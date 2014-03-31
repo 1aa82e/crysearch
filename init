@@ -1,0 +1,5 @@
+#ifndef _CrySearch_icpp_init_stub
+#define _CrySearch_icpp_init_stub
+#include "CtrlLib/init"
+#include "plugin/z/init"
+#endif

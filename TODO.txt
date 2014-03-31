@@ -1,0 +1,169 @@
+CrySearch application TODO list by evolution536
+
+- Optimize file writing in memory scanner and savior of data by memory scanner in memory;
+- Brute-force PID's to find out about hidden processes (process hacker);
+- Allow entering string as argument for create thread (let's make a custom data type of it);
+- Indicate architecture in process list;
+- Implement process polling by name, open when it polls succesfully;
+
+- Debugger:
+	- Far Cry doesn't want to listen to meh;
+	- manipulation lock, fix setting breakpoints and removing them pause the exception loop.
+	- Remove breakpoint without removing the results of the stack frame;
+	- Call stack -> go to disasm;
+	- VEH debugger
+
+- Add Nt/Zw functions: (Think of a good system for routine selection that allows scalability)
+	- NtReadVirtualMemory;
+	- NtWriteVirtualMemory;
+	- NtProtectVirtualMemory.
+
+- Main window:
+	- Use right toolbar space for message queue:
+		- Warning messages:
+			- PE Headers may be destroyed (process open);
+			- Executable module of process was hidden, undefined behavior;
+		- Info messages:
+			- Could be anything...
+
+- General Window:
+	- Add relocation table below section view;
+
+- Address Table:
+	- Add option checkbox / indicator to indicate whether address is frozen or not;
+
+- Disassembly view:
+	- Goto allocated block in the memory view.
+	
+- Disassembler:
+	- Get rid of the page in memory and use a file.
+
+- Encryption in target process & hide CrySearch from signature scan
+	- Look at AesStream example in bazaar.
+
+- Memory Scanner:
+	- Scan for a custom data type, a C structure;
+	- Import structs from ReClass;
+
+- Identify static addresses:
+	- IMAGE_SCN_INITIALIZED_DATA;
+	- Green display of static addresses;
+	- Save address data in structure with bool field to indicate type;
+	- Code generation customized to use offsets;
+	- Manually add = offsets.
+	- Pointers as addresses (using offsets);
+
+- Address table:
+	- Save instead of Save As when a file has been saved already or opened.
+
+- IAT:
+	- Drawing niet in het rood bij de eerste keer openen.
+
+- Enumerate open handles in target process;
+
+- Plugin system:
+	- Design plugin SDK;
+	- Plugin DLL to override process opening sequence;
+
+- .NET?
+	- hoe ver ga ik hierin?
+	- IMAGE_COR20_HEADER
+	- .NET references?
+
+- Ability to import cheat tables;
+- value in between;
+
+- Module window:
+	- Manual mapping as injection method.
+
+- Thread list:
+	- Queue user APC to thread (to inject a DLL);
+
+- Code generation:
+	- Change C++ to C and implement TCC?
+	- Configure Microsoft Visual C++ compiler to compile generated code?
+	- Look at Tcc example in Bazaar.
+
+- Scan for hooked functions inside a process based on:
+	- Detours;
+	- IAT.
+	
+- Add function: "Generate C++"->Fields / Struct / Union:
+	- Expand to be used with pointers, maybe structs;
+- Thread-specific stack/heap walk and search inside stack/heap
+- Structure dissections
+- VirtualProtectEx for addresses/blocks
+- Code caves scanning
+- Write x86 driver using WinDDK (.sys) and create UI module to load it:
+	- OpenProcess driver level equivalent;
+	- Read/Write- ProcessMemory driver level equivalent;
+	- TerminateThread driver level equivalent;
+
+------------------------------------------------------------------------------------------------
+
+Additions to U++:
+
+Add this to the CoWork class:
+
+	void SetThreadPriority(const int Priority)
+	{
+		Array<Thread>& thpPool = this->pool().threads;
+		
+		switch (Priority)
+		{	
+			case 0:
+				for (int thCount = 0; thCount < thpPool.GetCount(); thCount++)
+				{
+					thpPool[thCount].Priority(25);
+				}
+				break;
+			case 1:
+				for (int thCount = 0; thCount < thpPool.GetCount(); thCount++)
+				{
+					thpPool[thCount].Priority(75);
+				}
+				break;
+			case 2:
+				for (int thCount = 0; thCount < thpPool.GetCount(); thCount++)
+				{
+					thpPool[thCount].Priority(125);
+				}
+				break;
+			case 3:
+				for (int thCount = 0; thCount < thpPool.GetCount(); thCount++)
+				{
+					thpPool[thCount].Priority(175);
+				}
+				break;
+			case 4:
+				for (int thCount = 0; thCount < thpPool.GetCount(); thCount++)
+				{
+					thpPool[thCount].Priority(200);
+				}
+				break;
+		}
+	};
+
+Add this line to the TabCtrl::Item class:
+
+	const String&  GetText() const 					{ return text; }
+
+Add this function to the AMap class:
+	
+	K& 		 AddReturnKey(const K& k, const T& x)	{ value.Add(x); return key.Add(k); }
+
+------------------------------------------------------------------------------------------------
+
+- Comment out FileSel.h and FileSel.cpp Networking codenz.
+- Log.cpp: Comment out GetUserNameA calls and OutputDebugString calls;
+- App.h: Comment out GetUserName function;
+- App.cpp: Comment out GetUserName function;
+- ArrayCtrl.h:
+	- Move cellInfo variable in to protected;
+	- Comment out SerializeHeader and IsLineDisabled;
+- DropList.h:
+	- Comment out operator[int], NotNull, DropWidth, DropWidthZ;
+- Ctrl.iml:
+	- Remove networking icon(s);
+
+Copy uppsrc-custom files to designated locations before upp build.

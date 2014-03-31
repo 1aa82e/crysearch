@@ -1,0 +1,105 @@
+CrySearch Memory Scanner
+
+evolution536, www.unknowncheats.me
+
+v1.09
+	- Applied several performance fixes, increasing overall performance and memory usage. The disassembler is noticably faster;
+
+v1.08
+	- Changed the forum link in the about dialog to resolve to the CrySearch thread instead of the forum home page;
+	- Added option to format input value in hexadecimal when changing the integer value of an address table entry;
+	- Added process name to save file for future use;
+	- Changed the debugger window to effectively support multiple breakpoints, which was a major flaw in the first version;
+	- Added the breakpoint trigger address to the debugger window, with 'follow in disassembler' feature on click;
+	- Implemented 'Unknown Initial Value' as scanning type for the memory scanner;
+	- Added customizable stack read limit on breakpoint hit, editable from the Settings dialog;
+	- Refactored the Settings dialog to specialize certain settings;
+	- Added feature to suspend and resume the entire process. This feature does not provide distinction between suspended and running threads;
+	- Fixed bug that caused CrySearch to crash when a process contains more than 256 modules;
+	- Dropped Toolhelp32 as library in favor of NtQuerySystemInformation;
+	- Added feature to thread window where CrySearch is able to identify suspended threads;
+	- Changed the window title to contain the process identifier when a process is opened;
+	- Added possibility to enter API function as start address for a new thread. Format: (name.dll!function);
+	- Added option to randomize window title. Located under the menu 'Window';
+	- Changed the amount of search results visible in the user interface to 100.000 to reduce memory usage.
+v1.07
+	- Added key accelerators to disassembly window to quicken certain actions;
+	- Added heap walking feature in disassembly window to view the heaps associated with the opened process;
+	- Changed the margin for resizing the splitter vertically in the main window to be smaller;
+	- Fixed unicode string option to be invisible when string or wstring data type is not selected in change record dialog;
+	- Added option to set CrySearch's main window to be always on top. Added to the 'Window' menu;
+	- Fixed bug in IAT procedure to crash on ordinal lookup failure for some processes;
+	- Fixed bug in general PE information not being reset on process closure;
+	- Fixed bug in CrySearch x64 where GetClassLongPtr had to be used in order to succesfully retrieve the window icon;
+	- Fixed bug where CrySearch would crash when the PE headers are destroyed;
+	- Changed restore PE headers from file in module window to search working directory of module as starting directory.
+v1.06
+	- Changed right-click selectable to set breakpoints from invisible to disabled in case the debugger is not attached;
+	- Added option in module window to open the working directory of a module in the Windows Explorer;
+	- Added possibility to sort the processes in the process selection window per column by clicking the desired column header;
+	- Changed the 'Go to Address' button in the Disassembly window to go to the lower neighbor in case the address is not exact;
+	- Added column in process selection window to display icon associated to main window of a process;
+	- Added option in process selection window to hide processes that do not have a main window;
+	- Added dragging area in process selection window that allows the user to drag the mouse to the window of the desired process;
+	- Added button in module window to dump entire process into folder which includes all modules of the process;
+	- Added feature to dump specific sections of a module inside the opened process using right-click in the module window.
+v1.05
+	- Fixed major crash when opening processes which executable's IAT is mangled or modified;
+	- Fixed dump issue with section dump, where raw section size may be 0. If so, normal section size is used;
+	- Added basic disassembly using BeaEngine, showing address, bytes and OPcodes;
+	- Added debugger supporting:
+		- Software breakpoints;
+		- Hardware breakpoints;
+		- Hiding itself from PEB;
+		- Handling symbols with option to invade process.
+	- Added versioning information to the PE resources;
+	- Added checkbox in context menu of address table that indicates whether hexadecimal view is enabled;
+	- Due to a recent addition in the U++ framework, the overal application size reduced by 130 kb;
+	- Reduced size of toolbar images, to also reduce size of the toolbar itself;
+	- Fixed bug in ApiSetSchema resolving that would cause a crash in a small amount of situations;
+	- About dialog:
+		- Added U++ support link;
+		- Added CPUID display that shows hardware supported processor extensions.
+v1.04
+	- Fixed dumping of modules in module window, forcing to dump .dll when trying to dump the main executable module;
+	- Added ApiSetSchema resolving for Windows 8.1 and fixed a bug samiliar to its implementation for Windows 7;
+	- Changed definition of PEB and TEB to be more complete and accurate;
+	- Fixed crash when restoring address in IAT, case-sensitive comparing was necessary;
+	- Fixed crash when restoring address of virtualized API from imports window;
+	- Added correct address resolving and restoring of forwarded functions, now retrieving address from forwarded endpoint module;
+	- Changed about dialog with a clickable link to the unknowncheats forum and richer text;
+	- Added button to manually add addresses to the address table;
+	- Fixed bug with dumping a module, where occasionally the string length is incorrect, resulting in a mismatch;
+	- Fixed bug with ordinal import resolving where invalid address would be returned and added warning on invalid addresses.
+v1.03
+	- Fixed IAT module name, being too short with 32 bytes, now 48 bytes;
+	- Added TEB view for threads in opened process;
+	- Added IAT hooking, allowing user to overwrite function address in IAT;
+	- Added IAT unhooking, restoring the address of a previously hooked function from module's EAT;
+	- Added ordinal import name lookup in IAT window, ordinal imports are now displayed by foreign function name;
+	- Hooked imports are displayed in red to indicate the user that it is possibly hooked;
+	- Optimized PE operations by purging calls to ReadProcessMemory, speeding up the initialization process of CrySearch;
+	- Added button to refresh IAT manually;
+	- Added ApiSetSchema resolving for Windows 7+, redirected API's are resolved to its logical dll (This does not work on Windows 8.1);
+	- Added PEB window with a table view of the PEB contents, including a button to reset the BeingDebugged flag;
+v1.02
+	- Added hotkey configuration feature, for a basic set of keys and actions and keys;
+	- Fixed process open window search function not being able to press return to open first search result;
+	- Fixed terminated process not being detected, leaving CrySearch in a blind state (improvement for bugfix in v1.01);
+	- Added possibility to create process from file instead of opening an existing one;
+	- Added next scan conditions for increased and decreased value;
+	- Improved check against x64 processes when using x86 CrySearch;
+	- Changed CrySearch x64 for it to be fully compatible with Wow64 processes;
+	- Added several code size optimizations;
+	- Added IAT viewing (in tabpage: Imports);
+	- Removed warning at first startup, default settings are silently restored instead.
+v1.01:
+	- Fixed x86 and x64 settings file conflicting;
+	- Fixed scanning bug when process was terminated outside CrySearch;
+	- Fixed instability/crash when XML in settings file is modified unexpectedly;
+	- Fixed bug when closing and reoping 'General' window, where old section entries were not deleted;
+	- Fixed bug where opening a x86 process from x64 CrySearch, image base is incorrect;
+	- Added search box in process window to simplify loading of processes;
+	- Added shortcut closing of tool windows using Escape.
+v1.0:
+	- First release.
