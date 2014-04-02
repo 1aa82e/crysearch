@@ -129,7 +129,7 @@ private:
 	
 	typedef CrySearchForm CLASSNAME;
 public:
-	CrySearchForm();
+	CrySearchForm(const char* fn);
 	~CrySearchForm();
 	
 	CryDisasmCtrl* GetDisasmWindow();

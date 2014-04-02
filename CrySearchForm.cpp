@@ -374,7 +374,9 @@ void CrySearchForm::LinkHotkeysToActions()
 	}
 }
 
-CrySearchForm::CrySearchForm()
+// If CrySearch was opened using a file association, open the file straight away.
+// If CrySearch was opened regularly, pass NULL as parameter.
+CrySearchForm::CrySearchForm(const char* fn)
 {
 	this->processLoaded = false;
 	this->wndTitleRandomized = false;
@@ -444,6 +446,13 @@ CrySearchForm::CrySearchForm()
 	
 	// Wind up UI debugger error event. When attaching fails, the debug window must be closed at once.
 	this->mDbgWindow.DebugErrorOccured = THISBACK(DebugWindowErrorOccured);
+	
+	// If an address table file was opened using file association, load it and display it.
+	if (fn)
+	{
+		AddressTable::CreateAddressTableFromFile(loadedTable, fn);	
+		this->mUserAddressList.SetVirtualCount(loadedTable.GetCount());
+	}
 }
 
 CrySearchForm::~CrySearchForm()
@@ -1743,8 +1752,18 @@ GUI_APP_MAIN
 	// Delete temporary files from any earlier run, which might have crashed.
 	DeleteTemporaryFiles();
 	
+	// Get the command line. In case a .csat file was opened, the first argument is the path to the file.
+	const Vector<String>& cmdline = CommandLine();
+	if (cmdline.GetCount() > 0)
+	{
+		frm = new CrySearchForm(cmdline[0]);
+	}
+	else
+	{
+		frm = new CrySearchForm(NULL);
+	}
+	
 	// Run main window.
-	frm = new CrySearchForm();
 	frm->Run();
 	delete frm;
 	

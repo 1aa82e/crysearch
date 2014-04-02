@@ -6,6 +6,8 @@ extern String& HotkeyToString(const unsigned int hotkey);
 
 // File extension functions.
 extern "C" const BOOL RegisterAddressTableExtension();
+extern "C" const BOOL GetIsAddressTableExtensionRegistered();
+extern "C" const BOOL DeleteAddressTableRegistration();
 
 String GetHotkeyKey(const unsigned int index)
 {
@@ -125,8 +127,8 @@ void CrySearchSettingsDialog::LoadSettings()
 	this->mHotkeysList.SetVirtualCount(GlobalSettingsInstance.GetHotkeyCount());
 	this->mSymbolPathsList.SetVirtualCount(GlobalSettingsInstance.GetSymbolPathCount());
 	
-	// TODO: check current extension state, check if enabled, uncheck if not registered.
-	//this->mRegisterFileExtensionWithCrySearch = checked? hmm
+	this->mRegisterFileExtensionWithCrySearch = GetIsAddressTableExtensionRegistered();
+	this->mStartCheckedExtensionState = this->mRegisterFileExtensionWithCrySearch;
 }
 
 void CrySearchSettingsDialog::SaveSettings()
@@ -146,9 +148,13 @@ void CrySearchSettingsDialog::SaveSettings()
 	GlobalSettingsInstance.SetInvadeProcess(this->dbgInvadeProcess);
 	
 	// Attempt registering the CrySearch address table file extension with the currently started architecture of CrySearch.
-	if (this->mRegisterFileExtensionWithCrySearch && !RegisterAddressTableExtension())
+	if (this->mRegisterFileExtensionWithCrySearch && !this->mStartCheckedExtensionState && !RegisterAddressTableExtension())
 	{
-		Prompt("Fatal Error", CtrlImg::error(), "The address table file extension could not be registered!", "OK");
+		Prompt("Fatal Error", CtrlImg::error(), "Failed to register the file extension. Please run CrySearch as Administrator.", "OK");
+	}
+	else if (!this->mRegisterFileExtensionWithCrySearch && this->mStartCheckedExtensionState && !DeleteAddressTableRegistration())
+	{
+		Prompt("Fatal Error", CtrlImg::error(), "Failed to delete the file extension from the registry. Please run CrySearch as Administrator.", "OK");
 	}
 	
 	GlobalSettingsInstance.Save();

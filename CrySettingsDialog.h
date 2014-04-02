@@ -12,6 +12,8 @@ using namespace Upp;
 class CrySearchSettingsDialog sealed : public TopWindow
 {
 private:
+	bool mStartCheckedExtensionState;
+	
 	// Dialog main Ctrls
 	TabCtrl mainTabCtrl;
 	ParentCtrl mScanningTab;
