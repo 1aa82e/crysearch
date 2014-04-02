@@ -36,9 +36,20 @@ SettingsFile::SettingsFile()
 
 bool SettingsFile::Initialize()
 {
-	bool b = LoadFromXMLFile(*this, "CrySearch.xml");
+	bool b;
+	char binDir[MAX_PATH];
+	if (GetModuleFileName(NULL, binDir, MAX_PATH))
+	{
+		b = LoadFromXMLFile(*this, GetFileDirectory(binDir) + "CrySearch.xml");
+	}
+	else
+	{
+		b = LoadFromXMLFile(*this, "CrySearch.xml");
+	}
+	
 	this->mLanguage = LNGFromText("EN-EN");
 	
+	// If a simple integer value in the settings file is bogus, the file is corrupt.
 	if (this->mOpenProcessRoutine > 1)
 	{
 		b = false;
@@ -50,7 +61,15 @@ bool SettingsFile::Initialize()
 // Saves the data currently in memory to XML.
 void SettingsFile::Save()
 {
-	StoreAsXMLFile(*this, "ApplicationSettings", "CrySearch.xml");
+	char binDir[MAX_PATH];
+	if (GetModuleFileName(NULL, binDir, MAX_PATH))
+	{
+		StoreAsXMLFile(*this, "ApplicationSettings", GetFileDirectory(binDir) + "CrySearch.xml");
+	}
+	else
+	{
+		StoreAsXMLFile(*this, "ApplicationSettings", "CrySearch.xml");
+	}
 }
 
 void SettingsFile::AddHotkey(const String& description, unsigned int key)

@@ -5,6 +5,7 @@ evolution536, www.unknowncheats.me
 v1.09
 	- Applied several performance fixes, increasing overall performance and memory usage. The disassembler is noticably faster;
 	- Added option to manually associate the .csat file extension with CrySearch (elevation is necessary);
+	- Added button to 'Save' address table instead of 'Save As' every time. 'Save' is enabled whenever a table is opened;
 	
 v1.08
 	- Changed the forum link in the about dialog to resolve to the CrySearch thread instead of the forum home page;

@@ -1,7 +1,5 @@
 CrySearch application TODO list by evolution536
 
-- Working directory? Make sure the XML file doesn't get recreated...
-
 - Optimize file writing in memory scanner and savior of data by memory scanner in memory;
 - Brute-force PID's to find out about hidden processes (process hacker);
 - Allow entering string as argument for create thread (let's make a custom data type of it);
@@ -54,9 +52,6 @@ CrySearch application TODO list by evolution536
 	- Code generation customized to use offsets;
 	- Manually add = offsets.
 	- Pointers as addresses (using offsets);
-
-- Address table:
-	- Save instead of Save As when a file has been saved already or opened.
 
 - IAT:
 	- Drawing niet in het rood bij de eerste keer openen.

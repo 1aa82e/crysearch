@@ -6,7 +6,7 @@ const char* extension = ".csat";
 const char* action = "Open with CrySearch";
 
 // Creates the registry key for extension association registration.
-void CreatePathCommand(const char* const extension, const char* const action, char* const outString)
+void CreatePathCommand(const char* const extension, const char* const action, char* outString)
 {
 	const char* subStr = "\\Shell\\";
 	const char* commandPart = "\\command\\";
@@ -58,15 +58,16 @@ const BOOL RegisterAddressTableExtension()
 			return FALSE;
 		}
 		
+		pathCommand[0] = '"';
 		// Get the working directory of the application to set as command string.
-		if (!GetModuleFileName(NULL, pathCommand, MAX_PATH))
+		if (!GetModuleFileName(NULL, pathCommand + 1, MAX_PATH))
 		{
 			RegCloseKey(key);
 			return FALSE;
 		}
 		
 		// Append an identifier for the first parameter to the command string.
-		strcat_s(pathCommand, MAX_PATH, " %1");
+		strcat_s(pathCommand, MAX_PATH, "\" \"%1\"");
 		
 		// Set the value inside the registry key.
 		RegSetValueEx(key, NULL, 0, REG_SZ, pathCommand, strlen(pathCommand));

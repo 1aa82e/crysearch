@@ -47,6 +47,7 @@ struct AddressTableEntry : Moveable<AddressTableEntry>
 class AddressTable sealed
 {
 private:
+	String mSavedFileName;
 	String mProcessName;
 	Vector<AddressTableEntry> mEntries;
 public:
@@ -66,8 +67,10 @@ public:
 	void Clear();
 	void SetProcessName(const String& pName);
 	void ClearProcessName();
+	void SetFileName(const char* str);
 	
 	const int GetCount() const;
+	const String& GetFileName() const;
 	
 	const AddressTableEntry* operator [] (const int x) const
 	{

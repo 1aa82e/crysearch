@@ -101,6 +101,7 @@ private:
 	void DeleteUserDefinedAddress();
 	void OpenFileMenu();
 	void SaveFileMenu();
+	void SaveFileAsMenu();
 	void ClearAddressList();
 	void ShowHideDisasmWindow();
 	void ManuallyAddAddressToTable();

@@ -68,6 +68,16 @@ const int AddressTable::GetCount() const
 	return this->mEntries.GetCount();
 }
 
+const String& AddressTable::GetFileName() const
+{
+	return this->mSavedFileName;
+}
+
+void AddressTable::SetFileName(const char* str)
+{
+	this->mSavedFileName = str;
+}
+
 #ifdef _WIN64
 	const AddressTableEntry* AddressTable::Add(const String& description, const __int64 address, const String& valueType)
 	{
@@ -118,6 +128,7 @@ const int AddressTable::GetCount() const
 void AddressTable::CreateAddressTableFromFile(AddressTable& at, const String& filename)
 {
 	LoadFromXMLFile(at, filename);
+	at.SetFileName(filename);
 }
 
 // Creates an address table from a .ct Cheat Engine XML data file.
@@ -172,4 +183,5 @@ void AddressTable::CreateAddressTableFromFile(AddressTable& at, const String& fi
 void AddressTable::SaveAddressTableToFile(AddressTable& pTable, const String& filename)
 {
 	StoreAsXMLFile(pTable, "CrySearchAddressTable", filename);
+	pTable.SetFileName(filename);
 }

@@ -450,7 +450,7 @@ CrySearchForm::CrySearchForm(const char* fn)
 	// If an address table file was opened using file association, load it and display it.
 	if (fn)
 	{
-		AddressTable::CreateAddressTableFromFile(loadedTable, fn);	
+		AddressTable::CreateAddressTableFromFile(loadedTable, fn);
 		this->mUserAddressList.SetVirtualCount(loadedTable.GetCount());
 	}
 }
@@ -496,7 +496,17 @@ void CrySearchForm::FileMenu(Bar& pBar)
 	pBar.Separator();
 	
 	pBar.Add("Open File", CrySearchIml::OpenFile(), THISBACK(OpenFileMenu));
-	pBar.Add("Save File", CrySearchIml::SaveFile(), THISBACK(SaveFileMenu));
+	
+	if (loadedTable.GetFileName().IsEmpty())
+	{
+		pBar.Add(false, "Save File", CrySearchIml::SaveFile(), THISBACK(SaveFileMenu));
+	}
+	else
+	{
+		pBar.Add(true, "Save File", CrySearchIml::SaveFile(), THISBACK(SaveFileMenu));
+	}
+	
+	pBar.Add("Save File As", THISBACK(SaveFileAsMenu));
 	
 	pBar.Separator();
 	pBar.Add("Exit", CrySearchIml::ExitApplication(), THISBACK(ExitApplication));
@@ -857,6 +867,14 @@ void CrySearchForm::AddressListChangeProperty(ChangeRecordDialogMode mode)
 }
 
 void CrySearchForm::SaveFileMenu()
+{
+	if (!loadedTable.GetFileName().IsEmpty())
+	{
+		AddressTable::SaveAddressTableToFile(loadedTable, loadedTable.GetFileName());
+	}
+}
+
+void CrySearchForm::SaveFileAsMenu()
 {
 	FileSel* fs = new FileSel();
 	fs->Types("CrySearch Address Tables\t*.csat");
