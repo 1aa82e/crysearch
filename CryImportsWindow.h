@@ -27,6 +27,7 @@ public:
 	~CryImportsWindow();
 	
 	void Initialize();
+	void ModuleRedraw();
 };
 
 extern Win32ModuleInformation* FindModuleInVector(const char* modName);

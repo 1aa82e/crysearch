@@ -189,3 +189,74 @@ bool EnumerateHeaps(Vector<Win32HeapInformation>& heapInfoList)
 	RtlDestroyQueryDebugBuffer(db);
 	return true;
 }
+
+// Enumerates the heaps inside the target process. This function does not return a value.
+// When it succeeds, the out Vector parameter contains the handles. If failed, the Vector is empty.
+void EnumerateHandles(const int processId, Vector<Win32HandleInformation>& handles)
+{
+	// Clear the output Vector.
+	handles.Clear();
+	
+	NTSTATUS returnVal;
+	ULONG dataLength = 0x10000;
+	PSYSTEM_HANDLE_INFORMATION handleInfo = NULL;
+	
+	// Query the system handles. If the call fails because of a length mismatch, recreate a bigger buffer and try again.
+	do
+	{
+		handleInfo = (PSYSTEM_HANDLE_INFORMATION)VirtualAlloc(NULL, dataLength, MEM_COMMIT, PAGE_READWRITE);
+		returnVal = NtInternalFunctions.NtQuerySystemInformation(SystemHandleInformation, handleInfo, dataLength, &dataLength);
+		if (returnVal == STATUS_INFO_LENGTH_MISMATCH)
+		{
+			// The length of the buffer was not sufficient. Expand the buffer before retrying.
+			VirtualFree(handleInfo, 0, MEM_RELEASE);
+			dataLength *= 2;
+		}
+	}
+	while (returnVal == STATUS_INFO_LENGTH_MISMATCH);
+	
+	if (returnVal == STATUS_SUCCESS)
+	{
+		// The system query succeeded, let's wire up the object system call.
+		NtQueryObjectPrototype NtQueryObject = (NtQueryObjectPrototype)GetProcAddress(GetModuleHandle("ntdll.dll"), "NtQueryObject");
+		PPUBLIC_OBJECT_TYPE_INFORMATION objInfo = (PPUBLIC_OBJECT_TYPE_INFORMATION)VirtualAlloc(NULL, 0x1000, MEM_COMMIT, PAGE_READWRITE);
+		
+		// The count is available, let's resize the Vector to save us the additional allocations.
+		handles.Reserve(handleInfo->NumberOfHandles);
+		
+		for (DWORD i = 0; i < handleInfo->NumberOfHandles; ++i)
+		{
+			const PSYSTEM_HANDLE_TABLE_ENTRY_INFO curHandle = &handleInfo->Handles[i];
+			if (curHandle->UniqueProcessId == processId)
+			{
+				Win32HandleInformation newHandle;
+				newHandle.Handle = curHandle->HandleValue;
+				newHandle.Access = curHandle->GrantedAccess;
+				
+				// Duplicate the handle in order to find out what object it is associated with.
+				HANDLE hDup;
+				DuplicateHandle(mMemoryScanner->GetHandle(), (HANDLE)curHandle->HandleValue, GetCurrentProcess(), &hDup, 0, FALSE, DUPLICATE_SAME_ACCESS);
+
+				// Query the object to find out what kind of object it is.
+				if (NtQueryObject && NtQueryObject(hDup, ObjectTypeInformation, objInfo, 0x1000, NULL) == STATUS_SUCCESS)
+				{
+					newHandle.ObjectType = WString(objInfo->TypeName.Buffer, objInfo->TypeName.Length + 1);
+				}
+
+				// Only add handles that make sense.
+				if (!newHandle.ObjectType.IsEmpty())
+				{
+					handles.Add(newHandle);
+				}
+
+				// Close the duplicate handle ofcourse.
+				CloseHandle(hDup);
+			}
+		}
+
+		VirtualFree(objInfo, 0, MEM_RELEASE);
+	}
+	
+	// Free heap allocated process information.
+	VirtualFree(handleInfo, 0, MEM_RELEASE);
+}

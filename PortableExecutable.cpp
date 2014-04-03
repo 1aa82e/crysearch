@@ -1180,6 +1180,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const SIZE_T baseAddr
     AddrStruct addrStruct;
     addrStruct.BaseAddress = (Byte*)baseAddress;
     addrStruct.BufferBaseAddress = (exportDirectoryBuffer - dataDir.VirtualAddress);
+	addrStruct.BufferEndAddress = addrStruct.BufferBaseAddress + dataDir.VirtualAddress + dataDir.Size;
     addrStruct.ExportDirectory = (IMAGE_EXPORT_DIRECTORY*)exportDirectoryBuffer;
     addrStruct.DirectoryAddress = &dataDir;
     
@@ -1976,6 +1977,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const SIZE_T baseAddr
 	    AddrStruct addrStruct;
 	    addrStruct.BaseAddress = (Byte*)baseAddress;
 	    addrStruct.BufferBaseAddress = (exportDirectoryBuffer - dataDir.VirtualAddress);
+		addrStruct.BufferEndAddress = addrStruct.BufferBaseAddress + dataDir.VirtualAddress + dataDir.Size;
 	    addrStruct.ExportDirectory = (IMAGE_EXPORT_DIRECTORY*)exportDirectoryBuffer;
 	    addrStruct.DirectoryAddress = &dataDir;
 	    

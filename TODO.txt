@@ -1,5 +1,6 @@
 CrySearch application TODO list by evolution536
 
+- Path to object with handle list?
 - Optimize file writing in memory scanner and savior of data by memory scanner in memory;
 - Brute-force PID's to find out about hidden processes (process hacker);
 - Allow entering string as argument for create thread (let's make a custom data type of it);
@@ -32,12 +33,6 @@ CrySearch application TODO list by evolution536
 - Address Table:
 	- Add option checkbox / indicator to indicate whether address is frozen or not;
 
-- Disassembly view:
-	- Goto allocated block in the memory view.
-	
-- Disassembler:
-	- Get rid of the page in memory and use a file.
-
 - Encryption in target process & hide CrySearch from signature scan
 	- Look at AesStream example in bazaar.
 
@@ -52,11 +47,6 @@ CrySearch application TODO list by evolution536
 	- Code generation customized to use offsets;
 	- Manually add = offsets.
 	- Pointers as addresses (using offsets);
-
-- IAT:
-	- Drawing niet in het rood bij de eerste keer openen.
-
-- Enumerate open handles in target process;
 
 - Plugin system:
 	- Design plugin SDK;

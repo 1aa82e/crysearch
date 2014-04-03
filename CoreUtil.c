@@ -170,6 +170,22 @@ const int CryAllocateProcessMemory(HANDLE procHandle, const unsigned int MemoryS
 	return (*pVirtualAddress = (SIZE_T)VirtualAllocEx(procHandle, NULL, MemorySize, MEM_COMMIT, protect)) ? 0 : -1;
 }
 
+// Attempts to close a remote handle. It duplicates the handle while closing the source and then closes the duplicate.
+// Returns TRUE if the operation succeeded, FALSE otherwise.
+const BOOL CloseRemoteHandle(HANDLE procHandle, HANDLE handle)
+{
+	// Duplicate the handle.
+	HANDLE hDup;
+	if (!DuplicateHandle(procHandle, handle, GetCurrentProcess(), &hDup, 0, FALSE, DUPLICATE_CLOSE_SOURCE))
+	{
+		return FALSE;
+	}
+	
+	// Close the duplicated handle.
+	CloseHandle(hDup);
+	return TRUE;
+}
+
 #ifdef _WIN64
 	// Aligns an address in memory to the specific boundary.
 	void AlignPointer(DWORD_PTR* Address, const DWORD Boundary)

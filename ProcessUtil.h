@@ -44,6 +44,17 @@ struct Win32HeapInformation : Moveable<Win32HeapInformation>
 	LONG Flags;
 };
 
+// Contains information about a handle in the system.
+struct Win32HandleInformation : Moveable<Win32HandleInformation>
+{
+	USHORT Handle;
+	LONG Access;
+	WString ObjectType;
+};
+
+extern "C" const BOOL CloseRemoteHandle(HANDLE procHandle, HANDLE handle);
+
+void EnumerateHandles(const int processId, Vector<Win32HandleInformation>& handles);
 void EnumerateThreads(const int processId, Vector<Win32ThreadInformation>& threads);
 void EnumerateProcesses(Vector<Win32ProcessInformation>& outList);
 void EnumerateModules(HANDLE procHandle, const int processId);

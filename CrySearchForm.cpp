@@ -7,6 +7,7 @@
 #include "CryAllocateMemoryWindow.h"
 #include "CryCodeGenerationForm.h"
 #include "CryProcessEnvironmentBlockWindow.h"
+#include "CrySystemHandleInformationWindow.h"
 #include "ImlProvider.h"
 #include "UIUtilities.h"
 
@@ -409,6 +410,8 @@ CrySearchForm::CrySearchForm(const char* fn)
 	;
 	
 	this->mScanningProgress.Hide();
+	this->mTabbedDataWindows.WhenSet = THISBACK(ActiveTabWindowChanged);
+	
 	
 	*this
 		<< this->mMainSplitter.Vert(this->mInputScanSplitter.Horz(this->mSearchResultsPanel, this->mUserAddressList.SizePos())
@@ -526,6 +529,8 @@ void CrySearchForm::ToolsMenu(Bar& pBar)
 	if (this->processLoaded)
 	{
 		pBar.Add("View PEB", CrySearchIml::AboutButton(), THISBACK(ViewPEBButtonClicked));
+		pBar.Add("View Handles", CrySearchIml::ViewHandlesButton(), THISBACK(ViewSystemHandlesButtonClicked));
+		pBar.Separator();
 		pBar.Add("Allocate Memory", CrySearchIml::CrySearch(), THISBACK(AllocateMemoryButtonClicked));
 		pBar.Separator();
 		pBar.Add((this->mUserAddressList.GetCount() > 0), "Code Generation", CrySearchIml::CodeGenerationButton(), THISBACK(CodeGenerationButtonClicked));
@@ -619,6 +624,15 @@ void CrySearchForm::UserDefinedEntryWhenBar(Bar& pBar)
 void CrySearchForm::ToggleAlwaysOnTop()
 {
 	this->TopMost(!this->IsTopMost());
+}
+
+void CrySearchForm::ActiveTabWindowChanged()
+{
+	const int index = ~this->mTabbedDataWindows;
+	if (index >= 0 && this->mTabbedDataWindows.GetItem(index).GetText() == "Imports")
+	{
+		this->mImportsWindow.ModuleRedraw();
+	}
 }
 
 // Randomizes the window title and sets CrySearch to use menubar label to display the opened process.
@@ -1315,6 +1329,13 @@ void CrySearchForm::CodeGenerationButtonClicked()
 	CryCodeGenerationForm* ccgf = new CryCodeGenerationForm();
 	ccgf->Execute();
 	delete ccgf;
+}
+
+void CrySearchForm::ViewSystemHandlesButtonClicked()
+{
+	CrySystemHandleInformationWindow* cshiw = new CrySystemHandleInformationWindow();
+	cshiw->Execute();
+	delete cshiw;
 }
 
 void CrySearchForm::ViewPEBButtonClicked()

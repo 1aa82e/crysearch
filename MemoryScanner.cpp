@@ -206,7 +206,7 @@ bool MemoryScanner::Initialize(int processId, const String& exeTitle)
 	{
 		case ROUTINE_OPENPROCESS:
 			this->mOpenedProcessHandle = OpenProcess(PROCESS_VM_OPERATION | PROCESS_VM_READ | PROCESS_VM_WRITE
-				| PROCESS_QUERY_INFORMATION | PROCESS_CREATE_THREAD, FALSE, processId);
+				| PROCESS_QUERY_INFORMATION | PROCESS_CREATE_THREAD | PROCESS_DUP_HANDLE, FALSE, processId);
 			break;
 		case ROUTINE_NTOPENPROCESS:
 			CLIENT_ID cid;
@@ -223,7 +223,7 @@ bool MemoryScanner::Initialize(int processId, const String& exeTitle)
 			}
 			
 			NtInternalFunctions.NtOpenProcess(&this->mOpenedProcessHandle, PROCESS_VM_OPERATION | PROCESS_VM_READ | PROCESS_VM_WRITE
-				| PROCESS_QUERY_INFORMATION | PROCESS_CREATE_THREAD, &objAttr, &cid);
+				| PROCESS_QUERY_INFORMATION | PROCESS_CREATE_THREAD | PROCESS_DUP_HANDLE, &objAttr, &cid);
 			break;
 	}
 	

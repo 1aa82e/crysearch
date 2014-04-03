@@ -50,6 +50,8 @@ file
 	CryCodeGenerationForm.h,
 	CryAddHotkeyWindow.cpp,
 	CryAddHotkeyWindow.h,
+	CrySystemHandleInformationWindow.cpp,
+	CrySystemHandleInformationWindow.h,
 	CryProcessEnvironmentBlockWindow.cpp,
 	CryProcessEnvironmentBlockWindow.h,
 	CryHeapWalkDialog.cpp,

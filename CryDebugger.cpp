@@ -126,6 +126,7 @@ CryDebugger::CryDebugger()
 // Debugger default destructor. (Don't call this->Stop() in the destructor)
 CryDebugger::~CryDebugger()
 {
+	// Cheecky exception is thrown when handle is invalid and debugger is attached...
 	SymCleanup(mMemoryScanner->GetHandle());
 }
 

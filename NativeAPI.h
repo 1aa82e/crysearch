@@ -1195,6 +1195,43 @@ typedef struct _SYSTEM_PROCESS_INFORMATION
 	SYSTEM_EXTENDED_THREAD_INFORMATION Threads[1];
 } SYSTEM_PROCESS_INFORMATION, *PSYSTEM_PROCESS_INFORMATION;
 
+// Describes a handle.
+typedef struct _SYSTEM_HANDLE_TABLE_ENTRY_INFO
+{
+	USHORT UniqueProcessId;
+	USHORT CreatorBackTraceIndex;
+	UCHAR ObjectTypeIndex;
+	UCHAR HandleAttributes;
+	USHORT HandleValue;
+	PVOID Object;
+	ULONG GrantedAccess;
+} SYSTEM_HANDLE_TABLE_ENTRY_INFO, *PSYSTEM_HANDLE_TABLE_ENTRY_INFO;
+
+// Contains information about the handles that are currently active inside the system.
+typedef struct _SYSTEM_HANDLE_INFORMATION
+{
+	ULONG NumberOfHandles;
+	SYSTEM_HANDLE_TABLE_ENTRY_INFO Handles[1];
+} SYSTEM_HANDLE_INFORMATION, *PSYSTEM_HANDLE_INFORMATION;
+
+// Identifies the type of information that is queried of an object.
+typedef enum _OBJECT_INFORMATION_CLASS
+{
+	ObjectBasicInformation  = 0,
+	ObjectTypeInformation   = 2
+} OBJECT_INFORMATION_CLASS;
+
+// Contains information about an object that is being queried.
+typedef struct __PUBLIC_OBJECT_TYPE_INFORMATION
+{
+	UNICODE_STRING TypeName;
+	ULONG          Reserved[22];
+} PUBLIC_OBJECT_TYPE_INFORMATION, *PPUBLIC_OBJECT_TYPE_INFORMATION;
+
+// Function that queries objects by their handle.
+typedef NTSTATUS (__stdcall* NtQueryObjectPrototype)(HANDLE Handle, OBJECT_INFORMATION_CLASS ObjectInformationClass, PVOID ObjectInformation, ULONG ObjectInformationLength, PULONG ReturnLength);
+
+// System information function.
 typedef NTSTATUS (__stdcall* NtQuerySystemInformationPrototype)(SYSTEM_INFORMATION_CLASS ProcessInformationClass, PVOID ProcessInformation, ULONG ProcessInformationLength, PULONG ReturnLength);
 
 // Nt functions for thread and process query calls.

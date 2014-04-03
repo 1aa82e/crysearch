@@ -10,8 +10,8 @@ void CreatePathCommand(const char* const extension, const char* const action, ch
 {
 	const char* subStr = "\\Shell\\";
 	const char* commandPart = "\\command\\";
-	DWORD index = 0;
-	int curStringLength = strlen(extension);
+	SIZE_T index = 0;
+	SIZE_T curStringLength = strlen(extension);
 	
 	// Set the file extension.
 	memcpy(outString, extension, curStringLength);
@@ -49,7 +49,7 @@ const BOOL RegisterAddressTableExtension()
 		char pathCommand[MAX_PATH];
 		CreatePathCommand(extension, action, pathCommand);	
 		
-		RegSetValueEx(key, NULL, 0, REG_SZ, fileDesc, strlen(fileDesc));
+		RegSetValueEx(key, NULL, 0, REG_SZ, fileDesc, (DWORD)strlen(fileDesc));
 		RegCloseKey(key);
 		
 		// Create a registry key to save the path to the executable that opens address tables.
@@ -70,7 +70,7 @@ const BOOL RegisterAddressTableExtension()
 		strcat_s(pathCommand, MAX_PATH, "\" \"%1\"");
 		
 		// Set the value inside the registry key.
-		RegSetValueEx(key, NULL, 0, REG_SZ, pathCommand, strlen(pathCommand));
+		RegSetValueEx(key, NULL, 0, REG_SZ, pathCommand, (DWORD)strlen(pathCommand));
 		RegCloseKey(key);
 		
 		return TRUE;

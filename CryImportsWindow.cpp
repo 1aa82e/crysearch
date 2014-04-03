@@ -127,6 +127,11 @@ void CryImportsWindow::PlaceHookOnIATFunction()
 	this->RefreshImports();
 }
 
+void CryImportsWindow::ModuleRedraw()
+{
+	this->ModuleChanged();
+}
+
 void CryImportsWindow::ModuleChanged()
 {
 	MasterIndex = this->mModulesList.GetCursor();
@@ -163,6 +168,7 @@ void CryImportsWindow::Initialize()
 		this->mModulesList.SetVirtualCount(LoadedProcessPEInformation.ImportAddressTable.GetCount());
 		this->mModulesList.SetCursor(0);
 		
+		// Trigger the event to load the functions inside an imported module.
 		this->ModuleChanged();
 	}
 }

@@ -69,6 +69,8 @@ private:
 	void ChangeRecordSubMenu(Bar& pBar);
 	void SetDataBreakpointMenu(Bar& pBar);
 	
+	void ViewSystemHandlesButtonClicked();
+	void ActiveTabWindowChanged();
 	void RandomizeWindowTitle();
 	void SetBreakpointMenuFunction(const HWBP_TYPE type);
 	void ToggleAlwaysOnTop();
