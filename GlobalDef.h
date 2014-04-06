@@ -10,6 +10,11 @@
 
 // ---------------------------------------------------------------------------------------------
 
+// Defines the maximum size of a buffer allocated by the memory scanner that triggers a reduced 
+// reallocation. The second definition is the reduced reallocation factor.
+#define MEMORY_SCANNER_BUFFER_LENGTH_THRESHOLD		0x1000000 // 16 MB
+#define MEMORY_SCANNER_BUFFER_REALLOCATION_FACTOR	(double)1.5
+
 // Defines the amount of search results that CrySearch will keep in memory to view to the users.
 // Be sure to also edit the amount in the string manually in the ScannerCompleted function.
 #define MEMORYSCANNER_CACHE_LIMIT	100000
@@ -58,6 +63,7 @@ __declspec(selectany) struct _NtInternalFunctions
 	NtQueryInformationThreadPrototype NtQueryInformationThread;
 	NtQueryInformationProcessPrototype NtQueryInformationProcess;
 	NtOpenProcessPrototype NtOpenProcess;
+	NtQueryObjectPrototype NtQueryObject;
 	
 	// Construct all internals functions once for application wide use.
 	_NtInternalFunctions()
@@ -67,6 +73,7 @@ __declspec(selectany) struct _NtInternalFunctions
 		this->NtQueryInformationThread = (NtQueryInformationThreadPrototype)GetProcAddress(ntdll, "NtQueryInformationThread");
 		this->NtQueryInformationProcess = (NtQueryInformationProcessPrototype)GetProcAddress(ntdll, "NtQueryInformationProcess");
 		this->NtOpenProcess = (NtOpenProcessPrototype)GetProcAddress(ntdll, "NtOpenProcess");
+		this->NtQueryObject = (NtQueryObjectPrototype)GetProcAddress(ntdll, "NtQueryObject");
 	}
 } NtInternalFunctions;
 

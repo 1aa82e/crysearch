@@ -35,9 +35,21 @@ String GetVirtualAddress(const int index)
 #endif
 }
 
+String GetModuleStringRepresentation(const int index)
+{
+#ifdef _WIN64
+	return Format("%llX - %s", (__int64)LoadedModulesList[index].BaseAddress, LoadedModulesList[index].ModuleName);
+#else
+	return Format("%lX - %s", (int)LoadedModulesList[index].BaseAddress, LoadedModulesList[index].ModuleName);
+#endif
+}
+
 CryImportsWindow::CryImportsWindow()
 {
 	FunctionEntriesArrayCtrl = &this->mFunctionsList;
+	
+	this->AddFrame(mToolStrip);
+	this->mToolStrip.Set(THISBACK(ToolStrip));
 	
 	this->mModulesList.AddRowNumColumn("Module").SetConvert(Single<IndexBasedValueConvert<GetModule>>());
 	this->mFunctionsList.AddRowNumColumn("Function", 60).SetConvert(Single<IndexBasedValueConvert<GetFunction>>());
@@ -53,11 +65,45 @@ CryImportsWindow::CryImportsWindow()
 	this->mControlSplitter.SetMinPixels(0, 150);
 	this->mControlSplitter.SetMinPixels(1, 300);
 	this->mControlSplitter.SetPos(3500);
+
+	this->mModulesDropList.SetConvert(Single<IndexBasedValueConvert<GetModuleStringRepresentation>>());
+	this->mModulesDropList.WhenDrop = THISBACK(ModulesDropped);
+	this->mModulesDropList.WhenAction = THISBACK(ModulesSelected);
 }
 
 CryImportsWindow::~CryImportsWindow()
 {
 	
+}
+
+void CryImportsWindow::ToolStrip(Bar& pBar)
+{
+	pBar.Add(this->mModulesDescriptorLabel.SetLabel("Module: "));
+	pBar.Add(this->mModulesDropList, 200);
+	pBar.Separator();
+	pBar.Add("Refresh", CrySearchIml::RefreshButtonSmall(), THISBACK(RefreshImports));
+}
+
+void CryImportsWindow::ModulesDropped()
+{
+	// Refresh modules before dropping the list.
+	EnumerateModules(mMemoryScanner->GetHandle(), mMemoryScanner->GetProcessId());
+	this->mModulesDropList.SetCount(LoadedModulesList.GetCount());
+}
+
+void CryImportsWindow::ModulesSelected()
+{
+	const int cursor = this->mModulesDropList.GetIndex();
+	if (cursor >= 0 && LoadedModulesList.GetCount() > 0)
+	{
+		// Alter base address to match the module's one, get infos and quickly restore exe base address.
+		mPeInstance->SetBaseAddress(LoadedModulesList[cursor].BaseAddress);
+		this->RefreshImports();
+		mPeInstance->SetBaseAddress(LoadedModulesList[0].BaseAddress);
+		
+		// Set the new index of the drop list to the newly selected module.
+		this->mModulesDropList.SetIndex(cursor);
+	}
 }
 
 void CryImportsWindow::FunctionListRightClick(Bar& pBar)
@@ -73,14 +119,15 @@ void CryImportsWindow::FunctionListRightClick(Bar& pBar)
 			pBar.Add("Place Hook", CrySearchIml::PlaceHookSmall(), THISBACK(PlaceHookOnIATFunction));
 		}
 	}
-	
-	pBar.Add("Refresh", CrySearchIml::RefreshButtonSmall(), THISBACK(RefreshImports));
 }
 
 void CryImportsWindow::RestoreIATFunction()
 {
 	const ImportTableDescriptor& key = LoadedProcessPEInformation.ImportAddressTable.GetKey(MasterIndex);
 	const ImportAddressTableEntry& entry = LoadedProcessPEInformation.ImportAddressTable.Get(key)[this->mFunctionsList.GetCursor()];
+
+	// Set the base address to the correct module.
+	mPeInstance->SetBaseAddress(LoadedModulesList[this->mModulesDropList.GetIndex()].BaseAddress);
 	
 	if (key.LogicalBaseAddress)
 	{
@@ -108,6 +155,9 @@ void CryImportsWindow::PlaceHookOnIATFunction()
 		return;
 	}
 	
+	// Set the base address to the correct module.
+	mPeInstance->SetBaseAddress(LoadedModulesList[this->mModulesDropList.GetIndex()].BaseAddress);
+
 	// Ordinal import or named import? Differentiate here, the backend will take care of the rest.
 	if (entry.Ordinal == 0)
 	{
@@ -125,6 +175,18 @@ void CryImportsWindow::PlaceHookOnIATFunction()
 	
 	// Reload imports to view the hooked import.
 	this->RefreshImports();
+}
+
+void CryImportsWindow::DataRetrievalDone()
+{
+	if (LoadedModulesList.GetCount() > 0)
+	{
+		mPeInstance->SetBaseAddress(LoadedModulesList[0].BaseAddress);
+	}
+	else
+	{
+		mPeInstance->SetBaseAddress(0);
+	}
 }
 
 void CryImportsWindow::ModuleRedraw()
@@ -154,6 +216,17 @@ void CryImportsWindow::ModuleChanged()
 
 void CryImportsWindow::RefreshImports()
 {
+	// If a module is selected, refresh the imports of this module. Otherwise refresh the exe imports.
+	const int cursor = this->mModulesDropList.GetIndex();
+	if (cursor >= 0 && LoadedModulesList.GetCount() > 0)
+	{
+		mPeInstance->SetBaseAddress(LoadedModulesList[cursor].BaseAddress);
+	}
+	else
+	{
+		mPeInstance->SetBaseAddress(0);
+	}
+	
 	LoadedProcessPEInformation.ClearImportTable();
 	this->Initialize();
 }
@@ -161,6 +234,22 @@ void CryImportsWindow::RefreshImports()
 void CryImportsWindow::Initialize()
 {
 	mPeInstance->GetImportAddressTable();
+	this->mModulesDropList.SetCount(LoadedModulesList.GetCount());
+	const int cursor = this->mModulesDropList.GetIndex();
+	if (LoadedModulesList.GetCount() > 0)
+	{
+		if (cursor >= 0)
+		{
+			this->mModulesDropList.SetIndex(cursor);
+		}
+		else
+		{
+			this->mModulesDropList.SetIndex(0);
+		}
+	}
+	
+	// Make sure the base address is correct again.
+	this->DataRetrievalDone();
 	
 	// If the IAT could not be loaded, and is empty, do not trigger the event. This will crash CrySearch.
 	if (LoadedProcessPEInformation.ImportAddressTable.GetCount())

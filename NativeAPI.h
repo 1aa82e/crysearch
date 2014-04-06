@@ -1198,13 +1198,11 @@ typedef struct _SYSTEM_PROCESS_INFORMATION
 // Describes a handle.
 typedef struct _SYSTEM_HANDLE_TABLE_ENTRY_INFO
 {
-	USHORT UniqueProcessId;
-	USHORT CreatorBackTraceIndex;
-	UCHAR ObjectTypeIndex;
-	UCHAR HandleAttributes;
+	DWORD UniqueProcessId;
+	WORD HandleType;
 	USHORT HandleValue;
 	PVOID Object;
-	ULONG GrantedAccess;
+	ACCESS_MASK GrantedAccess;
 } SYSTEM_HANDLE_TABLE_ENTRY_INFO, *PSYSTEM_HANDLE_TABLE_ENTRY_INFO;
 
 // Contains information about the handles that are currently active inside the system.
@@ -1217,16 +1215,62 @@ typedef struct _SYSTEM_HANDLE_INFORMATION
 // Identifies the type of information that is queried of an object.
 typedef enum _OBJECT_INFORMATION_CLASS
 {
-	ObjectBasicInformation  = 0,
-	ObjectTypeInformation   = 2
+	ObjectBasicInformation,
+	ObjectNameInformation,
+	ObjectTypeInformation,
+	ObjectTypesInformation,
+	ObjectHandleFlagInformation,
+	ObjectSessionInformation,
+	MaxObjectInfoClass
 } OBJECT_INFORMATION_CLASS;
 
-// Contains information about an object that is being queried.
-typedef struct __PUBLIC_OBJECT_TYPE_INFORMATION
+// Provides the name of an object associated with a handle.
+typedef struct _OBJECT_NAME_INFORMATION
+{
+	UNICODE_STRING ObjectName;
+} OBJECT_NAME_INFORMATION, *POBJECT_NAME_INFORMATION;
+
+// Contains basic information about an object that is being queried.
+typedef struct _OBJECT_BASIC_INFORMATION
+{
+	ULONG Attributes;
+	ACCESS_MASK GrantedAccess;
+	ULONG HandleCount;
+	ULONG PointerCount;
+	ULONG PagedPoolCharge;
+	ULONG NonPagedPoolCharge;
+	ULONG Reserved[3];
+	ULONG NameInfoSize;
+	ULONG TypeInfoSize;
+	ULONG SecurityDescriptorSize;
+	LARGE_INTEGER CreationTime;
+} OBJECT_BASIC_INFORMATION, *POBJECT_BASIC_INFORMATION;
+
+// Contains type information about an object that is being queried.
+typedef struct _OBJECT_TYPE_INFORMATION
 {
 	UNICODE_STRING TypeName;
-	ULONG          Reserved[22];
-} PUBLIC_OBJECT_TYPE_INFORMATION, *PPUBLIC_OBJECT_TYPE_INFORMATION;
+	ULONG TotalNumberOfObjects;
+	ULONG TotalNumberOfHandles;
+	ULONG TotalPagedPoolUsage;
+	ULONG TotalNonPagedPoolUsage;
+	ULONG TotalNamePoolUsage;
+	ULONG TotalHandleTableUsage;
+	ULONG HighWaterNumberOfObjects;
+	ULONG HighWaterNumberOfHandles;
+	ULONG HighWaterPagedPoolUsage;
+	ULONG HighWaterNonPagedPoolUsage;
+	ULONG HighWaterNamePoolUsage;
+	ULONG HighWaterHandleTableUsage;
+	ULONG InvalidAttributes;
+	GENERIC_MAPPING GenericMapping;
+	ULONG ValidAccessMask;
+	BOOLEAN SecurityRequired;
+	BOOLEAN MaintainHandleCount;
+	ULONG PoolType;
+	ULONG DefaultPagedPoolCharge;
+	ULONG DefaultNonPagedPoolCharge;
+} OBJECT_TYPE_INFORMATION, *POBJECT_TYPE_INFORMATION;
 
 // Function that queries objects by their handle.
 typedef NTSTATUS (__stdcall* NtQueryObjectPrototype)(HANDLE Handle, OBJECT_INFORMATION_CLASS ObjectInformationClass, PVOID ObjectInformation, ULONG ObjectInformationLength, PULONG ReturnLength);

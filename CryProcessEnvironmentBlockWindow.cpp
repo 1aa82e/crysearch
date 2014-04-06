@@ -4,7 +4,7 @@
 
 CryProcessEnvironmentBlockWindow::CryProcessEnvironmentBlockWindow()
 {
-	this->Title("Process Information").SetRect(0, 0, 330, 300);
+	this->Title("Process Information").SetRect(0, 0, 350, 300);
 	
 	this->mOk <<= THISBACK(DialogClose);
 	this->mResetDebugFlag <<= THISBACK(ResetDebugFlag);
@@ -39,8 +39,8 @@ void CryProcessEnvironmentBlockWindow::Initialize()
 			
 			this->pIsBeingDebuggedPtr = ((BYTE*)PebBaseAddress) + 0x2;
 			
-			this->mPEBInfo.AddColumn("Property", 63);
-			this->mPEBInfo.AddColumn("Value", 37);
+			this->mPEBInfo.AddColumn("Property", 65);
+			this->mPEBInfo.AddColumn("Value", 35);
 						
 			this->mPEBInfo.Add("PEB Address", Format("%lX", (int)PebBaseAddress));
 			this->mPEBInfo.Add("Inherited address space", Format("%X", peb.InheritedAddressSpace));
@@ -93,7 +93,7 @@ void CryProcessEnvironmentBlockWindow::Initialize()
 			this->mPEBInfo.Add("CSD Version pointer", Format("%lX", (LONG_PTR)peb.CSDVersion.Buffer));
 			this->mPEBInfo.Add("Activation context data", Format("%lX", (LONG_PTR)peb.ActivationContextData));
 			this->mPEBInfo.Add("Assembly storage map", Format("%lX", (LONG_PTR)peb.ProcessAssemblyStorageMap));
-			this->mPEBInfo.Add("System default activation context data", Format("%lX", (LONG_PTR)peb.SystemDefaultActivationContextData));
+			this->mPEBInfo.Add("System default activation context", Format("%lX", (LONG_PTR)peb.SystemDefaultActivationContextData));
 			this->mPEBInfo.Add("Minimum stack commit", Format("%i", (LONG_PTR)peb.MinimumStackCommit));
 			this->mPEBInfo.Add("FLS List, first element", Format("%lX", (LONG_PTR)peb.FlsListHead.Flink));
 			this->mPEBInfo.Add("FLS bitmap bits", Format("%lX", (LONG_PTR)peb.FlsBitmapBits));
@@ -103,7 +103,7 @@ void CryProcessEnvironmentBlockWindow::Initialize()
 			this->mPEBInfo.Add("Context data", Format("%lX", (LONG_PTR)peb.pContextData));
 			this->mPEBInfo.Add("Image header hash", Format("%lX", (LONG_PTR)peb.pImageHeaderHash));
 			this->mPEBInfo.Add("Tracing flags", Format("%i", (LONG_PTR)peb.TracingFlags));
-			this->mPEBInfo.Add("CSR server read-only shared memory base", Format("%llX", (LONG_PTR)peb.CsrServerReadOnlySharedMemoryBase));
+			this->mPEBInfo.Add("CSR server read-only shared memory", Format("%llX", (LONG_PTR)peb.CsrServerReadOnlySharedMemoryBase));
 		}
 		else
 		{
@@ -121,8 +121,8 @@ void CryProcessEnvironmentBlockWindow::Initialize()
 			
 			this->pIsBeingDebuggedPtr = ((BYTE*)tInfo.PebBaseAddress) + 0x2;
 			
-			this->mPEBInfo.AddColumn("Property", 63);
-			this->mPEBInfo.AddColumn("Value", 37);
+			this->mPEBInfo.AddColumn("Property", 65);
+			this->mPEBInfo.AddColumn("Value", 35);
 			
 			this->mPEBInfo.Add("PEB Address", Format("%llX", tInfo.PebBaseAddress));
 			this->mPEBInfo.Add("Inherited address space", Format("%X", peb.InheritedAddressSpace));
@@ -176,7 +176,7 @@ void CryProcessEnvironmentBlockWindow::Initialize()
 			this->mPEBInfo.Add("CSD Version pointer", Format("%lX", (LONG_PTR)peb.CSDVersion.Buffer));
 			this->mPEBInfo.Add("Activation context data", Format("%lX", (LONG_PTR)peb.ActivationContextData));
 			this->mPEBInfo.Add("Assembly storage map", Format("%lX", (LONG_PTR)peb.ProcessAssemblyStorageMap));
-			this->mPEBInfo.Add("System default activation context data", Format("%lX", (LONG_PTR)peb.SystemDefaultActivationContextData));
+			this->mPEBInfo.Add("System default activation context", Format("%lX", (LONG_PTR)peb.SystemDefaultActivationContextData));
 			this->mPEBInfo.Add("Minimum stack commit", Format("%i", (LONG_PTR)peb.MinimumStackCommit));
 			this->mPEBInfo.Add("FLS List, first element", Format("%lX", (LONG_PTR)peb.FlsListHead.Flink));
 			this->mPEBInfo.Add("FLS bitmap bits", Format("%lX", (LONG_PTR)peb.FlsBitmapBits));
@@ -186,7 +186,7 @@ void CryProcessEnvironmentBlockWindow::Initialize()
 			this->mPEBInfo.Add("Context data", Format("%lX", (LONG_PTR)peb.pContextData));
 			this->mPEBInfo.Add("Image header hash", Format("%lX", (LONG_PTR)peb.pImageHeaderHash));
 			this->mPEBInfo.Add("Tracing flags", Format("%i", (LONG_PTR)peb.TracingFlags));
-			this->mPEBInfo.Add("CSR server read-only shared memory base", Format("%llX", (LONG_PTR)peb.CsrServerReadOnlySharedMemoryBase));
+			this->mPEBInfo.Add("CSR server read-only shared memory", Format("%llX", (LONG_PTR)peb.CsrServerReadOnlySharedMemoryBase));
 		}
 		else
 		{
@@ -203,8 +203,8 @@ void CryProcessEnvironmentBlockWindow::Initialize()
 		
 		this->pIsBeingDebuggedPtr = ((BYTE*)tInfo.PebBaseAddress) + 0x2;
 		
-		this->mPEBInfo.AddColumn("Property", 63);
-		this->mPEBInfo.AddColumn("Value", 37);
+		this->mPEBInfo.AddColumn("Property", 65);
+		this->mPEBInfo.AddColumn("Value", 35);
 		
 		this->mPEBInfo.Add("PEB Address", Format("%lX", (int)tInfo.PebBaseAddress));
 		this->mPEBInfo.Add("Inherited address space", Format("%X", peb.InheritedAddressSpace));
@@ -258,7 +258,7 @@ void CryProcessEnvironmentBlockWindow::Initialize()
 		this->mPEBInfo.Add("CSD Version pointer", Format("%lX", (LONG_PTR)peb.CSDVersion.Buffer));
 		this->mPEBInfo.Add("Activation context data", Format("%lX", (LONG_PTR)peb.ActivationContextData));
 		this->mPEBInfo.Add("Assembly storage map", Format("%lX", (LONG_PTR)peb.ProcessAssemblyStorageMap));
-		this->mPEBInfo.Add("System default activation context data", Format("%lX", (LONG_PTR)peb.SystemDefaultActivationContextData));
+		this->mPEBInfo.Add("System default activation context", Format("%lX", (LONG_PTR)peb.SystemDefaultActivationContextData));
 		this->mPEBInfo.Add("Minimum stack commit", Format("%i", (LONG_PTR)peb.MinimumStackCommit));
 		this->mPEBInfo.Add("FLS List, first element", Format("%lX", (LONG_PTR)peb.FlsListHead.Flink));
 		this->mPEBInfo.Add("FLS bitmap bits", Format("%lX", (LONG_PTR)peb.FlsBitmapBits));
@@ -268,7 +268,7 @@ void CryProcessEnvironmentBlockWindow::Initialize()
 		this->mPEBInfo.Add("Context data", Format("%lX", (LONG_PTR)peb.pContextData));
 		this->mPEBInfo.Add("Image header hash", Format("%lX", (LONG_PTR)peb.pImageHeaderHash));
 		this->mPEBInfo.Add("Tracing flags", Format("%i", (LONG_PTR)peb.TracingFlags));
-		this->mPEBInfo.Add("CSR server read-only shared memory base", Format("%lX", (LONG_PTR)peb.CsrServerReadOnlySharedMemoryBase));
+		this->mPEBInfo.Add("CSR server read-only shared memory", Format("%lX", (LONG_PTR)peb.CsrServerReadOnlySharedMemoryBase));
 	}
 	else
 	{

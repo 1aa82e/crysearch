@@ -3,7 +3,7 @@
 
 #include "BeaEngine/include/BeaEngine.h"
 
-#include <psapi.h>
+#include <Psapi.h>
 #include <VerRsrc.h>
 #include <DbgHelp.h>
 
@@ -109,13 +109,20 @@ CryDebugger::CryDebugger()
 		GetModuleFileNameEx(mMemoryScanner->GetHandle(), NULL, fn, MAX_PATH);
 		
 		// By default, only load the executable module's symbols.
-		const Win32ModuleInformation* const exeMod = LoadedModulesList.GetCount() > 0 ? &LoadedModulesList[0] : NULL;
+		const Win32ModuleInformation* exeMod;
+		int retryCount = 0;
 		
-#ifdef _WIN64
-		SymLoadModuleEx(mMemoryScanner->GetHandle(), NULL, fn, exeMod->ModuleName, exeMod->BaseAddress, (DWORD)exeMod->Length, NULL, 0);
-#else
-		SymLoadModuleEx(mMemoryScanner->GetHandle(), NULL, fn, exeMod->ModuleName, exeMod->BaseAddress, exeMod->Length, NULL, 0);
-#endif
+		// Try to get the first module but set a threshold for it to fail.
+		while (retryCount++ < 3 && !(exeMod = LoadedModulesList.GetCount() > 0 ? &LoadedModulesList[0] : NULL))
+		{
+			Sleep(25);
+		}
+		
+		// If the module pointer is not null, lets load up the symbols.
+		if (exeMod)
+		{
+			SymLoadModuleEx(mMemoryScanner->GetHandle(), NULL, fn, exeMod->ModuleName, exeMod->BaseAddress, (DWORD)exeMod->Length, NULL, 0);
+		}
 	}
 	
 	this->mAttached = false;

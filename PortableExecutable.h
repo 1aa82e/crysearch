@@ -133,6 +133,9 @@ public:
 	
 	void* GetPebAddress() const;
 	
+	// Small methods to set the internal variables.
+	void SetBaseAddress(const SIZE_T baseAddress);
+
 	PortableExecutable();
 	virtual ~PortableExecutable();
 };

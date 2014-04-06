@@ -17,7 +17,7 @@ struct Win32ModuleInformation : Moveable<Win32ModuleInformation>
 #endif
 };
 
-Win32ModuleInformation* FindModuleInVector(const char* modName);
+const Win32ModuleInformation* FindModuleInVector(const char* modName);
 
 // Represents a Win32 process
 struct Win32ProcessInformation : Moveable<Win32ProcessInformation>
@@ -48,8 +48,10 @@ struct Win32HeapInformation : Moveable<Win32HeapInformation>
 struct Win32HandleInformation : Moveable<Win32HandleInformation>
 {
 	USHORT Handle;
-	LONG Access;
-	WString ObjectType;
+	String ObjectType;
+	String ObjectName;
+	LONG ReferenceCount;
+	LONG Access;	
 };
 
 extern "C" const BOOL CloseRemoteHandle(HANDLE procHandle, HANDLE handle);

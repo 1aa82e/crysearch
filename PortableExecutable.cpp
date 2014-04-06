@@ -30,13 +30,14 @@ const bool RVAPointsInsideSection(const DWORD rva)
 }
 
 // Looks up a module in the module list by name. Returns the found module or NULL if the module was not found.
-Win32ModuleInformation* FindModuleInVector(const char* modName)
+const Win32ModuleInformation* FindModuleInVector(const char* modName)
 {
-	for (int i = 0; i < LoadedModulesList.GetCount(); ++i)
+	const Vector<Win32ModuleInformation>& constVec = LoadedModulesList;
+	for (int i = 0; i < constVec.GetCount(); ++i)
 	{
-		if (_stricmp(LoadedModulesList[i].ModuleName, modName) == 0)
+		if (_stricmp(constVec[i].ModuleName, modName) == 0)
 		{
-			return &LoadedModulesList[i];
+			return &constVec[i];
 		}
 	}
 	
@@ -108,6 +109,12 @@ PortableExecutable::~PortableExecutable()
 	LoadedProcessPEInformation.PEFields.Clear();
 	LoadedProcessPEInformation.Reset();
 	LoadedProcessPEInformation.ClearImportTable();
+}
+
+// Sets the base address.
+void PortableExecutable::SetBaseAddress(const SIZE_T baseAddress)
+{
+	this->mBaseAddress = baseAddress;
 }
 
 // Retrieves the address of the Process Environment Block of the opened process.
@@ -466,6 +473,7 @@ SIZE_T PortableExecutable32::GetAddressFromExportTable(const AddrStruct* addr, c
 			{
 				bool found = false;
 				const DWORD* funcAddrPtr = NULL;
+
 				// Compare ordinal values without magic bitoperations!
 				if ((addr->ExportDirectory->Base + *ordValue) == (WORD)NameOrdinal)
 				{
@@ -473,7 +481,7 @@ SIZE_T PortableExecutable32::GetAddressFromExportTable(const AddrStruct* addr, c
 					found = true;
 				}
 
-				if (!found)
+				if (!found || ((Byte*)funcAddrPtr < addr->BufferBaseAddress || (Byte*)funcAddrPtr > addr->BufferEndAddress))
 				{
 					continue;
 				}
@@ -496,7 +504,7 @@ SIZE_T PortableExecutable32::GetAddressFromExportTable(const AddrStruct* addr, c
 					const int dotIndex = forwardedModName.Find('.');
 					forwardedModName.Remove(dotIndex, forwardedModName.GetLength() - dotIndex);
 					forwardedModName += ".dll";
-					Win32ModuleInformation* modBaseAddr = FindModuleInVector(forwardedModName);
+					const Win32ModuleInformation* modBaseAddr = FindModuleInVector(forwardedModName);
 					
 					// Sometimes infinite redirecting causes stack overflowing. Terminate this sequence by returning not found.
 					if ((SIZE_T)addr->BaseAddress == modBaseAddr->BaseAddress)
@@ -556,7 +564,7 @@ SIZE_T PortableExecutable32::GetAddressFromExportTable(const AddrStruct* addr, c
 						const int dotIndex = forwardedModName.Find('.');
 						forwardedModName.Remove(dotIndex, forwardedModName.GetLength() - dotIndex);
 						forwardedModName += ".dll";
-						Win32ModuleInformation* modBaseAddr = FindModuleInVector(forwardedModName);
+						const Win32ModuleInformation* modBaseAddr = FindModuleInVector(forwardedModName);
 						
 						if ((SIZE_T)addr->BaseAddress == modBaseAddr->BaseAddress)
 						{
@@ -703,27 +711,15 @@ void PortableExecutable32::GetImportAddressTable() const
 			{
 				// Read current thunk into local memory.
 				ReadProcessMemory(this->mProcessHandle, (void*)(this->mBaseAddress + pDesc.OriginalFirstThunk + count * sizeof(DWORD)), &thunk, sizeof(IMAGE_THUNK_DATA32), NULL);
-				
+
 				ImportAddressTableEntry funcEntry;
-				
+
 				// Check for 32-bit ordinal magic flag.
 				if (thunk.u1.Ordinal & IMAGE_ORDINAL_FLAG32)
 				{
 					funcEntry.Ordinal = IMAGE_ORDINAL32(thunk.u1.Ordinal);
 					funcEntry.Hint = 0;
-					
-					if (addrStruct.ExportDirectory->AddressOfNames)
-					{
-						funcEntry.FunctionName = this->GetOrdinalFunctionNameFromExportTable(&addrStruct, funcEntry.Ordinal);
-					}
-				}
-				
-				// In a rare occasion the ordinal bit-flag is already removed. In this case the ordinal should be detected by section awareness.
-				else if (!RVAPointsInsideSection(thunk.u1.Ordinal))
-				{
-					funcEntry.Ordinal = (WORD)thunk.u1.Ordinal;
-					funcEntry.Hint = 0;
-					
+
 					if (addrStruct.ExportDirectory->AddressOfNames)
 					{
 						funcEntry.FunctionName = this->GetOrdinalFunctionNameFromExportTable(&addrStruct, funcEntry.Ordinal);
@@ -734,11 +730,23 @@ void PortableExecutable32::GetImportAddressTable() const
 					// Read function name from thunk data.
 					char funcName[96];
 					ReadProcessMemory(this->mProcessHandle, (void*)(this->mBaseAddress + thunk.u1.AddressOfData), funcName, 96, NULL);
-					
+
 					// Set ordinal value to 0, read function name and WORD sized hint from the first two read bytes sequence.
 					funcEntry.Ordinal = 0;
 					funcEntry.Hint = *(WORD*)funcName;
 					funcEntry.FunctionName = funcName + sizeof(WORD);
+				}
+
+				// In a rare occasion the ordinal bit-flag is already removed. In this case the ordinal should be detected by section awareness.
+				if (funcEntry.FunctionName.IsEmpty() && !RVAPointsInsideSection(thunk.u1.Ordinal))
+				{
+					funcEntry.Ordinal = (WORD)thunk.u1.Ordinal;
+					funcEntry.Hint = 0;
+					
+					if (addrStruct.ExportDirectory->AddressOfNames)
+					{
+						funcEntry.FunctionName = this->GetOrdinalFunctionNameFromExportTable(&addrStruct, funcEntry.Ordinal);
+					}
 				}
 				
 				// If the function name is empty even after ordinal resolving, the function has no name. Give it an automated name.
@@ -1316,7 +1324,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const SIZE_T baseAddr
 						found = true;
 					}
 
-					if (!found)
+					if (!found || ((Byte*)funcAddrPtr < addr->BufferBaseAddress || (Byte*)funcAddrPtr > addr->BufferEndAddress))
 					{
 						continue;
 					}
@@ -1339,7 +1347,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const SIZE_T baseAddr
 						const int dotIndex = forwardedModName.Find('.');
 						forwardedModName.Remove(dotIndex, forwardedModName.GetLength() - dotIndex);
 						forwardedModName += ".dll";
-						Win32ModuleInformation* modBaseAddr = FindModuleInVector(forwardedModName);
+						const Win32ModuleInformation* modBaseAddr = FindModuleInVector(forwardedModName);
 						
 						if ((SIZE_T)addr->BaseAddress == modBaseAddr->BaseAddress)
 						{
@@ -1398,7 +1406,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const SIZE_T baseAddr
 							const int dotIndex = forwardedModName.Find('.');
 							forwardedModName.Remove(dotIndex, forwardedModName.GetLength() - dotIndex);
 							forwardedModName += ".dll";
-							Win32ModuleInformation* modBaseAddr = FindModuleInVector(forwardedModName);
+							const Win32ModuleInformation* modBaseAddr = FindModuleInVector(forwardedModName);
 
 							if ((SIZE_T)addr->BaseAddress == modBaseAddr->BaseAddress)
 							{
@@ -1494,7 +1502,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const SIZE_T baseAddr
 	        ImportTableDescriptor& impDesc = LoadedProcessPEInformation.ImportAddressTable.AddReturnKey(descAdd, Vector<ImportAddressTableEntry>());
 	        
 	        // Get base address and length of desired DLL, and look up the function foreign name in the export table of that DLL.
-			Win32ModuleInformation* modBaseAddr = NULL;
+			const Win32ModuleInformation* modBaseAddr = NULL;
 			if (ToLower(dllName).StartsWith("api-ms-win"))
 			{
 				// Windows 6.x ApiSetSchema redirection detected, resolve the redirection.
@@ -1558,18 +1566,6 @@ void PortableExecutable32::RestoreExportTableAddressImport(const SIZE_T baseAddr
 							funcEntry.FunctionName = this->GetOrdinalFunctionNameFromExportTable(&addrStruct, funcEntry.Ordinal);
 						}
 					}
-					
-					// In a rare occasion the ordinal bit-flag is already removed. In this case the ordinal should be detected by section awareness.
-					else if (!RVAPointsInsideSection((DWORD)thunk.u1.Ordinal))
-					{
-						funcEntry.Ordinal = (WORD)thunk.u1.Ordinal;
-						funcEntry.Hint = 0;
-						
-						if (addrStruct.ExportDirectory->AddressOfNames)
-						{
-							funcEntry.FunctionName = this->GetOrdinalFunctionNameFromExportTable(&addrStruct, funcEntry.Ordinal);
-						}
-					}
 					else
 					{
 						char funcName[96];
@@ -1579,6 +1575,18 @@ void PortableExecutable32::RestoreExportTableAddressImport(const SIZE_T baseAddr
 						funcEntry.Ordinal = 0;
 						funcEntry.Hint = *(WORD*)funcName;
 						funcEntry.FunctionName = funcName + sizeof(WORD);
+					}
+					
+					// In a rare occasion the ordinal bit-flag is already removed. In this case the ordinal should be detected by section awareness.
+					if (funcEntry.FunctionName.IsEmpty() && !RVAPointsInsideSection((DWORD)thunk.u1.Ordinal))
+					{
+						funcEntry.Ordinal = (WORD)thunk.u1.Ordinal;
+						funcEntry.Hint = 0;
+						
+						if (addrStruct.ExportDirectory->AddressOfNames)
+						{
+							funcEntry.FunctionName = this->GetOrdinalFunctionNameFromExportTable(&addrStruct, funcEntry.Ordinal);
+						}
 					}
 					
 					// If the function name is empty even after ordinal resolving, the function has no name. Give it an automated name.

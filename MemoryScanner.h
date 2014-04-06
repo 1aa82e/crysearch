@@ -95,6 +95,10 @@ struct WorkerRegionParameterData : Moveable<WorkerRegionParameterData>
 	int WorkerIdentifier;
 	unsigned int OriginalStartIndex;
 	unsigned int Length;
+	
+	// File handles.
+	HANDLE AddressesFile;
+	HANDLE ValuesFile;
 };
 
 // Represents an array of bytes to be searched for in memory.
@@ -176,14 +180,23 @@ private:
 	String mProcessName;
 	bool isX86Process;
 	bool ScanRunning;
-
+	
+	// Vector that contains the order of worker completions. Needed to ensure next scan accuracy.
+	Vector<WorkerRegionParameterData> mWorkerFileOrder;
+	
+	// Resultcount variable that contains the result count of the most recent memory scan.
+	int mScanResultCount;
+	
 	typedef MemoryScanner CLASSNAME;
 
 	template <class T>
-	void FirstScanWorker(const WorkerRegionParameterData& regionData, const T& value);
+	void FirstScanWorker(WorkerRegionParameterData& regionData, const T& value);
 	
 	template <class T>
-	void NextScanWorker(const WorkerRegionParameterData& regionData, const T& value);
+	void NextScanWorker(WorkerRegionParameterData& regionData, const T& value);
+	
+	// Reallocation counter function as a workaround for the excessive buffer allocation problem on older systems.
+	inline void ReallocateMemoryScannerBufferCounter(unsigned int* const length);
 	
 	// Singleton code: private constructor, destructor and copy constructors.
 	MemoryScanner();
@@ -200,7 +213,9 @@ public:
 
 	bool Initialize(int processId, const String& exeTitle);
 	bool Initialize(const String& exetitle, int* pProcessId);
+	
 	void CloseProcess();
+	void ClearSearchResults();
 	
 	template <class T>
 	void FirstScan();
@@ -220,7 +235,9 @@ public:
 	const int GetProcessId() const;
 	HANDLE GetHandle() const;
 	bool IsScanRunning() const;
-
+	const Vector<WorkerRegionParameterData>& QueryWorkerData() const;
+	const int GetScanResultCount() const;
+	
 	Callback1<int> ScanStarted;
 	Callback ScanCompleted;
 	Callback1<MemoryScannerError> ErrorOccured;
@@ -234,11 +251,8 @@ public:
 #endif
 
 extern Vector<Value> CachedValues;
-extern int ScanResultCount;
 
 template <class T>
 void AddResultsToCache(const int Resultcount, const SIZE_T* AddressBuffer, const T* ValuesBuffer);
-
-void ClearSearchResults();
 
 #endif

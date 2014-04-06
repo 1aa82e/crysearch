@@ -297,7 +297,7 @@ void CrySearchForm::CheckKeyPresses()
 			// Check if the configured key is currently pressed.
 			if (GetAsyncKeyState(curKey.Key) & 1)
 			{
-				if (!mMemoryScanner->IsScanRunning() && ScanResultCount > 0)
+				if (!mMemoryScanner->IsScanRunning() && mMemoryScanner->GetScanResultCount() > 0)
 				{
 					if (curKey.Description == "Refresh search results, changed value")
 					{
@@ -679,7 +679,7 @@ void CrySearchForm::SetDataBreakpointMenu(Bar& pBar)
 
 void CrySearchForm::SearchResultWhenBar(Bar& pBar)
 {
-	if (this->mScanResults.GetCursor() >= 0 && ScanResultCount > 0)
+	if (this->mScanResults.GetCursor() >= 0 && mMemoryScanner->GetScanResultCount() > 0)
 	{
 		pBar.Add("Add to address list", CrySearchIml::AddToAddressList(), THISBACK(SearchResultDoubleClicked));
 	}
@@ -962,7 +962,7 @@ void CrySearchForm::ClearAddressList()
 void CrySearchForm::SearchResultDoubleClicked()
 {
 	const int cursor = this->mScanResults.GetCursor();
-	if (cursor < 0 || ScanResultCount <= 0)
+	if (cursor < 0 || mMemoryScanner->GetScanResultCount() <= 0)
 	{
 		return;
 	}
@@ -1472,7 +1472,7 @@ void CrySearchForm::ClearScanResults()
 		, "Do you want to keep the current scan results?", "Yes", "No"))
 	{
 		this->mScanResults.Clear();
-		ClearSearchResults();
+		mMemoryScanner->ClearSearchResults();
 		this->mSearchResultCount.SetLabel("Search Results: 0");
 	}
 }
@@ -1480,7 +1480,7 @@ void CrySearchForm::ClearScanResults()
 void CrySearchForm::ClearScanResultsWithoutWarning()
 {
 	this->mScanResults.Clear();
-	ClearSearchResults();
+	mMemoryScanner->ClearSearchResults();
 	
 	this->mSearchResultCount.SetLabel("Search Results: 0");
 }
@@ -1741,17 +1741,17 @@ void CrySearchForm::ScannerCompletedScan()
 
 void CrySearchForm::ScannerCompletedThreadSafe()
 {
-	bool million = ScanResultCount > MEMORYSCANNER_CACHE_LIMIT;
+	bool million = mMemoryScanner->GetScanResultCount() > MEMORYSCANNER_CACHE_LIMIT;
 	
 	if (million)
 	{
 		this->mScanResults.SetVirtualCount(MEMORYSCANNER_CACHE_LIMIT);
-		this->mSearchResultCount.SetLabel(Format("Search Results: %i (100.000 results shown)", ScanResultCount));
+		this->mSearchResultCount.SetLabel(Format("Search Results: %i (100.000 results shown)", mMemoryScanner->GetScanResultCount()));
 	}
 	else
 	{
-		this->mScanResults.SetVirtualCount(ScanResultCount);
-		this->mSearchResultCount.SetLabel(Format("Search Results: %i", ScanResultCount));
+		this->mScanResults.SetVirtualCount(mMemoryScanner->GetScanResultCount());
+		this->mSearchResultCount.SetLabel(Format("Search Results: %i", mMemoryScanner->GetScanResultCount()));
 	}
 	
 	this->mScanningProgress.Hide();

@@ -7,13 +7,23 @@ using namespace Upp;
 
 #include "GlobalDef.h"
 #include "CrySearchArrayCtrl.h"
+#include "VirtualDropList.h"
 
 class CryImportsWindow sealed : public ParentCtrl
 {
 private:
+	ToolBar mToolStrip;
 	ArrayCtrl mModulesList;
 	CrySearchArrayCtrl mFunctionsList;
 	Splitter mControlSplitter;
+	Label mModulesDescriptorLabel;
+	VirtualDropList mModulesDropList;
+	
+	void ToolStrip(Bar& pBar);
+	
+	void ModulesDropped();
+	void ModulesSelected();	
+	void DataRetrievalDone();
 	
 	void RefreshImports();
 	void ModuleChanged();
@@ -30,6 +40,6 @@ public:
 	void ModuleRedraw();
 };
 
-extern Win32ModuleInformation* FindModuleInVector(const char* modName);
+extern const Win32ModuleInformation* FindModuleInVector(const char* modName);
 
 #endif
