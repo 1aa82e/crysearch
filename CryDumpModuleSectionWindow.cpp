@@ -75,7 +75,8 @@ void CryDumpModuleSectionWindow::DumpSelectedSection()
 		fs->Types("Memory Dump files\t*.dmp");
 		if (fs->ExecuteSaveAs("Select dump location"))
 		{
-			if (mPeInstance->DumpProcessSection(fs->Get(), this->imageSections[cursorRow]))
+			const Win32PESectionInformation& sect = this->imageSections[cursorRow];
+			if (mPeInstance->DumpProcessSection(fs->Get(), sect.BaseAddress, sect.RawSectionSize ? sect.RawSectionSize : sect.SectionSize))
 			{
 				PromptOK("Dump succeeded!");
 			}

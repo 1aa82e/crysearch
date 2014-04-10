@@ -73,9 +73,8 @@ void AddResultsToCache(const int Resultcount, const SIZE_T* AddressBuffer, const
 	{
 		for (int i = 0; i < indexBarrier; ++i)
 		{
-			const ArrayOfBytes& cur = ValuesBuffer[i];
 			CachedAddresses.Add(AddressBuffer[i]);	
-			CachedValues.Add(BytesToString(cur.Data, cur.Size));
+			CachedValues.Add(BytesToString(ValuesBuffer[i].Data, ValuesBuffer[i].Size));
 		}
 	}
 	
@@ -542,16 +541,20 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 						
 						ArrayOfBytes* newValuesArray = new ArrayOfBytes[currentArrayLength];
 						memcpy(newValuesArray, localValues, oldCurrentArrayLength * sizeof(ArrayOfBytes));
+						
+						// A quick workaround to the destruction of non-allocated pointers is setting all items to NULL.
+						for (unsigned int i = 0; i < oldCurrentArrayLength; ++i)
+						{
+							localValues[i].Data = NULL;
+						}
+						
 						delete[] localValues;
 						localValues = newValuesArray;
 					}
 					
-					ArrayOfBytes testAob;
-					testAob.Data = tempStore;
-					testAob.Size = inputLength;
-					
 					localAddresses[arrayIndex] = currentRegion.BaseAddress + i;
-					localValues[arrayIndex++] = testAob;
+					localValues[arrayIndex].Data = tempStore;
+					localValues[arrayIndex++].Size = inputLength;
 
 					++fileIndex;
 				}
@@ -575,6 +578,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 			for (unsigned int counter = 0; counter < arrayIndex; ++counter)
 			{
 				memcpy(fileData + tmpIndex, localValues[counter].Data, localValues[counter].Size);
+				localValues[counter].Data = NULL;
 				tmpIndex += value.Size;
 			}
 			
@@ -603,7 +607,6 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 	if (++threadIncrement == threadCount)
 	{
 		delete CompareValues;
-		delete[] ((ScanParameters<ArrayOfBytes>*)GlobalScanParameter)->ScanValue.Data;
 		
 		this->ScanRunning = false;
 		this->ScanCompleted();
@@ -1109,16 +1112,20 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 							
 							ArrayOfBytes* newValuesArray = new ArrayOfBytes[currentArrayLength];
 							memcpy(newValuesArray, localValues, oldCurrentArrayLength * sizeof(ArrayOfBytes));
+							
+							// A quick workaround to the destruction of non-allocated pointers is setting all items to NULL.
+							for (unsigned int i = 0; i < oldCurrentArrayLength; ++i)
+							{
+								localValues[i].Data = NULL;
+							}
+							
 							delete[] localValues;
 							localValues = newValuesArray;
 						}
 						
-						ArrayOfBytes testAob;
-						testAob.Data = currentDataPtr;
-						testAob.Size = value.Size;
-						
 						localAddresses[arrayIndex] = currentResultPtr;
-						localValues[arrayIndex++] = testAob;
+						localValues[arrayIndex].Data = currentDataPtr;
+						localValues[arrayIndex++].Size = value.Size;
 						
 						++fileIndex;
 					}
@@ -1144,6 +1151,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 				for (unsigned int counter = 0; counter < arrayIndex; ++counter)
 				{
 					memcpy(fileData + tmpIndex, localValues[counter].Data, localValues[counter].Size);
+					localValues[counter].Data = NULL;
 					tmpIndex += value.Size;
 				}
 					
@@ -1178,7 +1186,6 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 	if (++threadIncrement == threadCount)
 	{
 		delete CompareValues;
-		delete[] ((ScanParameters<ArrayOfBytes>*)GlobalScanParameter)->ScanValue.Data;
 		
 		this->ScanRunning = false;
 		this->ScanCompleted();

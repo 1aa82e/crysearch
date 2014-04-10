@@ -54,14 +54,6 @@ struct DisasmLine : Moveable<DisasmLine>
 		this->BytesStringRepresentation.Data = NULL;
 		this->BytesStringRepresentation.Size = 0;
 	};
-	
-	~DisasmLine()
-	{
-		if (this->BytesStringRepresentation.Data)
-		{
-			delete[] this->BytesStringRepresentation.Data;
-		}
-	};
 };
 
 void RefreshExecutablePages(Vector<MemoryRegion>& pages);

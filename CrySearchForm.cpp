@@ -141,8 +141,6 @@ void CrySearchForm::AddressValuesUpdater()
 			{
 				ArrayOfBytes aob = StringToBytes(curEntry->Value);
 				mMemoryScanner->Poke(curEntry->Address, aob);
-				delete[] aob.Data;
-				
 				curEntry->Size = aob.Size;
 			}
 			else if (curEntry->ValueType == "String")
@@ -216,7 +214,9 @@ void CrySearchForm::AddressValuesUpdater()
 				float value;
 				if (mMemoryScanner->Peek<float>(loadedTable[start]->Address, 0, &value))
 				{
-					loadedTable[start]->Value = DblStr(value);
+					char str[32];
+					sprintf_s(str, 32, "%f", value);
+					loadedTable[start]->Value = str;
 				}
 				else
 				{
@@ -246,8 +246,6 @@ void CrySearchForm::AddressValuesUpdater()
 				{
 					loadedTable[start]->Value = "???";
 				}
-			
-				delete[] value.Data;
 			}
 			else if (loadedTable[start]->ValueType == "String")
 			{

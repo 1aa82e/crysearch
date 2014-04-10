@@ -14,6 +14,7 @@ CrySearch application TODO list by evolution536
 	- Far Cry doesn't want to listen to meh;
 	- manipulation lock, fix setting breakpoints and removing them pause the exception loop.
 	- Remove breakpoint without removing the results of the stack frame;
+	- Single step (step over);
 	- Call stack -> go to disasm;
 	- VEH debugger
 
@@ -54,11 +55,6 @@ CrySearch application TODO list by evolution536
 - Plugin system:
 	- Design plugin SDK;
 	- Plugin DLL to override process opening sequence;
-
-- .NET?
-	- hoe ver ga ik hierin?
-	- IMAGE_COR20_HEADER
-	- .NET references?
 
 - Pointer scan;
 - Ability to import cheat tables;

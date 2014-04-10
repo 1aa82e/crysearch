@@ -14,13 +14,17 @@ class CryPEWindow sealed : public ParentCtrl
 private:
 	ToolBar tBar;
 	Splitter mSplitter;
+	Splitter mRightPaneSplitter;
 	ArrayCtrl mPeInformationCtrl;
 	ArrayCtrl mSections;
+	ArrayCtrl mDotNetInformation;
 	
 	void ToolBar(Bar& pBar);
 	void SectionsListRightClick(Bar& pBar);
+	void DotNetSectionsListRightClick(Bar& pBar);
 
 	void DumpSection();
+	void DumpDotNetSection();
 	
 	typedef CryPEWindow CLASSNAME;
 public:

@@ -11,6 +11,7 @@ v1.09
 	- Extended imports window to feature view of imports of every module in the loaded process;
 	- Fixed a bug with checking for ordinal imported functions skipping the name where it shouldn't be skipped;
 	- Changed memory allocation during memory scans to reduce aggressive allocation resulting in out-of-memory exceptions;
+	- Added .NET sections to lower right pane of General window. Allows dumping of .NET sections;
 	
 v1.08
 	- Changed the forum link in the about dialog to resolve to the CrySearch thread instead of the forum home page;

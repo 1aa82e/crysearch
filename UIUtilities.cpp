@@ -84,10 +84,7 @@ ArrayOfBytes StringToBytes(const String& input)
 		}
 	}
 	
-	ArrayOfBytes aob;
-	aob.Data = dataPtr;
-	aob.Size = dataIndex;
-	return aob;
+	return ArrayOfBytes(dataPtr, dataIndex);
 }
 
 const char ascstr[] = "0123456789ABCDEF";
@@ -97,6 +94,11 @@ const char ascstr[] = "0123456789ABCDEF";
 // This function has been rigorously optimized because it produces a lot of samples, it gets called a lot.
 String BytesToString(const Byte* const buffer, const unsigned int length)
 {
+	if (!length)
+	{
+		return "";
+	}
+
 	StringBuffer outString(length * 3 + 1);
 	char* outIterator = outString.Begin();
 	const Byte* iterator = buffer;

@@ -349,11 +349,8 @@ void CryChangeRecordDialog::DialogOkay()
 			}
 			else if (this->mLoadedEntry->ValueType == "Array of Bytes")
 			{
-				ArrayOfBytes aob = StringToBytes(this->mFieldValue.GetText().ToString());
-				
+				ArrayOfBytes aob = StringToBytes(this->mFieldValue.GetText().ToString());	
 				mMemoryScanner->Poke(this->mLoadedEntry->Address, aob);
-				delete[] aob.Data;
-				
 				this->mLoadedEntry->Size = aob.Size;
 			}
 			break;

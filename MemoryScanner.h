@@ -107,10 +107,51 @@ struct ArrayOfBytes
 	Byte* Data;
 	int Size;
 	
+	ArrayOfBytes()
+	{
+		this->Data = NULL;
+		this->Size = 0;
+	};
+
+	// Assignment constructor, does not copy the data!
+	ArrayOfBytes(Byte* const data, const int size)
+	{
+		this->Data = data;
+		this->Size = size;
+	};
+
+	~ArrayOfBytes()
+	{
+		if (this->Data)
+		{
+			delete[] this->Data;
+		}
+		
+		this->Data = NULL;
+		this->Size = 0;
+	};
+
 	void Allocate(int size)
 	{
 		this->Data = new Byte[size];
 		this->Size = size;
+	};
+	
+	ArrayOfBytes(ArrayOfBytes const& next)
+	{
+		this->CopyConstructAob(next);
+	};
+
+	void operator=(ArrayOfBytes const& next)
+	{
+		this->CopyConstructAob(next);
+	};
+
+private:
+	inline void CopyConstructAob(ArrayOfBytes const& next)
+	{
+		this->Allocate(next.Size);
+		memcpy(this->Data, next.Data, next.Size);
 	};
 };
 

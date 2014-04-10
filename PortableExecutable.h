@@ -7,7 +7,7 @@ using namespace Upp;
 
 #include "ProcessUtil.h"
 
-// Represents a section in a PE executable file.
+// Represents a section within a PE executable file.
 struct Win32PESectionInformation : Moveable<Win32PESectionInformation>
 {
 	String SectionName;
@@ -15,6 +15,14 @@ struct Win32PESectionInformation : Moveable<Win32PESectionInformation>
 	SIZE_T SectionSize;
 	SIZE_T RawSectionSize;
 	bool CanContainStatic;
+};
+
+// Represents a section within a .NET executable file.
+struct Win32DotNetSectionInformation : Moveable<Win32DotNetSectionInformation>
+{
+	String SectionName;
+	LONG Offset;
+	LONG Size;
 };
 
 // Represents the type of machine a PE executable should run on.
@@ -64,10 +72,18 @@ struct ImportTableDescriptor : Moveable<ImportTableDescriptor>
 	}
 };
 
+// Contains data about a .NET executable header and sections.
+struct Win32DotNetInformation
+{
+	DWORD MetadataHeaderOffset;
+	Vector<Win32DotNetSectionInformation> DotNetSections;
+};
+
 // Represents a pointable struct that contains all PE information of a loaded process.
 struct Win32PEInformation
 {
 	VectorMap<String, Value> PEFields;
+	Win32DotNetInformation DotNetInformation;
 	Vector<Win32PESectionInformation> ImageSections;
 	VectorMap<ImportTableDescriptor, Vector<ImportAddressTableEntry>> ImportAddressTable;
 	
@@ -75,6 +91,7 @@ struct Win32PEInformation
 	{
 		//this->PEFields.Clear(); The map doesn't have to be cleared because the keys will always be the same.
 		this->ImageSections.Clear();
+		this->DotNetInformation.DotNetSections.Clear();
 	};
 	
 	void ClearImportTable()
@@ -107,6 +124,8 @@ protected:
 	HANDLE mProcessHandle;
 	SIZE_T mBaseAddress;
 	
+	void GetDotNetDirectoryInformation(const IMAGE_DATA_DIRECTORY* const netHeader) const;
+	
 	virtual const char* GetOrdinalFunctionNameFromExportTable(const AddrStruct* addr, const WORD ordinal) const = 0;
 public:
 	virtual Byte* ReadModuleFromMemory(const SIZE_T moduleBase, const DWORD moduleSize) const = 0;
@@ -116,7 +135,7 @@ public:
 	virtual bool RestorePEHeaderFromFile(const String& fileName, const Win32ModuleInformation& module) const = 0;	
 	virtual bool HideModuleFromProcess(const Win32ModuleInformation& module) const = 0;
 	virtual bool DumpProcessModule(const String& fileName, const Win32ModuleInformation& module) const = 0;
-	virtual bool DumpProcessSection(const String& fileName, const Win32PESectionInformation& section) const = 0;
+	virtual bool DumpProcessSection(const String& fileName, const SIZE_T address, const SIZE_T size) const = 0;
 	virtual bool LoadLibraryExternal(const String& library) const = 0;
 	virtual void UnloadLibraryExternal(const SIZE_T module) const = 0;
 	virtual void RestoreExportTableAddressImport(const SIZE_T baseAddress, const char* NameOrdinal, bool IsOrdinal) const = 0;
@@ -153,7 +172,7 @@ public:
 	virtual bool RestorePEHeaderFromFile(const String& fileName, const Win32ModuleInformation& module) const;
 	virtual bool HideModuleFromProcess(const Win32ModuleInformation& module) const;
 	virtual bool DumpProcessModule(const String& fileName, const Win32ModuleInformation& module) const;
-	virtual bool DumpProcessSection(const String& fileName, const Win32PESectionInformation& section) const;
+	virtual bool DumpProcessSection(const String& fileName, const SIZE_T address, const SIZE_T size) const;
 	virtual bool LoadLibraryExternal(const String& library) const;
 	virtual void UnloadLibraryExternal(const SIZE_T module) const;
 	virtual void RestoreExportTableAddressImport(const SIZE_T baseAddress, const char* NameOrdinal, bool IsOrdinal) const;
@@ -177,7 +196,7 @@ public:
 		virtual bool RestorePEHeaderFromFile(const String& fileName, const Win32ModuleInformation& module) const;
 		virtual bool HideModuleFromProcess(const Win32ModuleInformation& module) const;
 		virtual bool DumpProcessModule(const String& fileName, const Win32ModuleInformation& module) const;
-		virtual bool DumpProcessSection(const String& fileName, const Win32PESectionInformation& section) const;
+		virtual bool DumpProcessSection(const String& fileName, const SIZE_T address, const SIZE_T size) const;
 		virtual bool LoadLibraryExternal(const String& library) const;
 		virtual void UnloadLibraryExternal(const SIZE_T module) const;
 		virtual void RestoreExportTableAddressImport(const SIZE_T baseAddress, const char* NameOrdinal, bool IsOrdinal) const;

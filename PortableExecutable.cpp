@@ -347,6 +347,75 @@ wchar* PortableExecutable::ResolveApiSetSchemaMappingEx(const wchar* ApiSetSchem
 	return NULL;
 }
 
+// Reads the COM directory from a PE file header. Most likely this is the .NET header.
+// This function does not free the buffer pointed to by the parameter.
+void PortableExecutable::GetDotNetDirectoryInformation(const IMAGE_DATA_DIRECTORY* const netHeader) const
+{
+	// Check if the executable contains a COM header.
+	if (netHeader->VirtualAddress && netHeader->Size >= sizeof(IMAGE_COR20_HEADER))
+	{
+		// Read COR20 header from file.
+		Byte* netDirBuffer = new Byte[netHeader->Size];
+		ReadProcessMemory(mMemoryScanner->GetHandle(), (void*)(this->mBaseAddress + netHeader->VirtualAddress), netDirBuffer, netHeader->Size, NULL);
+
+		// Save version information from COR20 header.
+		IMAGE_DATA_DIRECTORY mdDir;
+		memcpy(&mdDir, &((IMAGE_COR20_HEADER*)netDirBuffer)->MetaData, sizeof(IMAGE_DATA_DIRECTORY));
+		delete[] netDirBuffer;
+		
+		// Save the offset to the metadata header to allow dumping of .NET sections later.
+		LoadedProcessPEInformation.DotNetInformation.MetadataHeaderOffset = mdDir.VirtualAddress;
+
+		// Read metadata from header.
+		netDirBuffer = new Byte[mdDir.Size];
+		ReadProcessMemory(mMemoryScanner->GetHandle(), (void*)(this->mBaseAddress + mdDir.VirtualAddress), netDirBuffer, mdDir.Size, NULL);
+		
+		// Dissect metadata. Since its a dynamic structure we cannot compile this into a struct.
+		const DWORD vStrLength = *(DWORD*)(netDirBuffer + 12);
+		const WORD streamCount = *(WORD*)(netDirBuffer + 18 + vStrLength);
+
+		// Based on the stream count, dissect streams from the header.
+		DWORD streamIterator = 0;
+		for (const char* iterator = (char*)(netDirBuffer + 20 + vStrLength); streamIterator < streamCount; ++streamIterator)
+		{
+			// Get offset and size fields.
+			const DWORD* const offsetPtr = (DWORD*)iterator;
+			iterator += sizeof(DWORD);
+			const DWORD* const sizePtr = (DWORD*)iterator;
+			iterator += sizeof(DWORD);
+			
+			// Read the name of the stream.
+			WORD str = 0;
+			const char* const beginIterator = iterator;
+			bool strEnded = false;
+			while (1)
+			{
+				// First find the end of the string.
+				if (!strEnded && *iterator == 0)
+				{
+					strEnded = true;
+				}
+				// Continue until the next 4 byte boundary is reached.
+				else if (strEnded && ((SIZE_T)iterator % 4) == 0)
+				{
+					break;
+				}
+
+				++str;
+				++iterator;
+			}
+			
+			// String length was measured, now read it into a variable.
+			Win32DotNetSectionInformation& newSect = LoadedProcessPEInformation.DotNetInformation.DotNetSections.Add();
+			newSect.SectionName = String(beginIterator, str + 1);
+			newSect.Offset = *offsetPtr;
+			newSect.Size = *sizePtr;
+		}
+
+		delete[] netDirBuffer;
+	}
+}
+
 // -------------------------------------------------------------------------------------------------------------------------------
 // PE32 class methods
 // -------------------------------------------------------------------------------------------------------------------------------
@@ -400,7 +469,8 @@ void PortableExecutable32::GetExecutablePeInformation() const
 	ReadProcessMemory(this->mProcessHandle, (void*)this->mBaseAddress, moduleBuffer, 0x400, NULL);
 	
 	// Load PE headers.
-	const IMAGE_NT_HEADERS32* const pNTHeader =(IMAGE_NT_HEADERS32*)(moduleBuffer + ((IMAGE_DOS_HEADER*)moduleBuffer)->e_lfanew);
+	IMAGE_DOS_HEADER* const pDosHeader = (IMAGE_DOS_HEADER*)moduleBuffer;
+	IMAGE_NT_HEADERS32* const pNTHeader =(IMAGE_NT_HEADERS32*)(moduleBuffer + pDosHeader->e_lfanew);
 
 	// When the PE Headers are destroyed at runtime the pointer to the headers may run out of the buffer's bounds.
 	if ((Byte*)pNTHeader > (moduleBuffer + 0x400))
@@ -449,6 +519,11 @@ void PortableExecutable32::GetExecutablePeInformation() const
 	const DWORD sectionCount = pNTHeader->FileHeader.NumberOfSections;
 	const DWORD sectionSizeBytes = sizeof(IMAGE_SECTION_HEADER) * sectionCount;
 	const IMAGE_SECTION_HEADER* const firstSectionPtr = (IMAGE_SECTION_HEADER*)(this->mBaseAddress + ((Byte*)IMAGE_FIRST_SECTION(pNTHeader) - moduleBuffer));
+	
+	// Get the COM header from the PE file.
+	this->GetDotNetDirectoryInformation(&pOptionalHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR]);
+	
+	// Delete the allocated buffer to move on to the section enumeration.
 	delete[] moduleBuffer;
 	
 	// Attempt to load the sections inside the PE file.
@@ -1059,14 +1134,13 @@ bool PortableExecutable32::DumpProcessModule(const String& fileName, const Win32
 
 // Dumps a specific section in the loaded process to a file on the harddisk.
 // Returns true if the operation succeeded, and false if it did not succeed.
-bool PortableExecutable32::DumpProcessSection(const String& fileName, const Win32PESectionInformation& section) const
+bool PortableExecutable32::DumpProcessSection(const String& fileName, const SIZE_T address, const SIZE_T size) const
 {
 	bool result = true;
-	const SIZE_T dumpSize = section.RawSectionSize ? section.RawSectionSize : section.SectionSize;
-	Byte* const buffer = new Byte[dumpSize];
+	Byte* const buffer = new Byte[size];
 	
 	// Read section memory from target process and save it into the buffer.
-	if (!ReadProcessMemory(this->mProcessHandle, (void*)(LoadedModulesList[0].BaseAddress + section.BaseAddress), buffer, dumpSize, NULL))
+	if (!ReadProcessMemory(this->mProcessHandle, (void*)(this->mBaseAddress + address), buffer, size, NULL))
 	{
 		result = false;
 	}
@@ -1081,9 +1155,9 @@ bool PortableExecutable32::DumpProcessSection(const String& fileName, const Win3
 	// Write the data read to the file.
 	DWORD bytesWritten;
 #ifdef _WIN64
-	if (!WriteFile(hFile, buffer, (DWORD)dumpSize, &bytesWritten, NULL))
+	if (!WriteFile(hFile, buffer, (DWORD)size, &bytesWritten, NULL))
 #else
-	if (!WriteFile(hFile, buffer, dumpSize, &bytesWritten, NULL))
+	if (!WriteFile(hFile, buffer, size, &bytesWritten, NULL))
 #endif
 	{
 		DeleteFile(fileName);
@@ -1293,6 +1367,10 @@ void PortableExecutable32::RestoreExportTableAddressImport(const SIZE_T baseAddr
 		const DWORD sectionCount = pNTHeader->FileHeader.NumberOfSections;
 		const DWORD sectionSizeBytes = sizeof(IMAGE_SECTION_HEADER) * sectionCount;
 		const IMAGE_SECTION_HEADER* const firstSectionPtr = (IMAGE_SECTION_HEADER*)(this->mBaseAddress + ((Byte*)IMAGE_FIRST_SECTION(pNTHeader) - moduleBuffer));
+		
+		// Get the COM header from the PE file.
+		this->GetDotNetDirectoryInformation(&pOptionalHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR]);
+	
 		delete[] moduleBuffer;
 	
 		moduleBuffer = new Byte[sectionSizeBytes];
@@ -1889,13 +1967,12 @@ void PortableExecutable32::RestoreExportTableAddressImport(const SIZE_T baseAddr
 	
 	// Dumps a specific section in the loaded process to a file on the harddisk.
 	// Returns true if the operation succeeded, and false if it did not succeed.
-	bool PortableExecutable64::DumpProcessSection(const String& fileName, const Win32PESectionInformation& section) const
+	bool PortableExecutable64::DumpProcessSection(const String& fileName, const SIZE_T address, const SIZE_T size) const
 	{
 		bool result = true;
-		const SIZE_T dumpSize = section.RawSectionSize ? section.RawSectionSize : section.SectionSize;
-		Byte* const buffer = new Byte[dumpSize];
+		Byte* const buffer = new Byte[size];
 		
-		if (!ReadProcessMemory(this->mProcessHandle, (void*)(LoadedModulesList[0].BaseAddress + section.BaseAddress), buffer, dumpSize, NULL))
+		if (!ReadProcessMemory(this->mProcessHandle, (void*)(this->mBaseAddress + address), buffer, size, NULL))
 		{
 			result = false;
 		}
@@ -1909,7 +1986,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const SIZE_T baseAddr
 		
 		// Write the data read to the file.
 		DWORD bytesWritten;
-		if (!WriteFile(hFile, buffer, (DWORD)dumpSize, &bytesWritten, NULL))
+		if (!WriteFile(hFile, buffer, (DWORD)size, &bytesWritten, NULL))
 		{
 			DeleteFile(fileName);
 			result = false;
