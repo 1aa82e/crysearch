@@ -1,9 +1,9 @@
 CrySearch application TODO list by evolution536
 
+- Dump .NET modules?
 - Cancel IO on application shutdown when huge scan is still running (XP support blocks me here)
 - handle file handle names seperately;
 - Detect handles that are 'malicious'?
-- Dissect access mask in seperate window? (right-click handle)
 - Optimize file writing in memory scanner and savior of data by memory scanner in memory;
 - Brute-force PID's to find out about hidden processes (process hacker);
 - Allow entering string as argument for create thread (let's make a custom data type of it);
