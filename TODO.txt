@@ -1,5 +1,6 @@
 CrySearch application TODO list by evolution536
 
+- Crash handler (SetUnhandledExceptionFilter);
 - Dump .NET modules?
 - Cancel IO on application shutdown when huge scan is still running (XP support blocks me here)
 - handle file handle names seperately;
