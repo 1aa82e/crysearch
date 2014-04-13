@@ -1,0 +1,5 @@
+*.sdf
+CryVEHDebugger\Debug\*
+CryVEHDebugger\Release\*
+CryVEHDebugger\CryVEHDebugger\Debug\*
+CryVEHDebugger\CryVEHDebugger\Release\*
