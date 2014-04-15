@@ -188,6 +188,7 @@ protected:
 	void HandleMiscellaneousExceptions(const SIZE_T address, const LONG excCode);
 	
 	virtual void CreateStackSnapshot(DbgBreakpoint* pBp, const SIZE_T pEsp) = 0;
+	virtual void ObtainCallStackTrace(DbgBreakpoint* pBp, void* const ctx) = 0;
 public:
 	CryDebugger();
 	virtual ~CryDebugger();
@@ -198,8 +199,6 @@ public:
 	bool SetHardwareBreakpoint(const Vector<Win32ThreadInformation>& threads, const SIZE_T address, const HWBP_SIZE size, const HWBP_TYPE type);
 	bool SetBreakpoint(const SIZE_T address);
 	bool RemoveBreakpoint(const SIZE_T address);
-	
-	virtual void ObtainCallStackTrace(DbgBreakpoint* pBp, const DWORD ThreadId, void* const ctx) = 0;
 	
 	void ClearBreakpoints();
 	int FindBreakpoint(const SIZE_T address) const;
@@ -231,11 +230,10 @@ private:
 	typedef CryDebugger32 CLASSNAME;
 protected:
 	virtual void CreateStackSnapshot(DbgBreakpoint* pBp, const SIZE_T pEsp);
+	virtual void ObtainCallStackTrace(DbgBreakpoint* pBp, void* const ctx);
 public:
 	CryDebugger32();
 	~CryDebugger32();
-	
-	virtual void ObtainCallStackTrace(DbgBreakpoint* pBp, const DWORD ThreadId, void* const ctx);
 };
 
 // x64 specific debugger implementations.
@@ -253,11 +251,10 @@ public:
 		typedef CryDebugger64 CLASSNAME;
 	protected:
 		virtual void CreateStackSnapshot(DbgBreakpoint* pBp, const SIZE_T pEsp);
+		virtual void ObtainCallStackTrace(DbgBreakpoint* pBp, void* const ctx);
 	public:
 		CryDebugger64();
 		~CryDebugger64();
-
-		virtual void ObtainCallStackTrace(DbgBreakpoint* pBp, const DWORD ThreadId, void* const ctx);
 	};
 #endif
 

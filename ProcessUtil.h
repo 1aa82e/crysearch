@@ -18,6 +18,7 @@ struct Win32ModuleInformation : Moveable<Win32ModuleInformation>
 };
 
 const Win32ModuleInformation* FindModuleInVector(const char* modName);
+void GetModuleFromContainedAddress(Win32ModuleInformation** module, SIZE_T address);
 
 // Represents a Win32 process
 struct Win32ProcessInformation : Moveable<Win32ProcessInformation>
@@ -61,6 +62,7 @@ void EnumerateThreads(const int processId, Vector<Win32ThreadInformation>& threa
 void EnumerateProcesses(Vector<Win32ProcessInformation>& outList);
 void EnumerateModules(HANDLE procHandle, const int processId);
 bool EnumerateHeaps(Vector<Win32HeapInformation>& heapInfoList);
+void ConstructStackTrace(HANDLE hProcess, const DWORD machineType, const void* const contextPtr, Vector<String>& outStackTrace);
 
 // Defines permissions on a memory block. Allocation or protection functions can use this enumeration.
 #define CRYPROTECTION_READONLY		0

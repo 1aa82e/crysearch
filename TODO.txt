@@ -1,9 +1,7 @@
 CrySearch application TODO list by evolution536
 
-- Crash handler (SetUnhandledExceptionFilter);
 - Dump .NET modules?
-- Cancel IO on application shutdown when huge scan is still running (XP support blocks me here)
-- handle file handle names seperately;
+- Cancel IO on application shutdown when huge scan is still running (XP support blocks me here);
 - Detect handles that are 'malicious'?
 - Optimize file writing in memory scanner and savior of data by memory scanner in memory;
 - Brute-force PID's to find out about hidden processes (process hacker);
@@ -31,9 +29,6 @@ CrySearch application TODO list by evolution536
 			- Executable module of process was hidden, undefined behavior;
 		- Info messages:
 			- Could be anything...
-
-- General Window:
-	- Add relocation table below section view;
 
 - Address Table:
 	- Add option checkbox / indicator to indicate whether address is frozen or not;

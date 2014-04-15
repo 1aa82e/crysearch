@@ -45,22 +45,6 @@ extern "C" inline void SetBits(DWORD_PTR* const dw, const int lowBit, const int 
 	extern "C" inline void AlignPointer(DWORD_PTR* const Address, const DWORD Boundary);
 #endif
 
-// Retrieves the module of a contained executable address. Stack trace functions need this.
-inline void GetModuleFromContainedAddress(Win32ModuleInformation** module, SIZE_T address)
-{
-	for (int i = 0; i < LoadedModulesList.GetCount(); i++)
-	{
-		Win32ModuleInformation* const tmp = &LoadedModulesList[i];
-		if (address > tmp->BaseAddress && address < tmp->BaseAddress + tmp->Length)
-		{
-			*module = tmp;
-			return;
-		}
-	}
-	
-	*module = NULL;
-}
-
 // ---------------------------------------------------------------------------------------------
 
 // Debugger default constructor.
@@ -655,100 +639,15 @@ const int CryDebugger32::CheckHardwareBreakpointRegisters(const DWORD threadId) 
 }
 
 // Obtains the stack trace for a hit breakpoint and puts it into the last parameter.
-void CryDebugger32::ObtainCallStackTrace(DbgBreakpoint* pBp, const DWORD ThreadId, void* const ctx)
+void CryDebugger32::ObtainCallStackTrace(DbgBreakpoint* pBp, void* const ctx)
 {
 	if (!pBp || !ctx)
 	{
 		return;
 	}
 	
-	pBp->BreakpointSnapshot.CallStackView.Clear();
-	
-#ifdef _WIN64
-	WOW64_CONTEXT* const ctxCasted = (WOW64_CONTEXT*)ctx;
-#else
-	CONTEXT* const ctxCasted = (CONTEXT*)ctx;
-#endif
-
-	HANDLE hThread = OpenThread(THREAD_GET_CONTEXT, FALSE, ThreadId);
-	
-	if (hThread == INVALID_HANDLE_VALUE)
-	{
-		return;
-	}
-	
-	DWORD MachineType;
-	STACKFRAME64 StackFrame;
-	memset(&StackFrame, 0, sizeof(STACKFRAME64));
-	
-	MachineType = IMAGE_FILE_MACHINE_I386;
-	StackFrame.AddrPC.Offset = ctxCasted->Eip;
-	StackFrame.AddrFrame.Offset = ctxCasted->Ebp;
-	StackFrame.AddrStack.Offset = ctxCasted->Esp;
-	StackFrame.AddrPC.Mode = AddrModeFlat;
-	StackFrame.AddrFrame.Mode = AddrModeFlat;
-	StackFrame.AddrStack.Mode = AddrModeFlat;
-	
-	BOOL result;
-	const DWORD arrSize = sizeof(IMAGEHLP_SYMBOL64) + MAX_SYM_NAME;
-
-	do
-	{
-		result = StackWalk64(MachineType, mMemoryScanner->GetHandle(), hThread, &StackFrame, ctxCasted, NULL, SymFunctionTableAccess64, SymGetModuleBase64, NULL);
-		
-		// When we reach a return address, stop the stack walking.
-		if (StackFrame.AddrPC.Offset == StackFrame.AddrReturn.Offset)
-		{
-			break;
-		}
-		
-		char buffer[arrSize];
-		memset(buffer, 0, arrSize);
-
-		IMAGEHLP_SYMBOL64* const symbol = (IMAGEHLP_SYMBOL64*)buffer;
-		symbol->SizeOfStruct = sizeof(IMAGEHLP_SYMBOL64);
-        symbol->MaxNameLength = MAX_SYM_NAME;
-        
-        // Obtain module from stack trace.
-        Win32ModuleInformation* module = NULL;
-        
-#ifdef _WIN64
-        GetModuleFromContainedAddress(&module, StackFrame.AddrPC.Offset);
-#else
-		GetModuleFromContainedAddress(&module, (SIZE_T)StackFrame.AddrPC.Offset);
-#endif
-        
-        char name[MAX_SYM_NAME];
-        char* symNamePtr;
-		DWORD customizedLength = 0;
-        
-        // Set stack trace entry name array to zero to avoid cluttered results.
-		memset(name, 0, MAX_SYM_NAME);
-        
-        if (module)
-        {
-            const int strLen = module->ModuleName.GetLength();
-            memcpy(name, module->ModuleName, strLen);
-            name[strLen] = '!';
-			customizedLength = strLen + 1;
-            symNamePtr = name + customizedLength;
-        }
-            
-        // Attempt to retrieve symbol name from PDB file.
-        if (SymGetSymFromAddr64(mMemoryScanner->GetHandle(), StackFrame.AddrPC.Offset, NULL, symbol))
-        {
-            UnDecorateSymbolName(symbol->Name, symNamePtr, MAX_SYM_NAME - customizedLength, UNDNAME_COMPLETE);
-            pBp->BreakpointSnapshot.CallStackView.Add(name);
-        }
-        else
-        {
-            // Symbol name was not found, just put module name with address.
-            pBp->BreakpointSnapshot.CallStackView.Add(Format("%s%lX", name, (LONG_PTR)StackFrame.AddrPC.Offset));
-        }
-	}
-	while (result);
-	
-	CloseHandle(hThread);
+	// Create call stack.
+	ConstructStackTrace(mMemoryScanner->GetHandle(), IMAGE_FILE_MACHINE_I386, ctx, pBp->BreakpointSnapshot.CallStackView);
 }
 
 // Hardware breakpoint routine
@@ -1006,7 +905,7 @@ void CryDebugger32::HandleSoftwareBreakpoint(const DWORD threadId, const SIZE_T 
 	
 	// Set hit associated data for the breakpoint.
 	this->CreateStackSnapshot(&bp, ctx.Esp);
-	this->ObtainCallStackTrace(&bp, threadId, &ctx);
+	this->ObtainCallStackTrace(&bp, &ctx);
 	bp.BreakpointSnapshot.RegisterFieldCount = REGISTERCOUNT_86;
 	
 	// Send trigger to user interface.
@@ -1079,7 +978,7 @@ void CryDebugger32::HandleHardwareBreakpoint(const DWORD threadId, const SIZE_T 
 	
 	// Set hit associated data for the breakpoint.
 	this->CreateStackSnapshot(&hwbp, ctx.Esp);
-	this->ObtainCallStackTrace(&hwbp, threadId, &ctx);
+	this->ObtainCallStackTrace(&hwbp, &ctx);
 	hwbp.BreakpointSnapshot.RegisterFieldCount = REGISTERCOUNT_86;
 	
 	// Send trigger to user interface.
@@ -1227,7 +1126,7 @@ void CryDebugger32::HandleHardwareBreakpoint(const DWORD threadId, const SIZE_T 
 
 		// Set hit associated data for the breakpoint.
 		this->CreateStackSnapshot(&bp, ctx->Rsp);
-		this->ObtainCallStackTrace(&bp, threadId, ctx);
+		this->ObtainCallStackTrace(&bp, ctx);
 		bp.BreakpointSnapshot.ThreadContextContainer = new CryThreadContext<CONTEXT>();
 		memcpy(&((CryThreadContext<CONTEXT>*)bp.BreakpointSnapshot.ThreadContextContainer)->ThreadContext, ctx, sizeof(CONTEXT));
 		bp.BreakpointSnapshot.RegisterFieldCount = REGISTERCOUNT_64;
@@ -1288,7 +1187,7 @@ void CryDebugger32::HandleHardwareBreakpoint(const DWORD threadId, const SIZE_T 
 		
 		// Set hit associated data for the breakpoint.
 		this->CreateStackSnapshot(&hwbp, ctx->Rsp);
-		this->ObtainCallStackTrace(&hwbp, threadId, ctx);
+		this->ObtainCallStackTrace(&hwbp, ctx);
 		hwbp.BreakpointSnapshot.ThreadContextContainer = new CryThreadContext<CONTEXT>();
 		memcpy(&((CryThreadContext<CONTEXT>*)hwbp.BreakpointSnapshot.ThreadContextContainer)->ThreadContext, ctx, sizeof(CONTEXT));
 		hwbp.BreakpointSnapshot.RegisterFieldCount = REGISTERCOUNT_64;
@@ -1416,90 +1315,14 @@ void CryDebugger32::HandleHardwareBreakpoint(const DWORD threadId, const SIZE_T 
 	}
 	
 	// Obtains the stack trace for a hit breakpoint and puts it into the last parameter.
-	void CryDebugger64::ObtainCallStackTrace(DbgBreakpoint* pBp, const DWORD ThreadId, void* const ctx)
+	void CryDebugger64::ObtainCallStackTrace(DbgBreakpoint* pBp, void* const ctx)
 	{
 		if (!pBp || !ctx)
 		{
 			return;
 		}
 		
-		pBp->BreakpointSnapshot.CallStackView.Clear();
-		
-		PCONTEXT const ctxCasted = (PCONTEXT)ctx;
-	
-		HANDLE hThread = OpenThread(THREAD_GET_CONTEXT, FALSE, ThreadId);
-		if (hThread == INVALID_HANDLE_VALUE)
-		{
-			return;
-		}
-		
-		DWORD MachineType;
-		STACKFRAME64 StackFrame;
-		memset(&StackFrame, 0, sizeof(STACKFRAME64));
-		
-		MachineType = IMAGE_FILE_MACHINE_AMD64;
-		StackFrame.AddrPC.Offset = ctxCasted->Rip;
-		StackFrame.AddrFrame.Offset = ctxCasted->Rbp;
-		StackFrame.AddrStack.Offset = ctxCasted->Rsp;
-		StackFrame.AddrPC.Mode = AddrModeFlat;
-		StackFrame.AddrFrame.Mode = AddrModeFlat;
-		StackFrame.AddrStack.Mode = AddrModeFlat;
-		
-		BOOL result;
-		const DWORD arrSize = sizeof(IMAGEHLP_SYMBOL64) + MAX_SYM_NAME;
-		
-		do
-		{
-			result = StackWalk64(MachineType, mMemoryScanner->GetHandle(), hThread, &StackFrame, ctxCasted, NULL, SymFunctionTableAccess64, SymGetModuleBase64, NULL);
-		
-			// When we reach a return address, stop the stack walking.
-			if (StackFrame.AddrPC.Offset == StackFrame.AddrReturn.Offset)
-			{
-				break;
-			}
-			
-			char buffer[arrSize];
-			memset(buffer, 0, arrSize);
-	
-			IMAGEHLP_SYMBOL64* const symbol = (IMAGEHLP_SYMBOL64*)buffer;
-			symbol->SizeOfStruct = sizeof(IMAGEHLP_SYMBOL64);
-	        symbol->MaxNameLength = MAX_SYM_NAME;
-	        
-	        // Obtain module from stack trace.
-	        Win32ModuleInformation* module = NULL;
-
-	        GetModuleFromContainedAddress(&module, StackFrame.AddrPC.Offset);
-	        
-	        char name[MAX_SYM_NAME];
-	        char* symNamePtr;
-			DWORD customizedLength = 0;
-	        
-	        // Set stack trace entry name array to zero to avoid cluttered results.
-			memset(name, 0, MAX_SYM_NAME);
-	        
-	        if (module)
-	        {
-	            const int strLen = module->ModuleName.GetLength();
-	            memcpy(name, module->ModuleName, strLen);
-	            name[strLen] = '!';
-				customizedLength = strLen + 1;
-	            symNamePtr = name + customizedLength;
-	        }
-	            
-	        // Attempt to retrieve symbol name from PDB file.
-	        if (SymGetSymFromAddr64(mMemoryScanner->GetHandle(), StackFrame.AddrPC.Offset, NULL, symbol))
-	        {
-	            UnDecorateSymbolName(symbol->Name, symNamePtr, MAX_SYM_NAME - customizedLength, UNDNAME_COMPLETE);
-	            pBp->BreakpointSnapshot.CallStackView.Add(name);
-	        }
-	        else
-	        {
-	            // Symbol name was not found, just put module name with address.
-	            pBp->BreakpointSnapshot.CallStackView.Add(Format("%s%llX", name, (LONG_PTR)StackFrame.AddrPC.Offset));
-	        }
-		}
-		while (result);
-		
-		CloseHandle(hThread);
+		// Create call stack.
+		ConstructStackTrace(mMemoryScanner->GetHandle(), IMAGE_FILE_MACHINE_AMD64, ctx, pBp->BreakpointSnapshot.CallStackView);
 	}
 #endif

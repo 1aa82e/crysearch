@@ -8,6 +8,7 @@
 #include "CryCodeGenerationForm.h"
 #include "CryProcessEnvironmentBlockWindow.h"
 #include "CrySystemHandleInformationWindow.h"
+#include "CrashHandler.h"
 #include "ImlProvider.h"
 #include "UIUtilities.h"
 
@@ -1786,6 +1787,9 @@ CrySearchForm* frm;
 
 GUI_APP_MAIN
 {
+	// Wire up the crash handler.
+	SetUnhandledExceptionFilter(CrashHandler);
+	
 	// Delete temporary files from any earlier run, which might have crashed.
 	DeleteTemporaryFiles();
 	

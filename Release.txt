@@ -2,6 +2,10 @@ CrySearch Memory Scanner
 
 evolution536, www.unknowncheats.me
 
+v1.10
+	- Added crash reporting system. When CrySearch crashes a crash report is generated for support;
+	- 
+
 v1.09
 	- Applied several performance fixes, increasing overall performance and memory usage. The disassembler is noticably faster;
 	- Added option to manually associate the .csat file extension with CrySearch (elevation is necessary);

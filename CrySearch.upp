@@ -73,6 +73,8 @@ file
 	Resource.aps,
 	CrySearch.ico,
 	Core readonly separator,
+	CrashHandler.cpp,
+	CrashHandler.h,
 	GlobalDef.h,
 	SettingsFile.cpp,
 	SettingsFile.h,

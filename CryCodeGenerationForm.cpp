@@ -46,8 +46,7 @@ void CryCodeGenerationForm::GenerateButtonClicked()
 	String codenz;
 	this->mCodeGen->Generate(codenz);
 	
-	this->mCodeField.Clear();
-	this->mCodeField.Insert(0, codenz);
+	this->mCodeField.Set(codenz);
 }
 
 void CryCodeGenerationForm::CloseForm()

@@ -33,7 +33,7 @@ String GetHandleAccess(const int index)
 
 CrySystemHandleInformationWindow::CrySystemHandleInformationWindow()
 {
-	this->Title("Open Handles").SetRect(0, 0, 600 , 200);
+	this->Title("Open Handles").Zoomable().Sizeable().SetRect(0, 0, 600 , 200);
 	
 	this->mOK <<= THISBACK(CloseButtonClicked);
 	

@@ -4,9 +4,11 @@
 #include <TlHelp32.h>
 #include <Psapi.h>
 #include <Shlwapi.h>
+#include <VerRsrc.h>
+#include <DbgHelp.h>
 
-#pragma comment(lib, "shlwapi.lib")
-#pragma comment(lib, "psapi.lib")
+#pragma comment(lib, "Shlwapi.lib")
+#pragma comment(lib, "Psapi.lib")
 
 #include "GlobalDef.h"
 
@@ -327,4 +329,116 @@ void EnumerateHandles(const int processId, Vector<Win32HandleInformation>& handl
 	
 	// Free heap allocated handle information.
 	VirtualFree(handleInfo, 0, MEM_RELEASE);
+}
+
+// Retrieves the module of a contained executable address. Stack trace functions need this.
+void GetModuleFromContainedAddress(Win32ModuleInformation** module, SIZE_T address)
+{
+	for (int i = 0; i < LoadedModulesList.GetCount(); i++)
+	{
+		Win32ModuleInformation* const tmp = &LoadedModulesList[i];
+		if (address > tmp->BaseAddress && address < tmp->BaseAddress + tmp->Length)
+		{
+			*module = tmp;
+			return;
+		}
+	}
+	
+	*module = NULL;
+}
+
+// Obtains the stack trace for a hit breakpoint and puts it into the last parameter.
+void ConstructStackTrace(HANDLE hProcess, const DWORD machineType, const void* const contextPtr, Vector<String>& outStackTrace)
+{
+	outStackTrace.Clear();
+
+	STACKFRAME64 StackFrame;
+	memset(&StackFrame, 0, sizeof(STACKFRAME64));
+	PVOID localCtx = NULL;
+	
+	if (machineType == IMAGE_FILE_MACHINE_I386)
+	{
+#ifdef _WIN64
+		WOW64_CONTEXT ctx;
+		memcpy(&ctx, contextPtr, sizeof(WOW64_CONTEXT));
+#else
+		CONTEXT ctx;
+		memcpy(&ctx, contextPtr, sizeof(CONTEXT));
+#endif
+		StackFrame.AddrPC.Offset = ctx.Eip;
+		StackFrame.AddrFrame.Offset = ctx.Ebp;
+		StackFrame.AddrStack.Offset = ctx.Esp;
+		localCtx = &ctx;
+	}
+#ifdef _WIN64
+	else
+	{
+		CONTEXT ctx;
+		memcpy(&ctx, contextPtr, sizeof(CONTEXT));
+		StackFrame.AddrPC.Offset = ctx.Rip;
+		StackFrame.AddrFrame.Offset = ctx.Rbp;
+		StackFrame.AddrStack.Offset = ctx.Rsp;
+		localCtx = &ctx;
+	}
+#endif
+
+	StackFrame.AddrPC.Mode = AddrModeFlat;
+	StackFrame.AddrFrame.Mode = AddrModeFlat;
+	StackFrame.AddrStack.Mode = AddrModeFlat;
+	
+	BOOL result;
+	const DWORD arrSize = sizeof(IMAGEHLP_SYMBOL64) + MAX_SYM_NAME;
+	
+	do
+	{
+		// Don't forget to make a copy of the context structure. It may get modified on the way.
+		result = StackWalk64(machineType, hProcess, NULL, &StackFrame, localCtx, NULL, SymFunctionTableAccess64, SymGetModuleBase64, NULL);
+	
+		// When we reach a return address, stop the stack walking.
+		if (StackFrame.AddrPC.Offset == StackFrame.AddrReturn.Offset)
+		{
+			break;
+		}
+		
+		char buffer[arrSize];
+		memset(buffer, 0, arrSize);
+
+		IMAGEHLP_SYMBOL64* const symbol = (IMAGEHLP_SYMBOL64*)buffer;
+		symbol->SizeOfStruct = sizeof(IMAGEHLP_SYMBOL64);
+        symbol->MaxNameLength = MAX_SYM_NAME;
+        
+        // Obtain module from stack trace.
+        Win32ModuleInformation* module = NULL;
+        GetModuleFromContainedAddress(&module, (SIZE_T)StackFrame.AddrPC.Offset);
+        
+        char name[MAX_SYM_NAME];
+        char* symNamePtr;
+		DWORD customizedLength = 0;
+        
+        // Set stack trace entry name array to zero to avoid cluttered results.
+		memset(name, 0, MAX_SYM_NAME);
+        
+        if (module)
+        {
+            // Set the module name for the stack trace entry.
+            const int strLen = module->ModuleName.GetLength();
+            memcpy(name, module->ModuleName, strLen);
+            name[strLen] = '!';
+			customizedLength = strLen + 1;
+            symNamePtr = name + customizedLength;
+        }
+            
+        // Attempt to retrieve symbol name from PDB file.
+        if (SymGetSymFromAddr64(hProcess, StackFrame.AddrPC.Offset, NULL, symbol))
+        {
+            UnDecorateSymbolName(symbol->Name, symNamePtr, MAX_SYM_NAME - customizedLength, UNDNAME_COMPLETE);
+            outStackTrace.Add(name);
+        }
+        else
+        {
+            // Symbol name was not found, just put module name with address.
+            outStackTrace.Add(Format("%s%llX", name, (LONG_PTR)StackFrame.AddrPC.Offset));
+        }
+	}
+	while (result);
 }

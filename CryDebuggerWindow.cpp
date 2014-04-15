@@ -1,56 +1,10 @@
 #include "CryDebuggerWindow.h"
 #include "ImlProvider.h"
 #include "GlobalDef.h"
+#include "CrashHandler.h"
 
 // Master index indicates which hit breakpoint is currently selected.
 int BreakpointMasterIndex = 0;
-
-// ---------------------------------------------------------------------------------------------
-
-// Describes an exception.
-struct ExceptionLookupTableEntry
-{
-	DWORD ExceptionCode;
-	char ExceptionString[46];
-};
-
-// The lookup table for exceptions and their string representations.
-ExceptionLookupTableEntry ExceptionLookupTable[] =
-{
-	{ EXCEPTION_ACCESS_VIOLATION, "Access violation" },
-	{ EXCEPTION_ARRAY_BOUNDS_EXCEEDED, "Array bounds exceeded" },
-	{ EXCEPTION_DATATYPE_MISALIGNMENT, "Attempted to access misaligned data" },
-	{ EXCEPTION_FLT_DENORMAL_OPERAND, "Denormal floating point operand" },
-	{ EXCEPTION_FLT_DIVIDE_BY_ZERO, "Floating point division by zero" },
-	{ EXCEPTION_FLT_INEXACT_RESULT, "Inexact floating point operation result" },
-	{ EXCEPTION_FLT_INVALID_OPERATION, "Invalid floating point operation" },
-	{ EXCEPTION_FLT_OVERFLOW, "Floating point overflow" },
-	{ EXCEPTION_FLT_STACK_CHECK, "Floating point stack check" },
-	{ EXCEPTION_FLT_UNDERFLOW, "Floating point underflow" },
-	{ EXCEPTION_ILLEGAL_INSTRUCTION, "Attempted execution of illegal instruction" },
-	{ EXCEPTION_IN_PAGE_ERROR, "Unable to access memory page" },
-	{ EXCEPTION_INT_DIVIDE_BY_ZERO, "Attempted to divide integer by zero" },
-	{ EXCEPTION_INT_OVERFLOW, "Integer overflow" },
-	{ EXCEPTION_INVALID_DISPOSITION, "Invalid disposition of exception" },
-	{ EXCEPTION_NONCONTINUABLE_EXCEPTION, "Attempted non-continuable execution" },
-	{ EXCEPTION_PRIV_INSTRUCTION, "Attempted execution of priveleged instruction" },
-	{ EXCEPTION_STACK_OVERFLOW, "Stack overflow" },
-	{ DBG_CONTROL_C, "Ctrl + C was pressed (console interrupt)" }
-};
-
-// Parses an exception code into a string representation for the user interface.
-const char* ParseExceptionCode(LONG excCode)
-{
-	for (unsigned int i = 0; i < sizeof(ExceptionLookupTable) / sizeof(ExceptionLookupTable[0]); i++)
-	{
-		if (ExceptionLookupTable[i].ExceptionCode == excCode)
-		{
-			return ExceptionLookupTable[i].ExceptionString;
-		}
-	}
-
-	return "Unknown Exception";
-}
 
 // ---------------------------------------------------------------------------------------------
 

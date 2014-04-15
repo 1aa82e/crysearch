@@ -212,7 +212,12 @@ bool MemoryScanner::Initialize(int processId, const String& exeTitle)
 	
 	// Process succesfully loaded, set identifiers and return.
 	this->mLoadedProcessId = processId;
+
+#ifdef _WIN64
 	this->isX86Process = IsI386Process(this->mOpenedProcessHandle);
+#else
+	this->isX86Process = true;
+#endif
 
 	// If a process was opened by dragging the cursor onto another window, the process name is empty from the start.
 	if (exeTitle.IsEmpty())
@@ -245,7 +250,12 @@ bool MemoryScanner::Initialize(const String& exetitle, int* pProcessId)
 		CloseHandle(processInfo.hThread);
 	}
 	
+#ifdef _WIN64
 	this->isX86Process = IsI386Process(this->mOpenedProcessHandle);
+#else
+	this->isX86Process = true;
+#endif
+
 	this->mProcessName = GetFileName(exetitle);
 	
 	return b;
