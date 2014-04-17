@@ -3,14 +3,11 @@
 
 #pragma warning(disable : 4005)
 
-#include <CtrlLib/CtrlLib.h>
-
-using namespace Upp;
-
+#include "CryDialogTemplate.h"
 #include "CryClickLabel.h"
 
 // Simple about dialog for CrySearch, displaying its version, architecture and credits.
-class CrySearchAboutDialog sealed : public TopWindow
+class CrySearchAboutDialog sealed : public CryDialogTemplate
 {
 private:
 	DWORD forumLink[27];
@@ -24,8 +21,6 @@ private:
 	Button mOk;
 	
 	void CloseAboutWindow();
-
-	virtual bool Key(dword key, int count);
 public:
 	CrySearchAboutDialog();
 	

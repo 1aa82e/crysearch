@@ -3,13 +3,10 @@
 
 #pragma warning(disable : 4005)
 
-#include <CtrlLib/CtrlLib.h>
-
-using namespace Upp;
-
 #include "GlobalDef.h"
+#include "CryDialogTemplate.h"
 
-class CryNewScanForm sealed : public TopWindow
+class CryNewScanForm sealed : public CryDialogTemplate
 {
 private:
 	bool mNextScan;
@@ -28,8 +25,6 @@ private:
 	void ScanTypeSelected();
 	void BlockSizeSelected();
 	void OkButtonClicked();
-	
-	virtual bool Key(dword key, int count);
 	
 	friend class CrySearchForm;
 public:

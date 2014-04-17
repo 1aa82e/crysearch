@@ -3,11 +3,8 @@
 
 #pragma warning(disable : 4005)
 
-#include <CtrlLib/CtrlLib.h>
-
-using namespace Upp;
-
 #include "ProcessUtil.h"
+#include "CryDialogTemplate.h"
 
 // Represents a small area that can be clicked to begin a mouse dragging sequence.
 class ProcessSelectionDragArea sealed : public ParentCtrl
@@ -36,7 +33,7 @@ public:
 };
 
 // The form where the user selects the process to open in CrySearch.
-class CryProcessEnumeratorForm sealed : public TopWindow
+class CryProcessEnumeratorForm sealed : public CryDialogTemplate
 {
 private:
 	Label mInfoAboutDialog;
@@ -61,8 +58,6 @@ private:
 	void TitleColumnHeaderClicked();
 	
 	void DragFromCtrlCompleted(HWND hwnd);
-	
-	virtual bool Key(dword key, int count);
 public:
 	CryProcessEnumeratorForm();
 	~CryProcessEnumeratorForm() { }

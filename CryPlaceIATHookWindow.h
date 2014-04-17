@@ -1,11 +1,9 @@
 #ifndef _CrySearch_CryPlaceIATHookWindow_h_
 #define _CrySearch_CryPlaceIATHookWindow_h_
 
-#include <CtrlLib/CtrlLib.h>
+#include "CryDialogTemplate.h"
 
-using namespace Upp;
-
-class CryPlaceIATHookWindow sealed : public TopWindow
+class CryPlaceIATHookWindow sealed : public CryDialogTemplate
 {
 private:
 	char* mFunction;
@@ -18,8 +16,6 @@ private:
 	
 	void DialogOkay();
 	void DialogCancel();
-	
-	virtual bool Key(dword key, int count);
 	
 	typedef CryPlaceIATHookWindow CLASSNAME;
 public:

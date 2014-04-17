@@ -1292,7 +1292,7 @@ void CryDebugger32::HandleHardwareBreakpoint(const DWORD threadId, const SIZE_T 
 			pHwbp->DebugRegister = 0;
 		}	    
 		
-		ctx->Dr6 = 0;		
+		ctx->Dr6 = 0;
 		
 		// Prepare context struct and set it into the threads context.
 		if (!SetThreadContext(hThread, ctx))

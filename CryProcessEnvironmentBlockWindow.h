@@ -1,11 +1,9 @@
 #ifndef _CrySearch_CryProcessEnvironmentBlockWindow_h_
 #define _CrySearch_CryProcessEnvironmentBlockWindow_h_
 
-#include <CtrlLib/CtrlLib.h>
+#include "CryDialogTemplate.h"
 
-using namespace Upp;
-
-class CryProcessEnvironmentBlockWindow sealed : public TopWindow
+class CryProcessEnvironmentBlockWindow sealed : public CryDialogTemplate
 {
 private:
 	BYTE* pIsBeingDebuggedPtr;
@@ -18,8 +16,6 @@ private:
 	void Initialize();
 	void DialogClose();
 	void ResetDebugFlag();
-	
-	virtual bool Key(dword key, int count);
 	
 	typedef CryProcessEnvironmentBlockWindow CLASSNAME;
 public:

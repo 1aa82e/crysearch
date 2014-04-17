@@ -54,6 +54,7 @@ String ParseFieldType(const String& valueType)
 	}
 	else
 	{
+		// There are no other CrySearch types so this code path should never be reached.
 		__assume(0);
 	}
 }

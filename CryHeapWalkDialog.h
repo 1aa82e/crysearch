@@ -1,19 +1,16 @@
 #ifndef _CrySearch_CryHeapWalkDialog_h_
 #define _CrySearch_CryHeapWalkDialog_h_
 
-#include <CtrlLib/CtrlLib.h>
+#include "CryDialogTemplate.h"
 
-using namespace Upp;
-
-class CryHeapWalkDialog sealed : public TopWindow
+class CryHeapWalkDialog sealed : public CryDialogTemplate
 {
 private:
 	Button mClose;
 	ArrayCtrl mHeapList;
+	Label mHeapCount;
 	
 	void CloseDialog();
-	
-	virtual bool Key(dword key, int count);
 	
 	typedef CryHeapWalkDialog CLASSNAME;
 public:

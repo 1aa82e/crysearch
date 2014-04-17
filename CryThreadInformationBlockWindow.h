@@ -1,11 +1,9 @@
 #ifndef _CrySearch_CryThreadInformationBlockWindow_h_
 #define _CrySearch_CryThreadInformationBlockWindow_h_
 
-#include <CtrlLib/CtrlLib.h>
+#include "CryDialogTemplate.h"
 
-using namespace Upp;
-
-class CryThreadInformationBlockWindow sealed : public TopWindow
+class CryThreadInformationBlockWindow sealed : public CryDialogTemplate
 {
 private:
 	Label mThreadWindowDescription;
@@ -13,8 +11,6 @@ private:
 	Button mOk;
 	
 	void DialogClose();
-	
-	virtual bool Key(dword key, int count);
 	
 	typedef CryThreadInformationBlockWindow CLASSNAME;
 public:

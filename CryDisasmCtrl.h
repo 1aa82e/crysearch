@@ -4,9 +4,10 @@
 #include "CrySearchArrayCtrl.h"
 #include "VirtualDropList.h"
 #include "AsyncDisassembler.h"
+#include "CryDialogTemplate.h"
 
 // Small dialog that is opened when the 'Go to address' context menu action is chosen from the disassembly view.
-class CryDisasmGoToAddressDialog sealed : public TopWindow
+class CryDisasmGoToAddressDialog sealed : public CryDialogTemplate
 {
 private:
 	Label mAddressDesc;
@@ -15,18 +16,6 @@ private:
 	Button mCancel;
 	
 	LONG_PTR* addrPtr;
-	
-	virtual bool Key(dword key, int count)
-	{
-		if (key == K_ESCAPE)
-		{
-			*addrPtr = -1;
-			this->Close();
-			return true;
-		}
-		
-		return false;
-	}
 	
 	void OkButtonClicked()
 	{

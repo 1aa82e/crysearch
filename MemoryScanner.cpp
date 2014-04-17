@@ -16,9 +16,6 @@ volatile int threadIncrement = 0;
 // Globally used scanning variables. Declared globally to speed up calls and variable access.
 ScanParameterBase* GlobalScanParameter;
 
-// Vector that contains the memory pages of the currently opened process. Beware that a First-Scan refreshes the pages entirely.
-Vector<MemoryRegion> memRegions;
-
 // Cache vectors that contain the data visible in the GUI ArrayCtrl.
 #ifdef _WIN64
 	Vector<__int64> CachedAddresses;
@@ -212,12 +209,7 @@ bool MemoryScanner::Initialize(int processId, const String& exeTitle)
 	
 	// Process succesfully loaded, set identifiers and return.
 	this->mLoadedProcessId = processId;
-
-#ifdef _WIN64
 	this->isX86Process = IsI386Process(this->mOpenedProcessHandle);
-#else
-	this->isX86Process = true;
-#endif
 
 	// If a process was opened by dragging the cursor onto another window, the process name is empty from the start.
 	if (exeTitle.IsEmpty())
@@ -250,12 +242,7 @@ bool MemoryScanner::Initialize(const String& exetitle, int* pProcessId)
 		CloseHandle(processInfo.hThread);
 	}
 	
-#ifdef _WIN64
 	this->isX86Process = IsI386Process(this->mOpenedProcessHandle);
-#else
-	this->isX86Process = true;
-#endif
-
 	this->mProcessName = GetFileName(exetitle);
 	
 	return b;
@@ -414,7 +401,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 		unsigned int currentArrayLength = 256;
 		SIZE_T* localAddresses = NULL;
 		double* localValues = NULL;
-		MemoryRegion& currentRegion = memRegions[i];
+		MemoryRegion& currentRegion = this->memRegions[i];
 		
 		currentRegion.FileDataIndexes.StartIndex = fileIndex;
 		
@@ -520,7 +507,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 		unsigned int currentArrayLength = 256;
 		SIZE_T* localAddresses = NULL;
 		ArrayOfBytes* localValues = NULL;
-		MemoryRegion& currentRegion = memRegions[i];
+		MemoryRegion& currentRegion = this->memRegions[i];
 		
 		currentRegion.FileDataIndexes.StartIndex = fileIndex;
 		
@@ -645,7 +632,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 		unsigned int currentArrayLength = 256;
 		SIZE_T* localAddresses = NULL;
 		Vector<WString> localValues;
-		MemoryRegion& currentRegion = memRegions[i];
+		MemoryRegion& currentRegion = this->memRegions[i];
 		
 		currentRegion.FileDataIndexes.StartIndex = fileIndex;
 		
@@ -749,7 +736,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 		unsigned int currentArrayLength = 256;
 		SIZE_T* localAddresses = NULL;
 		Vector<String> localValues;
-		MemoryRegion& currentRegion = memRegions[i];
+		MemoryRegion& currentRegion = this->memRegions[i];
 		
 		currentRegion.FileDataIndexes.StartIndex = fileIndex;
 
@@ -856,7 +843,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 		unsigned int arrayIndex = 0;
 		unsigned int currentArrayLength = 256;
 		
-		MemoryRegion& currentRegion = memRegions[i];
+		MemoryRegion& currentRegion = this->memRegions[i];
 		currentRegion.FileDataIndexes.StartIndex = fileIndex;
 		
 		SIZE_T* localAddresses = NULL;
@@ -953,7 +940,7 @@ void MemoryScanner::FirstScan()
 	SIZE_T incAddress = 0;
 	MEMORY_BASIC_INFORMATION block;
 	
-	memRegions.Clear();
+	this->memRegions.Clear();
 	this->ScanRunning = true;
 	
 	// Query virtual pages inside target process.
@@ -974,7 +961,7 @@ void MemoryScanner::FirstScan()
 		        MemoryRegion memReg;
 		        memReg.BaseAddress = (SIZE_T)block.BaseAddress;
 			    memReg.MemorySize = block.RegionSize;
-			    memRegions << memReg;
+			    this->memRegions << memReg;
 	     	}
 	    }
 	
@@ -1003,19 +990,19 @@ void MemoryScanner::FirstScan()
 	threadIncrement = 0;
 	
 	// Check for sets of regions and append overlapping regions to reduce the number of regions needed to read.
-	for (int i = 0; i < memRegions.GetCount(); i++)
+	for (int i = 0; i < this->memRegions.GetCount(); i++)
 	{
 		// Append new region to other region if possible.
 		const int prev = i - 1;
-		if ((i > 0) && (memRegions[i].BaseAddress == (memRegions[prev].BaseAddress + memRegions[prev].MemorySize)))
+		if ((i > 0) && (this->memRegions[i].BaseAddress == (this->memRegions[prev].BaseAddress + this->memRegions[prev].MemorySize)))
 		{
-			memRegions[prev].MemorySize += memRegions[i].MemorySize;
-			memRegions.Remove(i--);
+			this->memRegions[prev].MemorySize += this->memRegions[i].MemorySize;
+			this->memRegions.Remove(i--);
 		}
 	}
 	
 	// Abort scanning and throw an error, no readable memory found.
-	if (memRegions.GetCount() <= 0)
+	if (this->memRegions.GetCount() <= 0)
 	{
 		this->ErrorOccured(NOREADABLEMEMORYFOUND);
 		this->ScanRunning = false;
@@ -1030,7 +1017,7 @@ void MemoryScanner::FirstScan()
 #endif
 
 	// Signal user interface with a count to set progress indicator to ready state.
-	const int regionCount = memRegions.GetCount();
+	const int regionCount = this->memRegions.GetCount();
 	this->ScanStarted(regionCount);
 	
 	// Assign compare function accordingly
@@ -1079,7 +1066,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 	const unsigned int forLoopLength = regionData.OriginalStartIndex + regionData.Length;
 	for (unsigned int i = regionData.OriginalStartIndex; i < forLoopLength; ++i)
 	{
-		MemoryRegion& currentRegion = memRegions[i];
+		MemoryRegion& currentRegion = this->memRegions[i];
 		const unsigned int oldFileIndex = currentRegion.FileDataIndexes.StartIndex;
 		currentRegion.FileDataIndexes.StartIndex = fileIndex;
 		
@@ -1223,7 +1210,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 	const unsigned int forLoopLength = regionData.OriginalStartIndex + regionData.Length;
 	for (unsigned int i = regionData.OriginalStartIndex; i < forLoopLength; ++i)
 	{
-		MemoryRegion& currentRegion = memRegions[i];
+		MemoryRegion& currentRegion = this->memRegions[i];
 		const unsigned int oldFileIndex = currentRegion.FileDataIndexes.StartIndex;
 		currentRegion.FileDataIndexes.StartIndex = fileIndex;
 		
@@ -1346,7 +1333,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 	const unsigned int forLoopLength = regionData.OriginalStartIndex + regionData.Length;
 	for (unsigned int i = regionData.OriginalStartIndex; i < forLoopLength; ++i)
 	{
-		MemoryRegion& currentRegion = memRegions[i];
+		MemoryRegion& currentRegion = this->memRegions[i];
 		const unsigned int oldFileIndex = currentRegion.FileDataIndexes.StartIndex;
 		currentRegion.FileDataIndexes.StartIndex = fileIndex;
 		
@@ -1476,7 +1463,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 	const unsigned int forLoopLength = regionData.OriginalStartIndex + regionData.Length;
 	for (unsigned int i = regionData.OriginalStartIndex; i < forLoopLength; ++i)
 	{
-		MemoryRegion& currentRegion = memRegions[i];
+		MemoryRegion& currentRegion = this->memRegions[i];
 		const unsigned int oldFileIndex = currentRegion.FileDataIndexes.StartIndex;
 		currentRegion.FileDataIndexes.StartIndex = fileIndex;
 		
@@ -1651,7 +1638,7 @@ void MemoryScanner::NextScan()
 	// Reset progress indication bar in the GUI.
 	RegionFinishCount = 0;
 	threadIncrement = 0;
-	this->ScanStarted(memRegions.GetCount());
+	this->ScanStarted(this->memRegions.GetCount());
 	
 	// Assign compare function accordingly
 	CompareValues = new ValueComparator<T>(GlobalScanParameter->GlobalScanType);

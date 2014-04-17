@@ -1,13 +1,10 @@
 #ifndef _CrySearch_CrySystemHandleInformationWindow_h_
 #define _CrySearch_CrySystemHandleInformationWindow_h_
 
-#include <CtrlLib/CtrlLib.h>
-
-using namespace Upp;
-
 #include "CrySearchArrayCtrl.h"
+#include "CryDialogTemplate.h"
 
-class CrySystemHandleInformationWindow sealed : public TopWindow
+class CrySystemHandleInformationWindow sealed : public CryDialogTemplate
 {
 private:
 	Button mOK;

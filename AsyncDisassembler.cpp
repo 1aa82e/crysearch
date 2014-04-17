@@ -17,9 +17,10 @@ Vector<MemoryRegion> mExecutablePagesList;
 // Retrieves the correct page index in the list by passing an address inside it.
 const int GetPageIndexFromAddress(const SIZE_T address)
 {
-	for (int i = 0; i < mExecutablePagesList.GetCount(); i++)
+	for (int i = 0; i < mExecutablePagesList.GetCount(); ++i)
 	{
-		if (address >= mExecutablePagesList[i].BaseAddress && address < mExecutablePagesList[i].BaseAddress + mExecutablePagesList[i].MemorySize)
+		const MemoryRegion& mem = mExecutablePagesList[i];
+		if (address >= mem.BaseAddress && address < mem.BaseAddress + mem.MemorySize)
 		{
 			return i;
 		}
@@ -31,11 +32,12 @@ const int GetPageIndexFromAddress(const SIZE_T address)
 // Retrieves the correct page by passing an address inside it.
 const MemoryRegion* GetPageFromAddress(const SIZE_T address)
 {
-	for (int i = 0; i < mExecutablePagesList.GetCount(); i++)
+	for (int i = 0; i < mExecutablePagesList.GetCount(); ++i)
 	{
-		if (address >= mExecutablePagesList[i].BaseAddress && address < mExecutablePagesList[i].BaseAddress + mExecutablePagesList[i].MemorySize)
+		const MemoryRegion* mem = &mExecutablePagesList[i];
+		if (address >= mem->BaseAddress && address < mem->BaseAddress + mem->MemorySize)
 		{
-			return &mExecutablePagesList[i];
+			return mem;
 		}
 	}
 	

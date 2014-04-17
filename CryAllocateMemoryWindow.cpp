@@ -28,18 +28,6 @@ CryAllocateMemoryWindow::~CryAllocateMemoryWindow()
 	
 }
 
-bool CryAllocateMemoryWindow::Key(dword key, int count)
-{
-	if (key == K_ESCAPE)
-	{
-		this->Close();
-		return true;
-	}
-	
-	return false;
-}
-
-
 void CryAllocateMemoryWindow::OkButton()
 {
 	// Check the validity of the memory size input field.

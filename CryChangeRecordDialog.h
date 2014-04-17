@@ -3,13 +3,10 @@
 
 #pragma warning(disable : 4005)
 
-#include <CtrlLib/CtrlLib.h>
-
-using namespace Upp;
-
 #include "GlobalDef.h"
 #include "AddressTable.h"
 #include "UIUtilities.h"
+#include "CryDialogTemplate.h"
 
 // Defines the mode the dialog should be opened. 4 different ways to edit a record in the addresstable.
 enum ChangeRecordDialogMode
@@ -22,7 +19,7 @@ enum ChangeRecordDialogMode
 };
 
 // The record change dialog class definition.
-class CryChangeRecordDialog sealed : public TopWindow
+class CryChangeRecordDialog sealed : public CryDialogTemplate
 {
 private:
 	ChangeRecordDialogMode mMode;
@@ -42,8 +39,6 @@ private:
 	
 	void ValueModeHexOptionChanged();
 	void BlockSizeSelected();
-	
-	virtual bool Key(dword key, int count);
 	
 	typedef CryChangeRecordDialog CLASSNAME;
 public:

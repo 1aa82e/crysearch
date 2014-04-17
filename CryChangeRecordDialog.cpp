@@ -149,17 +149,6 @@ CryChangeRecordDialog::~CryChangeRecordDialog()
 	
 }
 
-bool CryChangeRecordDialog::Key(dword key, int count)
-{
-	if (key == K_ESCAPE)
-	{
-		this->Close();
-		return true;
-	}
-	
-	return false;
-}
-
 void CryChangeRecordDialog::ValueModeHexOptionChanged()
 {
 	if (this->mValueIsHex)

@@ -76,17 +76,6 @@ CrySearchAboutDialog::CrySearchAboutDialog()
 	this->mUppLinkLabel.WhenLeftUp = callback1(LaunchWebBrowser, (char*)this->uppLink);
 }
 
-bool CrySearchAboutDialog::Key(dword key, int count)
-{
-	if (key == K_ESCAPE)
-	{
-		this->Close();
-		return true;
-	}
-	
-	return false;
-}
-
 void CrySearchAboutDialog::CloseAboutWindow()
 {
 	this->Close();

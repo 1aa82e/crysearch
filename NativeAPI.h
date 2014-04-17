@@ -4,9 +4,7 @@
 #include <windows.h>
 
 // This function is widely used for compatibility fixing, so declaring it here seems logical.
-#ifdef _WIN64
-	extern "C" const BOOL __stdcall IsI386Process(HANDLE procHandle);
-#endif
+extern "C" const BOOL __stdcall IsI386Process(HANDLE procHandle);
 
 // Defines the return value of undocumented API functions.
 

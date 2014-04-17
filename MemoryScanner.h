@@ -225,6 +225,9 @@ private:
 	// Vector that contains the order of worker completions. Needed to ensure next scan accuracy.
 	Vector<WorkerRegionParameterData> mWorkerFileOrder;
 	
+	// Vector that contains the memory pages of the currently opened process. Beware that a First-Scan refreshes the pages entirely.
+	Vector<MemoryRegion> memRegions;
+	
 	// Resultcount variable that contains the result count of the most recent memory scan.
 	int mScanResultCount;
 	

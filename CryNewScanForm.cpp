@@ -149,17 +149,6 @@ CryNewScanForm::CryNewScanForm(bool FirstScan)
 	}
 }
 
-bool CryNewScanForm::Key(dword key, int count)
-{
-	if (key == K_ESCAPE)
-	{
-		this->Close();
-		return true;
-	}
-	
-	return false;
-}
-
 CryNewScanForm::~CryNewScanForm()
 {
 	

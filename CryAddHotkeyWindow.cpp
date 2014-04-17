@@ -1,7 +1,7 @@
 #include "CryAddHotkeyWindow.h"
 
 // The lookup table, allocated once at runtime. This table is used to convert hotkey fields from and to user interface views.
-HotkeyLookupTableEntry HotkeyLookupTable[] = 
+const HotkeyLookupTableEntry HotkeyLookupTable[] = 
 {
 	{ VK_F1, "F1" },
 	{ VK_F2, "F2" },
@@ -27,7 +27,7 @@ HotkeyLookupTableEntry HotkeyLookupTable[] =
 	{ VK_NUMPAD9, "Numpad 9" }
 };
 
-String& HotkeyToString(const unsigned int hotkey)
+const char* HotkeyToString(const unsigned int hotkey)
 {
 	for (unsigned int i = 0; i < sizeof(HotkeyLookupTable) / sizeof(HotkeyLookupTable[0]); i++)
 	{
@@ -94,17 +94,6 @@ CryAddHotkeyWindow::CryAddHotkeyWindow(CrySearchHotKey* entry)
 CryAddHotkeyWindow::~CryAddHotkeyWindow()
 {
 	
-}
-
-bool CryAddHotkeyWindow::Key(dword key, int count)
-{
-	if (key == K_ESCAPE)
-	{
-		this->Close();
-		return true;
-	}
-	
-	return false;
 }
 
 void CryAddHotkeyWindow::DialogOkay()

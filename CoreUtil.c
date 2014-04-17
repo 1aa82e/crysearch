@@ -13,30 +13,28 @@ const BOOL GetIsMultipleOf(const LONG_PTR intVal, const int mulVal)
 	return (intVal % mulVal) == 0;
 }
 
-#ifdef _WIN64
-	// This function is used by CrySearch to identify the architecture of the loaded process, very important and widely used, the whole application depends on it.
-	// Returns true if the target process is running in wow64. When this function is called from an x86 operating system, the return value is undefined.
-	const BOOL __stdcall IsI386Process(HANDLE procHandle)
+// This function is used by CrySearch to identify the architecture of the loaded process, very important and widely used, the whole application depends on it.
+// Returns true if the target process is running in wow64. When this function is called from an x86 operating system, the return value is undefined.
+const BOOL __stdcall IsI386Process(HANDLE procHandle)
+{
+	SYSTEM_INFO sysInfo;
+	BOOL is32;
+	
+	// Get native system info. GetSystemInfo will not return the desired information at all times.
+	GetNativeSystemInfo(&sysInfo);
+	
+	if (sysInfo.wProcessorArchitecture == 0)
 	{
-		SYSTEM_INFO sysInfo;
-		BOOL is32;
-		
-		// Get native system info. GetSystemInfo will not return the desired information at all times.
-		GetNativeSystemInfo(&sysInfo);
-		
-		if (sysInfo.wProcessorArchitecture == 0)
-		{
-			is32 = TRUE;
-		}
-		else
-		{
-			// 64-bit OS is detected as host, find out whether the process is running x64 or wow64.
-			IsWow64Process(procHandle, &is32);
-		}
-		
-		return is32;
+		is32 = TRUE;
 	}
-#endif
+	else
+	{
+		// 64-bit OS is detected as host, find out whether the process is running x64 or wow64.
+		IsWow64Process(procHandle, &is32);
+	}
+	
+	return is32;
+}
 
 // Creates a thread inside the loaded process using the default user-mode WINAPI function(s).
 // 0 = succeeded

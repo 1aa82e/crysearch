@@ -3,7 +3,7 @@
 
 CryThreadInformationBlockWindow::CryThreadInformationBlockWindow(const int threadId)
 {
-	this->Title("Thread Information").SetRect(0, 0, 320, 300);
+	this->Title("Thread Information").Sizeable().SetRect(0, 0, 320, 300);
 	
 	this->mOk <<= THISBACK(DialogClose);
 	
@@ -249,17 +249,6 @@ CryThreadInformationBlockWindow::CryThreadInformationBlockWindow(const int threa
 CryThreadInformationBlockWindow::~CryThreadInformationBlockWindow()
 {
 	
-}
-
-bool CryThreadInformationBlockWindow::Key(dword key, int count)
-{
-	if (key == K_ESCAPE)
-	{
-		this->Close();
-		return true;
-	}
-	
-	return false;
 }
 
 void CryThreadInformationBlockWindow::DialogClose()

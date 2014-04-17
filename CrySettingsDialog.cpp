@@ -2,7 +2,7 @@
 #include "ImlProvider.h"
 #include "CryAddHotkeyWindow.h"
 
-extern String& HotkeyToString(const unsigned int hotkey);
+extern const char* HotkeyToString(const unsigned int hotkey);
 
 // File extension functions.
 extern "C" const BOOL RegisterAddressTableExtension();

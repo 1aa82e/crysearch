@@ -4,9 +4,6 @@
 #include "ImlProvider.h"
 #include "UIUtilities.h"
 
-// Global pointer necessary here to explicitly grant access to row indexes from Display struct.
-CrySearchArrayCtrl* FunctionEntriesArrayCtrl;
-
 // The master index is the index of the selected module in the list of impor entries. Depending on this index, the functions are displayed.
 int MasterIndex;
 
@@ -46,8 +43,6 @@ String GetModuleStringRepresentation(const int index)
 
 CryImportsWindow::CryImportsWindow()
 {
-	FunctionEntriesArrayCtrl = &this->mFunctionsList;
-	
 	this->AddFrame(mToolStrip);
 	this->mToolStrip.Set(THISBACK(ToolStrip));
 	
@@ -197,19 +192,24 @@ void CryImportsWindow::ModuleRedraw()
 void CryImportsWindow::ModuleChanged()
 {
 	MasterIndex = this->mModulesList.GetCursor();
-	this->mFunctionsList.SetVirtualCount(LoadedProcessPEInformation.ImportAddressTable.Get(LoadedProcessPEInformation.ImportAddressTable.GetKey(MasterIndex)).GetCount());
+	const int virtualcount = MasterIndex >= 0 && LoadedProcessPEInformation.ImportAddressTable.GetCount() > 0 ? LoadedProcessPEInformation.ImportAddressTable.Get(LoadedProcessPEInformation.ImportAddressTable.GetKey(MasterIndex)).GetCount() : 0;
+	this->mFunctionsList.SetVirtualCount(virtualcount);
 	
-	// Iterate imported functions for the currently selected module and draw hooked functions in red.
-	const Vector<ImportAddressTableEntry>& list = LoadedProcessPEInformation.ImportAddressTable.Get(LoadedProcessPEInformation.ImportAddressTable.GetKey(MasterIndex));
-	for (int i = 0; i < list.GetCount(); i++)
+	// The import table should contain something.
+	if (virtualcount)
 	{
-		if (list[i].Flag == IAT_FLAG_HOOKED)
+		// Iterate imported functions for the currently selected module and draw hooked functions in red.
+		const Vector<ImportAddressTableEntry>& list = LoadedProcessPEInformation.ImportAddressTable.Get(LoadedProcessPEInformation.ImportAddressTable.GetKey(MasterIndex));
+		for (int i = 0; i < list.GetCount(); i++)
 		{
-			this->mFunctionsList.SetRowDisplay(i, RedDisplayDrawInstance);
-		}
-		else
-		{
-			this->mFunctionsList.SetRowDisplay(i, StdDisplay());
+			if (list[i].Flag == IAT_FLAG_HOOKED)
+			{
+				this->mFunctionsList.SetRowDisplay(i, RedDisplayDrawInstance);
+			}
+			else
+			{
+				this->mFunctionsList.SetRowDisplay(i, StdDisplay());
+			}
 		}
 	}
 }

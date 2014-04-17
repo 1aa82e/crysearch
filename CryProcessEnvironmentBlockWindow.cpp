@@ -4,7 +4,7 @@
 
 CryProcessEnvironmentBlockWindow::CryProcessEnvironmentBlockWindow()
 {
-	this->Title("Process Information").SetRect(0, 0, 350, 300);
+	this->Title("Process Information").Sizeable().SetRect(0, 0, 350, 300);
 	
 	this->mOk <<= THISBACK(DialogClose);
 	this->mResetDebugFlag <<= THISBACK(ResetDebugFlag);
@@ -276,17 +276,6 @@ void CryProcessEnvironmentBlockWindow::Initialize()
 		this->mPEBInfo.Add("Failed to retrieve process environment block");
 	}
 #endif
-}
-
-bool CryProcessEnvironmentBlockWindow::Key(dword key, int count)
-{
-	if (key == K_ESCAPE)
-	{
-		this->Close();
-		return true;
-	}
-	
-	return false;
 }
 
 void CryProcessEnvironmentBlockWindow::ResetDebugFlag()

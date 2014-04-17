@@ -3,7 +3,7 @@
 
 CryDumpModuleSectionWindow::CryDumpModuleSectionWindow(const int modListIndex)
 {
-	this->Title("Dump Section").SetRect(0, 0, 300, 200);
+	this->Title("Dump Section").Sizeable().SetRect(0, 0, 300, 200);
 	
 	this->mDumpButton <<= THISBACK(DumpSelectedSection);
 	this->mCancelButton <<= THISBACK(CancelAndCloseDialog);
@@ -14,6 +14,7 @@ CryDumpModuleSectionWindow::CryDumpModuleSectionWindow(const int modListIndex)
 	
 	*this
 		<< this->mSectionsList.HSizePos(5, 5).VSizePos(5, 35)
+		<< this->mSectionCount.LeftPos(5, 100).BottomPos(5, 25)
 		<< this->mCancelButton.SetLabel("Cancel").RightPos(5, 60).BottomPos(5, 25)
 		<< this->mDumpButton.SetLabel("Dump").RightPos(70, 60).BottomPos(5, 25)
 	;
@@ -48,22 +49,14 @@ CryDumpModuleSectionWindow::CryDumpModuleSectionWindow(const int modListIndex)
 		const Win32PESectionInformation& cur = this->imageSections[i];
 		this->mSectionsList.Add(cur.SectionName, Format("%llX", (__int64)cur.BaseAddress), Format("%llX", (__int64)cur.SectionSize));
 	}
+	
+	// Set the amount of sections in a label.
+	this->mSectionCount.SetLabel(Format("Total %i sections", this->imageSections.GetCount()));
 }
 
 CryDumpModuleSectionWindow::~CryDumpModuleSectionWindow()
 {
 	
-}
-
-bool CryDumpModuleSectionWindow::Key(dword key, int count)
-{
-	if (key == K_ESCAPE)
-	{
-		this->Close();
-		return true;
-	}
-	
-	return false;
 }
 
 void CryDumpModuleSectionWindow::DumpSelectedSection()

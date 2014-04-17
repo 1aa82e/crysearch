@@ -3,18 +3,19 @@
 
 CryHeapWalkDialog::CryHeapWalkDialog()
 {
-	this->Title("Heap Walk").SetRect(0, 0, 500, 200);
+	this->Title("Heap Walk").Sizeable().SetRect(0, 0, 550, 200);
 	
-	this->mHeapList.AddColumn("Virtual address", 25);
-	this->mHeapList.AddColumn("Committed size", 23);
-	this->mHeapList.AddColumn("Allocated size", 22);
-	this->mHeapList.AddColumn("Block count", 20);
-	this->mHeapList.AddColumn("Flags", 10);
+	this->mHeapList.AddColumn("Virtual address", 28);
+	this->mHeapList.AddColumn("Committed size", 22);
+	this->mHeapList.AddColumn("Allocated size", 20);
+	this->mHeapList.AddColumn("Block count", 25);
+	this->mHeapList.AddColumn("Flags", 15);
 	
 	this->mClose <<= THISBACK(CloseDialog);
 	
 	*this
 		<< this->mHeapList.HSizePos(5, 5).VSizePos(5, 35)
+		<< this->mHeapCount.LeftPos(5, 100).BottomPos(5, 25)
 		<< this->mClose.SetLabel("Close").RightPos(5, 60).BottomPos(5, 25)
 	;
 	
@@ -32,22 +33,14 @@ CryHeapWalkDialog::CryHeapWalkDialog()
 	{
 		this->mHeapList.Add("Heap walk failed");
 	}
+	
+	// Set the amount of heaps in a label.
+	this->mHeapCount.SetLabel(Format("Total %i heaps", heaps.GetCount()));
 }
 
 CryHeapWalkDialog::~CryHeapWalkDialog()
 {
 	
-}
-
-bool CryHeapWalkDialog::Key(dword key, int count)
-{
-	if (key == K_ESCAPE)
-	{
-		this->Close();
-		return true;
-	}
-	
-	return false;
 }
 
 void CryHeapWalkDialog::CloseDialog()

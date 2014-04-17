@@ -91,17 +91,6 @@ CryProcessEnumeratorForm::CryProcessEnumeratorForm()
 	this->RefreshProcesses();
 }
 
-bool CryProcessEnumeratorForm::Key(dword key, int count)
-{
-	if (key == K_ESCAPE)
-	{
-		this->Close();
-		return true;
-	}
-	
-	return false;
-}
-
 void CryProcessEnumeratorForm::IdColumnHeaderClicked()
 {
 	this->mProcessList.SetSortColumn(1);

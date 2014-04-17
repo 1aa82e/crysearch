@@ -24,17 +24,6 @@ CryPlaceIATHookWindow::~CryPlaceIATHookWindow()
 	
 }
 
-bool CryPlaceIATHookWindow::Key(dword key, int count)
-{
-	if (key == K_ESCAPE)
-	{
-		this->Close();
-		return true;
-	}
-	
-	return false;
-}
-
 void CryPlaceIATHookWindow::DialogOkay()
 {
 	// Check whether the input is not empty or retarded.

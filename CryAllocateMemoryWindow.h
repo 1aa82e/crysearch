@@ -1,9 +1,7 @@
 #ifndef _CrySearch_CryAllocateMemoryWindow_h_
 #define _CrySearch_CryAllocateMemoryWindow_h_
 
-#include <CtrlLib/CtrlLib.h>
-
-using namespace Upp;
+#include "CryDialogTemplate.h"
 
 // Represents a data package that is needed to pass data from one window to another.
 struct AllocateMemoryDataStruct
@@ -12,7 +10,7 @@ struct AllocateMemoryDataStruct
 	int BlockProtection;
 };
 
-class CryAllocateMemoryWindow sealed : public TopWindow
+class CryAllocateMemoryWindow sealed : public CryDialogTemplate
 {
 private:
 	AllocateMemoryDataStruct* dataStruct;
@@ -26,8 +24,6 @@ private:
 	
 	void OkButton();
 	void CancelButton();
-	
-	virtual bool Key(dword key, int count);
 	
 	typedef CryAllocateMemoryWindow CLASSNAME;
 public:

@@ -1,20 +1,17 @@
 #ifndef _CrySearch_CryAddHotkeyWindow_h_
 #define _CrySearch_CryAddHotkeyWindow_h_
 
-#include <CtrlLib/CtrlLib.h>
-
-using namespace Upp;
-
 #include "GlobalDef.h"
+#include "CryDialogTemplate.h"
 
 // Represents the structure for the lookup table from keycode to string representation.
 struct HotkeyLookupTableEntry
 {
 	int KeyCode;
-	String StringRepresentation;
+	char* StringRepresentation;
 };
 
-class CryAddHotkeyWindow sealed : public TopWindow
+class CryAddHotkeyWindow sealed : public CryDialogTemplate
 {
 private:
 	CrySearchHotKey* mAlterEntry;
@@ -28,8 +25,6 @@ private:
 	
 	void DialogOkay();
 	void DialogCancel();
-	
-	virtual bool Key(dword key, int count);
 	
 	typedef CryAddHotkeyWindow CLASSNAME;
 public:

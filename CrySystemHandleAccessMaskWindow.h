@@ -1,11 +1,9 @@
 #ifndef _CrySearch_CrySystemHandleAccessMaskWindow_h_
 #define _CrySearch_CrySystemHandleAccessMaskWindow_h_
 
-#include <CtrlLib/CtrlLib.h>
+#include "CryDialogTemplate.h"
 
-using namespace Upp;
-
-class CrySystemHandleAccessMaskWindow sealed : public TopWindow
+class CrySystemHandleAccessMaskWindow sealed : public CryDialogTemplate
 {
 private:
 	ArrayCtrl mAccessConstants;

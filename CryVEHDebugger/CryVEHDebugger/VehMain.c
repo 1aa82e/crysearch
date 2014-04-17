@@ -1,15 +1,25 @@
 #include "CryVEHDebug.h"
 
+// ------------------------------------------------------------------------------------------------
+
 HANDLE hCommMapping = NULL;
 CRY_VEH_COMMUNICATION_HEADER* pCommBasePtr = NULL;
 PVOID hExceptionHandler = NULL;
 
+void SetBreakpointHit(CRY_VEH_COMMUNICATION_HEADER* const header, const SIZE_T excAddress, CONTEXT* const pContext)
+{
+	header->BreakpointWasHit = TRUE;
+	header->ExceptionAddress = excAddress;
+	memcpy(&header->ThreadContext, pContext, sizeof(CONTEXT));
+}
+
 // This function is called when an exception occurs in the process where the debugger is loaded.
 LONG __stdcall CryExceptionHandler(PEXCEPTION_POINTERS ExceptionInfo)
 {
-	// For now...
-	MessageBox(NULL, L"LAAWWWWLLL", L"hurr durr", MB_ICONERROR);
+	// Set the breakpoint data in the communication header.
+	SetBreakpointHit(pCommBasePtr, (SIZE_T)ExceptionInfo->ExceptionRecord->ExceptionAddress, ExceptionInfo->ContextRecord);
 
+	// Let the application continue execution.
 	return EXCEPTION_CONTINUE_EXECUTION;
 }
 
@@ -48,20 +58,4 @@ void __stdcall CryDetachVEHDebugger()
 	UnmapViewOfFile(pCommBasePtr);
 	CloseHandle(hCommMapping);
 	RemoveVectoredExceptionHandler(hExceptionHandler);
-}
-
-// Custom entrypoint.
-BOOL __stdcall DllMain(HINSTANCE hInst, DWORD dwReason, LPVOID lpReserved)
-{
-	switch (dwReason)
-	{
-		case DLL_PROCESS_ATTACH:
-			CryAttachVEHDebugger();
-			break;
-		case DLL_PROCESS_DETACH:
-			CryDetachVEHDebugger();
-			break;
-	}
-
-	return TRUE;
 }
