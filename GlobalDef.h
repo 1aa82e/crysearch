@@ -55,27 +55,62 @@ struct IndexBasedValueConvert : public Convert
 	}
 };
 
+// ---------------------------------------------------------------------------------------------
+
+// Type definition for memory reading function.
+typedef const bool (__stdcall* CryReadMemoryRoutineType)(HANDLE handle, LPCVOID addr, LPVOID buffer, SIZE_T size, SIZE_T* outSize);
+typedef const bool (__stdcall* CryWriteMemoryRoutineType)(HANDLE handle, LPVOID addr, LPCVOID buffer, SIZE_T size, SIZE_T* outSize);
+typedef const bool (__stdcall* CryProtectMemoryRoutineType)(HANDLE handle, LPVOID addr, SIZE_T size, ULONG newAccess, PULONG oldAccess);
+
+// CrySearch memory reading routines.
+extern const bool __stdcall CryReadMemoryRoutine32(HANDLE handle, LPCVOID addr, LPVOID buffer, SIZE_T size, SIZE_T* outSize);
+extern const bool __stdcall CryReadMemoryRoutineNt(HANDLE handle, LPCVOID addr, LPVOID buffer, SIZE_T size, SIZE_T* outSize);
+
+// CrySearch memory writing routines.
+extern const bool __stdcall CryWriteMemoryRoutine32(HANDLE handle, LPVOID addr, LPCVOID buffer, SIZE_T size, SIZE_T* outSize);
+extern const bool __stdcall CryWriteMemoryRoutineNt(HANDLE handle, LPVOID addr, LPCVOID buffer, SIZE_T size, SIZE_T* outSize);
+
+// CrySearch memory protection routines.
+extern const bool __stdcall CryProtectMemoryRoutine32(HANDLE handle, LPVOID addr, SIZE_T size, ULONG newAccess, PULONG oldAccess);
+extern const bool __stdcall CryProtectMemoryRoutineNt(HANDLE handle, LPVOID addr, SIZE_T size, ULONG newAccess, PULONG oldAccess);
+
+// ---------------------------------------------------------------------------------------------
+
 // CrySearch uses a few undocumented NT Internals functions. As they are used over different places in the application,
 // a container globally defined keeps track of all of these.
-__declspec(selectany) struct _NtInternalFunctions
+__declspec(selectany) class _CrySearchRoutines
 {
+private:
+	CryReadMemoryRoutineType ReadMemoryRoutine;
+	CryWriteMemoryRoutineType WriteMemoryRoutine;
+	CryProtectMemoryRoutineType ProtectMemoryRoutine;
+public:	
 	NtQuerySystemInformationPrototype NtQuerySystemInformation;
 	NtQueryInformationThreadPrototype NtQueryInformationThread;
 	NtQueryInformationProcessPrototype NtQueryInformationProcess;
 	NtOpenProcessPrototype NtOpenProcess;
 	NtQueryObjectPrototype NtQueryObject;
+	NtReadVirtualMemoryPrototype NtReadVirtualMemory;
+	NtWriteVirtualMemoryPrototype NtWriteVirtualMemory;
+	NtProtectVirtualMemoryPrototype NtProtectVirtualMemory;
 	
 	// Construct all internals functions once for application wide use.
-	_NtInternalFunctions()
-	{
-		HMODULE ntdll = GetModuleHandle("ntdll.dll");
-		this->NtQuerySystemInformation = (NtQuerySystemInformationPrototype)GetProcAddress(ntdll, "NtQuerySystemInformation");
-		this->NtQueryInformationThread = (NtQueryInformationThreadPrototype)GetProcAddress(ntdll, "NtQueryInformationThread");
-		this->NtQueryInformationProcess = (NtQueryInformationProcessPrototype)GetProcAddress(ntdll, "NtQueryInformationProcess");
-		this->NtOpenProcess = (NtOpenProcessPrototype)GetProcAddress(ntdll, "NtOpenProcess");
-		this->NtQueryObject = (NtQueryObjectPrototype)GetProcAddress(ntdll, "NtQueryObject");
-	}
-} NtInternalFunctions;
+	_CrySearchRoutines();
+	
+	// Sets the routines from the settings file.
+	void SetCrySearchReadMemoryRoutine(CryReadMemoryRoutineType read);
+	void SetCrySearchWriteMemoryRoutine(CryWriteMemoryRoutineType write);
+	void SetCrySearchProtectMemoryRoutine(CryProtectMemoryRoutineType protect);
+	
+	// Executes routines.
+	const bool CryReadMemoryRoutine(HANDLE handle, LPCVOID addr, LPVOID buffer, SIZE_T size, SIZE_T* outSize) const;
+	const bool CryWriteMemoryRoutine(HANDLE handle, LPVOID addr, LPCVOID buffer, SIZE_T size, SIZE_T* outSize) const;
+	const bool CryProtectMemoryRoutine(HANDLE handle, LPVOID addr, SIZE_T size, ULONG newAccess, PULONG oldAccess) const;
+	
+} CrySearchRoutines;
+
+// Initializes the routines from the settings file.
+__declspec(noinline) void InitializeRoutines();
 
 // Multiple parts of CrySearch may want to check whether a value is a multiple of another value.
 extern "C" inline const BOOL GetIsMultipleOf(const LONG_PTR intVal, const int mulVal);

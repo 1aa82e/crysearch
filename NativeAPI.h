@@ -1282,4 +1282,9 @@ typedef NTSTATUS (__stdcall* NtQuerySystemInformationPrototype)(SYSTEM_INFORMATI
 typedef NTSTATUS (__stdcall* NtQueryInformationThreadPrototype)(HANDLE ThreadHandle, THREAD_INFORMATION_CLASS ThreadInformationClass, PVOID ThreadInformation, ULONG ThreadInformationLength, PULONG ReturnLength);
 typedef NTSTATUS (__stdcall* NtQueryInformationProcessPrototype)(HANDLE ProcessHandle, PROCESSINFOCLASS ProcessInformationClass, PVOID ProcessInformation, ULONG ProcessInformationLength, PULONG ReturnLength);
 
+// Nt functions for memory operations.
+typedef NTSTATUS (__stdcall* NtReadVirtualMemoryPrototype)(HANDLE hProcess, LPCVOID lpAddress, LPVOID lpBuffer, SIZE_T size, SIZE_T* outSize);
+typedef NTSTATUS (__stdcall* NtWriteVirtualMemoryPrototype)(HANDLE hProcess, LPVOID lpAddress, LPCVOID lpBuffer, SIZE_T size, SIZE_T* outSize);
+typedef NTSTATUS (__stdcall* NtProtectVirtualMemoryPrototype)(HANDLE hProcess, PVOID lpAddress, PULONG NumberOfBytesToProtect, ULONG NewAccessProtection, PULONG OldAccessProtection);
+
 #endif

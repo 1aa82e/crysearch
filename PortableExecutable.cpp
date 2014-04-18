@@ -53,33 +53,33 @@ DWORD Wow64GetProcAddress(HANDLE hProcess, const DWORD moduleBase, const char* f
 	
 	// Read the PE headers into local memory and get the pointer to the export table.
 	Byte* const moduleBuffer = new Byte[0x400];
-	ReadProcessMemory(hProcess, (void*)moduleBase, moduleBuffer, 0x400, NULL);
+	CrySearchRoutines.CryReadMemoryRoutine(hProcess, (void*)moduleBase, moduleBuffer, 0x400, NULL);
 	
 	const IMAGE_DOS_HEADER* const pDOSHeader = (IMAGE_DOS_HEADER*)moduleBuffer;
 	const IMAGE_NT_HEADERS32* const pNTHeader =(IMAGE_NT_HEADERS32*)((BYTE*)pDOSHeader + pDOSHeader->e_lfanew);
 	const IMAGE_OPTIONAL_HEADER32* const pOptionalHeader = (IMAGE_OPTIONAL_HEADER32*)&pNTHeader->OptionalHeader;
 	
 	IMAGE_EXPORT_DIRECTORY exportDir;
-	ReadProcessMemory(hProcess, (void*)(moduleBase + pOptionalHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress), &exportDir, sizeof(IMAGE_EXPORT_DIRECTORY), NULL);
+	CrySearchRoutines.CryReadMemoryRoutine(hProcess, (void*)(moduleBase + pOptionalHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress), &exportDir, sizeof(IMAGE_EXPORT_DIRECTORY), NULL);
 	
 	DWORD* const funcAddresses = new DWORD[exportDir.NumberOfFunctions];
-	ReadProcessMemory(hProcess, (void*)(moduleBase + exportDir.AddressOfFunctions), funcAddresses, (sizeof(DWORD) * exportDir.NumberOfFunctions), NULL);
+	CrySearchRoutines.CryReadMemoryRoutine(hProcess, (void*)(moduleBase + exportDir.AddressOfFunctions), funcAddresses, (sizeof(DWORD) * exportDir.NumberOfFunctions), NULL);
 	
 	// Iterate functions in the export table.
 	for (unsigned int i = 0; i < exportDir.NumberOfFunctions; ++i)
 	{
 		DWORD stringPtr;
-		ReadProcessMemory(hProcess, (void*)(moduleBase + exportDir.AddressOfNames + (i * sizeof(DWORD))), &stringPtr, sizeof(DWORD), NULL);
+		CrySearchRoutines.CryReadMemoryRoutine(hProcess, (void*)(moduleBase + exportDir.AddressOfNames + (i * sizeof(DWORD))), &stringPtr, sizeof(DWORD), NULL);
 
 		char functionName[64];
-		ReadProcessMemory(hProcess, (void*)(moduleBase + stringPtr), functionName, 64, NULL);
+		CrySearchRoutines.CryReadMemoryRoutine(hProcess, (void*)(moduleBase + stringPtr), functionName, 64, NULL);
 		
 		// Compare input function name with currently iterated one.
 		if (strcmp(funcName, functionName) == 0)
 		{
 			WORD nameOrdinal;
-			ReadProcessMemory(hProcess, (void*)(moduleBase + exportDir.AddressOfNameOrdinals + (i * sizeof(WORD))), &nameOrdinal, sizeof(WORD), NULL);
-			ReadProcessMemory(hProcess, (void*)(moduleBase + exportDir.AddressOfFunctions + (sizeof(DWORD) * nameOrdinal)), &pLoadLibraryFunction, sizeof(DWORD), NULL);
+			CrySearchRoutines.CryReadMemoryRoutine(hProcess, (void*)(moduleBase + exportDir.AddressOfNameOrdinals + (i * sizeof(WORD))), &nameOrdinal, sizeof(WORD), NULL);
+			CrySearchRoutines.CryReadMemoryRoutine(hProcess, (void*)(moduleBase + exportDir.AddressOfFunctions + (sizeof(DWORD) * nameOrdinal)), &pLoadLibraryFunction, sizeof(DWORD), NULL);
 			break;
 		}
 	}
@@ -121,16 +121,11 @@ void PortableExecutable::SetBaseAddress(const SIZE_T baseAddress)
 // Returns the PEB base address or NULL if the address was not succesfully retrieved.
 void* PortableExecutable::GetPebAddress() const
 {
-	if (!NtInternalFunctions.NtQueryInformationProcess)
-	{
-		return NULL;
-	}
-	
 #ifdef WIN64
 	if (mMemoryScanner->IsX86Process())
 	{
 		ULONG_PTR PebBaseAddress;
-		if (NtInternalFunctions.NtQueryInformationProcess(this->mProcessHandle, ProcessWow64Information, &PebBaseAddress, sizeof(ULONG_PTR), NULL) == STATUS_SUCCESS)
+		if (CrySearchRoutines.NtQueryInformationProcess(this->mProcessHandle, ProcessWow64Information, &PebBaseAddress, sizeof(ULONG_PTR), NULL) == STATUS_SUCCESS)
 		{
 			return (void*)PebBaseAddress;
 		}
@@ -138,14 +133,14 @@ void* PortableExecutable::GetPebAddress() const
 	else
 	{
 		PROCESS_BASIC_INFORMATION tInfo;
-		if (NtInternalFunctions.NtQueryInformationProcess(this->mProcessHandle, ProcessBasicInformation, &tInfo, sizeof(PROCESS_BASIC_INFORMATION), NULL) == STATUS_SUCCESS)
+		if (CrySearchRoutines.NtQueryInformationProcess(this->mProcessHandle, ProcessBasicInformation, &tInfo, sizeof(PROCESS_BASIC_INFORMATION), NULL) == STATUS_SUCCESS)
 		{
 			return tInfo.PebBaseAddress;
 		}
 	}
 #else
 	PROCESS_BASIC_INFORMATION tInfo;
-	if (NtInternalFunctions.NtQueryInformationProcess(this->mProcessHandle, ProcessBasicInformation, &tInfo, sizeof(PROCESS_BASIC_INFORMATION), NULL) == STATUS_SUCCESS)
+	if (CrySearchRoutines.NtQueryInformationProcess(this->mProcessHandle, ProcessBasicInformation, &tInfo, sizeof(PROCESS_BASIC_INFORMATION), NULL) == STATUS_SUCCESS)
 	{
 		return tInfo.PebBaseAddress;
 	}
@@ -356,7 +351,7 @@ void PortableExecutable::GetDotNetDirectoryInformation(const IMAGE_DATA_DIRECTOR
 	{
 		// Read COR20 header from file.
 		Byte* netDirBuffer = new Byte[netHeader->Size];
-		ReadProcessMemory(mMemoryScanner->GetHandle(), (void*)(this->mBaseAddress + netHeader->VirtualAddress), netDirBuffer, netHeader->Size, NULL);
+		CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), (void*)(this->mBaseAddress + netHeader->VirtualAddress), netDirBuffer, netHeader->Size, NULL);
 
 		// Save version information from COR20 header.
 		IMAGE_DATA_DIRECTORY mdDir;
@@ -368,7 +363,7 @@ void PortableExecutable::GetDotNetDirectoryInformation(const IMAGE_DATA_DIRECTOR
 
 		// Read metadata from header.
 		netDirBuffer = new Byte[mdDir.Size];
-		ReadProcessMemory(mMemoryScanner->GetHandle(), (void*)(this->mBaseAddress + mdDir.VirtualAddress), netDirBuffer, mdDir.Size, NULL);
+		CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), (void*)(this->mBaseAddress + mdDir.VirtualAddress), netDirBuffer, mdDir.Size, NULL);
 		
 		// Dissect metadata. Since its a dynamic structure we cannot compile this into a struct.
 		const DWORD vStrLength = *(DWORD*)(netDirBuffer + 12);
@@ -433,7 +428,7 @@ Byte* PortableExecutable32::ReadModuleFromMemory(const SIZE_T moduleBase, const 
 	Byte* const buffer = new Byte[moduleSize];
 	
 	// Read headers from the input module.
-	ReadProcessMemory(this->mProcessHandle, (void*)moduleBase, buffer, 0x400, NULL);
+	CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)moduleBase, buffer, 0x400, NULL);
 
 	const IMAGE_NT_HEADERS32* const pNTHeader =(IMAGE_NT_HEADERS32*)(buffer + ((IMAGE_DOS_HEADER*)buffer)->e_lfanew);
 	const IMAGE_OPTIONAL_HEADER32* const pOptionalHeader = (IMAGE_OPTIONAL_HEADER32*)&pNTHeader->OptionalHeader;
@@ -451,7 +446,7 @@ Byte* PortableExecutable32::ReadModuleFromMemory(const SIZE_T moduleBase, const 
 		memcpy(buffer + bufPtr, pSecHeader, sizeof(IMAGE_SECTION_HEADER));
 		bufPtr += sizeof(IMAGE_SECTION_HEADER);
 		
-		ReadProcessMemory(this->mProcessHandle, (void*)(pOptionalHeader->ImageBase + pSecHeader->VirtualAddress), buffer + pSecHeader->PointerToRawData, pSecHeader->SizeOfRawData, NULL);
+		CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(pOptionalHeader->ImageBase + pSecHeader->VirtualAddress), buffer + pSecHeader->PointerToRawData, pSecHeader->SizeOfRawData, NULL);
 	}
 	
 	return buffer;
@@ -466,7 +461,7 @@ void PortableExecutable32::GetExecutablePeInformation() const
 	
 	// Read process memory into local buffer in order to load PE headers.
 	Byte* moduleBuffer = new Byte[0x400];
-	ReadProcessMemory(this->mProcessHandle, (void*)this->mBaseAddress, moduleBuffer, 0x400, NULL);
+	CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)this->mBaseAddress, moduleBuffer, 0x400, NULL);
 	
 	// Load PE headers.
 	IMAGE_DOS_HEADER* const pDosHeader = (IMAGE_DOS_HEADER*)moduleBuffer;
@@ -528,7 +523,7 @@ void PortableExecutable32::GetExecutablePeInformation() const
 	
 	// Attempt to load the sections inside the PE file.
 	moduleBuffer = new Byte[sectionSizeBytes];
-	ReadProcessMemory(mMemoryScanner->GetHandle(), firstSectionPtr, moduleBuffer, sectionSizeBytes, NULL);
+	CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), firstSectionPtr, moduleBuffer, sectionSizeBytes, NULL);
 	this->GetImageSectionsList((IMAGE_SECTION_HEADER*)moduleBuffer, sectionCount, LoadedProcessPEInformation.ImageSections);
 	delete[] moduleBuffer;
 }
@@ -588,7 +583,7 @@ SIZE_T PortableExecutable32::GetAddressFromExportTable(const AddrStruct* addr, c
 					}
 						
 					Byte* const dllBuffer = new Byte[0x400];
-			        ReadProcessMemory(this->mProcessHandle, (void*)modBaseAddr->BaseAddress, dllBuffer, 0x400, NULL);
+			        CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)modBaseAddr->BaseAddress, dllBuffer, 0x400, NULL);
 			        
 			        const IMAGE_NT_HEADERS32* const pNTHeader =(IMAGE_NT_HEADERS32*)(dllBuffer + ((IMAGE_DOS_HEADER*)dllBuffer)->e_lfanew);
 					IMAGE_DATA_DIRECTORY dataDir = *(&((IMAGE_OPTIONAL_HEADER32*)&pNTHeader->OptionalHeader)->DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT]);
@@ -596,7 +591,7 @@ SIZE_T PortableExecutable32::GetAddressFromExportTable(const AddrStruct* addr, c
 			        delete[] dllBuffer;
 			            
 			        Byte* const exportDirectoryBuffer = new Byte[dataDir.Size];
-			        ReadProcessMemory(this->mProcessHandle, (void*)(modBaseAddr->BaseAddress + dataDir.VirtualAddress), exportDirectoryBuffer, dataDir.Size, NULL);
+			        CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(modBaseAddr->BaseAddress + dataDir.VirtualAddress), exportDirectoryBuffer, dataDir.Size, NULL);
 						
 					AddrStruct addrStruct;
 			        addrStruct.BaseAddress = (Byte*)modBaseAddr->BaseAddress;
@@ -647,7 +642,7 @@ SIZE_T PortableExecutable32::GetAddressFromExportTable(const AddrStruct* addr, c
 						}
 						
 						Byte* const dllBuffer = new Byte[0x400];
-			            ReadProcessMemory(this->mProcessHandle, (void*)modBaseAddr->BaseAddress, dllBuffer, 0x400, NULL);
+			            CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)modBaseAddr->BaseAddress, dllBuffer, 0x400, NULL);
 			           
 			            const IMAGE_NT_HEADERS32* const pNTHeader =(IMAGE_NT_HEADERS32*)(dllBuffer + ((IMAGE_DOS_HEADER*)dllBuffer)->e_lfanew);
 						IMAGE_DATA_DIRECTORY dataDir = *(&((IMAGE_OPTIONAL_HEADER32*)&pNTHeader->OptionalHeader)->DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT]);
@@ -655,7 +650,7 @@ SIZE_T PortableExecutable32::GetAddressFromExportTable(const AddrStruct* addr, c
 			            delete[] dllBuffer;
 			            
 			            Byte* const exportDirectoryBuffer = new Byte[dataDir.Size];
-			            ReadProcessMemory(this->mProcessHandle, (void*)(modBaseAddr->BaseAddress + dataDir.VirtualAddress), exportDirectoryBuffer, dataDir.Size, NULL);
+			            CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(modBaseAddr->BaseAddress + dataDir.VirtualAddress), exportDirectoryBuffer, dataDir.Size, NULL);
 						
 						AddrStruct addrStruct;
 			            addrStruct.BaseAddress = (Byte*)modBaseAddr->BaseAddress;
@@ -707,7 +702,7 @@ void PortableExecutable32::GetImportAddressTable() const
 {
 	// Read process memory into local buffer in order to load IAT.
 	Byte* const moduleBuffer = new Byte[0x400];
-	ReadProcessMemory(this->mProcessHandle, (void*)this->mBaseAddress, moduleBuffer, 0x400, NULL);
+	CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)this->mBaseAddress, moduleBuffer, 0x400, NULL);
 	
 	const IMAGE_NT_HEADERS32* const pNTHeader =(IMAGE_NT_HEADERS32*)(moduleBuffer + ((IMAGE_DOS_HEADER*)moduleBuffer)->e_lfanew);
 
@@ -722,13 +717,13 @@ void PortableExecutable32::GetImportAddressTable() const
 	
 	unsigned int counter = 0;
 	IMAGE_IMPORT_DESCRIPTOR pDesc;
-	ReadProcessMemory(this->mProcessHandle, (void*)(this->mBaseAddress + pOptionalHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress + (counter * sizeof(IMAGE_IMPORT_DESCRIPTOR))), &pDesc, sizeof(IMAGE_IMPORT_DESCRIPTOR), NULL);
+	CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(this->mBaseAddress + pOptionalHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress + (counter * sizeof(IMAGE_IMPORT_DESCRIPTOR))), &pDesc, sizeof(IMAGE_IMPORT_DESCRIPTOR), NULL);
 
 	while (pDesc.FirstThunk)
 	{
 		// Read DLL name from import descriptor entry.
 		char dllName[48];
-		ReadProcessMemory(this->mProcessHandle, (void*)(pDesc.Name + this->mBaseAddress), dllName, 48, NULL);
+		CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(pDesc.Name + this->mBaseAddress), dllName, 48, NULL);
         
         ImportTableDescriptor descAdd;
 		descAdd.ModuleName = dllName;
@@ -762,7 +757,7 @@ void PortableExecutable32::GetImportAddressTable() const
         if (modBaseAddr)
         {
             Byte* const dllBuffer = new Byte[0x400];
-            ReadProcessMemory(this->mProcessHandle, (void*)modBaseAddr->BaseAddress, dllBuffer, 0x400, NULL);
+            CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)modBaseAddr->BaseAddress, dllBuffer, 0x400, NULL);
            
             const IMAGE_NT_HEADERS32* const pNTHeader =(IMAGE_NT_HEADERS32*)(dllBuffer + ((IMAGE_DOS_HEADER*)dllBuffer)->e_lfanew);
 			IMAGE_DATA_DIRECTORY dataDir = *(&((IMAGE_OPTIONAL_HEADER32*)&pNTHeader->OptionalHeader)->DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT]);
@@ -770,7 +765,7 @@ void PortableExecutable32::GetImportAddressTable() const
             delete[] dllBuffer;
             
             Byte* const exportDirectoryBuffer = new Byte[dataDir.Size];
-            ReadProcessMemory(this->mProcessHandle, (void*)(modBaseAddr->BaseAddress + dataDir.VirtualAddress), exportDirectoryBuffer, dataDir.Size, NULL);
+            CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(modBaseAddr->BaseAddress + dataDir.VirtualAddress), exportDirectoryBuffer, dataDir.Size, NULL);
             
             AddrStruct addrStruct;
             addrStruct.BaseAddress = (Byte*)modBaseAddr->BaseAddress;
@@ -785,7 +780,7 @@ void PortableExecutable32::GetImportAddressTable() const
 			do
 			{
 				// Read current thunk into local memory.
-				ReadProcessMemory(this->mProcessHandle, (void*)(this->mBaseAddress + pDesc.OriginalFirstThunk + count * sizeof(DWORD)), &thunk, sizeof(IMAGE_THUNK_DATA32), NULL);
+				CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(this->mBaseAddress + pDesc.OriginalFirstThunk + count * sizeof(DWORD)), &thunk, sizeof(IMAGE_THUNK_DATA32), NULL);
 
 				ImportAddressTableEntry funcEntry;
 
@@ -804,7 +799,7 @@ void PortableExecutable32::GetImportAddressTable() const
 				{
 					// Read function name from thunk data.
 					char funcName[96];
-					ReadProcessMemory(this->mProcessHandle, (void*)(this->mBaseAddress + thunk.u1.AddressOfData), funcName, 96, NULL);
+					CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(this->mBaseAddress + thunk.u1.AddressOfData), funcName, 96, NULL);
 
 					// Set ordinal value to 0, read function name and WORD sized hint from the first two read bytes sequence.
 					funcEntry.Ordinal = 0;
@@ -835,7 +830,7 @@ void PortableExecutable32::GetImportAddressTable() const
 				
 				// Read function address from thunk data and increment function iteration counter.
 				DWORD funcAddress;
-				ReadProcessMemory(this->mProcessHandle, (void*)(this->mBaseAddress + pDesc.FirstThunk + count++ * sizeof(DWORD)), &funcAddress, sizeof(DWORD), NULL);
+				CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(this->mBaseAddress + pDesc.FirstThunk + count++ * sizeof(DWORD)), &funcAddress, sizeof(DWORD), NULL);
 	
 				if (!funcAddress)
 				{
@@ -863,7 +858,7 @@ void PortableExecutable32::GetImportAddressTable() const
 			delete[] exportDirectoryBuffer;
         }
 
-		ReadProcessMemory(this->mProcessHandle, (void*)(this->mBaseAddress + pOptionalHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress + (++counter * sizeof(IMAGE_IMPORT_DESCRIPTOR))), &pDesc, sizeof(IMAGE_IMPORT_DESCRIPTOR), NULL);
+		CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(this->mBaseAddress + pOptionalHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress + (++counter * sizeof(IMAGE_IMPORT_DESCRIPTOR))), &pDesc, sizeof(IMAGE_IMPORT_DESCRIPTOR), NULL);
 	}
 	
 	// Success, free used buffers and return.
@@ -875,7 +870,7 @@ void PortableExecutable32::GetImportAddressTable() const
 void PortableExecutable32::PlaceIATHook(const char* NameOrdinal, const SIZE_T newAddress, bool IsOrdinal) const
 {
 	Byte* const moduleBuffer = new Byte[LoadedModulesList[0].Length];
-	ReadProcessMemory(this->mProcessHandle, (void*)this->mBaseAddress, moduleBuffer, LoadedModulesList[0].Length, NULL);
+	CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)this->mBaseAddress, moduleBuffer, LoadedModulesList[0].Length, NULL);
 	
 	const IMAGE_NT_HEADERS32* const pNTHeader =(IMAGE_NT_HEADERS32*)(moduleBuffer + ((IMAGE_DOS_HEADER*)moduleBuffer)->e_lfanew);
 	const IMAGE_OPTIONAL_HEADER32* const pOptionalHeader = (IMAGE_OPTIONAL_HEADER32*)&pNTHeader->OptionalHeader;
@@ -903,9 +898,9 @@ void PortableExecutable32::PlaceIATHook(const char* NameOrdinal, const SIZE_T ne
 					if (IMAGE_ORDINAL32(thunk->u1.Ordinal) == (DWORD)NameOrdinal)
 					{
 						DWORD dwOldProtect;
-						VirtualProtectEx(this->mProcessHandle, AddressAddr, sizeof(DWORD), PAGE_READWRITE, &dwOldProtect);
-						WriteProcessMemory(this->mProcessHandle, AddressAddr, &newAddress, sizeof(DWORD), NULL);
-						VirtualProtectEx(this->mProcessHandle, AddressAddr, sizeof(DWORD), dwOldProtect, &dwOldProtect);
+						CrySearchRoutines.CryProtectMemoryRoutine(this->mProcessHandle, AddressAddr, sizeof(DWORD), PAGE_READWRITE, &dwOldProtect);
+						CrySearchRoutines.CryWriteMemoryRoutine(this->mProcessHandle, AddressAddr, &newAddress, sizeof(DWORD), NULL);
+						CrySearchRoutines.CryProtectMemoryRoutine(this->mProcessHandle, AddressAddr, sizeof(DWORD), dwOldProtect, &dwOldProtect);
 						break;
 					}
 				}
@@ -924,9 +919,9 @@ void PortableExecutable32::PlaceIATHook(const char* NameOrdinal, const SIZE_T ne
 				if (strcmp(funcName, NameOrdinal) == 0)
 				{
 					DWORD dwOldProtect;
-					VirtualProtectEx(this->mProcessHandle, AddressAddr, sizeof(DWORD), PAGE_READWRITE, &dwOldProtect);
-					WriteProcessMemory(this->mProcessHandle, AddressAddr, &newAddress, sizeof(DWORD), NULL);
-					VirtualProtectEx(this->mProcessHandle, AddressAddr, sizeof(DWORD), dwOldProtect, &dwOldProtect);
+					CrySearchRoutines.CryProtectMemoryRoutine(this->mProcessHandle, AddressAddr, sizeof(DWORD), PAGE_READWRITE, &dwOldProtect);
+					CrySearchRoutines.CryWriteMemoryRoutine(this->mProcessHandle, AddressAddr, &newAddress, sizeof(DWORD), NULL);
+					CrySearchRoutines.CryProtectMemoryRoutine(this->mProcessHandle, AddressAddr, sizeof(DWORD), dwOldProtect, &dwOldProtect);
 					break;
 				}
 			}
@@ -980,14 +975,14 @@ bool PortableExecutable32::RestorePEHeaderFromFile(const String& fileName, const
 	const IMAGE_OPTIONAL_HEADER32* const pOptionalHeader = (IMAGE_OPTIONAL_HEADER32*)&pNTHeader->OptionalHeader;
 
 	// Write header data into process memory at designated location.
-	VirtualProtectEx(this->mProcessHandle, (void*)module.BaseAddress, pOptionalHeader->SizeOfHeaders, PAGE_READWRITE, &bytesRead);
+	CrySearchRoutines.CryProtectMemoryRoutine(this->mProcessHandle, (void*)module.BaseAddress, pOptionalHeader->SizeOfHeaders, PAGE_READWRITE, &bytesRead);
 
-	if (!WriteProcessMemory(this->mProcessHandle, (void*)module.BaseAddress, fileBuffer, pOptionalHeader->SizeOfHeaders, NULL))
+	if (!CrySearchRoutines.CryWriteMemoryRoutine(this->mProcessHandle, (void*)module.BaseAddress, fileBuffer, pOptionalHeader->SizeOfHeaders, NULL))
 	{
 		result = false;
 	}
 
-	VirtualProtectEx(this->mProcessHandle, (void*)module.BaseAddress, pOptionalHeader->SizeOfHeaders, bytesRead, &bytesRead);
+	CrySearchRoutines.CryProtectMemoryRoutine(this->mProcessHandle, (void*)module.BaseAddress, pOptionalHeader->SizeOfHeaders, bytesRead, &bytesRead);
 	
 	delete[] fileBuffer;
 	CloseHandle(hFile);
@@ -999,7 +994,7 @@ bool PortableExecutable32::RestorePEHeaderFromFile(const String& fileName, const
 // Returns true if the operation succeeded, and false if it did not succeed.
 bool PortableExecutable32::HideModuleFromProcess(const Win32ModuleInformation& module) const
 {
-	if (!NtInternalFunctions.NtQueryInformationProcess)
+	if (!CrySearchRoutines.NtQueryInformationProcess)
 	{
 		return false;
 	}
@@ -1007,10 +1002,10 @@ bool PortableExecutable32::HideModuleFromProcess(const Win32ModuleInformation& m
 	// Retrieve target process information using Nt function.
 #ifdef _WIN64
 	ULONG_PTR pebAddr;
-	if (NtInternalFunctions.NtQueryInformationProcess(this->mProcessHandle, ProcessWow64Information, &pebAddr, sizeof(ULONG_PTR), NULL) != STATUS_SUCCESS)
+	if (CrySearchRoutines.NtQueryInformationProcess(this->mProcessHandle, ProcessWow64Information, &pebAddr, sizeof(ULONG_PTR), NULL) != STATUS_SUCCESS)
 #else
 	PROCESS_BASIC_INFORMATION procBlock;
-	if (NtInternalFunctions.NtQueryInformationProcess(this->mProcessHandle, ProcessBasicInformation, &procBlock, sizeof(PROCESS_BASIC_INFORMATION), NULL) != STATUS_SUCCESS)
+	if (CrySearchRoutines.NtQueryInformationProcess(this->mProcessHandle, ProcessBasicInformation, &procBlock, sizeof(PROCESS_BASIC_INFORMATION), NULL) != STATUS_SUCCESS)
 #endif
 	{
 		return false;
@@ -1021,11 +1016,11 @@ bool PortableExecutable32::HideModuleFromProcess(const Win32ModuleInformation& m
 
 	// Read process environment block and loader data from the process memory.
 #ifdef _WIN64
-	ReadProcessMemory(this->mProcessHandle, (unsigned char*)pebAddr + offsetof(PEB32, LoaderData), &pebPtr, sizeof(DWORD), NULL);
+	CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (unsigned char*)pebAddr + offsetof(PEB32, LoaderData), &pebPtr, sizeof(DWORD), NULL);
 #else
-	ReadProcessMemory(this->mProcessHandle, (unsigned char*)procBlock.PebBaseAddress + offsetof(PEB, LoaderData), &pebPtr, sizeof(DWORD), NULL);
+	CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (unsigned char*)procBlock.PebBaseAddress + offsetof(PEB, LoaderData), &pebPtr, sizeof(DWORD), NULL);
 #endif
-	ReadProcessMemory(this->mProcessHandle, (void*)pebPtr, &peb, sizeof(PEB_LDR_DATA), NULL);
+	CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)pebPtr, &peb, sizeof(PEB_LDR_DATA), NULL);
 
 	LDR_MODULE32 curModule;
 	bool found = false;
@@ -1038,7 +1033,7 @@ bool PortableExecutable32::HideModuleFromProcess(const Win32ModuleInformation& m
     do
     {
 		// Read current linked list module from the process memory.
-        if (ReadProcessMemory(this->mProcessHandle, (void*)(Node -= sizeof(LIST_ENTRY32)), &curModule, sizeof(LDR_MODULE32), NULL))
+        if (CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(Node -= sizeof(LIST_ENTRY32)), &curModule, sizeof(LDR_MODULE32), NULL))
         {
             if (curModule.BaseAddress)
             {
@@ -1047,7 +1042,7 @@ bool PortableExecutable32::HideModuleFromProcess(const Win32ModuleInformation& m
 
 				// A valid module is found, read its base dll name from the process memory.
                 wchar BaseDllName[MAX_PATH];
-                ReadProcessMemory(this->mProcessHandle, (void*)curModule.BaseDllName.Buffer, BaseDllName, curModule.BaseDllName.Length, NULL);
+                CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)curModule.BaseDllName.Buffer, BaseDllName, curModule.BaseDllName.Length, NULL);
                 BaseDllName[curModule.BaseDllName.Length / 2] = 0;
                 PathStripPathW(BaseDllName);
                 
@@ -1061,7 +1056,7 @@ bool PortableExecutable32::HideModuleFromProcess(const Win32ModuleInformation& m
 				        LIST_ENTRY32 current;
 				        
 				        // Read current, previous and next list entry from the process memory.
-						ReadProcessMemory(this->mProcessHandle, (void*)Node, &current, sizeof(LIST_ENTRY32), NULL);
+						CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)Node, &current, sizeof(LIST_ENTRY32), NULL);
 				        
 				        if (GetLastError() > 0)
 				        {
@@ -1073,8 +1068,8 @@ bool PortableExecutable32::HideModuleFromProcess(const Win32ModuleInformation& m
 						const DWORD prevItemAddr = current.Blink;
 						
 						// Overwrite the pointers of the previous and next list entry so the current one is effectively hidden.
-				        WriteProcessMemory(this->mProcessHandle, (void*)current.Blink, &nextItemAddr, sizeof(DWORD), NULL);
-				        WriteProcessMemory(this->mProcessHandle, (unsigned char*)current.Flink + sizeof(DWORD), &prevItemAddr, sizeof(DWORD), NULL);
+				        CrySearchRoutines.CryWriteMemoryRoutine(this->mProcessHandle, (void*)current.Blink, &nextItemAddr, sizeof(DWORD), NULL);
+				        CrySearchRoutines.CryWriteMemoryRoutine(this->mProcessHandle, (unsigned char*)current.Flink + sizeof(DWORD), &prevItemAddr, sizeof(DWORD), NULL);
                     }
 				    
                     break;
@@ -1140,7 +1135,7 @@ bool PortableExecutable32::DumpProcessSection(const String& fileName, const SIZE
 	Byte* const buffer = new Byte[size];
 	
 	// Read section memory from target process and save it into the buffer.
-	if (!ReadProcessMemory(this->mProcessHandle, (void*)(this->mBaseAddress + address), buffer, size, NULL))
+	if (!CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(this->mBaseAddress + address), buffer, size, NULL))
 	{
 		result = false;
 	}
@@ -1180,7 +1175,7 @@ bool PortableExecutable32::LoadLibraryExternal(const String& library) const
 	SIZE_T bytesWritten;
 	
 	// Write path to library into the newly allocated memory.
-	WriteProcessMemory(this->mProcessHandle, lpRemoteAddress, library, library.GetLength(), &bytesWritten);
+	CrySearchRoutines.CryWriteMemoryRoutine(this->mProcessHandle, lpRemoteAddress, library, library.GetLength(), &bytesWritten);
 	
 	if (bytesWritten != library.GetLength())
 	{
@@ -1249,7 +1244,7 @@ void PortableExecutable32::UnloadLibraryExternal(const SIZE_T module) const
 void PortableExecutable32::RestoreExportTableAddressImport(const SIZE_T baseAddress, const char* NameOrdinal, bool IsOrdinal) const
 {
 	Byte* const dllBuffer = new Byte[0x400];
-    ReadProcessMemory(this->mProcessHandle, (void*)baseAddress, dllBuffer, 0x400, NULL);
+    CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)baseAddress, dllBuffer, 0x400, NULL);
    
     const IMAGE_NT_HEADERS32* const pNTHeader =(IMAGE_NT_HEADERS32*)(dllBuffer + ((IMAGE_DOS_HEADER*)dllBuffer)->e_lfanew);
 	IMAGE_DATA_DIRECTORY dataDir = *(&((IMAGE_OPTIONAL_HEADER32*)&pNTHeader->OptionalHeader)->DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT]);
@@ -1257,7 +1252,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const SIZE_T baseAddr
     delete[] dllBuffer;
     
     Byte* const exportDirectoryBuffer = new Byte[dataDir.Size];
-    ReadProcessMemory(this->mProcessHandle, (void*)(baseAddress + dataDir.VirtualAddress), exportDirectoryBuffer, dataDir.Size, NULL);
+    CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(baseAddress + dataDir.VirtualAddress), exportDirectoryBuffer, dataDir.Size, NULL);
     
     AddrStruct addrStruct;
     addrStruct.BaseAddress = (Byte*)baseAddress;
@@ -1288,7 +1283,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const SIZE_T baseAddr
 		Byte* const buffer = new Byte[moduleSize];
 		
 		// Read headers
-		ReadProcessMemory(this->mProcessHandle, (void*)moduleBase, buffer, 0x400, NULL);
+		CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)moduleBase, buffer, 0x400, NULL);
 	
 		const IMAGE_NT_HEADERS* const pNTHeader =(IMAGE_NT_HEADERS*)(buffer + ((IMAGE_DOS_HEADER*)buffer)->e_lfanew);
 		const IMAGE_OPTIONAL_HEADER* const pOptionalHeader = (IMAGE_OPTIONAL_HEADER*)&pNTHeader->OptionalHeader;
@@ -1306,7 +1301,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const SIZE_T baseAddr
 			memcpy(buffer + bufPtr, pSecHeader, sizeof(IMAGE_SECTION_HEADER));
 			bufPtr += sizeof(IMAGE_SECTION_HEADER);
 			
-			ReadProcessMemory(this->mProcessHandle, (void*)(pOptionalHeader->ImageBase + pSecHeader->VirtualAddress), buffer + pSecHeader->PointerToRawData, pSecHeader->SizeOfRawData, NULL);
+			CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(pOptionalHeader->ImageBase + pSecHeader->VirtualAddress), buffer + pSecHeader->PointerToRawData, pSecHeader->SizeOfRawData, NULL);
 		}
 		
 		return buffer;
@@ -1321,7 +1316,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const SIZE_T baseAddr
 	
 		// Read process memory into local buffer in order to load PE headers.
 		Byte* moduleBuffer = new Byte[0x400];
-		ReadProcessMemory(this->mProcessHandle, (void*)this->mBaseAddress, moduleBuffer, 0x400, NULL);
+		CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)this->mBaseAddress, moduleBuffer, 0x400, NULL);
 		
 		// Load PE headers.
 		const IMAGE_NT_HEADERS64* const pNTHeader =(IMAGE_NT_HEADERS64*)(moduleBuffer + ((IMAGE_DOS_HEADER*)moduleBuffer)->e_lfanew);
@@ -1374,7 +1369,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const SIZE_T baseAddr
 		delete[] moduleBuffer;
 	
 		moduleBuffer = new Byte[sectionSizeBytes];
-		ReadProcessMemory(mMemoryScanner->GetHandle(), firstSectionPtr, moduleBuffer, sectionSizeBytes, NULL);
+		CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), firstSectionPtr, moduleBuffer, sectionSizeBytes, NULL);
 		this->GetImageSectionsList((IMAGE_SECTION_HEADER*)moduleBuffer, sectionCount, LoadedProcessPEInformation.ImageSections);
 		delete[] moduleBuffer;
 	}
@@ -1433,7 +1428,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const SIZE_T baseAddr
 						}
 	
 						Byte* const dllBuffer = new Byte[0x400];
-				        ReadProcessMemory(this->mProcessHandle, (void*)modBaseAddr->BaseAddress, dllBuffer, 0x400, NULL);
+				        CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)modBaseAddr->BaseAddress, dllBuffer, 0x400, NULL);
 				           
 				        const IMAGE_NT_HEADERS64* pNTHeader =(IMAGE_NT_HEADERS64*)(dllBuffer + ((IMAGE_DOS_HEADER*)dllBuffer)->e_lfanew);
 						IMAGE_DATA_DIRECTORY dataDir = *(&((IMAGE_OPTIONAL_HEADER64*)&pNTHeader->OptionalHeader)->DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT]);
@@ -1441,7 +1436,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const SIZE_T baseAddr
 				        delete[] dllBuffer;
 				            
 				        Byte* const exportDirectoryBuffer = new Byte[dataDir.Size];
-				        ReadProcessMemory(this->mProcessHandle, (void*)(modBaseAddr->BaseAddress + dataDir.VirtualAddress), exportDirectoryBuffer, dataDir.Size, NULL);
+				        CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(modBaseAddr->BaseAddress + dataDir.VirtualAddress), exportDirectoryBuffer, dataDir.Size, NULL);
 						
 						AddrStruct addrStruct;
 				        addrStruct.BaseAddress = (Byte*)modBaseAddr->BaseAddress;
@@ -1492,7 +1487,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const SIZE_T baseAddr
 							}
 
 							Byte* const dllBuffer = new Byte[0x400];
-				            ReadProcessMemory(this->mProcessHandle, (void*)modBaseAddr->BaseAddress, dllBuffer, 0x400, NULL);
+				            CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)modBaseAddr->BaseAddress, dllBuffer, 0x400, NULL);
 				           
 				            const IMAGE_NT_HEADERS64* const pNTHeader =(IMAGE_NT_HEADERS64*)(dllBuffer + ((IMAGE_DOS_HEADER*)dllBuffer)->e_lfanew);
 							IMAGE_DATA_DIRECTORY dataDir = *(&((IMAGE_OPTIONAL_HEADER64*)&pNTHeader->OptionalHeader)->DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT]);
@@ -1500,7 +1495,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const SIZE_T baseAddr
 				            delete[] dllBuffer;
 				            
 				            Byte* const exportDirectoryBuffer = new Byte[dataDir.Size];
-				            ReadProcessMemory(this->mProcessHandle, (void*)(modBaseAddr->BaseAddress + dataDir.VirtualAddress), exportDirectoryBuffer, dataDir.Size, NULL);
+				            CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(modBaseAddr->BaseAddress + dataDir.VirtualAddress), exportDirectoryBuffer, dataDir.Size, NULL);
 							
 							AddrStruct addrStruct;
 				            addrStruct.BaseAddress = (Byte*)modBaseAddr->BaseAddress;
@@ -1552,7 +1547,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const SIZE_T baseAddr
 	{
 		// Read process memory into local buffer in order to load IAT.
 		Byte* const moduleBuffer = new Byte[0x400];
-		ReadProcessMemory(this->mProcessHandle, (void*)this->mBaseAddress, moduleBuffer, 0x400, NULL);
+		CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)this->mBaseAddress, moduleBuffer, 0x400, NULL);
 		
 		const IMAGE_NT_HEADERS64* const pNTHeader = (IMAGE_NT_HEADERS*)((BYTE*)moduleBuffer + ((IMAGE_DOS_HEADER*)moduleBuffer)->e_lfanew);
 		
@@ -1567,13 +1562,13 @@ void PortableExecutable32::RestoreExportTableAddressImport(const SIZE_T baseAddr
 		
 		unsigned int counter = 0;
 		IMAGE_IMPORT_DESCRIPTOR pDesc;
-		ReadProcessMemory(this->mProcessHandle, (void*)(this->mBaseAddress + pOptionalHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress + (counter * sizeof(IMAGE_IMPORT_DESCRIPTOR))), &pDesc, sizeof(IMAGE_IMPORT_DESCRIPTOR), NULL);
+		CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(this->mBaseAddress + pOptionalHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress + (counter * sizeof(IMAGE_IMPORT_DESCRIPTOR))), &pDesc, sizeof(IMAGE_IMPORT_DESCRIPTOR), NULL);
 		
 		while (pDesc.FirstThunk)
 		{
 			// Read DLL name from import descriptor entry.
 			char dllName[48];
-			ReadProcessMemory(this->mProcessHandle, (void*)(pDesc.Name + this->mBaseAddress), dllName, 48, NULL);
+			CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(pDesc.Name + this->mBaseAddress), dllName, 48, NULL);
 	        
 			ImportTableDescriptor descAdd;
 			descAdd.ModuleName = dllName;
@@ -1607,7 +1602,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const SIZE_T baseAddr
 			if (modBaseAddr)
 			{
 	            Byte* const dllBuffer = new Byte[0x400];
-	            ReadProcessMemory(this->mProcessHandle, (void*)modBaseAddr->BaseAddress, dllBuffer, 0x400, NULL);
+	            CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)modBaseAddr->BaseAddress, dllBuffer, 0x400, NULL);
 	           
 	            const IMAGE_NT_HEADERS64* pNTHeader =(IMAGE_NT_HEADERS64*)(dllBuffer + ((IMAGE_DOS_HEADER*)dllBuffer)->e_lfanew);
 				IMAGE_DATA_DIRECTORY dataDir = *(&((IMAGE_OPTIONAL_HEADER64*)&pNTHeader->OptionalHeader)->DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT]);
@@ -1615,7 +1610,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const SIZE_T baseAddr
 	            delete[] dllBuffer;
 	            
 	            Byte* exportDirectoryBuffer = new Byte[dataDir.Size];
-	            ReadProcessMemory(this->mProcessHandle, (void*)(modBaseAddr->BaseAddress + dataDir.VirtualAddress), exportDirectoryBuffer, dataDir.Size, NULL);
+	            CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(modBaseAddr->BaseAddress + dataDir.VirtualAddress), exportDirectoryBuffer, dataDir.Size, NULL);
 	            
 	            AddrStruct addrStruct;
 	            addrStruct.BaseAddress = (Byte*)modBaseAddr->BaseAddress;
@@ -1629,7 +1624,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const SIZE_T baseAddr
 	        
 				do
 				{
-					ReadProcessMemory(this->mProcessHandle, (void*)(this->mBaseAddress + pDesc.OriginalFirstThunk + count * sizeof(IMAGE_THUNK_DATA)), &thunk, sizeof(IMAGE_THUNK_DATA), NULL);
+					CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(this->mBaseAddress + pDesc.OriginalFirstThunk + count * sizeof(IMAGE_THUNK_DATA)), &thunk, sizeof(IMAGE_THUNK_DATA), NULL);
 				
 					ImportAddressTableEntry funcEntry;
 					
@@ -1647,7 +1642,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const SIZE_T baseAddr
 					else
 					{
 						char funcName[96];
-						ReadProcessMemory(this->mProcessHandle, (void*)(this->mBaseAddress + thunk.u1.AddressOfData), funcName, 96, NULL);
+						CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(this->mBaseAddress + thunk.u1.AddressOfData), funcName, 96, NULL);
 					
 						// Set ordinal value to 0, read function name and WORD sized hint from the first two read bytes sequence.
 						funcEntry.Ordinal = 0;
@@ -1678,7 +1673,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const SIZE_T baseAddr
 					
 					// Read function address from thunk data and increment function iteration counter.
 					SIZE_T funcAddress;
-					ReadProcessMemory(this->mProcessHandle, (void*)(this->mBaseAddress + pDesc.FirstThunk + count++ * sizeof(SIZE_T)), &funcAddress, sizeof(SIZE_T), NULL);
+					CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(this->mBaseAddress + pDesc.FirstThunk + count++ * sizeof(SIZE_T)), &funcAddress, sizeof(SIZE_T), NULL);
 	
 					if (!funcAddress)
 					{
@@ -1706,7 +1701,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const SIZE_T baseAddr
 				delete[] exportDirectoryBuffer;
 			}
 			
-			ReadProcessMemory(this->mProcessHandle, (void*)(this->mBaseAddress + pOptionalHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress + (++counter * sizeof(IMAGE_IMPORT_DESCRIPTOR))), &pDesc, sizeof(IMAGE_IMPORT_DESCRIPTOR), NULL);
+			CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(this->mBaseAddress + pOptionalHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress + (++counter * sizeof(IMAGE_IMPORT_DESCRIPTOR))), &pDesc, sizeof(IMAGE_IMPORT_DESCRIPTOR), NULL);
 		}
 		
 		// Success, free used buffers and return.
@@ -1718,7 +1713,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const SIZE_T baseAddr
 	void PortableExecutable64::PlaceIATHook(const char* NameOrdinal, const SIZE_T newAddress, bool IsOrdinal) const
 	{
 		Byte* const moduleBuffer = new Byte[LoadedModulesList[0].Length];
-		ReadProcessMemory(this->mProcessHandle, (void*)this->mBaseAddress, moduleBuffer, LoadedModulesList[0].Length, NULL);
+		CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)this->mBaseAddress, moduleBuffer, LoadedModulesList[0].Length, NULL);
 		
 		const IMAGE_NT_HEADERS* const pNTHeader =(IMAGE_NT_HEADERS*)(moduleBuffer + ((IMAGE_DOS_HEADER*)moduleBuffer)->e_lfanew);
 		const IMAGE_IMPORT_DESCRIPTOR* pDesc = (IMAGE_IMPORT_DESCRIPTOR*)(moduleBuffer + ((IMAGE_OPTIONAL_HEADER*)&pNTHeader->OptionalHeader)->DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress);
@@ -1748,9 +1743,9 @@ void PortableExecutable32::RestoreExportTableAddressImport(const SIZE_T baseAddr
 						if (IMAGE_ORDINAL64(thunk->u1.Ordinal) == (SIZE_T)NameOrdinal)
 						{
 							DWORD dwOldProtect;
-							VirtualProtectEx(this->mProcessHandle, AddressAddr, sizeof(IMAGE_THUNK_DATA), PAGE_READWRITE, &dwOldProtect);
-							WriteProcessMemory(this->mProcessHandle, AddressAddr, &newAddress, sizeof(IMAGE_THUNK_DATA), NULL);
-							VirtualProtectEx(this->mProcessHandle, AddressAddr, sizeof(IMAGE_THUNK_DATA), dwOldProtect, &dwOldProtect);
+							CrySearchRoutines.CryProtectMemoryRoutine(this->mProcessHandle, AddressAddr, sizeof(IMAGE_THUNK_DATA), PAGE_READWRITE, &dwOldProtect);
+							CrySearchRoutines.CryWriteMemoryRoutine(this->mProcessHandle, AddressAddr, &newAddress, sizeof(IMAGE_THUNK_DATA), NULL);
+							CrySearchRoutines.CryProtectMemoryRoutine(this->mProcessHandle, AddressAddr, sizeof(IMAGE_THUNK_DATA), dwOldProtect, &dwOldProtect);
 							break;
 						}
 					}
@@ -1770,9 +1765,9 @@ void PortableExecutable32::RestoreExportTableAddressImport(const SIZE_T baseAddr
 					if (strcmp(funcName, NameOrdinal) == 0)
 					{
 						DWORD dwOldProtect;
-						VirtualProtectEx(this->mProcessHandle, AddressAddr, sizeof(IMAGE_THUNK_DATA), PAGE_READWRITE, &dwOldProtect);
-						WriteProcessMemory(this->mProcessHandle, AddressAddr, &newAddress, sizeof(IMAGE_THUNK_DATA), NULL);
-						VirtualProtectEx(this->mProcessHandle, AddressAddr, sizeof(IMAGE_THUNK_DATA), dwOldProtect, &dwOldProtect);
+						CrySearchRoutines.CryProtectMemoryRoutine(this->mProcessHandle, AddressAddr, sizeof(IMAGE_THUNK_DATA), PAGE_READWRITE, &dwOldProtect);
+						CrySearchRoutines.CryWriteMemoryRoutine(this->mProcessHandle, AddressAddr, &newAddress, sizeof(IMAGE_THUNK_DATA), NULL);
+						CrySearchRoutines.CryProtectMemoryRoutine(this->mProcessHandle, AddressAddr, sizeof(IMAGE_THUNK_DATA), dwOldProtect, &dwOldProtect);
 						break;
 					}
 				}
@@ -1826,14 +1821,14 @@ void PortableExecutable32::RestoreExportTableAddressImport(const SIZE_T baseAddr
 		const IMAGE_OPTIONAL_HEADER* const pOptionalHeader = (IMAGE_OPTIONAL_HEADER*)&pNTHeader->OptionalHeader;
 
 		// Write header data into process memory at designated location.
-		VirtualProtectEx(this->mProcessHandle, (void*)module.BaseAddress, pOptionalHeader->SizeOfHeaders, PAGE_READWRITE, &bytesRead);
+		CrySearchRoutines.CryProtectMemoryRoutine(this->mProcessHandle, (void*)module.BaseAddress, pOptionalHeader->SizeOfHeaders, PAGE_READWRITE, &bytesRead);
 	
-		if (!WriteProcessMemory(this->mProcessHandle, (void*)module.BaseAddress, fileBuffer, pOptionalHeader->SizeOfHeaders, NULL))
+		if (!CrySearchRoutines.CryWriteMemoryRoutine(this->mProcessHandle, (void*)module.BaseAddress, fileBuffer, pOptionalHeader->SizeOfHeaders, NULL))
 		{
 			result = false;
 		}
 	
-		VirtualProtectEx(this->mProcessHandle, (void*)module.BaseAddress, pOptionalHeader->SizeOfHeaders, bytesRead, &bytesRead);
+		CrySearchRoutines.CryProtectMemoryRoutine(this->mProcessHandle, (void*)module.BaseAddress, pOptionalHeader->SizeOfHeaders, bytesRead, &bytesRead);
 		
 		delete[] fileBuffer;
 		CloseHandle(hFile);
@@ -1845,14 +1840,14 @@ void PortableExecutable32::RestoreExportTableAddressImport(const SIZE_T baseAddr
 	// Returns true if the operation succeeded, and false if it did not succeed.
 	bool PortableExecutable64::HideModuleFromProcess(const Win32ModuleInformation& module) const
 	{
-		if (!NtInternalFunctions.NtQueryInformationProcess)
+		if (!CrySearchRoutines.NtQueryInformationProcess)
 		{
 			return false;
 		}
 		
 		// Retrieve target process information using Nt function.
 		PROCESS_BASIC_INFORMATION procBlock;
-		if (NtInternalFunctions.NtQueryInformationProcess(this->mProcessHandle, ProcessBasicInformation, &procBlock, sizeof(procBlock), NULL) != STATUS_SUCCESS)
+		if (CrySearchRoutines.NtQueryInformationProcess(this->mProcessHandle, ProcessBasicInformation, &procBlock, sizeof(procBlock), NULL) != STATUS_SUCCESS)
 		{
 			return false;
 		}
@@ -1861,8 +1856,8 @@ void PortableExecutable32::RestoreExportTableAddressImport(const SIZE_T baseAddr
 		PPEB_LDR_DATA pebPtr;
 	
 		// Read process environment block and loader data from the process memory.
-		ReadProcessMemory(this->mProcessHandle, (unsigned char*)procBlock.PebBaseAddress + offsetof(PEB, LoaderData), &pebPtr, sizeof(PPEB_LDR_DATA), NULL);
-		ReadProcessMemory(this->mProcessHandle, pebPtr, &peb, sizeof(PEB_LDR_DATA), NULL);
+		CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (unsigned char*)procBlock.PebBaseAddress + offsetof(PEB, LoaderData), &pebPtr, sizeof(PPEB_LDR_DATA), NULL);
+		CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, pebPtr, &peb, sizeof(PEB_LDR_DATA), NULL);
 	
 		LDR_MODULE curModule;
 		bool found = false;
@@ -1875,7 +1870,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const SIZE_T baseAddr
 	    do
 	    {
 			// Read current linked list module from the process memory.
-	        if (ReadProcessMemory(this->mProcessHandle, --Node, &curModule, sizeof(LDR_MODULE), NULL))
+	        if (CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, --Node, &curModule, sizeof(LDR_MODULE), NULL))
 	        {
 	            if (curModule.BaseAddress)
 	            {
@@ -1884,7 +1879,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const SIZE_T baseAddr
 	
 					// A valid module is found, read its base dll name from the process memory.
 	                wchar BaseDllName[MAX_PATH];
-	                ReadProcessMemory(this->mProcessHandle, curModule.BaseDllName.Buffer, BaseDllName, curModule.BaseDllName.Length, NULL);
+	                CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, curModule.BaseDllName.Buffer, BaseDllName, curModule.BaseDllName.Length, NULL);
 	                BaseDllName[curModule.BaseDllName.Length / 2] = 0;
 	                PathStripPathW(BaseDllName);
 	                
@@ -1898,7 +1893,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const SIZE_T baseAddr
 					        LIST_ENTRY current;
 					        
 					        // Read current, previous and next list entry from the process memory.
-							ReadProcessMemory(this->mProcessHandle, Node, &current, sizeof(LIST_ENTRY), NULL);
+							CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, Node, &current, sizeof(LIST_ENTRY), NULL);
 					        
 					        if (GetLastError() > 0)
 					        {
@@ -1910,8 +1905,8 @@ void PortableExecutable32::RestoreExportTableAddressImport(const SIZE_T baseAddr
 							const unsigned __int64 prevItemAddr = (unsigned __int64)current.Blink;
 							
 							// Overwrite the pointers of the previous and next list entry so the current one is effectively hidden.
-					        WriteProcessMemory(this->mProcessHandle, current.Blink, &nextItemAddr, sizeof(LIST_ENTRY*), NULL);
-					        WriteProcessMemory(this->mProcessHandle, (unsigned char*)current.Flink + sizeof(LIST_ENTRY*), &prevItemAddr, sizeof(LIST_ENTRY*), NULL);
+					        CrySearchRoutines.CryWriteMemoryRoutine(this->mProcessHandle, current.Blink, &nextItemAddr, sizeof(LIST_ENTRY*), NULL);
+					        CrySearchRoutines.CryWriteMemoryRoutine(this->mProcessHandle, (unsigned char*)current.Flink + sizeof(LIST_ENTRY*), &prevItemAddr, sizeof(LIST_ENTRY*), NULL);
 	                    }
 					    
 	                    break;
@@ -1972,7 +1967,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const SIZE_T baseAddr
 		bool result = true;
 		Byte* const buffer = new Byte[size];
 		
-		if (!ReadProcessMemory(this->mProcessHandle, (void*)(this->mBaseAddress + address), buffer, size, NULL))
+		if (!CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(this->mBaseAddress + address), buffer, size, NULL))
 		{
 			result = false;
 		}
@@ -2008,7 +2003,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const SIZE_T baseAddr
 		SIZE_T bytesWritten;
 		
 		// Write path to library into the newly allocated memory.
-		WriteProcessMemory(this->mProcessHandle, lpRemoteAddress, library, library.GetLength(), &bytesWritten);
+		CrySearchRoutines.CryWriteMemoryRoutine(this->mProcessHandle, lpRemoteAddress, library, library.GetLength(), &bytesWritten);
 		
 		if (bytesWritten != library.GetLength())
 		{
@@ -2049,7 +2044,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const SIZE_T baseAddr
 	void PortableExecutable64::RestoreExportTableAddressImport(const SIZE_T baseAddress, const char* NameOrdinal, bool IsOrdinal) const
 	{
 		Byte* const dllBuffer = new Byte[0x400];
-	    ReadProcessMemory(this->mProcessHandle, (void*)baseAddress, dllBuffer, 0x400, NULL);
+	    CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)baseAddress, dllBuffer, 0x400, NULL);
 	   
 	    const IMAGE_NT_HEADERS64* const pNTHeader =(IMAGE_NT_HEADERS64*)(dllBuffer + ((IMAGE_DOS_HEADER*)dllBuffer)->e_lfanew);
 		IMAGE_DATA_DIRECTORY dataDir = *(&((IMAGE_OPTIONAL_HEADER64*)&pNTHeader->OptionalHeader)->DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT]);
@@ -2057,7 +2052,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const SIZE_T baseAddr
 	    delete[] dllBuffer;
 	    
 	    Byte* const exportDirectoryBuffer = new Byte[dataDir.Size];
-	    ReadProcessMemory(this->mProcessHandle, (void*)(baseAddress + dataDir.VirtualAddress), exportDirectoryBuffer, dataDir.Size, NULL);
+	    CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(baseAddress + dataDir.VirtualAddress), exportDirectoryBuffer, dataDir.Size, NULL);
 	    
 	    AddrStruct addrStruct;
 	    addrStruct.BaseAddress = (Byte*)baseAddress;

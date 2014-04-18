@@ -63,9 +63,15 @@ CrySearchSettingsDialog::CrySearchSettingsDialog()
 		<< this->mAddressTableUpdaterIntervalBox.SetLabel("Address table updater").HSizePos(5, 5).TopPos(0, 45)
 		<< this->mAddressTableUpdaterIntervalDescription.SetLabel("Update Interval:").HSizePos(10, 120).TopPos(18, 20)
 		<< this->mAddressTableUpdaterIntervalEditField.HSizePos(150, 10).TopPos(18, 20)
-		<< this->mRoutinesBox.SetLabel("Routines").HSizePos(5, 5).TopPos(50, 45)
+		<< this->mRoutinesBox.SetLabel("Routines").HSizePos(5, 5).VSizePos(50, 30)
 		<< this->mOpenProcRoutineSelectorLabel.SetLabel("Opening a process:").HSizePos(10, 90).TopPos(68, 20)
 		<< this->mOpenProcRoutineSelector.Add("OpenProcess (Default)").Add("NtOpenProcess").HSizePos(150, 10).TopPos(68, 20)
+		<< this->mReadMemoryProcRoutineSelectorLabel.SetLabel("Reading memory:").HSizePos(10, 90).TopPos(95, 20)
+		<< this->mReadMemoryProcRoutineSelector.Add("ReadProcessMemory (Default)").Add("NtReadVirtualMemory").HSizePos(150, 10).TopPos(95, 20)
+		<< this->mWriteMemoryProcRoutineSelectorLabel.SetLabel("Writing memory:").HSizePos(10, 90).TopPos(120, 20)
+		<< this->mWriteMemoryProcRoutineSelector.Add("WriteProcessMemory (Default)").Add("NtWriteVirtualMemory").HSizePos(150, 10).TopPos(120, 20)
+		<< this->mProtectMemoryProcRoutineSelectorLabel.SetLabel("Protecting memory:").HSizePos(10, 90).TopPos(145, 20)
+		<< this->mProtectMemoryProcRoutineSelector.Add("VirtualProtectEx (Default)").Add("NtProtectVirtualMemory").HSizePos(150, 10).TopPos(145, 20)
 		<< this->mRegisterFileExtensionWithCrySearch.SetLabel("Associate address table files with CrySearch.").HSizePos(5, 5).BottomPos(5, 20)
 	;
 	
@@ -113,6 +119,9 @@ void CrySearchSettingsDialog::LoadSettings()
 	this->memMapped = GlobalSettingsInstance.GetScanMemMapped();
 	this->scanningThreadPriority.SetIndex(GlobalSettingsInstance.GetScanThreadPriority());
 	this->mOpenProcRoutineSelector.SetIndex(GlobalSettingsInstance.GetOpenProcessRoutine());
+	this->mReadMemoryProcRoutineSelector.SetIndex(GlobalSettingsInstance.GetReadMemoryRoutine());
+	this->mWriteMemoryProcRoutineSelector.SetIndex(GlobalSettingsInstance.GetWriteMemoryRoutine());
+	this->mProtectMemoryProcRoutineSelector.SetIndex(GlobalSettingsInstance.GetProtectMemoryRoutine());
 	this->mAddressTableUpdaterIntervalEditField.SetText(IntStr(GlobalSettingsInstance.GetAddressTableUpdateInterval()));
 	this->mStackSnapshotLimitEdit.SetText(IntStr(GlobalSettingsInstance.GetStackSnapshotLimit()));
 	this->dbgAttemptHidePeb = GlobalSettingsInstance.GetAttemptHideDebuggerFromPeb();
@@ -142,10 +151,16 @@ void CrySearchSettingsDialog::SaveSettings()
 	GlobalSettingsInstance.SetScanMemImage(this->memImage);
 	GlobalSettingsInstance.SetScanMemMapped(this->memMapped);
 	GlobalSettingsInstance.SetScanThreadPriority(this->scanningThreadPriority.GetIndex());
-	GlobalSettingsInstance.SetOpenProcessRoutine(this->mOpenProcRoutineSelector.GetIndex());	
+	GlobalSettingsInstance.SetOpenProcessRoutine(this->mOpenProcRoutineSelector.GetIndex());
+	GlobalSettingsInstance.SetReadMemoryRoutine(this->mReadMemoryProcRoutineSelector.GetIndex());
+	GlobalSettingsInstance.SetWriteMemoryRoutine(this->mWriteMemoryProcRoutineSelector.GetIndex());	
+	GlobalSettingsInstance.SetProtectMemoryRoutine(this->mProtectMemoryProcRoutineSelector.GetIndex());
 	GlobalSettingsInstance.SetAttemptHideDebuggerFromPeb(this->dbgAttemptHidePeb);
 	GlobalSettingsInstance.SetEnableHotkeys(this->mHotkeysOption);
 	GlobalSettingsInstance.SetInvadeProcess(this->dbgInvadeProcess);
+	
+	// As a special case, update the search routine in this part of the program.
+	InitializeRoutines();
 	
 	// Attempt registering the CrySearch address table file extension with the currently started architecture of CrySearch.
 	if (this->mRegisterFileExtensionWithCrySearch && !this->mStartCheckedExtensionState && !RegisterAddressTableExtension())

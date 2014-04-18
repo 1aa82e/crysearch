@@ -5,6 +5,7 @@ evolution536, www.unknowncheats.me
 v1.10
 	- Added crash reporting system. When CrySearch crashes a crash report is generated for support;
 	- Changed data windows for module sections, heaps and handles to be sizeable and added count label;
+	- Added customizable routines in Settings window for ReadProcessMemory, WriteProcessMemory and VirtualProtectEx;
 
 v1.09
 	- Applied several performance fixes, increasing overall performance and memory usage. The disassembler is noticably faster;

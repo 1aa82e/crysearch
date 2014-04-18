@@ -25,7 +25,7 @@ void EnumerateProcesses(Vector<Win32ProcessInformation>& outList)
 	do
 	{
 		procInfo = (PSYSTEM_PROCESS_INFORMATION)VirtualAlloc(NULL, dataLength, MEM_COMMIT, PAGE_READWRITE);
-		returnVal = NtInternalFunctions.NtQuerySystemInformation(SystemExtendedProcessInformation, procInfo, dataLength, &dataLength);
+		returnVal = CrySearchRoutines.NtQuerySystemInformation(SystemExtendedProcessInformation, procInfo, dataLength, &dataLength);
 		if (returnVal == STATUS_INFO_LENGTH_MISMATCH)
 		{
 			// The length of the buffer was not sufficient. Expand the buffer before retrying.
@@ -107,7 +107,7 @@ void EnumerateThreads(const int processId, Vector<Win32ThreadInformation>& threa
 	do
 	{
 		procInfo = (PSYSTEM_PROCESS_INFORMATION)VirtualAlloc(NULL, dataLength, MEM_COMMIT, PAGE_READWRITE);
-		returnVal = NtInternalFunctions.NtQuerySystemInformation(SystemExtendedProcessInformation, procInfo, dataLength, &dataLength);
+		returnVal = CrySearchRoutines.NtQuerySystemInformation(SystemExtendedProcessInformation, procInfo, dataLength, &dataLength);
 		if (returnVal == STATUS_INFO_LENGTH_MISMATCH)
 		{
 			// The length of the buffer was not sufficient. Expand the buffer before retrying.
@@ -216,7 +216,7 @@ String GetObjectNameByType(HANDLE hObject, const wchar* pType, const DWORD lengt
 	{
 		// The object is a thread, get its thread ID.
 		THREAD_BASIC_INFORMATION ti;
-		if (NtInternalFunctions.NtQueryInformationThread(hObject, ThreadBasicInformation, &ti, sizeof(THREAD_BASIC_INFORMATION), NULL) == STATUS_SUCCESS)
+		if (CrySearchRoutines.NtQueryInformationThread(hObject, ThreadBasicInformation, &ti, sizeof(THREAD_BASIC_INFORMATION), NULL) == STATUS_SUCCESS)
 		{
 			retVal = Format("Thread ID: %i", (int)ti.ClientId.UniqueThread);
 		}
@@ -231,7 +231,7 @@ String GetObjectNameByType(HANDLE hObject, const wchar* pType, const DWORD lengt
 		// The object was not a user-friendly object that can be queried with logical information. Call NtQueryObject.
 		// Allocate a buffer to hold the object name and query it into the buffer.
 		POBJECT_NAME_INFORMATION objNameInfo = (POBJECT_NAME_INFORMATION)VirtualAlloc(NULL, 0x1000, MEM_COMMIT, PAGE_READWRITE);
-		if (NtInternalFunctions.NtQueryObject(hObject, ObjectNameInformation, objNameInfo, 0x1000, NULL) == STATUS_SUCCESS)
+		if (CrySearchRoutines.NtQueryObject(hObject, ObjectNameInformation, objNameInfo, 0x1000, NULL) == STATUS_SUCCESS)
 		{
 			// Not all handles have a name. Sanity check for the name.
 			if (objNameInfo->ObjectName.Buffer)
@@ -262,7 +262,7 @@ void EnumerateHandles(const int processId, Vector<Win32HandleInformation>& handl
 	do
 	{
 		handleInfo = (PSYSTEM_HANDLE_INFORMATION)VirtualAlloc(NULL, dataLength, MEM_COMMIT, PAGE_READWRITE);
-		returnVal = NtInternalFunctions.NtQuerySystemInformation(SystemHandleInformation, handleInfo, dataLength, &dataLength);
+		returnVal = CrySearchRoutines.NtQuerySystemInformation(SystemHandleInformation, handleInfo, dataLength, &dataLength);
 		if (returnVal == STATUS_INFO_LENGTH_MISMATCH)
 		{
 			// The length of the buffer was not sufficient. Expand the buffer before retrying.
@@ -294,7 +294,7 @@ void EnumerateHandles(const int processId, Vector<Win32HandleInformation>& handl
 				if (GetLastError() != ERROR_NOT_SUPPORTED)
 				{
 					// Query the object to find out what kind of object it is.
-					if (NtInternalFunctions.NtQueryObject(hDup, ObjectTypeInformation, objInfo, 0x1000, NULL) == STATUS_SUCCESS)
+					if (CrySearchRoutines.NtQueryObject(hDup, ObjectTypeInformation, objInfo, 0x1000, NULL) == STATUS_SUCCESS)
 					{
 						// Query the object again for its name.
 						String objName = GetObjectNameByType(hDup, objInfo->TypeName.Buffer, objInfo->TypeName.Length + 1);
@@ -307,7 +307,7 @@ void EnumerateHandles(const int processId, Vector<Win32HandleInformation>& handl
 							newHandle.ObjectName = objName;
 
 							// Query the object again for the other information block.
-							if (NtInternalFunctions.NtQueryObject(hDup, ObjectBasicInformation, objBasicInfo, sizeof(OBJECT_BASIC_INFORMATION), &dataLength) == STATUS_SUCCESS)
+							if (CrySearchRoutines.NtQueryObject(hDup, ObjectBasicInformation, objBasicInfo, sizeof(OBJECT_BASIC_INFORMATION), &dataLength) == STATUS_SUCCESS)
 							{
 								// As documented in ProcessHacker, we should decrement the handle count because NtQueryObject opened a handle
 								// to this object too. This handle is not applicable for counting with the references.

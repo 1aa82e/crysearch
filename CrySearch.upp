@@ -85,6 +85,7 @@ file
 	ShellExtension.c,
 	HandlePermissions.h,
 	HandlePermissions.c,
+	CrySearchRoutines.cpp,
 	"Memory Scanner" readonly separator,
 	MemoryScanner.cpp,
 	MemoryScanner.h,

@@ -202,6 +202,9 @@ void CryDebuggerWindow::CryDebuggerEventOccuredThreadSafe(DebugEvent event, void
 				
 				// Free the memory pointed to by the parameter pointer.
 				delete param;
+				
+				// Throw error occured event, to close debugger window.
+				this->DebugErrorOccured();
 			}
 			break;
 		case DBG_EVENT_BREAKPOINT_HIT:

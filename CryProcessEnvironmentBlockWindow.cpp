@@ -32,10 +32,10 @@ void CryProcessEnvironmentBlockWindow::Initialize()
 	if (mMemoryScanner->IsX86Process())
 	{
 		ULONG_PTR PebBaseAddress;
-		if (NtInternalFunctions.NtQueryInformationProcess(mMemoryScanner->GetHandle(), ProcessWow64Information, &PebBaseAddress, sizeof(ULONG_PTR), NULL) == STATUS_SUCCESS)
+		if (CrySearchRoutines.NtQueryInformationProcess(mMemoryScanner->GetHandle(), ProcessWow64Information, &PebBaseAddress, sizeof(ULONG_PTR), NULL) == STATUS_SUCCESS)
 		{
 			PEB32 peb;
-			ReadProcessMemory(mMemoryScanner->GetHandle(), (void*)PebBaseAddress, &peb, sizeof(PEB32), NULL);
+			CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), (void*)PebBaseAddress, &peb, sizeof(PEB32), NULL);
 			
 			this->pIsBeingDebuggedPtr = ((BYTE*)PebBaseAddress) + 0x2;
 			
@@ -114,10 +114,10 @@ void CryProcessEnvironmentBlockWindow::Initialize()
 	else
 	{
 		PROCESS_BASIC_INFORMATION tInfo;
-		if (NtInternalFunctions.NtQueryInformationProcess(mMemoryScanner->GetHandle(), ProcessBasicInformation, &tInfo, sizeof(PROCESS_BASIC_INFORMATION), NULL) == STATUS_SUCCESS)
+		if (CrySearchRoutines.NtQueryInformationProcess(mMemoryScanner->GetHandle(), ProcessBasicInformation, &tInfo, sizeof(PROCESS_BASIC_INFORMATION), NULL) == STATUS_SUCCESS)
 		{
 			PEB peb;
-			ReadProcessMemory(mMemoryScanner->GetHandle(), tInfo.PebBaseAddress, &peb, sizeof(PEB), NULL);
+			CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), tInfo.PebBaseAddress, &peb, sizeof(PEB), NULL);
 			
 			this->pIsBeingDebuggedPtr = ((BYTE*)tInfo.PebBaseAddress) + 0x2;
 			
@@ -196,10 +196,10 @@ void CryProcessEnvironmentBlockWindow::Initialize()
 	}
 #else
 	PROCESS_BASIC_INFORMATION tInfo;
-	if (NtInternalFunctions.NtQueryInformationProcess(mMemoryScanner->GetHandle(), ProcessBasicInformation, &tInfo, sizeof(PROCESS_BASIC_INFORMATION), NULL) == STATUS_SUCCESS)
+	if (CrySearchRoutines.NtQueryInformationProcess(mMemoryScanner->GetHandle(), ProcessBasicInformation, &tInfo, sizeof(PROCESS_BASIC_INFORMATION), NULL) == STATUS_SUCCESS)
 	{
 		PEB32 peb;
-		ReadProcessMemory(mMemoryScanner->GetHandle(), tInfo.PebBaseAddress, &peb, sizeof(PEB32), NULL);
+		CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), tInfo.PebBaseAddress, &peb, sizeof(PEB32), NULL);
 		
 		this->pIsBeingDebuggedPtr = ((BYTE*)tInfo.PebBaseAddress) + 0x2;
 		
@@ -283,7 +283,7 @@ void CryProcessEnvironmentBlockWindow::ResetDebugFlag()
 	// Reset the debug flag.
 	// Poke the address of the flag with a 0 value.
 	BYTE pResetted = 0x0;
-	if (!WriteProcessMemory(mMemoryScanner->GetHandle(), this->pIsBeingDebuggedPtr, &pResetted, sizeof(BYTE), NULL))
+	if (!CrySearchRoutines.CryWriteMemoryRoutine(mMemoryScanner->GetHandle(), this->pIsBeingDebuggedPtr, &pResetted, sizeof(BYTE), NULL))
 	{
 		Prompt("PEB Error", CtrlImg::error(), "The flag could not be resetted.", "OK");
 	}

@@ -18,7 +18,7 @@ DisasmLine DisasmGetLine(const SIZE_T address, ArchitectureDefinitions architect
 	
 	// Query virtual pages inside target process.
     Byte* const buffer = new Byte[bufferLength];
-    ReadProcessMemory(mMemoryScanner->GetHandle(), (void*)address, buffer, bufferLength, NULL);
+    CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), (void*)address, buffer, bufferLength, NULL);
     
     // Set EIP, correct architecture and security block to prevent access violations.
 	disasm.EIP = (UIntPtr)buffer;
@@ -65,7 +65,7 @@ DisasmLine DisasmGetPreviousLine(const SIZE_T address, ArchitectureDefinitions a
 	// Query virtual pages inside target process.
     Byte* buffer = new Byte[bufferLength];
 	const Byte* const staticBufferPtr = buffer;
-    ReadProcessMemory(mMemoryScanner->GetHandle(), (void*)newAddr, buffer, bufferLength, NULL);
+    CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), (void*)newAddr, buffer, bufferLength, NULL);
     
     // Set EIP, correct architecture and security block to prevent access violations.
 	disasm.EIP = (UIntPtr)buffer;

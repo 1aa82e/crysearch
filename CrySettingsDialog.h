@@ -47,6 +47,12 @@ private:
 	LabelBox mRoutinesBox;
 	Label mOpenProcRoutineSelectorLabel;
 	DropList mOpenProcRoutineSelector;
+	Label mReadMemoryProcRoutineSelectorLabel;
+	DropList mReadMemoryProcRoutineSelector;
+	Label mWriteMemoryProcRoutineSelectorLabel;
+	DropList mWriteMemoryProcRoutineSelector;
+	Label mProtectMemoryProcRoutineSelectorLabel;
+	DropList mProtectMemoryProcRoutineSelector;
 	Option mRegisterFileExtensionWithCrySearch;
 	
 	// Debugger tab

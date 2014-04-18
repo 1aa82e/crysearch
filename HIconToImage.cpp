@@ -94,8 +94,8 @@ Image CreateImageFromHICON(HICON icon)
 	ImageBuffer imgb(16, 16);
 	for(int y = 0; y < 16; ++y)
 	{
-		const Byte* lpY = lpbitmap + dwScan * sizeof(RGBA) * y;
-		RGBA* bufY = imgb[15 - y];
+		const Byte* const lpY = lpbitmap + dwScan * sizeof(RGBA) * y;
+		RGBA* const bufY = imgb[15 - y];
 		for(int x = 0; x < 16; ++x)
 		{
 			bufY[x].r = lpY[x * sizeof(RGBA) + 2];

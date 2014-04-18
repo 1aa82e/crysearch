@@ -186,7 +186,7 @@ void CryDebugger::HideDebuggerFromPeb() const
 	// Reset the debug flag.
 	// Poke the address of the flag with a 0 value.
 	BYTE pResetted = 0x0;
-	WriteProcessMemory(mMemoryScanner->GetHandle(), (char*)mPeInstance->GetPebAddress() + 0x2, &pResetted, sizeof(BYTE), NULL);
+	CrySearchRoutines.CryWriteMemoryRoutine(mMemoryScanner->GetHandle(), (char*)mPeInstance->GetPebAddress() + 0x2, &pResetted, sizeof(BYTE), NULL);
 }
 
 // Set a hardware breakpoint on a series of threads.
@@ -273,14 +273,14 @@ bool CryDebugger::SetBreakpoint(const SIZE_T address)
 	bp.Address = address;
 	
 	// Read out current byte.
-	if (!ReadProcessMemory(mMemoryScanner->GetHandle(), (void*)address, &bp.OldInstruction, sizeof(Byte), NULL))
+	if (!CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), (void*)address, &bp.OldInstruction, sizeof(Byte), NULL))
 	{
 		return false;
 	}
 	
 	// Write INT3 instruction to the specified address.
 	const Byte _int3 = 0xCC;
-	if (!WriteProcessMemory(mMemoryScanner->GetHandle(), (void*)address, &_int3, sizeof(Byte), NULL))
+	if (!CrySearchRoutines.CryWriteMemoryRoutine(mMemoryScanner->GetHandle(), (void*)address, &_int3, sizeof(Byte), NULL))
 	{
 		return false;
 	}
@@ -324,7 +324,7 @@ bool CryDebugger::RemoveBreakpoint(const SIZE_T address)
 	else
 	{
 		// Write the old instruction back to the address.
-		if (!WriteProcessMemory(mMemoryScanner->GetHandle(), (void*)address, &bp->OldInstruction, sizeof(Byte), NULL))
+		if (!CrySearchRoutines.CryWriteMemoryRoutine(mMemoryScanner->GetHandle(), (void*)address, &bp->OldInstruction, sizeof(Byte), NULL))
 		{
 			return false;
 		}
@@ -518,7 +518,7 @@ void CryDebugger::ExceptionWatch()
 							// Single step caused by software breakpoint being previously hit.
 							// Write back INT3 to the original spot of the breakpoint.
 							const Byte int3Bp = 0xCC;
-							WriteProcessMemory(mMemoryScanner->GetHandle(), (void*)this->mBreakpoints[bp].Address, &int3Bp, sizeof(Byte), NULL);
+							CrySearchRoutines.CryWriteMemoryRoutine(mMemoryScanner->GetHandle(), (void*)this->mBreakpoints[bp].Address, &int3Bp, sizeof(Byte), NULL);
 
 							// Remove single step flag from the thread context.
 							this->RemoveSingleStepFromBreakpoint(DebugEv.dwThreadId);
@@ -585,7 +585,7 @@ void CryDebugger32::CreateStackSnapshot(DbgBreakpoint* pBp, const SIZE_T pEsp)
 	pBp->BreakpointSnapshot.StackView.Clear();
 	
 	Byte stack[1024];
-	ReadProcessMemory(mMemoryScanner->GetHandle(), (void*)pEsp, stack, 1024, NULL);
+	CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), (void*)pEsp, stack, 1024, NULL);
 	DWORD stackPtr = (DWORD)stack;
 	const DWORD endAddress = (DWORD)pEsp + GlobalSettingsInstance.GetStackSnapshotLimit();
 	
@@ -880,7 +880,7 @@ void CryDebugger32::HandleSoftwareBreakpoint(const DWORD threadId, const SIZE_T 
 	
 	// Rewind EIP and restore original instruction.
 	SIZE_T bpAddr = --ctx.Eip;
-	WriteProcessMemory(mMemoryScanner->GetHandle(), (void*)bpAddr, &bp.OldInstruction, sizeof(Byte), NULL);
+	CrySearchRoutines.CryWriteMemoryRoutine(mMemoryScanner->GetHandle(), (void*)bpAddr, &bp.OldInstruction, sizeof(Byte), NULL);
 	
 	// Flush instruction cache to effectively apply original instruction again.
 	FlushInstructionCache(mMemoryScanner->GetHandle(), (void*)bpAddr, sizeof(Byte));
@@ -1012,7 +1012,7 @@ void CryDebugger32::HandleHardwareBreakpoint(const DWORD threadId, const SIZE_T 
 		pBp->BreakpointSnapshot.StackView.Clear();
 		
 		Byte stack[1024];
-		ReadProcessMemory(mMemoryScanner->GetHandle(), (void*)pEsp, stack, 1024, NULL);
+		CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), (void*)pEsp, stack, 1024, NULL);
 		SIZE_T stackPtr = (SIZE_T)stack;
 		const SIZE_T endAddress = (SIZE_T)pEsp + GlobalSettingsInstance.GetStackSnapshotLimit();
 		
@@ -1110,7 +1110,7 @@ void CryDebugger32::HandleHardwareBreakpoint(const DWORD threadId, const SIZE_T 
 		
 		// Rewind EIP and restore original instruction.
 		SIZE_T bpAddr = --ctx->Rip;
-		WriteProcessMemory(mMemoryScanner->GetHandle(), (void*)bpAddr, &bp.OldInstruction, sizeof(Byte), NULL);
+		CrySearchRoutines.CryWriteMemoryRoutine(mMemoryScanner->GetHandle(), (void*)bpAddr, &bp.OldInstruction, sizeof(Byte), NULL);
 		
 			// Flush instruction cache to effectively apply original instruction again.
 		FlushInstructionCache(mMemoryScanner->GetHandle(), (void*)bpAddr, sizeof(Byte));

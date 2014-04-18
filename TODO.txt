@@ -17,11 +17,6 @@ CrySearch application TODO list by evolution536
 	- Call stack -> go to disasm;
 	- VEH debugger
 
-- Add Nt/Zw functions: (Think of a good system for routine selection that allows scalability)
-	- NtReadVirtualMemory;
-	- NtWriteVirtualMemory;
-	- NtProtectVirtualMemory.
-
 - Main window:
 	- Use right toolbar space for message queue:
 		- Warning messages:

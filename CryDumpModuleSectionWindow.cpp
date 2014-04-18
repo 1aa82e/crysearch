@@ -24,7 +24,7 @@ CryDumpModuleSectionWindow::CryDumpModuleSectionWindow(const int modListIndex)
 	
 	// Get the sections associated to the module.
 	Byte* moduleBuffer = new Byte[0x400];
-	ReadProcessMemory(mMemoryScanner->GetHandle(), (void*)this->mModuleInfo->BaseAddress, moduleBuffer, 0x400, NULL);
+	CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), (void*)this->mModuleInfo->BaseAddress, moduleBuffer, 0x400, NULL);
 	
 #ifdef _WIN64
 	if (mMemoryScanner->IsX86Process())

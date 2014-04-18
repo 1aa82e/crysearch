@@ -41,6 +41,43 @@ String GetAddress(const int index)
 #endif
 }
 
+// Defined in GlobalDef.h.
+void InitializeRoutines()
+{
+	// Assign correct memory reading routine.
+	switch (GlobalSettingsInstance.GetReadMemoryRoutine())
+	{
+		case ROUTINE_READPROCESSMEMORY:
+			CrySearchRoutines.SetCrySearchReadMemoryRoutine(CryReadMemoryRoutine32);
+			break;
+		case ROUTINE_NTREADVIRTUALMEMORY:
+			CrySearchRoutines.SetCrySearchReadMemoryRoutine(CryReadMemoryRoutineNt);
+			break;
+	}
+	
+	// Assign the correct memory writing routine.
+	switch (GlobalSettingsInstance.GetWriteMemoryRoutine())
+	{
+		case ROUTINE_WRITEPROCESSMEMORY:
+			CrySearchRoutines.SetCrySearchWriteMemoryRoutine(CryWriteMemoryRoutine32);
+			break;
+		case ROUTINE_NTWRITEVIRTUALMEMORY:
+			CrySearchRoutines.SetCrySearchWriteMemoryRoutine(CryWriteMemoryRoutineNt);
+			break;
+	}
+	
+	// Assign the correct memory protection routine.
+	switch (GlobalSettingsInstance.GetProtectMemoryRoutine())
+	{
+		case ROUTINE_VIRTUALPROTECTEX:
+			CrySearchRoutines.SetCrySearchProtectMemoryRoutine(CryProtectMemoryRoutine32);
+			break;
+		case ROUTINE_NTPROTECTVIRTUALMEMORY:
+			CrySearchRoutines.SetCrySearchProtectMemoryRoutine(CryProtectMemoryRoutineNt);
+			break;
+	}
+}
+
 // Virtual array control row accessors.
 String GetValue(const int index)
 {
@@ -94,6 +131,9 @@ void ReloadDefaultSettings()
 	GlobalSettingsInstance.SetScanMemImage();
 	GlobalSettingsInstance.SetScanThreadPriority();
 	GlobalSettingsInstance.SetOpenProcessRoutine();
+	GlobalSettingsInstance.SetReadMemoryRoutine();
+	GlobalSettingsInstance.SetWriteMemoryRoutine();
+	GlobalSettingsInstance.SetProtectMemoryRoutine();
 	GlobalSettingsInstance.SetAddressTableUpdateInterval();
 	GlobalSettingsInstance.SetStackSnapshotLimit();
 	GlobalSettingsInstance.Save();
@@ -429,6 +469,9 @@ CrySearchForm::CrySearchForm(const char* fn)
 		//Prompt("Settings Error", CtrlImg::exclamation(), "The settings file was not found or corrupt, and has been overwritten with the defaults. If this is your first run, you can ignore this warning.", "OK");
 		ReloadDefaultSettings();
 	}
+	
+	// The settings file saves some routines too. Set the correct routines.
+	InitializeRoutines();
 	
 	// Initiate the memory scanner class, the most important part of CrySearch.
 	mMemoryScanner = MemoryScanner::GetInstance();

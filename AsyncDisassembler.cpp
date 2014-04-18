@@ -132,7 +132,7 @@ void AsyncDisassembler::Disassemble(const SIZE_T address, const SIZE_T size, con
 	
 	// Query virtual pages inside target process.
     Byte* const buffer = new Byte[size];
-    ReadProcessMemory(mMemoryScanner->GetHandle(), (void*)address, buffer, size, NULL);
+    CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), (void*)address, buffer, size, NULL);
     
     // Set EIP, correct architecture and security block to prevent access violations.
 	disasm.EIP = (UIntPtr)buffer;

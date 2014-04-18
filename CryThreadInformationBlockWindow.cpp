@@ -17,7 +17,7 @@ CryThreadInformationBlockWindow::CryThreadInformationBlockWindow(const int threa
 	HANDLE hThread = OpenThread(THREAD_QUERY_INFORMATION, FALSE, threadId);
 
 	THREAD_BASIC_INFORMATION tInfo;
-	if (NtInternalFunctions.NtQueryInformationThread(hThread, ThreadBasicInformation, &tInfo, sizeof(THREAD_BASIC_INFORMATION), NULL) == STATUS_SUCCESS)
+	if (CrySearchRoutines.NtQueryInformationThread(hThread, ThreadBasicInformation, &tInfo, sizeof(THREAD_BASIC_INFORMATION), NULL) == STATUS_SUCCESS)
 	{
 		this->mThreadInfo.AddColumn("Property", 60);
 		this->mThreadInfo.AddColumn("Value", 40);
@@ -28,7 +28,7 @@ CryThreadInformationBlockWindow::CryThreadInformationBlockWindow(const int threa
 			TEB32 tib;
 			
 			// TEB32 is located at TebBaseAddress + 0x2000, cheat sheet. :+)
-			ReadProcessMemory(mMemoryScanner->GetHandle(), (unsigned char*)tInfo.TebBaseAddress + 0x2000, &tib, sizeof(TEB32), NULL);
+			CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), (unsigned char*)tInfo.TebBaseAddress + 0x2000, &tib, sizeof(TEB32), NULL);
 			
 			this->mThreadInfo.Add("TEB Address", Format("%lX", (LONG_PTR)tib.NtTib.Self));
 			this->mThreadInfo.Add("Current SEH frame", Format("%lX", (LONG_PTR)tib.NtTib.ExceptionList));
@@ -98,7 +98,7 @@ CryThreadInformationBlockWindow::CryThreadInformationBlockWindow(const int threa
 		else
 		{
 			TEB tib;
-			ReadProcessMemory(mMemoryScanner->GetHandle(), tInfo.TebBaseAddress, &tib, sizeof(TEB), NULL);
+			CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), tInfo.TebBaseAddress, &tib, sizeof(TEB), NULL);
 			
 			this->mThreadInfo.Add("TEB Address", Format("%llX", (LONG_PTR)tib.NtTib.Self));
 			this->mThreadInfo.Add("Current SEH frame", Format("%llX", (LONG_PTR)tib.NtTib.ExceptionList));
@@ -169,7 +169,7 @@ CryThreadInformationBlockWindow::CryThreadInformationBlockWindow(const int threa
 		}
 #else
 		TEB tib;
-		ReadProcessMemory(mMemoryScanner->GetHandle(), tInfo.TebBaseAddress, &tib, sizeof(TEB32), NULL);
+		CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), tInfo.TebBaseAddress, &tib, sizeof(TEB32), NULL);
 		
 		this->mThreadInfo.Add("TEB Address", Format("%lX", (LONG_PTR)tib.NtTib.Self));
 		this->mThreadInfo.Add("Current SEH frame", Format("%lX", (LONG_PTR)tib.NtTib.ExceptionList));

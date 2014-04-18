@@ -190,13 +190,13 @@ bool MemoryScanner::Initialize(int processId, const String& exeTitle)
 			OBJECT_ATTRIBUTES objAttr;
 			InitializeObjectAttributes(&objAttr, NULL, 0, 0, NULL);
 		    
-		    if (!NtInternalFunctions.NtOpenProcess)
+		    if (!CrySearchRoutines.NtOpenProcess)
 			{
 				this->ErrorOccured(NATIVEROUTINEGETPROCFAILED);
 				return false;
 			}
 			
-			NtInternalFunctions.NtOpenProcess(&this->mOpenedProcessHandle, PROCESS_VM_OPERATION | PROCESS_VM_READ | PROCESS_VM_WRITE
+			CrySearchRoutines.NtOpenProcess(&this->mOpenedProcessHandle, PROCESS_VM_OPERATION | PROCESS_VM_READ | PROCESS_VM_WRITE
 				| PROCESS_QUERY_INFORMATION | PROCESS_CREATE_THREAD | PROCESS_DUP_HANDLE, &objAttr, &cid);
 			break;
 	}
@@ -406,7 +406,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 		currentRegion.FileDataIndexes.StartIndex = fileIndex;
 		
 		Byte *buffer = new Byte[currentRegion.MemorySize];
-		if (ReadProcessMemory(this->mOpenedProcessHandle, (void*)currentRegion.BaseAddress, buffer, currentRegion.MemorySize, NULL))
+		if (CrySearchRoutines.CryReadMemoryRoutine(this->mOpenedProcessHandle, (void*)currentRegion.BaseAddress, buffer, currentRegion.MemorySize, NULL))
 		{
 			for (SIZE_T i = 0; i < currentRegion.MemorySize; i += fastScanAlignSize)
 			{
@@ -512,7 +512,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 		currentRegion.FileDataIndexes.StartIndex = fileIndex;
 		
 		Byte *buffer = new Byte[currentRegion.MemorySize];
-		if (ReadProcessMemory(this->mOpenedProcessHandle, (void*)currentRegion.BaseAddress, buffer, currentRegion.MemorySize, NULL))
+		if (CrySearchRoutines.CryReadMemoryRoutine(this->mOpenedProcessHandle, (void*)currentRegion.BaseAddress, buffer, currentRegion.MemorySize, NULL))
 		{
 			for (SIZE_T i = 0; i < currentRegion.MemorySize; ++i)
 			{
@@ -637,7 +637,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 		currentRegion.FileDataIndexes.StartIndex = fileIndex;
 		
 		Byte *buffer = new Byte[currentRegion.MemorySize];
-		if (ReadProcessMemory(this->mOpenedProcessHandle, (void*)currentRegion.BaseAddress, buffer, currentRegion.MemorySize, NULL))
+		if (CrySearchRoutines.CryReadMemoryRoutine(this->mOpenedProcessHandle, (void*)currentRegion.BaseAddress, buffer, currentRegion.MemorySize, NULL))
 		{			
 			for (SIZE_T i = 0; i < currentRegion.MemorySize; ++i)
 			{
@@ -741,7 +741,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 		currentRegion.FileDataIndexes.StartIndex = fileIndex;
 
 		Byte *buffer = new Byte[currentRegion.MemorySize];
-		if (ReadProcessMemory(this->mOpenedProcessHandle, (void*)currentRegion.BaseAddress, buffer, currentRegion.MemorySize, NULL))
+		if (CrySearchRoutines.CryReadMemoryRoutine(this->mOpenedProcessHandle, (void*)currentRegion.BaseAddress, buffer, currentRegion.MemorySize, NULL))
 		{			
 			for (SIZE_T i = 0; i < currentRegion.MemorySize; i++)
 			{
@@ -850,7 +850,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 		T* localValues = NULL;
 		
 		Byte *buffer = new Byte[currentRegion.MemorySize];
-		if (ReadProcessMemory(this->mOpenedProcessHandle, (void*)currentRegion.BaseAddress, buffer, currentRegion.MemorySize, NULL))
+		if (CrySearchRoutines.CryReadMemoryRoutine(this->mOpenedProcessHandle, (void*)currentRegion.BaseAddress, buffer, currentRegion.MemorySize, NULL))
 		{
 			for (SIZE_T i = 0; i < currentRegion.MemorySize; i += fastScanAlignSize)
 			{
@@ -1078,7 +1078,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 			ArrayOfBytes* localValues = NULL;
 			
 			Byte* buffer = new Byte[currentRegion.MemorySize];
-			if (ReadProcessMemory(this->mOpenedProcessHandle, (void*)currentRegion.BaseAddress, buffer, currentRegion.MemorySize, NULL))
+			if (CrySearchRoutines.CryReadMemoryRoutine(this->mOpenedProcessHandle, (void*)currentRegion.BaseAddress, buffer, currentRegion.MemorySize, NULL))
 			{
 				SetFilePointer(hFile, oldFileIndex * sizeof(SIZE_T), NULL, FILE_BEGIN);
 				SIZE_T* addressesFileBuffer = new SIZE_T[currentRegion.FileDataIndexes.ResultCount];
@@ -1222,7 +1222,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 			Vector<WString> localValues;
 			
 			Byte* buffer = new Byte[currentRegion.MemorySize];
-			if (ReadProcessMemory(this->mOpenedProcessHandle, (void*)currentRegion.BaseAddress, buffer, currentRegion.MemorySize, NULL))
+			if (CrySearchRoutines.CryReadMemoryRoutine(this->mOpenedProcessHandle, (void*)currentRegion.BaseAddress, buffer, currentRegion.MemorySize, NULL))
 			{
 				SetFilePointer(hFile, oldFileIndex * sizeof(SIZE_T), NULL, FILE_BEGIN);
 				SIZE_T* addressesFileBuffer = new SIZE_T[currentRegion.FileDataIndexes.ResultCount];
@@ -1345,7 +1345,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 			Vector<String> localValues;
 			
 			Byte* buffer = new Byte[currentRegion.MemorySize];
-			if (ReadProcessMemory(this->mOpenedProcessHandle, (void*)currentRegion.BaseAddress, buffer, currentRegion.MemorySize, NULL))
+			if (CrySearchRoutines.CryReadMemoryRoutine(this->mOpenedProcessHandle, (void*)currentRegion.BaseAddress, buffer, currentRegion.MemorySize, NULL))
 			{
 				SetFilePointer(hFile, oldFileIndex * sizeof(SIZE_T), NULL, FILE_BEGIN);
 				SIZE_T* addressesFileBuffer = new SIZE_T[currentRegion.FileDataIndexes.ResultCount];
@@ -1475,7 +1475,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 			T* localValues = NULL;
 			
 			Byte* buffer = new Byte[currentRegion.MemorySize];
-			if (ReadProcessMemory(this->mOpenedProcessHandle, (void*)currentRegion.BaseAddress, buffer, currentRegion.MemorySize, NULL))
+			if (CrySearchRoutines.CryReadMemoryRoutine(this->mOpenedProcessHandle, (void*)currentRegion.BaseAddress, buffer, currentRegion.MemorySize, NULL))
 			{
 				SetFilePointer(hFile, oldFileIndex * sizeof(SIZE_T), NULL, FILE_BEGIN);
 				SIZE_T* addressesFileBuffer = new SIZE_T[currentRegion.FileDataIndexes.ResultCount];
@@ -1659,28 +1659,28 @@ void MemoryScanner::NextScan()
 template <>
 void MemoryScanner::Poke(const SIZE_T address, const ArrayOfBytes& value)
 {
-	WriteProcessMemory(this->mOpenedProcessHandle, (void*)address, value.Data, value.Size, NULL);
+	CrySearchRoutines.CryWriteMemoryRoutine(this->mOpenedProcessHandle, (void*)address, value.Data, value.Size, NULL);
 }
 
 // Writes a unicode string with specified size to the specified address.
 template <>
 void MemoryScanner::Poke(const SIZE_T address, const WString& value)
 {
-	WriteProcessMemory(this->mOpenedProcessHandle, (void*)address, value.Begin(), value.GetLength() * sizeof(wchar), NULL);
+	CrySearchRoutines.CryWriteMemoryRoutine(this->mOpenedProcessHandle, (void*)address, value.Begin(), value.GetLength() * sizeof(wchar), NULL);
 }
 
 // Writes an ANSI string with specified size to the specified address.
 template <>
 void MemoryScanner::Poke(const SIZE_T address, const String& value)
 {
-	WriteProcessMemory(this->mOpenedProcessHandle, (void*)address, value.Begin(), value.GetLength(), NULL);
+	CrySearchRoutines.CryWriteMemoryRoutine(this->mOpenedProcessHandle, (void*)address, value.Begin(), value.GetLength(), NULL);
 }
 
 // Writes a T value with sizeof(T) size to the specified address.
 template <class T>
 void MemoryScanner::Poke(const SIZE_T address, const T& value)
 {
-	WriteProcessMemory(this->mOpenedProcessHandle, (void*)address, &value, sizeof(T), NULL);
+	CrySearchRoutines.CryWriteMemoryRoutine(this->mOpenedProcessHandle, (void*)address, &value, sizeof(T), NULL);
 }
 
 // Reads a byte array with specified size from the specified address.
@@ -1689,7 +1689,7 @@ bool MemoryScanner::Peek(const SIZE_T address, const unsigned int size, ArrayOfB
 {
 	outBuffer->Data = new Byte[size];
 	outBuffer->Size = size;
-	return ReadProcessMemory(this->mOpenedProcessHandle, (void*)address, outBuffer->Data, size, NULL);
+	return CrySearchRoutines.CryReadMemoryRoutine(this->mOpenedProcessHandle, (void*)address, outBuffer->Data, size, NULL);
 }
 
 // Reads a unicode string with specified size from the specified address.
@@ -1699,7 +1699,7 @@ bool MemoryScanner::Peek(const SIZE_T address, const unsigned int size, WString*
 	const unsigned int bytesSize = size * sizeof(wchar);
 	SIZE_T bytesRead;
 	WStringBuffer buffer(bytesSize);
-	ReadProcessMemory(this->mOpenedProcessHandle, (void*)address, buffer.Begin(), bytesSize, &bytesRead);
+	CrySearchRoutines.CryReadMemoryRoutine(this->mOpenedProcessHandle, (void*)address, buffer.Begin(), bytesSize, &bytesRead);
 	*outBuffer = buffer;
 	return bytesRead == bytesSize;
 }
@@ -1710,7 +1710,7 @@ bool MemoryScanner::Peek(const SIZE_T address, const unsigned int size, String* 
 {
 	SIZE_T bytesRead;
 	StringBuffer buffer(size);
-	ReadProcessMemory(this->mOpenedProcessHandle, (void*)address, buffer.Begin(), size, &bytesRead);
+	CrySearchRoutines.CryReadMemoryRoutine(this->mOpenedProcessHandle, (void*)address, buffer.Begin(), size, &bytesRead);
 	*outBuffer = buffer;
 	return bytesRead == size;
 }
@@ -1719,7 +1719,7 @@ bool MemoryScanner::Peek(const SIZE_T address, const unsigned int size, String* 
 template <class T>
 bool MemoryScanner::Peek(const SIZE_T address, const unsigned int size, T* outBuffer)
 {
-	return ReadProcessMemory(this->mOpenedProcessHandle, (void*)address, outBuffer, sizeof(T), NULL);
+	return CrySearchRoutines.CryReadMemoryRoutine(this->mOpenedProcessHandle, (void*)address, outBuffer, sizeof(T), NULL);
 }
 
 // template implementations for linkage errors.

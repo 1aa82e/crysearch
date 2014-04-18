@@ -16,6 +16,15 @@ using namespace Upp;
 #define ROUTINE_OPENPROCESS				0
 #define ROUTINE_NTOPENPROCESS			1
 
+#define ROUTINE_READPROCESSMEMORY		0
+#define ROUTINE_NTREADVIRTUALMEMORY		1
+
+#define ROUTINE_WRITEPROCESSMEMORY		0
+#define ROUTINE_NTWRITEVIRTUALMEMORY	1
+
+#define ROUTINE_VIRTUALPROTECTEX		0
+#define ROUTINE_NTPROTECTVIRTUALMEMORY	1
+
 // Checks wether the application settings file exists or not
 bool ConfigFileExists();
 
@@ -62,6 +71,9 @@ private:
 	bool mScanMemMapped;
 	
 	int mOpenProcessRoutine;
+	int mReadMemoryRoutine;
+	int mWriteMemoryRoutine;
+	int mProtectMemoryRoutine;
 	int mAddressTableUpdateInterval;
 	
 	int mStackSnapshotLimit;
@@ -88,6 +100,9 @@ public:
 	const int GetScanThreadPriority() const						{ return this->mScanningThreadPriority; }
 	
 	const int GetOpenProcessRoutine() const						{ return this->mOpenProcessRoutine; }
+	const int GetReadMemoryRoutine() const						{ return this->mReadMemoryRoutine; }
+	const int GetWriteMemoryRoutine() const						{ return this->mWriteMemoryRoutine; }
+	const int GetProtectMemoryRoutine() const					{ return this->mProtectMemoryRoutine; }
 	
 	const int GetStackSnapshotLimit() const						{ return this->mStackSnapshotLimit; }
 	const int GetAddressTableUpdateInterval() const				{ return this->mAddressTableUpdateInterval; }
@@ -110,6 +125,9 @@ public:
 	void SetScanThreadPriority(int value = 2)					{ this->mScanningThreadPriority = value; }
 	
 	void SetOpenProcessRoutine(int value = 0)					{ this->mOpenProcessRoutine = value; }
+	void SetReadMemoryRoutine(int value = 0)					{ this->mReadMemoryRoutine = value; }
+	void SetWriteMemoryRoutine(int value = 0)					{ this->mWriteMemoryRoutine = value; }
+	void SetProtectMemoryRoutine(int value = 0)					{ this->mProtectMemoryRoutine = value; }
 	
 	void SetAddressTableUpdateInterval(int value = 500)			{ this->mAddressTableUpdateInterval = value; }
 	void SetAttemptHideDebuggerFromPeb(bool value = true)		{ this->mAttemptHideDebuggerPeb = value; }
