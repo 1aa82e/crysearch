@@ -139,10 +139,13 @@ void CryProcessEnumeratorForm::CreateProcessButtonClicked()
 		tmpProc.ExeTitle = fs->Get();
 		
 		this->ProcessOpened(tmpProc);
+		delete fs;
+		this->Close();
 	}
-	
-	delete fs;
-	this->Close();
+	else
+	{
+		delete fs;
+	}
 }
 
 void CryProcessEnumeratorForm::SearchProcess()

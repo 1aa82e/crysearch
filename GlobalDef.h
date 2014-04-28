@@ -8,6 +8,14 @@
 #include "PortableExecutable.h"
 #include "CryDebugger.h"
 
+#include "CrySearchLibrary/SDK/CrySearch.h"
+
+#ifdef _WIN64
+	#pragma comment(lib, "CrySearchLibrary/Bin/x64/CrySearch64.lib")
+#else
+	#pragma comment(lib, "CrySearchLibrary/Bin/x86/CrySearch32.lib")
+#endif
+
 // ---------------------------------------------------------------------------------------------
 
 // Defines the maximum size of a buffer allocated by the memory scanner that triggers a reduced 
@@ -111,8 +119,5 @@ public:
 
 // Initializes the routines from the settings file.
 __declspec(noinline) void InitializeRoutines();
-
-// Multiple parts of CrySearch may want to check whether a value is a multiple of another value.
-extern "C" inline const BOOL GetIsMultipleOf(const LONG_PTR intVal, const int mulVal);
 
 #endif

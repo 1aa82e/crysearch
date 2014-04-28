@@ -1,9 +1,7 @@
 #ifndef _CrySearch_CryCreateExternalThreadWindow_h_
 #define _CrySearch_CryCreateExternalThreadWindow_h_
 
-#include <CtrlLib/CtrlLib.h>
-
-using namespace Upp;
+#include  "CryDialogTemplate.h"
 
 // Represents a data package that can be used to travel data around the thread manager windows.
 struct CreateNewThreadStruct
@@ -13,7 +11,7 @@ struct CreateNewThreadStruct
 	bool StartSuspended;
 };
 
-class CryCreateExternalThreadWindow sealed : public TopWindow
+class CryCreateExternalThreadWindow sealed : public CryDialogTemplate
 {
 private:
 	CreateNewThreadStruct* outStructDataPtr;

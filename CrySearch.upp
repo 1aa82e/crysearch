@@ -86,6 +86,8 @@ file
 	HandlePermissions.h,
 	HandlePermissions.c,
 	CrySearchRoutines.cpp,
+	DependencyChecker.h,
+	DependencyChecker.c,
 	"Memory Scanner" readonly separator,
 	MemoryScanner.cpp,
 	MemoryScanner.h,

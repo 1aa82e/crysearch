@@ -11,6 +11,7 @@
 #include "CrashHandler.h"
 #include "ImlProvider.h"
 #include "UIUtilities.h"
+#include "DependencyChecker.h"
 
 // Global source IML file declaration. Imaging in the GUI depends on this.
 #define IMAGECLASS CrySearchIml
@@ -512,10 +513,10 @@ void CrySearchForm::MainMenu(Bar& pBar)
 {
 	pBar.Add("File", THISBACK(FileMenu));
 	pBar.Add("Edit", THISBACK(EditMenu));
+	pBar.Add("Tools", THISBACK(ToolsMenu));
 	
 	if (this->processLoaded)
 	{
-		pBar.Add("Tools", THISBACK(ToolsMenu));
 		pBar.Add("Debugger", THISBACK(DebuggerMenu));
 	}
 	
@@ -576,7 +577,11 @@ void CrySearchForm::ToolsMenu(Bar& pBar)
 		pBar.Add("Allocate Memory", CrySearchIml::CrySearch(), THISBACK(AllocateMemoryButtonClicked));
 		pBar.Separator();
 		pBar.Add((this->mUserAddressList.GetCount() > 0), "Code Generation", CrySearchIml::CodeGenerationButton(), THISBACK(CodeGenerationButtonClicked));
+		//pBar.Separator();
 	}
+	
+	// Dependency checker is for non-opened processes.
+	//pBar.Add("Dependency Checker", CrySearchIml::DependencyCheckerSmall(), THISBACK(DependencyCheckerButtonClicked));
 }
 
 void CrySearchForm::DebuggerMenu(Bar& pBar)
@@ -772,6 +777,34 @@ void CrySearchForm::RemoveBreakpointMenu()
 {
 	mDebugger->RemoveBreakpoint(loadedTable[this->mUserAddressList.GetCursor()]->Address);
 }
+
+/*void CrySearchForm::DependencyCheckerButtonClicked()
+{
+	// First attempt to open a file, if there was no file selected the dependency checker doesn't need to run.
+	FileSel* fs = new FileSel();
+	fs->Types("Executable files\t*.exe\nDynamic Link Libraries\t*.dll\nWindows Drivers\t*.sys");
+	if (fs->ExecuteOpen("Open file..."))
+	{
+		// Initialize depcheck result structure for safe use with the dependency checker.
+		DEPCHECKRESULT result;
+		InitializeDepCheckResult(&result);
+		
+		// Run dependency check on the specified file.
+		if (DependencyCheck(fs->Get(), &result))
+		{
+			
+		}
+		else
+		{
+			// Dependency check did not run succesfully.
+		}
+		
+		// Free depcheck result structure.
+		FreeDepCheckResult(&result);
+	}
+	
+	delete fs;
+}*/
 
 void CrySearchForm::OpenFileMenu()
 {

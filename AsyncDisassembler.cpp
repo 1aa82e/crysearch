@@ -156,7 +156,7 @@ void AsyncDisassembler::Disassemble(const SIZE_T address, const SIZE_T size, con
 		if (len == OUT_OF_BLOCK || len == UNKNOWN_OPCODE)
 		{
 			// Invalid OPcode was detected or the disassembler is not allowed to read any more bytes. Exit the loop.
-			error = 1;
+			error = TRUE;
 		}
 		else
 		{
@@ -178,7 +178,7 @@ void AsyncDisassembler::Disassemble(const SIZE_T address, const SIZE_T size, con
 			if (disasm.EIP >= codePageEnd)
 			{
 				// End of page reached, exit the loop.
-				error = 1;
+				error = TRUE;
 			}
 		}
 	}

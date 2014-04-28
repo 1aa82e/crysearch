@@ -1,5 +1,6 @@
 CrySearch application TODO list by evolution536
 
+- Finish depcheck implementation;
 - Dump .NET modules?
 - Cancel IO on application shutdown when huge scan is still running (XP support blocks me here);
 - Detect handles that are 'malicious'?
@@ -29,7 +30,8 @@ CrySearch application TODO list by evolution536
 	- Add option checkbox / indicator to indicate whether address is frozen or not;
 
 - Encryption in target process & hide CrySearch from signature scan
-	- Look at AesStream example in bazaar.
+	- Look at AesStream example in bazaar;
+	- Metamorphic code.
 
 - Memory Scanner:
 	- Scan for a custom data type, a C structure;

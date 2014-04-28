@@ -1,0 +1,10 @@
+LIBRARY
+
+EXPORTS
+
+	CrySearchGetVersion
+	CrySetBits
+	GetIsMultipleOf
+	IsI386Process
+	CryCreateExternalThread
+	CryGetThreadPriority

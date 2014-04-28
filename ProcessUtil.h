@@ -77,9 +77,5 @@ extern Vector<Win32ThreadInformation> mThreadsList;
 extern "C" const int CryResumeThread(const int ThreadID);
 extern "C" const int CryTerminateThread(const int ThreadID);
 extern "C" const BOOL CrySetThreadPriority(const int threadId, const int prior);
-extern "C" const char* CryGetThreadPriority(HANDLE hThread);
-
-// the last parameter must be a writable pointer as it will receive the thread ID of the created thread.
-extern "C" const int CryCreateExternalThread(HANDLE procHandle, const SIZE_T StartAddress, void* parameter, BOOL suspended, int* pThreadId);
 
 #endif

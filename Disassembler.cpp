@@ -12,7 +12,7 @@ int __stdcall CryDisasm(LPDISASM lpDisasm)
 // Retrieves the line of disassembly at the specified address.
 DisasmLine DisasmGetLine(const SIZE_T address, ArchitectureDefinitions architecture)
 {
-	DWORD bufferLength = architecture == ARCH_X64 ? 20 : 16;
+	const DWORD bufferLength = architecture == ARCH_X64 ? 20 : 16;
 	DISASM disasm;
 	memset(&disasm, 0, sizeof(DISASM));
 	
@@ -56,7 +56,7 @@ DisasmLine DisasmGetLine(const SIZE_T address, ArchitectureDefinitions architect
 DisasmLine DisasmGetPreviousLine(const SIZE_T address, ArchitectureDefinitions architecture)
 {
 	DisasmLine outputVal;
-	DWORD bufferLength = architecture == ARCH_X64 ? 20 : 16;
+	const DWORD bufferLength = architecture == ARCH_X64 ? 20 : 16;
 	SIZE_T newAddr = address - bufferLength;
 	
 	DISASM disasm;

@@ -39,8 +39,6 @@
 // Vector of visible (loaded in current page) lines of disassembly.
 extern Vector<DisasmLine> DisasmVisibleLines;
 
-extern "C" inline void SetBits(DWORD_PTR* const dw, const int lowBit, const int bits, const int newValue);
-
 #ifdef _WIN64
 	extern "C" inline void AlignPointer(DWORD_PTR* const Address, const DWORD Boundary);
 #endif
@@ -733,9 +731,9 @@ bool CryDebugger32::BreakpointRoutine(HardwareBreakpoint* pHwbp) const
 	        	break;
 	    }
 	    
-	    SetBits((DWORD_PTR*)&ct.Dr7, 16 + (m_index * 4), 2, pHwbp->Type);
-	    SetBits((DWORD_PTR*)&ct.Dr7, 18 + (m_index * 4), 2, pHwbp->Size);
-	    SetBits((DWORD_PTR*)&ct.Dr7, m_index * 2, 1, 1);
+	    CrySetBits((DWORD_PTR*)&ct.Dr7, 16 + (m_index * 4), 2, pHwbp->Type);
+	    CrySetBits((DWORD_PTR*)&ct.Dr7, 18 + (m_index * 4), 2, pHwbp->Size);
+	    CrySetBits((DWORD_PTR*)&ct.Dr7, m_index * 2, 1, 1);
 #else
 	    switch (m_index)
 	    {
@@ -757,9 +755,9 @@ bool CryDebugger32::BreakpointRoutine(HardwareBreakpoint* pHwbp) const
 	        	break;
 		}
 		
-		SetBits(&ct.Dr7, 16 + (m_index * 4), 2, pHwbp->Type);
-	    SetBits(&ct.Dr7, 18 + (m_index * 4), 2, pHwbp->Size);
-	    SetBits(&ct.Dr7, m_index * 2, 1, 1);
+		CrySetBits(&ct.Dr7, 16 + (m_index * 4), 2, pHwbp->Type);
+	    CrySetBits(&ct.Dr7, 18 + (m_index * 4), 2, pHwbp->Size);
+	    CrySetBits(&ct.Dr7, m_index * 2, 1, 1);
 #endif
 	}
 	else
@@ -781,9 +779,9 @@ bool CryDebugger32::BreakpointRoutine(HardwareBreakpoint* pHwbp) const
 		}
 		
 #ifdef _WIN64
-		SetBits((DWORD_PTR*)&ct.Dr7, pHwbp->DebugRegister * 2, 1, 0);
+		CrySetBits((DWORD_PTR*)&ct.Dr7, pHwbp->DebugRegister * 2, 1, 0);
 #else
-		SetBits(&ct.Dr7, pHwbp->DebugRegister * 2, 1, 0);
+		CrySetBits(&ct.Dr7, pHwbp->DebugRegister * 2, 1, 0);
 #endif
 		pHwbp->DebugRegister = 0;
 	}
@@ -958,13 +956,13 @@ void CryDebugger32::HandleHardwareBreakpoint(const DWORD threadId, const SIZE_T 
 	hwbp.BreakpointSnapshot.Release();
 	
 #ifdef _WIN64
-	SetBits((DWORD_PTR*)&ctx.Dr7, hwbp.DebugRegister * 2, 1, 0);
+	CrySetBits((DWORD_PTR*)&ctx.Dr7, hwbp.DebugRegister * 2, 1, 0);
 	ctx.ContextFlags = WOW64_CONTEXT_CONTROL | WOW64_CONTEXT_DEBUG_REGISTERS;
 	Wow64SetThreadContext(hThread, &ctx);
 	hwbp.BreakpointSnapshot.ThreadContextContainer = new CryThreadContext<WOW64_CONTEXT>();
 	memcpy(&((CryThreadContext<WOW64_CONTEXT>*)hwbp.BreakpointSnapshot.ThreadContextContainer)->ThreadContext, &ctx, sizeof(WOW64_CONTEXT));	
 #else
-	SetBits(&ctx.Dr7, hwbp.DebugRegister * 2, 1, 0);
+	CrySetBits(&ctx.Dr7, hwbp.DebugRegister * 2, 1, 0);
 	ctx.ContextFlags = CONTEXT_CONTROL | CONTEXT_DEBUG_REGISTERS;
 	SetThreadContext(hThread, &ctx);
 	hwbp.BreakpointSnapshot.ThreadContextContainer = new CryThreadContext<CONTEXT>();
@@ -1176,7 +1174,7 @@ void CryDebugger32::HandleHardwareBreakpoint(const DWORD threadId, const SIZE_T 
 				break;
 		}
 		
-		SetBits(&ctx->Dr7, hwbp.DebugRegister * 2, 1, 0);
+		CrySetBits(&ctx->Dr7, hwbp.DebugRegister * 2, 1, 0);
 		SetThreadContext(hThread, ctx);
 		
 		// Set the old instruction field to 0xFF in order to indicate that this hwbp's next hit is a single step trap.
@@ -1266,9 +1264,9 @@ void CryDebugger32::HandleHardwareBreakpoint(const DWORD threadId, const SIZE_T 
 		        	break;
 		    }
 		    
-			SetBits(&ctx->Dr7, 16 + (m_index * 4), 2, pHwbp->Type);
-		    SetBits(&ctx->Dr7, 18 + (m_index * 4), 2, pHwbp->Size);
-		    SetBits(&ctx->Dr7, m_index * 2, 1, 1);
+			CrySetBits(&ctx->Dr7, 16 + (m_index * 4), 2, pHwbp->Type);
+		    CrySetBits(&ctx->Dr7, 18 + (m_index * 4), 2, pHwbp->Size);
+		    CrySetBits(&ctx->Dr7, m_index * 2, 1, 1);
 	    }
 	    else
 		{
@@ -1288,7 +1286,7 @@ void CryDebugger32::HandleHardwareBreakpoint(const DWORD threadId, const SIZE_T 
 					break;
 			}
 			
-			SetBits((DWORD_PTR*)&ctx->Dr7, pHwbp->DebugRegister * 2, 1, 0);
+			CrySetBits((DWORD_PTR*)&ctx->Dr7, pHwbp->DebugRegister * 2, 1, 0);
 			pHwbp->DebugRegister = 0;
 		}	    
 		

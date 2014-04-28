@@ -1,7 +1,6 @@
 #include "ProcessUtil.h"
 #include "NativeAPI.h"
 
-#include <TlHelp32.h>
 #include <Psapi.h>
 #include <Shlwapi.h>
 #include <VerRsrc.h>

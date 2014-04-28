@@ -351,7 +351,7 @@ void PortableExecutable::GetDotNetDirectoryInformation(const IMAGE_DATA_DIRECTOR
 	{
 		// Read COR20 header from file.
 		Byte* netDirBuffer = new Byte[netHeader->Size];
-		CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), (void*)(this->mBaseAddress + netHeader->VirtualAddress), netDirBuffer, netHeader->Size, NULL);
+		CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(this->mBaseAddress + netHeader->VirtualAddress), netDirBuffer, netHeader->Size, NULL);
 
 		// Save version information from COR20 header.
 		IMAGE_DATA_DIRECTORY mdDir;
@@ -363,7 +363,7 @@ void PortableExecutable::GetDotNetDirectoryInformation(const IMAGE_DATA_DIRECTOR
 
 		// Read metadata from header.
 		netDirBuffer = new Byte[mdDir.Size];
-		CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), (void*)(this->mBaseAddress + mdDir.VirtualAddress), netDirBuffer, mdDir.Size, NULL);
+		CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(this->mBaseAddress + mdDir.VirtualAddress), netDirBuffer, mdDir.Size, NULL);
 		
 		// Dissect metadata. Since its a dynamic structure we cannot compile this into a struct.
 		const DWORD vStrLength = *(DWORD*)(netDirBuffer + 12);
@@ -523,7 +523,7 @@ void PortableExecutable32::GetExecutablePeInformation() const
 	
 	// Attempt to load the sections inside the PE file.
 	moduleBuffer = new Byte[sectionSizeBytes];
-	CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), firstSectionPtr, moduleBuffer, sectionSizeBytes, NULL);
+	CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, firstSectionPtr, moduleBuffer, sectionSizeBytes, NULL);
 	this->GetImageSectionsList((IMAGE_SECTION_HEADER*)moduleBuffer, sectionCount, LoadedProcessPEInformation.ImageSections);
 	delete[] moduleBuffer;
 }
@@ -537,7 +537,7 @@ SIZE_T PortableExecutable32::GetAddressFromExportTable(const AddrStruct* addr, c
 	{
 		for (unsigned int i = 0; i < addr->ExportDirectory->NumberOfFunctions; ++i)
 		{
-			const WORD* const ordValue = (WORD*)(addr->BufferBaseAddress + addr->ExportDirectory->AddressOfNameOrdinals + (i * sizeof(WORD)));
+			const WORD* const ordValue = (WORD*)((addr->BufferBaseAddress + addr->ExportDirectory->AddressOfNameOrdinals) + (i * sizeof(WORD)));
 
 			if (IsOrdinal)
 			{
@@ -547,7 +547,7 @@ SIZE_T PortableExecutable32::GetAddressFromExportTable(const AddrStruct* addr, c
 				// Compare ordinal values without magic bitoperations!
 				if ((addr->ExportDirectory->Base + *ordValue) == (WORD)NameOrdinal)
 				{
-					funcAddrPtr = (DWORD*)(addr->BufferBaseAddress + addr->ExportDirectory->AddressOfFunctions + (sizeof(DWORD) * *ordValue));					
+					funcAddrPtr = (DWORD*)((addr->BufferBaseAddress + addr->ExportDirectory->AddressOfFunctions) + (sizeof(DWORD) * *ordValue));					
 					found = true;
 				}
 
@@ -556,7 +556,7 @@ SIZE_T PortableExecutable32::GetAddressFromExportTable(const AddrStruct* addr, c
 					continue;
 				}
 				
-				if (*funcAddrPtr > addr->DirectoryAddress->VirtualAddress && *funcAddrPtr < addr->DirectoryAddress->VirtualAddress + addr->DirectoryAddress->Size)
+				if (*funcAddrPtr > addr->DirectoryAddress->VirtualAddress && *funcAddrPtr < (addr->DirectoryAddress->VirtualAddress + addr->DirectoryAddress->Size))
 				{
 					String forwardedModName = (char*)(addr->BufferBaseAddress + *funcAddrPtr);
 					const int ResurseDotIndex = forwardedModName.Find('.');
@@ -609,14 +609,14 @@ SIZE_T PortableExecutable32::GetAddressFromExportTable(const AddrStruct* addr, c
 			}
 			else
 			{
-				const DWORD* const stringPtr = (DWORD*)(addr->BufferBaseAddress + addr->ExportDirectory->AddressOfNames + (i * sizeof(DWORD)));
+				const DWORD* const stringPtr = (DWORD*)((addr->BufferBaseAddress + addr->ExportDirectory->AddressOfNames) + (i * sizeof(DWORD)));
 				const char* const functionName = (char*)(addr->BufferBaseAddress + *stringPtr);
 				
 				const size_t strlength = strlen(NameOrdinal);
 				if ((functionName > (char*)addr->BufferBaseAddress + addr->DirectoryAddress->VirtualAddress && (functionName + strlength + 1) < (char*)addr->BufferEndAddress) && memcmp(NameOrdinal, functionName, strlength) == 0)
 				{
-					const DWORD* const funcAddrPtr = (DWORD*)(addr->BufferBaseAddress + addr->ExportDirectory->AddressOfFunctions + (sizeof(DWORD) * *ordValue));	
-					if (*funcAddrPtr > addr->DirectoryAddress->VirtualAddress && *funcAddrPtr < addr->DirectoryAddress->VirtualAddress + addr->DirectoryAddress->Size)
+					const DWORD* const funcAddrPtr = (DWORD*)((addr->BufferBaseAddress + addr->ExportDirectory->AddressOfFunctions) + (sizeof(DWORD) * *ordValue));	
+					if (*funcAddrPtr > addr->DirectoryAddress->VirtualAddress && *funcAddrPtr < (addr->DirectoryAddress->VirtualAddress + addr->DirectoryAddress->Size))
 					{
 						String forwardedModName = (char*)(addr->BufferBaseAddress + *funcAddrPtr);
 						const int ResurseDotIndex = forwardedModName.Find('.');
@@ -685,7 +685,8 @@ const char* PortableExecutable32::GetOrdinalFunctionNameFromExportTable(const Ad
 		{
 			const DWORD* const stringPtr = (DWORD*)(addr->BufferBaseAddress + addr->ExportDirectory->AddressOfNames + i * sizeof(DWORD));
 			const Byte* const absStringPtr = (Byte*)(addr->BufferBaseAddress + *stringPtr);
-
+			
+			// Make sure the string points inside of the buffer. Scrambled EAT would crash the application.
 			if (absStringPtr > (addr->BufferBaseAddress + addr->DirectoryAddress->Size) && absStringPtr < addr->BufferEndAddress)
 			{
 				return (const char*)absStringPtr;
@@ -1369,7 +1370,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const SIZE_T baseAddr
 		delete[] moduleBuffer;
 	
 		moduleBuffer = new Byte[sectionSizeBytes];
-		CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), firstSectionPtr, moduleBuffer, sectionSizeBytes, NULL);
+		CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, firstSectionPtr, moduleBuffer, sectionSizeBytes, NULL);
 		this->GetImageSectionsList((IMAGE_SECTION_HEADER*)moduleBuffer, sectionCount, LoadedProcessPEInformation.ImageSections);
 		delete[] moduleBuffer;
 	}
@@ -1531,6 +1532,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const SIZE_T baseAddr
 				const DWORD* const stringPtr = (DWORD*)(addr->BufferBaseAddress + addr->ExportDirectory->AddressOfNames + i * sizeof(DWORD));				
 				const Byte* const absStringPtr = (Byte*)(addr->BufferBaseAddress + *stringPtr);
 				
+				// Make sure the string points inside of the buffer. Scrambled EAT would crash the application.
 				if (absStringPtr > (addr->BufferBaseAddress + addr->DirectoryAddress->Size) && absStringPtr < addr->BufferEndAddress)
 				{
 					return (const char*)absStringPtr;
