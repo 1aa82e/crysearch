@@ -1,5 +1,5 @@
 #include "CrySystemHandleAccessMaskWindow.h"
-#include "HandlePermissions.h"
+#include "GlobalDef.h"
 
 CrySystemHandleAccessMaskWindow::CrySystemHandleAccessMaskWindow(const String& type, const DWORD mask)
 {

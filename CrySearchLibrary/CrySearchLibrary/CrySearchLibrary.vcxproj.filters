@@ -30,6 +30,9 @@
     <ClCompile Include="CrtFunctions.c">
       <Filter>Source Files\CRT</Filter>
     </ClCompile>
+    <ClCompile Include="HandlePermissions.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Exports.def">

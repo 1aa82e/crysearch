@@ -39,10 +39,6 @@
 // Vector of visible (loaded in current page) lines of disassembly.
 extern Vector<DisasmLine> DisasmVisibleLines;
 
-#ifdef _WIN64
-	extern "C" inline void AlignPointer(DWORD_PTR* const Address, const DWORD Boundary);
-#endif
-
 // ---------------------------------------------------------------------------------------------
 
 // Debugger default constructor.

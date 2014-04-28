@@ -1,3 +1,4 @@
+*.opensdf
 *.sdf
 *.user
 *.suo
@@ -5,3 +6,6 @@ CryVEHDebugger/Debug/*
 CryVEHDebugger/Release/*
 CryVEHDebugger/CryVEHDebugger/Debug/*
 CryVEHDebugger/CryVEHDebugger/Release/*
+CrySearchLibrary/Bin/*
+CrySearchLibrary/CrySearchLibrary/Debug/*
+CrySearchLibrary/CrySearchLibrary/Release/*

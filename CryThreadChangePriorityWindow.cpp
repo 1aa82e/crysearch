@@ -1,5 +1,5 @@
 #include "CryThreadChangePriorityWindow.h"
-#include "ProcessUtil.h"
+#include "GlobalDef.h"
 
 ThreadChangePriorityWindow::ThreadChangePriorityWindow(const int threadId, const int current)
 {

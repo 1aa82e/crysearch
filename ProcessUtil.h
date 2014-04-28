@@ -55,8 +55,6 @@ struct Win32HandleInformation : Moveable<Win32HandleInformation>
 	LONG Access;	
 };
 
-extern "C" const BOOL CloseRemoteHandle(HANDLE procHandle, HANDLE handle);
-
 void EnumerateHandles(const int processId, Vector<Win32HandleInformation>& handles);
 void EnumerateThreads(const int processId, Vector<Win32ThreadInformation>& threads);
 void EnumerateProcesses(Vector<Win32ProcessInformation>& outList);
@@ -64,18 +62,7 @@ void EnumerateModules(HANDLE procHandle, const int processId);
 bool EnumerateHeaps(Vector<Win32HeapInformation>& heapInfoList);
 void ConstructStackTrace(HANDLE hProcess, const DWORD machineType, const void* const contextPtr, Vector<String>& outStackTrace);
 
-// Defines permissions on a memory block. Allocation or protection functions can use this enumeration.
-#define CRYPROTECTION_READONLY		0
-#define CRYPROTECTION_READWRITE		1
-
-extern "C" const int CryAllocateProcessMemory(HANDLE procHandle, const unsigned int MemorySize, const int protection, SIZE_T* pVirtualAddress);
-
 // Extern thread list definition, which is needed by the disassembly window to set hardware breakpoints.
 extern Vector<Win32ThreadInformation> mThreadsList;
-
-// Thread function are simple and only use C resources so these are declared as being compiled in C files.
-extern "C" const int CryResumeThread(const int ThreadID);
-extern "C" const int CryTerminateThread(const int ThreadID);
-extern "C" const BOOL CrySetThreadPriority(const int threadId, const int prior);
 
 #endif

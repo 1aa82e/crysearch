@@ -8,3 +8,10 @@ EXPORTS
 	IsI386Process
 	CryCreateExternalThread
 	CryGetThreadPriority
+	CrySetThreadPriority
+	CrySuspendThread
+	CryResumeThread
+	CryTerminateThread
+	CryAllocateProcessMemory
+	CloseRemoteHandle
+	GetHandleObjectAccess

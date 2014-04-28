@@ -7,9 +7,6 @@
 #include "CryThreadInformationBlockWindow.h"
 #include "UIUtilities.h"
 
-// suspend thread function, defined externally in a C source file.
-extern "C" const BOOL CrySuspendThread(HANDLE hProcess, const int ThreadID);
-
 Vector<Win32ThreadInformation> mThreadsList;
 
 // External data source conversion functions.

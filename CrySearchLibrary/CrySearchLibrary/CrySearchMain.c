@@ -12,7 +12,7 @@ const BOOL __stdcall CrySearchGetVersion(char* const pStringBuffer, DWORD* const
 	if (pStringBuffer)
 	{
 		// Put version string into output buffer and return TRUE;
-		const DWORD strLength = strlen(CRYSEARCH_VERSION_STRING);
+		const SIZE_T strLength = strlen(CRYSEARCH_VERSION_STRING);
 		if (strLength > *inOutSize)
 		{
 			*inOutSize = 0;
@@ -20,7 +20,7 @@ const BOOL __stdcall CrySearchGetVersion(char* const pStringBuffer, DWORD* const
 		}
 
 		memcpy(pStringBuffer, CRYSEARCH_VERSION_STRING, strLength);
-		*inOutSize = strLength;
+		*inOutSize = (DWORD)strLength;
 
 		return TRUE;
 	}

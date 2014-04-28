@@ -169,6 +169,7 @@
   <ItemGroup>
     <ClCompile Include="CrtFunctions.c" />
     <ClCompile Include="CrySearchMain.c" />
+    <ClCompile Include="HandlePermissions.c" />
     <ClCompile Include="UtilFunctions.c" />
   </ItemGroup>
   <ItemGroup>
