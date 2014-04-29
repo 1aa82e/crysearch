@@ -6,6 +6,7 @@
  */
 
 #include "UtilFunctions.h"
+#include "ProcessCore.h"
 
 // Retrieves the human readable version string for CrySearch.
 // Returns TRUE if function succeeded and FALSE otherwise.

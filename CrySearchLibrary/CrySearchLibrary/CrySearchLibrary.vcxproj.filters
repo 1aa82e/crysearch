@@ -33,6 +33,12 @@
     <ClCompile Include="HandlePermissions.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ProcessCore.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PeUtil.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Exports.def">
@@ -44,6 +50,9 @@
       <Filter>Header Files\SDK</Filter>
     </ClInclude>
     <ClInclude Include="..\SDK\UtilFunctions.h">
+      <Filter>Header Files\SDK</Filter>
+    </ClInclude>
+    <ClInclude Include="..\SDK\ProcessCore.h">
       <Filter>Header Files\SDK</Filter>
     </ClInclude>
   </ItemGroup>

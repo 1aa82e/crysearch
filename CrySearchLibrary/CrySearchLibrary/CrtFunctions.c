@@ -11,6 +11,7 @@ void* memcpy(void* dest, const void* src, size_t n)
 }
 
 // Custom implementation of strlen to avoid linking to CRT.
+#pragma function(strlen)
 size_t strlen(const char* s)
 {
 	const char* p = s;

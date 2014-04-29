@@ -100,8 +100,6 @@ struct Win32PEInformation
 	};
 };
 
-DWORD Wow64GetProcAddress(HANDLE hProcess, const DWORD moduleBase, const char* funcName);
-
 // Address struct for holding addresses. Pointer to this struct is passed to PE functions that needs them.
 // BaseAddress:			The base address of the module with the export table in memory;
 // BufferBaseAddress:	The address of the buffer, relative to the base (- 0x1000 for PE32);
