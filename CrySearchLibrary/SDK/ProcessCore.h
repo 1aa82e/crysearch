@@ -18,9 +18,8 @@ extern "C"
 	const int CryTerminateThread(const int ThreadID);
 	const int CryAllocateProcessMemory(HANDLE procHandle, const unsigned int MemorySize, const int protection, SIZE_T* pVirtualAddress);
 	const BOOL CloseRemoteHandle(HANDLE procHandle, HANDLE handle);
+	DWORD Wow64GetProcAddress(HANDLE hProcess, const DWORD moduleBase, const char* const funcName);
 
 #ifdef __cplusplus
 }
 #endif
-
-DWORD Wow64GetProcAddress(HANDLE hProcess, const DWORD moduleBase, const char* funcName);

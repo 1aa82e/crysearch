@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <intrin.h>
 
+#pragma warning(disable : 4996)
+
 // Uses the cpuid instruction to retrieve information about the supported features by the processor.
 // The supported values are displayed in the about dialog.
 void GetProcessorSupportInformation(char pProcInformationString[128])
@@ -36,9 +38,58 @@ void GetProcessorSupportInformation(char pProcInformationString[128])
 	htt = CPUInfo[3] & (1 << 28);
 	
 	// Create output string to display to the user.
-	sprintf_s(pProcInformationString, 128, "\1[+70 Your processor supports: %s%s%s%s%s%s%s%s%s%s%s.]", sse ? "SSE, " : "", sse2 ? "SSE2, " : ""
+	/*sprintf_s(pProcInformationString, 128, "\1[+70 Your processor supports: %s%s%s%s%s%s%s%s%s%s%s.]", sse ? "SSE, " : "", sse2 ? "SSE2, " : ""
 		, sse3 ? "SSE3, " : "", ssse3 ? "SSSE3, " : "", sse41 ? "SSE4.1, " : "", sse42 ? "SSE4.2, " : "", mmx ? "MMX, " : ""
-		, avx ? "AVX, " : "", vtx ? "VT, " : "", htt ? "HTT, " : "", pae ? "PAE, " : "");
+		, avx ? "AVX, " : "", vtx ? "VT, " : "", htt ? "HTT, " : "", pae ? "PAE, " : "");*/
+
+	strcpy(pProcInformationString, "\1[+70 Your processor supports: ");
+
+	if (sse)
+	{
+		strcat(pProcInformationString, "SSE, ");
+	}
+	if (sse2)
+	{
+		strcat(pProcInformationString, "SSE2, ");
+	}
+	if (sse3)
+	{
+		strcat(pProcInformationString, "SSE3, ");
+	}
+	if (ssse3)
+	{
+		strcat(pProcInformationString, "SSSE3, ");
+	}
+	if (sse41)
+	{
+		strcat(pProcInformationString, "SSE4.1, ");
+	}
+	if (sse42)
+	{
+		strcat(pProcInformationString, "SSE4.2, ");
+	}
+	if (mmx)
+	{
+		strcat(pProcInformationString, "MMX, ");
+	}
+	if (avx)
+	{
+		strcat(pProcInformationString, "AVX, ");
+	}
+	if (vtx)
+	{
+		strcat(pProcInformationString, "VT, ");
+	}
+	if (htt)
+	{
+		strcat(pProcInformationString, "HTT, ");
+	}
+	if (pae)
+	{
+		strcat(pProcInformationString, "PAE, ");
+	}
+
+	strcat(pProcInformationString, ".]");
 	
 	// If the last character of the string is a comma, truncate it.
 	lastChar = strlen(pProcInformationString) - 4;

@@ -1,7 +1,6 @@
 #include "CrySearchAboutDialog.h"
 #include "ImlProvider.h"
-
-extern "C" void GetProcessorSupportInformation(char pProcInformationString[128]);
+#include "GlobalDef.h"
 
 CrySearchAboutDialog::CrySearchAboutDialog()
 {

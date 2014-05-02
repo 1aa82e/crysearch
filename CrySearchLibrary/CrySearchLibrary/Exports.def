@@ -3,6 +3,7 @@ LIBRARY
 EXPORTS
 
 	CrySearchGetVersion
+	GetProcessorSupportInformation
 	CrySetBits
 	GetIsMultipleOf
 	IsI386Process

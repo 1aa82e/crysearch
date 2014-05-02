@@ -21,6 +21,10 @@ extern "C"
 	const BOOL GetIsMultipleOf(const LONG_PTR intVal, const int mulVal);
 	void GetHandleObjectAccess(const DWORD type, const DWORD mask, char** const outBuffer, DWORD* const outSize);
 
+	// Retrieves information about the processor in the current system.
+	// Returns a string of supported extensions into the first parameter.
+	void GetProcessorSupportInformation(char pProcInformationString[128]);
+
 #ifdef _WIN64
 	__declspec(dllexport) void AlignPointer(DWORD_PTR* Address, const DWORD Boundary);
 #endif

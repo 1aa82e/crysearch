@@ -36,7 +36,10 @@
     <ClCompile Include="ProcessCore.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="PeUtil.cpp">
+    <ClCompile Include="ProcessorInformation.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PeUtil.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
