@@ -80,11 +80,13 @@
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)Bin\x86\</OutDir>
     <TargetName>CrySearch32</TargetName>
+    <GenerateManifest>false</GenerateManifest>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <TargetName>CrySearch64</TargetName>
     <OutDir>$(SolutionDir)Bin\x64\</OutDir>
+    <GenerateManifest>false</GenerateManifest>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -129,7 +131,8 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ModuleDefinitionFile>Exports.def</ModuleDefinitionFile>
       <NoEntryPoint>true</NoEntryPoint>
-      <IgnoreSpecificDefaultLibraries>libcmtd.lib</IgnoreSpecificDefaultLibraries>
+      <IgnoreSpecificDefaultLibraries>
+      </IgnoreSpecificDefaultLibraries>
     </Link>
     <PostBuildEvent>
       <Command>
@@ -184,7 +187,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="CrtFunctions.c" />
+    <ClCompile Include="CrtFunctions.c">
+      <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</WholeProgramOptimization>
+    </ClCompile>
     <ClCompile Include="CrySearchMain.c" />
     <ClCompile Include="HandlePermissions.c" />
     <ClCompile Include="PeUtil.c" />
@@ -197,6 +202,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\SDK\CrySearch.h" />
+    <ClInclude Include="..\SDK\Plugin.h" />
     <ClInclude Include="..\SDK\ProcessCore.h" />
     <ClInclude Include="..\SDK\UtilFunctions.h" />
   </ItemGroup>

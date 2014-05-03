@@ -5,14 +5,7 @@
 CrySearchAboutDialog::CrySearchAboutDialog()
 {
 	this->Title("About CrySearch").SetRect(0, 0, 445, 210);
-	
 	this->mOk <<= THISBACK(CloseAboutWindow);
-
-#ifdef _WIN64																								  // This DWORD contains the minor version number
-	const DWORD msg[] = { 0x372B5B01, 0x72432030, 0x61655379, 0x20686372, 0x26343678, 0x73726556, 0x206E6F69, 0x30312E31, 0x20796226, 0x6C6F7665, 0x6F697475, 0x3633356E, 0x4322203A, 0x5D227972, 0x00000000 };
-#else
-	const DWORD msg[] = { 0x372B5B01, 0x72432030, 0x61655379, 0x20686372, 0x26363878, 0x73726556, 0x206E6F69, 0x30312E31, 0x20796226, 0x6C6F7665, 0x6F697475, 0x3633356E, 0x4322203A, 0x5D227972, 0x00000000 };
-#endif
 	
 	const DWORD hyperLink[] = { 0x372B5B01, 0x5E5B2030, 0x2E777777, 0x6E6B6E75, 0x636E776F, 0x74616568, 0x656D2E73, 0x6E55205E, 0x576F6E4B, 0x6568436E, 0x2E735461, 0x5D5D656D, 0x00000000 };
 	
@@ -61,9 +54,14 @@ CrySearchAboutDialog::CrySearchAboutDialog()
 	char info[128];
 	GetProcessorSupportInformation(info);
 	
+	// Retrieve CrySearch version information from backend library.
+	char msg[512];
+	DWORD sz = 512;
+	CrySearchGetVersion(msg, &sz);
+	
 	*this
 		<< this->mProgramImage.SetImage(CrySearchIml::CrySearch()).LeftPos(5, 64).TopPos(5, 64)
-		<< this->mProgramInformation.SetLabel(t_((char*)msg)).HSizePos(80, 5).TopPos(2, 75)
+		<< this->mProgramInformation.SetLabel(t_(msg)).HSizePos(80, 5).TopPos(2, 75)
 		<< this->mLinkLabel.SetLabel(t_((char*)hyperLink)).HSizePos(80, 200).TopPos(70, 25)
 		<< this->mProcessorSupportLabel.SetLabel(info).HSizePos(80, 5).BottomPos(73, 35)
 		<< this->mUppLinkDescription.SetLabel(t_((char*)uppDesc)).HSizePos(80, 80).BottomPos(40, 35)

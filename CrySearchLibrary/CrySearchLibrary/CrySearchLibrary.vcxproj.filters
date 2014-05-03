@@ -58,5 +58,8 @@
     <ClInclude Include="..\SDK\ProcessCore.h">
       <Filter>Header Files\SDK</Filter>
     </ClInclude>
+    <ClInclude Include="..\SDK\Plugin.h">
+      <Filter>Header Files\SDK</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

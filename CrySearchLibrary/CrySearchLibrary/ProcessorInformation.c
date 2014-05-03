@@ -21,7 +21,8 @@ void GetProcessorSupportInformation(char pProcInformationString[128])
 	BOOL pae;
 	int CPUInfo[4] = {-1};
 	size_t lastChar = 0;
-	
+	char* prefixString = "\1[+70 Your processor supports: ";
+
 	// Get basic CPU information and dissect this information into seperate variables.
 	__cpuid(CPUInfo, 1);
 
@@ -42,7 +43,7 @@ void GetProcessorSupportInformation(char pProcInformationString[128])
 		, sse3 ? "SSE3, " : "", ssse3 ? "SSSE3, " : "", sse41 ? "SSE4.1, " : "", sse42 ? "SSE4.2, " : "", mmx ? "MMX, " : ""
 		, avx ? "AVX, " : "", vtx ? "VT, " : "", htt ? "HTT, " : "", pae ? "PAE, " : "");*/
 
-	strcpy(pProcInformationString, "\1[+70 Your processor supports: ");
+	strcpy(pProcInformationString, prefixString);
 
 	if (sse)
 	{
