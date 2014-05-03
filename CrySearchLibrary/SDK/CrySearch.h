@@ -1,3 +1,5 @@
+#pragma once
+
 /*
  *	CrySearch library include file
  *	evolution536, UnknownCheats, 2014

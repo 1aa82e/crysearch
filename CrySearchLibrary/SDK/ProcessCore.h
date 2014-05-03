@@ -1,3 +1,5 @@
+#pragma once
+
 #include <Windows.h>
 
 // Defines permissions on a memory block. Allocation or protection functions can use this enumeration.

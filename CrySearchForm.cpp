@@ -20,6 +20,7 @@
 
 // Extern declaration of global variables.
 MemoryScanner* mMemoryScanner;
+PluginSystem* mPluginSystem;
 AddressTable loadedTable;
 SettingsFile GlobalSettingsInstance;
 bool viewAddressTableValueHex;
@@ -481,6 +482,9 @@ CrySearchForm::CrySearchForm(const char* fn)
 	mMemoryScanner->UpdateScanningProgress = THISBACK(ScannerUserInterfaceUpdate);
 	mMemoryScanner->ScanStarted = THISBACK(ScannerScanStarted);
 	
+	// Initialize the plugin system.
+	mPluginSystem = PluginSystem::GetInstance();
+	
 	// Set timer that runs to keep the UI address table updated.
 	SetTimeCallback(GlobalSettingsInstance.GetAddressTableUpdateInterval(), THISBACK(AddressValuesUpdater), 10);
 	
@@ -577,8 +581,10 @@ void CrySearchForm::ToolsMenu(Bar& pBar)
 		pBar.Add("Allocate Memory", CrySearchIml::CrySearch(), THISBACK(AllocateMemoryButtonClicked));
 		pBar.Separator();
 		pBar.Add((this->mUserAddressList.GetCount() > 0), "Code Generation", CrySearchIml::CodeGenerationButton(), THISBACK(CodeGenerationButtonClicked));
-		//pBar.Separator();
+		pBar.Separator();
 	}
+	
+	pBar.Add("Plugins", CrySearchIml::PluginsMenuSmall(), THISBACK(PluginsMenuClicked));
 	
 	// Dependency checker is for non-opened processes.
 	//pBar.Add("Dependency Checker", CrySearchIml::DependencyCheckerSmall(), THISBACK(DependencyCheckerButtonClicked));
@@ -776,6 +782,11 @@ void CrySearchForm::SetDataBreakpointOnExecute()
 void CrySearchForm::RemoveBreakpointMenu()
 {
 	mDebugger->RemoveBreakpoint(loadedTable[this->mUserAddressList.GetCursor()]->Address);
+}
+
+void CrySearchForm::PluginsMenuClicked()
+{
+	mPluginSystem->RetrieveAndLoadAllPlugins();
 }
 
 /*void CrySearchForm::DependencyCheckerButtonClicked()

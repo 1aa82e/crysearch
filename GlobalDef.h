@@ -7,6 +7,7 @@
 #include "NativeAPI.h"
 #include "PortableExecutable.h"
 #include "CryDebugger.h"
+#include "PluginSystem.h"
 
 #include "CrySearchLibrary/SDK/CrySearch.h"
 
@@ -32,6 +33,7 @@ extern CryDebugger* mDebugger;
 extern AddressTable loadedTable;
 extern SettingsFile GlobalSettingsInstance;
 extern MemoryScanner* mMemoryScanner;
+extern PluginSystem* mPluginSystem;
 extern PortableExecutable* mPeInstance;
 extern Vector<Win32ModuleInformation> LoadedModulesList;
 extern Win32PEInformation LoadedProcessPEInformation;

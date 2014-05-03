@@ -115,6 +115,7 @@ private:
 	void CheckProcessTermination();
 	void LinkHotkeysToActions();
 	void RemoveBreakpointMenu();
+	void PluginsMenuClicked();
 	//void DependencyCheckerButtonClicked();
 	
 	void WhenProcessOpened(Win32ProcessInformation& pProc);

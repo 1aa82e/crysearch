@@ -1,3 +1,5 @@
+#pragma once
+
 #include <Windows.h>
 
 // Conversion type definitions for GetHandleObjectAccess.

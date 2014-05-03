@@ -1,5 +1,10 @@
 CrySearch application TODO list by evolution536
 
+- Plugin system:
+	- new threads for opening processes?
+	- x86 / x64?
+	- Plugin DLL to override process opening sequence;
+
 - Finish depcheck implementation;
 - Dump .NET modules?
 - Cancel IO on application shutdown when huge scan is still running (XP support blocks me here);
@@ -44,10 +49,6 @@ CrySearch application TODO list by evolution536
 	- Code generation customized to use offsets;
 	- Manually add = offsets.
 	- Pointers as addresses (using offsets);
-
-- Plugin system:
-	- Design plugin SDK;
-	- Plugin DLL to override process opening sequence;
 
 - Pointer scan;
 - Ability to import cheat tables;

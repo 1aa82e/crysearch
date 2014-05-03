@@ -9,3 +9,6 @@ CryVEHDebugger/CryVEHDebugger/Release/*
 CrySearchLibrary/Bin/*
 CrySearchLibrary/CrySearchLibrary/Debug/*
 CrySearchLibrary/CrySearchLibrary/Release/*
+Plugins/SectionDumper/SectionDumper/Debug/*
+Plugins/SectionDumper/SectionDumper/Release/*
+Plugins/SectionDumper/Bin/*
