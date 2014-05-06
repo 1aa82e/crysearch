@@ -139,7 +139,7 @@ bool CryDisasmCtrl::Key(dword key, int count)
 
 void CryDisasmCtrl::HeapWalkMenuClicked()
 {
-	CryHeapWalkDialog* chwd = new CryHeapWalkDialog();
+	CryHeapWalkDialog* chwd = new CryHeapWalkDialog(CrySearchIml::HeapWalkSmall());
 	chwd->Execute();
 	delete chwd;
 }

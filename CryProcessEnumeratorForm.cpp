@@ -54,9 +54,9 @@ void ProcessSelectionDragArea::LeftUp(Point p, dword keyflags)
 	}
 }
 
-CryProcessEnumeratorForm::CryProcessEnumeratorForm()
+CryProcessEnumeratorForm::CryProcessEnumeratorForm(const Image& icon) : CryDialogTemplate(icon)
 {
-	this->Title("Select Process").Icon(CrySearchIml::AttachToProcessMenu).SetRect(0, 0, 340, 360);
+	this->Title("Select Process").SetRect(0, 0, 340, 360);
 	
 	this->mOk <<= THISBACK(OkButtonClicked);
 	this->mCancel <<= THISBACK(CancelButtonClicked);

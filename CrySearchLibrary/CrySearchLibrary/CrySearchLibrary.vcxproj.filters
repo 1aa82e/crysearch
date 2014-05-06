@@ -42,6 +42,9 @@
     <ClCompile Include="PeUtil.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="PluginUtil.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Exports.def">
@@ -60,6 +63,9 @@
     </ClInclude>
     <ClInclude Include="..\SDK\Plugin.h">
       <Filter>Header Files\SDK</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

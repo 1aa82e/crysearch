@@ -5,6 +5,7 @@
 #include "VirtualDropList.h"
 #include "AsyncDisassembler.h"
 #include "CryDialogTemplate.h"
+#include "ImlProvider.h"
 
 // Small dialog that is opened when the 'Go to address' context menu action is chosen from the disassembly view.
 class CryDisasmGoToAddressDialog sealed : public CryDialogTemplate
@@ -42,7 +43,7 @@ private:
 	
 	typedef CryDisasmGoToAddressDialog CLASSNAME;
 public:
-	CryDisasmGoToAddressDialog(LONG_PTR* addr)
+	CryDisasmGoToAddressDialog(LONG_PTR* addr) : CryDialogTemplate(CrySearchIml::CrySearch())
 	{
 		this->addrPtr = addr;
 		

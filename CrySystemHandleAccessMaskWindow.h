@@ -13,7 +13,7 @@ private:
 	
 	typedef CrySystemHandleAccessMaskWindow CLASSNAME;
 public:
-	CrySystemHandleAccessMaskWindow(const String& type, const DWORD mask);
+	CrySystemHandleAccessMaskWindow(const String& type, const DWORD mask, const Image& icon);
 	~CrySystemHandleAccessMaskWindow();
 };
 

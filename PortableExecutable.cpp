@@ -373,37 +373,6 @@ PortableExecutable32::~PortableExecutable32()
 	
 }
 
-// Read the memory of a module into a local buffer.
-// Returns a pointer to a valid buffer with 'moduleSize' size, whether the reads succesfully completed or not.
-Byte* PortableExecutable32::ReadModuleFromMemory(const SIZE_T moduleBase, const DWORD moduleSize) const
-{
-	Byte* const buffer = new Byte[moduleSize];
-	
-	// Read headers from the input module.
-	CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)moduleBase, buffer, 0x400, NULL);
-
-	const IMAGE_NT_HEADERS32* const pNTHeader =(IMAGE_NT_HEADERS32*)(buffer + ((IMAGE_DOS_HEADER*)buffer)->e_lfanew);
-	const IMAGE_OPTIONAL_HEADER32* const pOptionalHeader = (IMAGE_OPTIONAL_HEADER32*)&pNTHeader->OptionalHeader;
-	
-	// Read the section headers from the input module.
-	unsigned int i = 0;
-	IMAGE_SECTION_HEADER* pSecHeader;
-	unsigned int bufPtr = pOptionalHeader->SizeOfHeaders;
-
-	// Iterate through sections and save them for application use.
-	for (pSecHeader = IMAGE_FIRST_SECTION(pNTHeader); i < pNTHeader->FileHeader.NumberOfSections; ++i, ++pSecHeader)
-	{
-		pSecHeader->Misc.VirtualSize = pSecHeader->SizeOfRawData;
-		
-		memcpy(buffer + bufPtr, pSecHeader, sizeof(IMAGE_SECTION_HEADER));
-		bufPtr += sizeof(IMAGE_SECTION_HEADER);
-		
-		CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(pOptionalHeader->ImageBase + pSecHeader->VirtualAddress), buffer + pSecHeader->PointerToRawData, pSecHeader->SizeOfRawData, NULL);
-	}
-	
-	return buffer;
-}
-
 // Retrieves PE header information from the loaded process. Information is saved in global storage that has process lifetime.
 // Note that IMAGE_NT_HEADERS and IMAGE_OPTIONAL_HEADER are explicitly defined as the 32 bit version. If compiled as 64 bit the structs differ.
 void PortableExecutable32::GetExecutablePeInformation() const
@@ -1046,40 +1015,6 @@ bool PortableExecutable32::HideModuleFromProcess(const Win32ModuleInformation& m
 	return found;
 }
 
-// Dumps a module in the loaded process to a file on the harddisk.
-// Returns true if the operation succeeded, and false if it did not succeed.
-bool PortableExecutable32::DumpProcessModule(const String& fileName, const Win32ModuleInformation& module) const
-{
-	bool result = true;
-
-	const Byte* const buffer = this->ReadModuleFromMemory(module.BaseAddress, (DWORD)module.Length);
-	
-	// Create output file
-	HANDLE hFile = CreateFile(fileName, GENERIC_WRITE, 0, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
-	if (hFile == INVALID_HANDLE_VALUE)
-	{
-		result = false;
-	}
-	
-	// Write output to dump file
-	DWORD bytesWritten;
-#ifdef _WIN64
-	if (!WriteFile(hFile, buffer, (int)module.Length, &bytesWritten, NULL))
-#else
-	if (!WriteFile(hFile, buffer, module.Length, &bytesWritten, NULL))
-#endif
-	{
-		DeleteFile(fileName);
-		result = false;
-	}
-	
-	// All succeeded, free resources and return
-	delete[] buffer;
-	CloseHandle(hFile);
-	
-	return result;
-}
-
 // Dumps a specific section in the loaded process to a file on the harddisk.
 // Returns true if the operation succeeded, and false if it did not succeed.
 bool PortableExecutable32::DumpProcessSection(const String& fileName, const SIZE_T address, const SIZE_T size) const
@@ -1227,37 +1162,6 @@ void PortableExecutable32::RestoreExportTableAddressImport(const SIZE_T baseAddr
 	PortableExecutable64::~PortableExecutable64()
 	{
 		
-	}
-	
-	// Read the memory of a module into a local buffer.
-	// Returns a pointer to a valid buffer with 'moduleSize' size, whether the reads succesfully completed or not.
-	Byte* PortableExecutable64::ReadModuleFromMemory(const SIZE_T moduleBase, const DWORD moduleSize) const
-	{
-		Byte* const buffer = new Byte[moduleSize];
-		
-		// Read headers
-		CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)moduleBase, buffer, 0x400, NULL);
-	
-		const IMAGE_NT_HEADERS* const pNTHeader =(IMAGE_NT_HEADERS*)(buffer + ((IMAGE_DOS_HEADER*)buffer)->e_lfanew);
-		const IMAGE_OPTIONAL_HEADER* const pOptionalHeader = (IMAGE_OPTIONAL_HEADER*)&pNTHeader->OptionalHeader;
-		
-		// Read sections
-		unsigned int i = 0;
-		IMAGE_SECTION_HEADER* pSecHeader;
-		unsigned int bufPtr = pOptionalHeader->SizeOfHeaders;
-	
-		// Iterate through sections and save them for application use.
-		for (pSecHeader = IMAGE_FIRST_SECTION(pNTHeader); i < pNTHeader->FileHeader.NumberOfSections; ++i, ++pSecHeader)
-		{
-			pSecHeader->Misc.VirtualSize = pSecHeader->SizeOfRawData;
-			
-			memcpy(buffer + bufPtr, pSecHeader, sizeof(IMAGE_SECTION_HEADER));
-			bufPtr += sizeof(IMAGE_SECTION_HEADER);
-			
-			CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(pOptionalHeader->ImageBase + pSecHeader->VirtualAddress), buffer + pSecHeader->PointerToRawData, pSecHeader->SizeOfRawData, NULL);
-		}
-		
-		return buffer;
 	}
 	
 	// Retrieves PE header information from the loaded process. Information is saved in global storage that has process lifetime.
@@ -1882,36 +1786,6 @@ void PortableExecutable32::RestoreExportTableAddressImport(const SIZE_T baseAddr
 	    while(Head != Node && moduleCount < LoadedModulesList.GetCount());
 	
 		return found;
-	}
-	
-	// Dumps a module in the loaded process to a file on the harddisk.
-	// Returns true if the operation succeeded, and false if it did not succeed.
-	bool PortableExecutable64::DumpProcessModule(const String& fileName, const Win32ModuleInformation& module) const
-	{
-		bool result = true;
-		
-		const Byte* const buffer = this->ReadModuleFromMemory(module.BaseAddress, (DWORD)module.Length);
-		
-		// Create output file
-		HANDLE hFile = CreateFile(fileName, GENERIC_WRITE, 0, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
-		if (hFile == INVALID_HANDLE_VALUE)
-		{
-			result = false;
-		}
-		
-		// Write output to dump file
-		DWORD bytesWritten;
-		if (!WriteFile(hFile, buffer, (int)module.Length, &bytesWritten, NULL))
-		{
-			DeleteFile(fileName);
-			result = false;
-		}
-		
-		// All succeeded, free resources and return
-		delete[] buffer;
-		CloseHandle(hFile);
-		
-		return result;
 	}
 	
 	// Dumps a specific section in the loaded process to a file on the harddisk.

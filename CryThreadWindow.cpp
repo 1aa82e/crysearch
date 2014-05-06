@@ -138,7 +138,7 @@ void CryThreadWindow::AttemptResumeAllThreads()
 void CryThreadWindow::CreateExternalThread()
 {
 	CreateNewThreadStruct dataStruct;
-	CryCreateExternalThreadWindow* newThreadWnd = new CryCreateExternalThreadWindow(&dataStruct);
+	CryCreateExternalThreadWindow* newThreadWnd = new CryCreateExternalThreadWindow(&dataStruct, CrySearchIml::AddToAddressList());
 	
 	if (newThreadWnd->Execute() != 10)
 	{

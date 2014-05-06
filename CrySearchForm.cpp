@@ -8,10 +8,11 @@
 #include "CryCodeGenerationForm.h"
 #include "CryProcessEnvironmentBlockWindow.h"
 #include "CrySystemHandleInformationWindow.h"
+#include "CryPluginsWindow.h"
 #include "CrashHandler.h"
 #include "ImlProvider.h"
 #include "UIUtilities.h"
-#include "DependencyChecker.h"
+//#include "DependencyChecker.h"
 
 // Global source IML file declaration. Imaging in the GUI depends on this.
 #define IMAGECLASS CrySearchIml
@@ -484,6 +485,7 @@ CrySearchForm::CrySearchForm(const char* fn)
 	
 	// Initialize the plugin system.
 	mPluginSystem = PluginSystem::GetInstance();
+	mPluginSystem->RetrieveAndLoadAllPlugins();
 	
 	// Set timer that runs to keep the UI address table updated.
 	SetTimeCallback(GlobalSettingsInstance.GetAddressTableUpdateInterval(), THISBACK(AddressValuesUpdater), 10);
@@ -786,7 +788,9 @@ void CrySearchForm::RemoveBreakpointMenu()
 
 void CrySearchForm::PluginsMenuClicked()
 {
-	mPluginSystem->RetrieveAndLoadAllPlugins();
+	CryPluginsWindow* cpw = new CryPluginsWindow();
+	cpw->Execute();
+	delete cpw;
 }
 
 /*void CrySearchForm::DependencyCheckerButtonClicked()
@@ -1149,7 +1153,7 @@ void CrySearchForm::MemorySearch()
 		return;
 	}
 	
-	CryNewScanForm* newScan = new CryNewScanForm(true);
+	CryNewScanForm* newScan = new CryNewScanForm(true, CrySearchIml::SearchMemoryMenu());
 	if (newScan->Execute() != 10)
 	{
 		delete newScan;
@@ -1175,7 +1179,7 @@ void CrySearchForm::RefreshSearchResults()
 		return;
 	}
 	
-	CryNewScanForm newScan(false);
+	CryNewScanForm newScan(false, CrySearchIml::SearchMemoryMenu());
 	if (newScan.Execute() != 10)
 	{
 		return;
@@ -1289,7 +1293,7 @@ void CrySearchForm::StartMemoryScanReliefGUI(bool FirstScan)
 
 void CrySearchForm::OpenProcessMenu()
 {
-	CryProcessEnumeratorForm* cpef = new CryProcessEnumeratorForm();
+	CryProcessEnumeratorForm* cpef = new CryProcessEnumeratorForm(CrySearchIml::AttachToProcessMenu());
 	cpef->ProcessOpened = THISBACK(WhenProcessOpened);
 	cpef->Execute();
 	delete cpef;
@@ -1419,14 +1423,14 @@ void CrySearchForm::CodeGenerationButtonClicked()
 
 void CrySearchForm::ViewSystemHandlesButtonClicked()
 {
-	CrySystemHandleInformationWindow* cshiw = new CrySystemHandleInformationWindow();
+	CrySystemHandleInformationWindow* cshiw = new CrySystemHandleInformationWindow(CrySearchIml::ViewHandlesButton());
 	cshiw->Execute();
 	delete cshiw;
 }
 
 void CrySearchForm::ViewPEBButtonClicked()
 {
-	CryProcessEnvironmentBlockWindow* cpebw = new CryProcessEnvironmentBlockWindow();
+	CryProcessEnvironmentBlockWindow* cpebw = new CryProcessEnvironmentBlockWindow(CrySearchIml::AboutButton());
 	cpebw->Execute();
 	delete cpebw;
 }

@@ -2,7 +2,7 @@
 #include "ImlProvider.h"
 #include "GlobalDef.h"
 
-CrySearchAboutDialog::CrySearchAboutDialog()
+CrySearchAboutDialog::CrySearchAboutDialog() : CryDialogTemplate(CrySearchIml::AboutButton())
 {
 	this->Title("About CrySearch").SetRect(0, 0, 445, 210);
 	this->mOk <<= THISBACK(CloseAboutWindow);

@@ -59,7 +59,7 @@ private:
 	
 	void DragFromCtrlCompleted(HWND hwnd);
 public:
-	CryProcessEnumeratorForm();
+	CryProcessEnumeratorForm(const Image& icon);
 	~CryProcessEnumeratorForm() { }
 	
 	typedef CryProcessEnumeratorForm CLASSNAME;

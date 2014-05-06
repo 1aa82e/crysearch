@@ -1,7 +1,7 @@
 #include "CryHeapWalkDialog.h"
 #include "ProcessUtil.h"
 
-CryHeapWalkDialog::CryHeapWalkDialog()
+CryHeapWalkDialog::CryHeapWalkDialog(const Image& icon) : CryDialogTemplate(icon)
 {
 	this->Title("Heap Walk").Sizeable().SetRect(0, 0, 550, 200);
 	

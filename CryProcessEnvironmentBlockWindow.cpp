@@ -2,7 +2,7 @@
 #include "GlobalDef.h"
 #include "NativeAPI.h"
 
-CryProcessEnvironmentBlockWindow::CryProcessEnvironmentBlockWindow()
+CryProcessEnvironmentBlockWindow::CryProcessEnvironmentBlockWindow(const Image& icon) : CryDialogTemplate(icon)
 {
 	this->Title("Process Information").Sizeable().SetRect(0, 0, 350, 300);
 	

@@ -1,6 +1,7 @@
 #include "CryAllocateMemoryWindow.h"
+#include "ImlProvider.h"
 
-CryAllocateMemoryWindow::CryAllocateMemoryWindow(AllocateMemoryDataStruct* dataStruct)
+CryAllocateMemoryWindow::CryAllocateMemoryWindow(AllocateMemoryDataStruct* dataStruct) : CryDialogTemplate(CrySearchIml::CrySearch())
 {
 	this->dataStruct = dataStruct;
 	

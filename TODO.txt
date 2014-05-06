@@ -1,9 +1,9 @@
 CrySearch application TODO list by evolution536
 
 - Plugin system:
-	- new threads for opening processes?
-	- x86 / x64?
-	- Plugin DLL to override process opening sequence;
+	- auto deploy correct plugins to build dir?
+	- new threads for opening plugins?
+	- Plugin DLL to override process opening sequence; (maybe other templates)
 
 - Finish depcheck implementation;
 - Dump .NET modules?
@@ -28,6 +28,7 @@ CrySearch application TODO list by evolution536
 		- Warning messages:
 			- PE Headers may be destroyed (process open);
 			- Executable module of process was hidden, undefined behavior;
+			- Plugin(s) failed to load;
 		- Info messages:
 			- Could be anything...
 

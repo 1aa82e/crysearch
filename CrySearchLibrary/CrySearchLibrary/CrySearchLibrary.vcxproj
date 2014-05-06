@@ -193,6 +193,7 @@
     <ClCompile Include="CrySearchMain.c" />
     <ClCompile Include="HandlePermissions.c" />
     <ClCompile Include="PeUtil.c" />
+    <ClCompile Include="PluginUtil.c" />
     <ClCompile Include="ProcessCore.c" />
     <ClCompile Include="ProcessorInformation.c" />
     <ClCompile Include="UtilFunctions.c" />
@@ -205,6 +206,7 @@
     <ClInclude Include="..\SDK\Plugin.h" />
     <ClInclude Include="..\SDK\ProcessCore.h" />
     <ClInclude Include="..\SDK\UtilFunctions.h" />
+    <ClInclude Include="resource.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

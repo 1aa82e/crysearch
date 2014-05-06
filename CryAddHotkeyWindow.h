@@ -28,7 +28,7 @@ private:
 	
 	typedef CryAddHotkeyWindow CLASSNAME;
 public:
-	CryAddHotkeyWindow(CrySearchHotKey* entry);
+	CryAddHotkeyWindow(CrySearchHotKey* entry, const Image& icon);
 	~CryAddHotkeyWindow();
 };
 

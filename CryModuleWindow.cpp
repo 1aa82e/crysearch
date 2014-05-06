@@ -70,8 +70,29 @@ void CryModuleWindow::ModuleListRightClick(Bar& pBar)
 
 void CryModuleWindow::DumpModuleSubMenu(Bar& pBar)
 {
-	pBar.Add("Full", THISBACK(DumpModuleButton));
+	pBar.Add("Full", THISBACK(DumpModuleButtonSubMenu));
 	pBar.Add("Section", THISBACK(DumpModuleSectionButton));
+}
+
+void CryModuleWindow::DumpModuleButtonSubMenu(Bar& pBar)
+{
+	// Retrieve all loaded dump engine plugins.
+	Vector<CrySearchPlugin> dumpers;
+	mPluginSystem->GetPluginsByType(CRYPLUGIN_DUMPER, dumpers);
+	
+	// If there are no dumpers available, display a disabled message button.
+	if (!dumpers.GetCount())
+	{
+		pBar.Add(false, "No Dumpers available", THISBACK1(DumpModuleButton, NULL));
+		return;
+	}
+	
+	// Still here, so add menus for the dumpers.
+	for (int i = 0; i < dumpers.GetCount(); ++i)
+	{
+		const CrySearchPlugin& plugin = dumpers[i];
+		pBar.Add(plugin.PluginHeader->PluginName, THISBACK1(DumpModuleButton, (SIZE_T)plugin.BaseAddress));
+	}
 }
 
 void CryModuleWindow::OpenModulePathInExplorer()
@@ -91,10 +112,22 @@ void CryModuleWindow::OpenModulePathInExplorer()
 void CryModuleWindow::UnloadModule()
 {
 	const SIZE_T oldBase = LoadedModulesList[this->mModules.GetCursor()].BaseAddress;
+	const char* pName = NULL;
 	
-	mPeInstance->UnloadLibraryExternal(oldBase);
+	// The module that was unloaded may be a CrySearch plugin. Make sure it is fixed up.
+	if (pName = mPluginSystem->IsPluginLoaded((HMODULE)oldBase))
+	{
+		// A plugin is about to be silently unloaded. Remove it from the list.
+		mPluginSystem->UnloadPlugin(pName);
+	}
+	else
+	{
+		// Module was not a plugin, use default procedure.
+		mPeInstance->UnloadLibraryExternal(oldBase);
+	}
+	
+	// Check whether the module was actually unloaded. (not included in refresh)
 	this->RefreshModulesList();
-	
 	for (int i = 0; i < LoadedModulesList.GetCount(); i++)
 	{
 		if (LoadedModulesList[i].BaseAddress == oldBase)
@@ -137,14 +170,50 @@ void CryModuleWindow::DumpAllModulesButton()
 	{
 		bool error = false;
 		String dir = fs->Get();
+		
+#ifdef _WIN64
+		const char* funcStr = NULL;
+		if (mMemoryScanner->IsX86Process())
+		{
+			CreateModuleDumpProc32 pCMDP = (CreateModuleDumpProc32)GetProcAddress(mPluginSystem->GetDefaultDumperEnginePlugin(), "CreateModuleDump32");
+			
+			// Dump all loaded modules.
+			for (int i = 0; i < LoadedModulesList.GetCount(); ++i)
+			{
+				const Win32ModuleInformation& mod = LoadedModulesList[i];
+				if (!pCMDP || !pCMDP(mMemoryScanner->GetHandle(), (void*)mod.BaseAddress, (DWORD)mod.Length, AppendFileName(dir, mod.ModuleName)))
+				{
+					error = true;
+				}
+			}
+		}
+		else
+		{
+			CreateModuleDumpProc64 pCMDP = (CreateModuleDumpProc64)GetProcAddress(mPluginSystem->GetDefaultDumperEnginePlugin(), "CreateModuleDump64");
+			
+			// Dump all loaded modules.
+			for (int i = 0; i < LoadedModulesList.GetCount(); ++i)
+			{
+				const Win32ModuleInformation& mod = LoadedModulesList[i];
+				if (!pCMDP || !pCMDP(mMemoryScanner->GetHandle(), (void*)mod.BaseAddress, (DWORD)mod.Length, AppendFileName(dir, mod.ModuleName)))
+				{
+					error = true;
+				}
+			}
+		}
+#else
+		CreateModuleDumpProc32 pCMDP = (CreateModuleDumpProc32)GetProcAddress(mPluginSystem->GetDefaultDumperEnginePlugin(), "CreateModuleDump32");
+		
+		// Dump all loaded modules.
 		for (int i = 0; i < LoadedModulesList.GetCount(); ++i)
 		{
 			const Win32ModuleInformation& mod = LoadedModulesList[i];
-			if (!mPeInstance->DumpProcessModule(AppendFileName(dir, mod.ModuleName), mod))
+			if (!pCMDP || !pCMDP(mMemoryScanner->GetHandle(), (void*)mod.BaseAddress, (DWORD)mod.Length, AppendFileName(dir, mod.ModuleName)))
 			{
 				error = true;
 			}
 		}
+#endif
 		
 		// If an error occured, display message box once at the end of the function.
 		if (error)
@@ -162,12 +231,12 @@ void CryModuleWindow::DumpAllModulesButton()
 
 void CryModuleWindow::DumpModuleSectionButton()
 {
-	CryDumpModuleSectionWindow* cdmsw = new CryDumpModuleSectionWindow(this->mModules.GetCursor());
+	CryDumpModuleSectionWindow* cdmsw = new CryDumpModuleSectionWindow(this->mModules.GetCursor(), CrySearchIml::DumpModuleSmall());
 	cdmsw->Execute();
 	delete cdmsw;
 }
 
-void CryModuleWindow::DumpModuleButton()
+void CryModuleWindow::DumpModuleButton(const SIZE_T pluginBase)
 {
 	FileSel* fs = new FileSel();
 	
@@ -183,7 +252,27 @@ void CryModuleWindow::DumpModuleButton()
 	
 	if (fs->ExecuteSaveAs("Select dump location"))
 	{
-		if (mPeInstance->DumpProcessModule(fs->Get(), LoadedModulesList[row]))
+		const Win32ModuleInformation& toDump = LoadedModulesList[row];
+		
+#ifdef _WIN64
+		BOOL result = FALSE;
+		if (mMemoryScanner->IsX86Process())
+		{
+			CreateModuleDumpProc32 pCMDP = (CreateModuleDumpProc32)GetProcAddress((HMODULE)pluginBase, "CreateModuleDump32");
+			result = pCMDP && pCMDP(mMemoryScanner->GetHandle(), (void*)toDump.BaseAddress, (DWORD)toDump.Length, fs->Get());
+		}
+		else
+		{
+			CreateModuleDumpProc64 pCMDP = (CreateModuleDumpProc64)GetProcAddress((HMODULE)pluginBase, "CreateModuleDump64");
+			result = pCMDP && pCMDP(mMemoryScanner->GetHandle(), (void*)toDump.BaseAddress, (DWORD)toDump.Length, fs->Get());			
+		}
+		
+#else
+		CreateModuleDumpProc32 pCMDP = (CreateModuleDumpProc32)GetProcAddress((HMODULE)pluginBase, "CreateModuleDump32");
+		BOOL result = pCMDP && pCMDP(mMemoryScanner->GetHandle(), (void*)toDump.BaseAddress, (DWORD)toDump.Length, fs->Get());
+#endif
+		
+		if (result)
 		{
 			PromptOK("Dump succeeded!");
 		}

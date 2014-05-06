@@ -20,7 +20,7 @@ private:
 	
 	typedef CrySystemHandleInformationWindow CLASSNAME;
 public:
-	CrySystemHandleInformationWindow();
+	CrySystemHandleInformationWindow(const Image& icon);
 	~CrySystemHandleInformationWindow();
 };
 

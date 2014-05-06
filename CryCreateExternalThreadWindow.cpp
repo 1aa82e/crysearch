@@ -3,7 +3,7 @@
 
 #pragma warning(disable : 4244)
 
-CryCreateExternalThreadWindow::CryCreateExternalThreadWindow(CreateNewThreadStruct* outStructDataPtr)
+CryCreateExternalThreadWindow::CryCreateExternalThreadWindow(CreateNewThreadStruct* outStructDataPtr, const Image& icon) : CryDialogTemplate(icon)
 {
 	this->outStructDataPtr = outStructDataPtr;
 	

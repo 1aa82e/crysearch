@@ -29,7 +29,7 @@ private:
 	
 	typedef CryCreateExternalThreadWindow CLASSNAME;
 public:
-	CryCreateExternalThreadWindow(CreateNewThreadStruct* outStructDataPtr);
+	CryCreateExternalThreadWindow(CreateNewThreadStruct* outStructDataPtr, const Image& icon);
 	~CryCreateExternalThreadWindow();
 };
 

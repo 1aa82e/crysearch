@@ -1,9 +1,10 @@
 #include "CryChangeRecordDialog.h"
+#include "ImlProvider.h"
 
 #ifdef _WIN64
-CryChangeRecordDialog::CryChangeRecordDialog(AddressTable& addrTable, const __int64 address, const String& type, ChangeRecordDialogMode mode)
+CryChangeRecordDialog::CryChangeRecordDialog(AddressTable& addrTable, const __int64 address, const String& type, ChangeRecordDialogMode mode) : CryDialogTemplate(CrySearchIml::ChangeRecordIcon())
 #else
-CryChangeRecordDialog::CryChangeRecordDialog(AddressTable& addrTable, const int address, const String& type, ChangeRecordDialogMode mode)
+CryChangeRecordDialog::CryChangeRecordDialog(AddressTable& addrTable, const int address, const String& type, ChangeRecordDialogMode mode) : CryDialogTemplate(CrySearchIml::ChangeRecordIcon())
 #endif
 {
 	this->mMode = mode;

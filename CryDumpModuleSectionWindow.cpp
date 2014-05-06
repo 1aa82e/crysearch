@@ -1,7 +1,7 @@
 #include "CryDumpModuleSectionWindow.h"
 #include "GlobalDef.h"
 
-CryDumpModuleSectionWindow::CryDumpModuleSectionWindow(const int modListIndex)
+CryDumpModuleSectionWindow::CryDumpModuleSectionWindow(const int modListIndex, const Image& icon) : CryDialogTemplate(icon)
 {
 	this->Title("Dump Section").Sizeable().SetRect(0, 0, 300, 200);
 	

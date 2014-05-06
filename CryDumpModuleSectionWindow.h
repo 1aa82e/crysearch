@@ -21,7 +21,7 @@ private:
 	
 	typedef CryDumpModuleSectionWindow CLASSNAME;
 public:
-	CryDumpModuleSectionWindow(const int modListIndex);
+	CryDumpModuleSectionWindow(const int modListIndex, const Image& icon);
 	~CryDumpModuleSectionWindow();	
 };
 

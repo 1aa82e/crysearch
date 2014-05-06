@@ -1,7 +1,7 @@
 #include "CryPlaceIATHookWindow.h"
 #include "GlobalDef.h"
 
-CryPlaceIATHookWindow::CryPlaceIATHookWindow(const char* funcIdentifier, bool IsOrdinal)
+CryPlaceIATHookWindow::CryPlaceIATHookWindow(const char* funcIdentifier, bool IsOrdinal, const Image& icon) : CryDialogTemplate(icon)
 {
 	this->mFunction = (char*)funcIdentifier;
 	this->mOrdinal = IsOrdinal;

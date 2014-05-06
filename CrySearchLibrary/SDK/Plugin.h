@@ -16,10 +16,29 @@
 #include <Windows.h>
 
 // Plugin type definitions.
-#define CRYPLUGIN_DUMPER			0x1
+#define CRYPLUGIN_UNKNOWN			0
+#define CRYPLUGIN_DUMPER			1
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
+	// Retrieves the friendly name of a plugin type.
+	const char* GetPluginTypeFriendlyName(const DWORD Type);
+
+#ifdef __cplusplus
+}
+#endif
 
 // Plugin state definitions.
-#define CRYPLUGIN_STATE_LOADED		0x1
+#define CRYPLUGIN_STATE_UNKNOWN		0
+#define CRYPLUGIN_STATE_LOADED		1
+
+// Flag definitions for plugins, sorted by plugin type.
+
+// Dumper engine flags.
+#define PLUGIN_DEFAULT_DUMPER		0x1
 
 // Contains information about the type of plugin. This information should be used to idenfity loaded plugins.
 // Every plugin should have exactly one piece of this structure in its global memory.
@@ -55,3 +74,12 @@ typedef const BOOL (__stdcall* CryInitializePluginProc)();
 // Destroys the plugin. Implement this function in a new plugin to do any destruction.
 // This function is called before the plugin is unloaded.
 typedef void (__stdcall* CryDestroyPluginProc)();
+
+// ------------------------------------------------------------------------------------------------------------------------------
+
+// Dumper Engine function definitions.
+
+// Creates a dump of a module inside a process.
+// Returns TRUE if the dump succeeded and FALSE otherwise. Partial dump may or may not result in TRUE depending on the developers intentions.
+typedef const BOOL (__stdcall* CreateModuleDumpProc32)(HANDLE hProcess, const void* moduleBase, const DWORD moduleSize, const char* fileName);
+typedef const BOOL (__stdcall* CreateModuleDumpProc64)(HANDLE hProcess, const void* moduleBase, const ULONGLONG moduleSize, const char* fileName);

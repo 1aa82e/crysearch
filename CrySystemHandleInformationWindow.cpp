@@ -2,6 +2,7 @@
 #include "CrySystemHandleAccessMaskWindow.h"
 #include "GlobalDef.h"
 #include "UIUtilities.h"
+#include "ImlProvider.h"
 
 // The handles are saved globally to simplify the code necessary.
 Vector<Win32HandleInformation> mHandleCollection;
@@ -31,7 +32,7 @@ String GetHandleAccess(const int index)
 	return Format("%lX", mHandleCollection[index].Access);
 }
 
-CrySystemHandleInformationWindow::CrySystemHandleInformationWindow()
+CrySystemHandleInformationWindow::CrySystemHandleInformationWindow(const Image& icon) : CryDialogTemplate(icon)
 {
 	this->Title("Open Handles").Zoomable().Sizeable().SetRect(0, 0, 600 , 200);
 	
@@ -91,7 +92,7 @@ void CrySystemHandleInformationWindow::CloseRemoteHandleClicked()
 void CrySystemHandleInformationWindow::ViewAccessButtonClicked()
 {	
 	const int row = this->mOpenHandles.GetCursor();
-	CrySystemHandleAccessMaskWindow* cshamw = new CrySystemHandleAccessMaskWindow(mHandleCollection[row].ObjectType, mHandleCollection[row].Access);
+	CrySystemHandleAccessMaskWindow* cshamw = new CrySystemHandleAccessMaskWindow(mHandleCollection[row].ObjectType, mHandleCollection[row].Access, CrySearchIml::ViewHandlesButton());
 	cshamw->Execute();
 	delete cshamw;
 }

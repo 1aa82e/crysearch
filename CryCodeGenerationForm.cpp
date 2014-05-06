@@ -1,8 +1,9 @@
 #include "CryCodeGenerationForm.h"
+#include "ImlProvider.h"
 
 CryCodeGenerationForm::CryCodeGenerationForm()
 {
-	this->Title("Generate Code").SetRect(0, 0, 450, 300);
+	this->Title("Generate Code").Icon(CrySearchIml::CodeGenerationButton()).SetRect(0, 0, 450, 300);
 	
 	this->mGenerate <<= THISBACK(GenerateButtonClicked);
 	this->mClose <<= THISBACK(CloseForm);

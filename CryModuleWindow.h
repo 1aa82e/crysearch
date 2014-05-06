@@ -19,7 +19,8 @@ private:
 	void LoadLibraryButtonClicked();
 	void UnloadModule();
 	void RefreshModulesList();
-	void DumpModuleButton();
+	void DumpModuleButton(const SIZE_T pluginBase);
+	void DumpModuleButtonSubMenu(Bar& pBar);
 	void DumpModuleSubMenu(Bar& pBar);
 	void RestorePEHeader();
 	void HideModule();

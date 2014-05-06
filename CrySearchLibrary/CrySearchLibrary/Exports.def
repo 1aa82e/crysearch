@@ -4,7 +4,7 @@ EXPORTS
 
 	CrySearchGetVersion
 	GetProcessorSupportInformation
-	CrySetBits
+	CrySetBits							
 	GetIsMultipleOf
 	IsI386Process
 	CryCreateExternalThread
@@ -17,3 +17,6 @@ EXPORTS
 	CloseRemoteHandle
 	GetHandleObjectAccess
 	Wow64GetProcAddress
+	GetPluginTypeFriendlyName
+
+VERSION 1.10

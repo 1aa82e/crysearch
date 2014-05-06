@@ -15,11 +15,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Exports.def">
-      <Filter>Resource Files</Filter>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
     <ClCompile Include="PluginMain.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -28,5 +23,13 @@
     <ClInclude Include="..\..\..\CrySearchLibrary\SDK\Plugin.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Exports32.def">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="Exports64.def">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

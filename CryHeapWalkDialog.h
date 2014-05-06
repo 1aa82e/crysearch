@@ -3,6 +3,7 @@
 
 #include "CryDialogTemplate.h"
 
+// Heap dialog that displays the heaps in the opened process.
 class CryHeapWalkDialog sealed : public CryDialogTemplate
 {
 private:
@@ -14,7 +15,7 @@ private:
 	
 	typedef CryHeapWalkDialog CLASSNAME;
 public:
-	CryHeapWalkDialog();
+	CryHeapWalkDialog(const Image& icon);
 	~CryHeapWalkDialog();	
 };
 

@@ -19,7 +19,7 @@ private:
 	
 	typedef CryPlaceIATHookWindow CLASSNAME;
 public:
-	CryPlaceIATHookWindow(const char* funcIdentifier, bool IsOrdinal);
+	CryPlaceIATHookWindow(const char* funcIdentifier, bool IsOrdinal, const Image& icon);
 	~CryPlaceIATHookWindow();	
 };
 

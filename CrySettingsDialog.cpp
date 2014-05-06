@@ -177,7 +177,7 @@ void CrySearchSettingsDialog::SaveSettings()
 
 void CrySearchSettingsDialog::AddHotkeyToList()
 {
-	CryAddHotkeyWindow* cahw = new CryAddHotkeyWindow(NULL);
+	CryAddHotkeyWindow* cahw = new CryAddHotkeyWindow(NULL, CrySearchIml::AddToAddressList());
 	cahw->Execute();
 	delete cahw;
 	this->mHotkeysList.SetVirtualCount(GlobalSettingsInstance.GetHotkeyCount());
@@ -216,7 +216,7 @@ void CrySearchSettingsDialog::WhenRightClickSymbolPathList(Bar& pBar)
 
 void CrySearchSettingsDialog::EditHotkeyFromList()
 {
-	CryAddHotkeyWindow* cahw = new CryAddHotkeyWindow(&GlobalSettingsInstance.GetHotkey(this->mHotkeysList.GetCursor()));
+	CryAddHotkeyWindow* cahw = new CryAddHotkeyWindow(&GlobalSettingsInstance.GetHotkey(this->mHotkeysList.GetCursor()), CrySearchIml::AddToAddressList());
 	cahw->Execute();
 	delete cahw;
 	this->mHotkeysList.SetVirtualCount(GlobalSettingsInstance.GetHotkeyCount());

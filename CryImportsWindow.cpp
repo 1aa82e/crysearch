@@ -157,12 +157,12 @@ void CryImportsWindow::PlaceHookOnIATFunction()
 	if (entry.Ordinal == 0)
 	{
 		param = entry.FunctionName;
-		cpthw = new CryPlaceIATHookWindow(param, false);
+		cpthw = new CryPlaceIATHookWindow(param, false, CrySearchIml::PlaceHookSmall());
 	}
 	else
 	{
 		param = (char*)entry.Ordinal;
-		cpthw = new CryPlaceIATHookWindow(param, true);
+		cpthw = new CryPlaceIATHookWindow(param, true, CrySearchIml::PlaceHookSmall());
 	}
 	
 	cpthw->Execute();

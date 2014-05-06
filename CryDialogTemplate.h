@@ -20,7 +20,11 @@ private:
 		return false;
 	};
 public:
-	CryDialogTemplate() { }
+	CryDialogTemplate(const Image& icon)
+	{
+		this->Icon(icon);
+	};
+	
 	virtual ~CryDialogTemplate() { }
 };
 

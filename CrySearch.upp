@@ -16,6 +16,8 @@ file
 	"User Interface" readonly separator,
 	CrySearchForm.cpp,
 	CrySearchForm.h,
+	CryPluginsWindow.cpp,
+	CryPluginsWindow.h,
 	CrySettingsDialog.cpp,
 	CrySettingsDialog.h,
 	CryChangeRecordDialog.cpp,

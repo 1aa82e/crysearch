@@ -1,7 +1,8 @@
 #include "CryThreadInformationBlockWindow.h"
 #include "GlobalDef.h"
+#include "ImlProvider.h"
 
-CryThreadInformationBlockWindow::CryThreadInformationBlockWindow(const int threadId)
+CryThreadInformationBlockWindow::CryThreadInformationBlockWindow(const int threadId) : CryDialogTemplate(CrySearchIml::AboutButton())
 {
 	this->Title("Thread Information").Sizeable().SetRect(0, 0, 320, 300);
 	

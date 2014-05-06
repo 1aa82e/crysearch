@@ -1,7 +1,7 @@
 #include "CrySystemHandleAccessMaskWindow.h"
 #include "GlobalDef.h"
 
-CrySystemHandleAccessMaskWindow::CrySystemHandleAccessMaskWindow(const String& type, const DWORD mask)
+CrySystemHandleAccessMaskWindow::CrySystemHandleAccessMaskWindow(const String& type, const DWORD mask, const Image& icon) : CryDialogTemplate(icon)
 {
 	this->Title("Access Mask").SetRect(0, 0, 300, 200);
 

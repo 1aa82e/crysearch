@@ -28,7 +28,7 @@ private:
 	
 	friend class CrySearchForm;
 public:
-	CryNewScanForm(bool FirstScan = true);
+	CryNewScanForm(bool FirstScan, const Image& icon);
 	~CryNewScanForm();
 
 	typedef CryNewScanForm CLASSNAME;

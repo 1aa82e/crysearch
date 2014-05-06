@@ -19,7 +19,7 @@ private:
 	
 	typedef CryProcessEnvironmentBlockWindow CLASSNAME;
 public:
-	CryProcessEnvironmentBlockWindow();
+	CryProcessEnvironmentBlockWindow(const Image& icon);
 	~CryProcessEnvironmentBlockWindow();	
 };
 

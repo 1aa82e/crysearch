@@ -45,7 +45,7 @@ MemoryScanType GetMemoryScanTypeFromStringRepresentation(const String& strRep)
 
 // ---------------------------------------------------------------------------------------------
 
-CryNewScanForm::CryNewScanForm(bool FirstScan)
+CryNewScanForm::CryNewScanForm(bool FirstScan, const Image& icon) : CryDialogTemplate(icon)
 {
 	this->mNextScan = FirstScan;
 	

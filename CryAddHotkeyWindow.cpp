@@ -55,7 +55,7 @@ unsigned int KeycodeFromString(const String& stringRepresentation)
 	__assume(0);
 }
 
-CryAddHotkeyWindow::CryAddHotkeyWindow(CrySearchHotKey* entry)
+CryAddHotkeyWindow::CryAddHotkeyWindow(CrySearchHotKey* entry, const Image& icon) : CryDialogTemplate(icon)
 {
 	this->mAlterEntry = entry;
 	
