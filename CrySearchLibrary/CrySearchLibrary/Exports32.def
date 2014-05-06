@@ -1,0 +1,20 @@
+LIBRARY
+
+EXPORTS
+
+	CrySearchGetVersion
+	GetProcessorSupportInformation
+	CrySetBits							
+	GetIsMultipleOf
+	IsI386Process
+	CryCreateExternalThread
+	CryGetThreadPriority
+	CrySetThreadPriority
+	CrySuspendThread
+	CryResumeThread
+	CryTerminateThread
+	CryAllocateProcessMemory
+	CloseRemoteHandle
+	GetHandleObjectAccess
+	Wow64GetProcAddress
+	GetPluginTypeFriendlyName

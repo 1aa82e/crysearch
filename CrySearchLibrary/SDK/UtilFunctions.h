@@ -28,7 +28,7 @@ extern "C"
 	void GetProcessorSupportInformation(char pProcInformationString[128]);
 
 #ifdef _WIN64
-	__declspec(dllexport) void AlignPointer(DWORD_PTR* Address, const DWORD Boundary);
+	void AlignPointer(DWORD_PTR* Address, const DWORD Boundary);
 #endif
 
 #ifdef __cplusplus

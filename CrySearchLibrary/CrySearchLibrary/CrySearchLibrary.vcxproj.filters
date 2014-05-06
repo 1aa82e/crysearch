@@ -47,11 +47,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Exports.def">
-      <Filter>Resource Files</Filter>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="..\SDK\CrySearch.h">
       <Filter>Header Files\SDK</Filter>
     </ClInclude>
@@ -67,5 +62,13 @@
     <ClInclude Include="resource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Exports32.def">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="Exports64.def">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

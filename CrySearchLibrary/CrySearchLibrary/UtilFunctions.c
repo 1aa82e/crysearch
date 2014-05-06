@@ -15,7 +15,7 @@ const BOOL GetIsMultipleOf(const LONG_PTR intVal, const int mulVal)
 
 #ifdef _WIN64
 	// Aligns an address in memory to the specific boundary.
-	__declspec(dllexport) void AlignPointer(DWORD_PTR* Address, const DWORD Boundary)
+	void AlignPointer(DWORD_PTR* Address, const DWORD Boundary)
 	{
 		if (Boundary > 0)
 		{

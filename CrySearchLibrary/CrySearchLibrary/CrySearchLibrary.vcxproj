@@ -104,7 +104,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <ModuleDefinitionFile>Exports.def</ModuleDefinitionFile>
+      <ModuleDefinitionFile>Exports32.def</ModuleDefinitionFile>
       <NoEntryPoint>true</NoEntryPoint>
       <IgnoreSpecificDefaultLibraries>libcmtd.lib</IgnoreSpecificDefaultLibraries>
     </Link>
@@ -129,7 +129,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <ModuleDefinitionFile>Exports.def</ModuleDefinitionFile>
+      <ModuleDefinitionFile>Exports64.def</ModuleDefinitionFile>
       <NoEntryPoint>true</NoEntryPoint>
       <IgnoreSpecificDefaultLibraries>
       </IgnoreSpecificDefaultLibraries>
@@ -159,7 +159,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <NoEntryPoint>true</NoEntryPoint>
-      <ModuleDefinitionFile>Exports.def</ModuleDefinitionFile>
+      <ModuleDefinitionFile>Exports32.def</ModuleDefinitionFile>
       <IgnoreSpecificDefaultLibraries>libcmt.lib</IgnoreSpecificDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
@@ -181,7 +181,7 @@
       <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <ModuleDefinitionFile>Exports.def</ModuleDefinitionFile>
+      <ModuleDefinitionFile>Exports64.def</ModuleDefinitionFile>
       <NoEntryPoint>true</NoEntryPoint>
       <IgnoreSpecificDefaultLibraries>libcmt.lib</IgnoreSpecificDefaultLibraries>
     </Link>
@@ -199,7 +199,8 @@
     <ClCompile Include="UtilFunctions.c" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Exports.def" />
+    <None Include="Exports32.def" />
+    <None Include="Exports64.def" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\SDK\CrySearch.h" />
