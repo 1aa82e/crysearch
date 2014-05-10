@@ -56,6 +56,7 @@ typedef struct tagCRYPLUGINHEADER
 	WORD MinorVersion;
 
 	// Represents the state of the plugin. May or may not be utilized by a plugin.
+	// Currently, this field is reserved and not used by CrySearch.
 	DWORD PluginState;
 
 	// Contains flags that are associated with the plugin. May or may not be utilized by a plugin.

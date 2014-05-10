@@ -12,6 +12,11 @@ String GetPluginType(const int index)
 	return GetPluginTypeFriendlyName((*mPluginSystem)[index].PluginHeader->PluginType);
 }
 
+String GetPluginVersion(const int index)
+{
+	return Format("%i.%i", (*mPluginSystem)[index].PluginHeader->MajorVersion, (*mPluginSystem)[index].PluginHeader->MinorVersion);
+}
+
 // ---------------------------------------------------------------------------------------------
 
 CryPluginsWindow::CryPluginsWindow() : CryDialogTemplate(CrySearchIml::PluginsMenuSmall())
@@ -20,8 +25,9 @@ CryPluginsWindow::CryPluginsWindow() : CryDialogTemplate(CrySearchIml::PluginsMe
 	
 	this->mOK <<= THISBACK(CloseWindow);
 	
-	this->mPluginsList.AddRowNumColumn("Name", 60).SetConvert(Single<IndexBasedValueConvert<GetPluginName>>());
-	this->mPluginsList.AddRowNumColumn("Type", 40).SetConvert(Single<IndexBasedValueConvert<GetPluginType>>());
+	this->mPluginsList.AddRowNumColumn("Name", 50).SetConvert(Single<IndexBasedValueConvert<GetPluginName>>());
+	this->mPluginsList.AddRowNumColumn("Type", 35).SetConvert(Single<IndexBasedValueConvert<GetPluginType>>());
+	this->mPluginsList.AddRowNumColumn("Version", 15).SetConvert(Single<IndexBasedValueConvert<GetPluginVersion>>());
 	this->mPluginsList.WhenBar = THISBACK(PluginRightClick);
 	
 	*this

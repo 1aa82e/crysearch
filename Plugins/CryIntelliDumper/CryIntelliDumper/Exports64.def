@@ -1,0 +1,9 @@
+LIBRARY
+
+EXPORTS
+	
+	CryGetPluginInformation
+	CryInitializePlugin
+	CreateModuleDump32
+	CreateModuleDump64
+	CryDestroyPlugin
