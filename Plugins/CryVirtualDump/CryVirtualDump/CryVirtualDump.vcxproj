@@ -69,11 +69,11 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(SolutionDir)\Bin\x86\</OutDir>
-    <TargetName>CryIntelliDumper_x86</TargetName>
+    <TargetName>CryVirtualDump_x86</TargetName>
     <GenerateManifest>false</GenerateManifest>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <TargetName>CryIntelliDumper_x64</TargetName>
+    <TargetName>CryVirtualDump_x64</TargetName>
     <GenerateManifest>false</GenerateManifest>
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(SolutionDir)\Bin\x64</OutDir>
@@ -82,10 +82,10 @@
     <LinkIncremental>false</LinkIncremental>
     <GenerateManifest>false</GenerateManifest>
     <OutDir>$(SolutionDir)\Bin\x86</OutDir>
-    <TargetName>CryIntelliDumper_x86</TargetName>
+    <TargetName>CryVirtualDump_x86</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <TargetName>CryIntelliDumper_x64</TargetName>
+    <TargetName>CryVirtualDump_x64</TargetName>
     <LinkIncremental>false</LinkIncremental>
     <GenerateManifest>false</GenerateManifest>
     <OutDir>$(SolutionDir)\Bin\x64\</OutDir>

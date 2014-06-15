@@ -17,7 +17,13 @@ private:
 	void ModuleListRightClick(Bar& pBar);
 	
 	void LoadLibraryButtonClicked();
+	void LoadLibraryThread(String pLibrary);
+	void LoadLibraryAsyncDone(BOOL result);
+	void LoadLibraryAsyncDoneThreadSafe(BOOL result);
 	void UnloadModule();
+	void UnloadModuleThread(const SIZE_T pBase);
+	void UnloadModuleAsyncDone(const SIZE_T pBase);
+	void UnloadModuleAsyncDoneThreadSafe(const SIZE_T pBase);
 	void RefreshModulesList();
 	void DumpModuleButton(const SIZE_T pluginBase);
 	void DumpModuleButtonSubMenu(Bar& pBar);
@@ -27,6 +33,9 @@ private:
 	void OpenModulePathInExplorer();
 	void DumpAllModulesButton();
 	void DumpModuleSectionButton();
+	
+	Callback1<BOOL> InjectionDone;
+	Callback1<SIZE_T> UnloadDone;
 	
 	typedef CryModuleWindow CLASSNAME;
 public:

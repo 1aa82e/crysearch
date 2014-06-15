@@ -1,7 +1,7 @@
 #ifndef _CrySearch_PluginSystem_h_
 #define _CrySearch_PluginSystem_h_
 
-#include <Core/Core.h>
+#include <CtrlLib/CtrlLib.h>
 
 using namespace Upp;
 
@@ -12,6 +12,19 @@ struct CrySearchPlugin : Moveable<CrySearchPlugin>
 {
 	HMODULE BaseAddress;
 	PCRYPLUGINHEADER PluginHeader;
+	
+	// Retrieves a string to the about string inside the plugin library.
+	const char* const ShowAboutDialog() const
+	{
+		char* aboutString = NULL;
+		CryGetPluginAboutProc abtProc = (CryGetPluginAboutProc)GetProcAddress(BaseAddress, "CryGetPluginAbout");
+		if (abtProc)
+		{
+			abtProc(&aboutString);
+		}
+		
+		return aboutString;
+	};
 };
 
 // Represents the CrySearch plugin system. It manages every plugin in the system.

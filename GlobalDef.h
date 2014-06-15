@@ -117,9 +117,9 @@ public:
 	const bool CryWriteMemoryRoutine(HANDLE handle, LPVOID addr, LPCVOID buffer, SIZE_T size, SIZE_T* outSize) const;
 	const bool CryProtectMemoryRoutine(HANDLE handle, LPVOID addr, SIZE_T size, ULONG newAccess, PULONG oldAccess) const;
 	
+	// Initializes the routines from the settings file.
+	__declspec(noinline) void InitializeRoutines();
+	
 } CrySearchRoutines;
-
-// Initializes the routines from the settings file.
-__declspec(noinline) void InitializeRoutines();
 
 #endif

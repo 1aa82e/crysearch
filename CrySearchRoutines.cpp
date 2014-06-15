@@ -78,3 +78,39 @@ const bool _CrySearchRoutines::CryProtectMemoryRoutine(HANDLE handle, LPVOID add
 {
 	return this->ProtectMemoryRoutine(handle, addr, size, newAccess, oldAccess);
 }
+
+void _CrySearchRoutines::InitializeRoutines()
+{
+	// Assign correct memory reading routine.
+	switch (GlobalSettingsInstance.GetReadMemoryRoutine())
+	{
+		case ROUTINE_READPROCESSMEMORY:
+			this->SetCrySearchReadMemoryRoutine(CryReadMemoryRoutine32);
+			break;
+		case ROUTINE_NTREADVIRTUALMEMORY:
+			this->SetCrySearchReadMemoryRoutine(CryReadMemoryRoutineNt);
+			break;
+	}
+	
+	// Assign the correct memory writing routine.
+	switch (GlobalSettingsInstance.GetWriteMemoryRoutine())
+	{
+		case ROUTINE_WRITEPROCESSMEMORY:
+			this->SetCrySearchWriteMemoryRoutine(CryWriteMemoryRoutine32);
+			break;
+		case ROUTINE_NTWRITEVIRTUALMEMORY:
+			this->SetCrySearchWriteMemoryRoutine(CryWriteMemoryRoutineNt);
+			break;
+	}
+	
+	// Assign the correct memory protection routine.
+	switch (GlobalSettingsInstance.GetProtectMemoryRoutine())
+	{
+		case ROUTINE_VIRTUALPROTECTEX:
+			this->SetCrySearchProtectMemoryRoutine(CryProtectMemoryRoutine32);
+			break;
+		case ROUTINE_NTPROTECTVIRTUALMEMORY:
+			this->SetCrySearchProtectMemoryRoutine(CryProtectMemoryRoutineNt);
+			break;
+	}
+}

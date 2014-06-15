@@ -3,6 +3,7 @@ LIBRARY
 EXPORTS
 	
 	CryGetPluginInformation
+	CryGetPluginAbout
 	CryInitializePlugin
 	CreateModuleDump32
 	CryDestroyPlugin

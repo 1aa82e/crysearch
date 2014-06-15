@@ -16,29 +16,19 @@
 #include <Windows.h>
 
 // Plugin type definitions.
-#define CRYPLUGIN_UNKNOWN			0
-#define CRYPLUGIN_DUMPER			1
-
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-
-	// Retrieves the friendly name of a plugin type.
-	const char* GetPluginTypeFriendlyName(const DWORD Type);
-
-#ifdef __cplusplus
-}
-#endif
+#define CRYPLUGIN_UNKNOWN			0x0
+#define CRYPLUGIN_DUMPER			0x1
 
 // Plugin state definitions.
 #define CRYPLUGIN_STATE_UNKNOWN		0
 #define CRYPLUGIN_STATE_LOADED		1
 
 // Flag definitions for plugins, sorted by plugin type.
+// Plugin generic flags.
+#define PLUGIN_WANTS_TAB_OUTPUT		0x1
 
 // Dumper engine flags.
-#define PLUGIN_DEFAULT_DUMPER		0x1
+#define PLUGIN_CLASS_DEFAULT		0x80
 
 // Contains information about the type of plugin. This information should be used to idenfity loaded plugins.
 // Every plugin should have exactly one piece of this structure in its global memory.
@@ -75,6 +65,12 @@ typedef const BOOL (__stdcall* CryInitializePluginProc)();
 // Destroys the plugin. Implement this function in a new plugin to do any destruction.
 // This function is called before the plugin is unloaded.
 typedef void (__stdcall* CryDestroyPluginProc)();
+
+// Retrieves the information about the plugin author and possible credits.
+// The string is user-defined and will be displayed in a message box inside CrySearch.
+// Writing an about string for a plugin requires some attention. Use '&' for newlines instead of '\r\n' for example.
+// For more information, and more detailed/better looking about messages, take a look at the QTF format on http://www.ultimatepp.org/
+typedef void (__stdcall* CryGetPluginAboutProc)(char** const pOutputString);
 
 // ------------------------------------------------------------------------------------------------------------------------------
 

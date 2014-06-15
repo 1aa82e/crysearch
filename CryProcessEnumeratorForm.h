@@ -36,6 +36,8 @@ public:
 class CryProcessEnumeratorForm sealed : public CryDialogTemplate
 {
 private:
+	Win32ProcessInformation tmpProc;
+
 	Label mInfoAboutDialog;
 	EditField mSearchBox;
 	Option mHideWindowLessProcesses;
@@ -62,9 +64,9 @@ public:
 	CryProcessEnumeratorForm(const Image& icon);
 	~CryProcessEnumeratorForm() { }
 	
+	Win32ProcessInformation* const GetSelectedProcess();
+	
 	typedef CryProcessEnumeratorForm CLASSNAME;
-
-	Callback1<Win32ProcessInformation&> ProcessOpened;
 };
 
 #endif

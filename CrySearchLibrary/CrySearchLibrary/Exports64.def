@@ -17,5 +17,5 @@ EXPORTS
 	CloseRemoteHandle
 	GetHandleObjectAccess
 	Wow64GetProcAddress
-	GetPluginTypeFriendlyName
 	AlignPointer
+	IsProcessActive

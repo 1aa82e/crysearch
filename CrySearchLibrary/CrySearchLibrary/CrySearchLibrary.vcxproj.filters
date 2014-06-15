@@ -42,9 +42,6 @@
     <ClCompile Include="PeUtil.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="PluginUtil.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\SDK\CrySearch.h">

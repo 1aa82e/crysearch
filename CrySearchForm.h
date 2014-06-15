@@ -87,7 +87,6 @@ private:
 	void ToggleAddressTableFreezeThaw();
 	void ToggleAddressTableValueView();
 	void OpenProcessMenu();
-	void ReopenProcessMenu();
 	void CloseProcessMenu();
 	bool CloseProcess();
 	void SettingsButtonClicked();
@@ -118,7 +117,7 @@ private:
 	void PluginsMenuClicked();
 	//void DependencyCheckerButtonClicked();
 	
-	void WhenProcessOpened(Win32ProcessInformation& pProc);
+	void WhenProcessOpened(Win32ProcessInformation* pProc);
 	void MemorySearch();
 	void RefreshSearchResults();
 

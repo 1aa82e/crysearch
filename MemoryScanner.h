@@ -255,8 +255,8 @@ public:
 		return &instance;
 	}
 
-	bool Initialize(int processId, const String& exeTitle);
-	bool Initialize(const String& exetitle, int* pProcessId);
+	bool InitializeExistingProcess(const int processId, const String& exeTitle);
+	bool InitializeNewProcess(const char* exetitle, int* const pProcessId);
 	
 	void CloseProcess();
 	void ClearSearchResults();

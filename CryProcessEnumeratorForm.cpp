@@ -115,14 +115,11 @@ void CryProcessEnumeratorForm::HideWindowsCheckedChanged()
 
 void CryProcessEnumeratorForm::DragFromCtrlCompleted(HWND hwnd)
 {
-	Win32ProcessInformation tmpProc;
-	
 	DWORD pid;
 	GetWindowThreadProcessId(hwnd, &pid);
 	tmpProc.ProcessId = pid;
 	
-	this->ProcessOpened(tmpProc);
-	this->Close();
+	this->AcceptBreak(10);
 }
 
 void CryProcessEnumeratorForm::CreateProcessButtonClicked()
@@ -132,15 +129,12 @@ void CryProcessEnumeratorForm::CreateProcessButtonClicked()
 	
 	if (fs->ExecuteOpen("Select executable file..."))
 	{
-		Win32ProcessInformation tmpProc;
-		
 		// Set process identifier to -1 to indicate that the process ID should not be used.
 		tmpProc.ProcessId = -1;
 		tmpProc.ExeTitle = fs->Get();
 		
-		this->ProcessOpened(tmpProc);
 		delete fs;
-		this->Close();
+		this->AcceptBreak(10);
 	}
 	else
 	{
@@ -183,18 +177,20 @@ void CryProcessEnumeratorForm::SearchProcess()
 	}
 }
 
+Win32ProcessInformation* const CryProcessEnumeratorForm::GetSelectedProcess()
+{
+	return &this->tmpProc;
+}
+
 void CryProcessEnumeratorForm::OkButtonClicked()
 {
 	const int row = this->mProcessList.GetCursor();
 	if (row >= 0 && this->mProcessList.GetCount() > 0)
 	{
-		Win32ProcessInformation tmpProc;
-		
 		tmpProc.ProcessId = this->mProcessList.Get(row, 1);
 		tmpProc.ExeTitle = this->mProcessList.Get(row, 2);
 		
-		this->ProcessOpened(tmpProc);
-		this->Close();
+		this->AcceptBreak(10);
 	}
 	else
 	{

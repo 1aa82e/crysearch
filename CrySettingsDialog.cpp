@@ -160,7 +160,7 @@ void CrySearchSettingsDialog::SaveSettings()
 	GlobalSettingsInstance.SetInvadeProcess(this->dbgInvadeProcess);
 	
 	// As a special case, update the search routine in this part of the program.
-	InitializeRoutines();
+	CrySearchRoutines.InitializeRoutines();
 	
 	// Attempt registering the CrySearch address table file extension with the currently started architecture of CrySearch.
 	if (this->mRegisterFileExtensionWithCrySearch && !this->mStartCheckedExtensionState && !RegisterAddressTableExtension())

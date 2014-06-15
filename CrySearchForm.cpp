@@ -19,6 +19,8 @@
 #define IMAGEFILE "CrySearch.iml"
 #include <Draw/iml_source.h>
 
+// ---------------------------------------------------------------------------------------------
+
 // Extern declaration of global variables.
 MemoryScanner* mMemoryScanner;
 PluginSystem* mPluginSystem;
@@ -35,6 +37,8 @@ CryDebugger* mDebugger;
 // Stored process PE information.
 Win32PEInformation LoadedProcessPEInformation;
 
+// ---------------------------------------------------------------------------------------------
+
 String GetAddress(const int index)
 {
 #ifdef _WIN64
@@ -42,43 +46,6 @@ String GetAddress(const int index)
 #else
 	return Format("%lX", CachedAddresses[index]);
 #endif
-}
-
-// Defined in GlobalDef.h.
-void InitializeRoutines()
-{
-	// Assign correct memory reading routine.
-	switch (GlobalSettingsInstance.GetReadMemoryRoutine())
-	{
-		case ROUTINE_READPROCESSMEMORY:
-			CrySearchRoutines.SetCrySearchReadMemoryRoutine(CryReadMemoryRoutine32);
-			break;
-		case ROUTINE_NTREADVIRTUALMEMORY:
-			CrySearchRoutines.SetCrySearchReadMemoryRoutine(CryReadMemoryRoutineNt);
-			break;
-	}
-	
-	// Assign the correct memory writing routine.
-	switch (GlobalSettingsInstance.GetWriteMemoryRoutine())
-	{
-		case ROUTINE_WRITEPROCESSMEMORY:
-			CrySearchRoutines.SetCrySearchWriteMemoryRoutine(CryWriteMemoryRoutine32);
-			break;
-		case ROUTINE_NTWRITEVIRTUALMEMORY:
-			CrySearchRoutines.SetCrySearchWriteMemoryRoutine(CryWriteMemoryRoutineNt);
-			break;
-	}
-	
-	// Assign the correct memory protection routine.
-	switch (GlobalSettingsInstance.GetProtectMemoryRoutine())
-	{
-		case ROUTINE_VIRTUALPROTECTEX:
-			CrySearchRoutines.SetCrySearchProtectMemoryRoutine(CryProtectMemoryRoutine32);
-			break;
-		case ROUTINE_NTPROTECTVIRTUALMEMORY:
-			CrySearchRoutines.SetCrySearchProtectMemoryRoutine(CryProtectMemoryRoutineNt);
-			break;
-	}
 }
 
 // Virtual array control row accessors.
@@ -122,6 +89,8 @@ String GetAddressTableValueType(const AddressTable& instance, const int index)
 {
 	return instance[index]->ValueType;
 }
+
+// ---------------------------------------------------------------------------------------------
 
 // global function to reload default settings whenever the settings file is not readable or not found.
 void ReloadDefaultSettings()
@@ -376,9 +345,7 @@ void CrySearchForm::CheckProcessTermination()
 {
 	if (mMemoryScanner->GetProcessId() > 0)
 	{
-		DWORD exitCode;
-		GetExitCodeProcess(mMemoryScanner->GetHandle(), &exitCode);
-		if (exitCode != STILL_ACTIVE)
+		if (!IsProcessActive(mMemoryScanner->GetHandle()))
 		{
 			this->ProcessTerminated = true;
 			this->ScannerErrorOccured(PROCESSWASTERMINATED);
@@ -474,7 +441,7 @@ CrySearchForm::CrySearchForm(const char* fn)
 	}
 	
 	// The settings file saves some routines too. Set the correct routines.
-	InitializeRoutines();
+	CrySearchRoutines.InitializeRoutines();
 	
 	// Initiate the memory scanner class, the most important part of CrySearch.
 	mMemoryScanner = MemoryScanner::GetInstance();
@@ -650,14 +617,8 @@ void CrySearchForm::UserDefinedEntryWhenBar(Bar& pBar)
 			pBar.Add("Freeze", CrySearchIml::FreezeAddressSmall(), THISBACK(ToggleAddressTableFreezeThaw));
 		}
 		
-		if (viewAddressTableValueHex)
-		{
-			pBar.Add("View as decimal", THISBACK(ToggleAddressTableValueView)).Check(true);
-		}
-		else
-		{
-			pBar.Add("View as hexadecimal", THISBACK(ToggleAddressTableValueView)).Check(false);
-		}
+		// Add decimal/hexadecimal toggle button.
+		pBar.Add(viewAddressTableValueHex ? "View as decimal" : "View as hexadecimal", THISBACK(ToggleAddressTableValueView)).Check(viewAddressTableValueHex);
 		
 		const bool canDbg = (mDebugger && mDebugger->IsDebuggerAttached());
 		if (mDebugger && mDebugger->FindBreakpoint(loadedTable[row]->Address) == -1)
@@ -695,15 +656,7 @@ void CrySearchForm::RandomizeWindowTitle()
 {
 	if (this->wndTitleRandomized)
 	{
-		if (this->processLoaded)
-		{
-			this->Title(Format("CrySearch Memory Scanner - (%i) %s", mMemoryScanner->GetProcessId(), mMemoryScanner->GetProcessName()));
-		}
-		else
-		{
-			this->Title("CrySearch Memory Scanner");
-		}
-
+		this->Title(this->processLoaded ? Format("CrySearch Memory Scanner - (%i) %s", mMemoryScanner->GetProcessId(), mMemoryScanner->GetProcessName()) : "CrySearch Memory Scanner");
 		this->mOpenedProcess.SetLabel("");
 	}
 	else
@@ -711,14 +664,7 @@ void CrySearchForm::RandomizeWindowTitle()
 		this->Title(GenerateRandomWindowTitle());
 		
 		// Set the label in the menu bar to be utilized.
-		if (this->processLoaded)
-		{
-			this->mOpenedProcess.SetLabel(Format("(%i) %s ", mMemoryScanner->GetProcessId(), mMemoryScanner->GetProcessName()));
-		}
-		else
-		{
-			this->mOpenedProcess.SetLabel("");
-		}
+		this->mOpenedProcess.SetLabel(this->processLoaded ? Format("(%i) %s ", mMemoryScanner->GetProcessId(), mMemoryScanner->GetProcessName()) : "");
 	}
 	
 	this->mMenuStrip.Set(THISBACK(MainMenu));
@@ -1294,14 +1240,12 @@ void CrySearchForm::StartMemoryScanReliefGUI(bool FirstScan)
 void CrySearchForm::OpenProcessMenu()
 {
 	CryProcessEnumeratorForm* cpef = new CryProcessEnumeratorForm(CrySearchIml::AttachToProcessMenu());
-	cpef->ProcessOpened = THISBACK(WhenProcessOpened);
-	cpef->Execute();
+	if (cpef->Execute() == 10)
+	{
+		this->WhenProcessOpened(cpef->GetSelectedProcess());
+	}
+	
 	delete cpef;
-}
-
-void CrySearchForm::ReopenProcessMenu()
-{
-	this->OpenProcessMenu();
 }
 
 void CrySearchForm::CloseProcessMenu()
@@ -1393,6 +1337,7 @@ void CrySearchForm::SettingsButtonClicked()
 	// If the hotkeys are enabled, reinstate the callback for the next poll session.
 	if (GlobalSettingsInstance.GetEnableHotkeys())
 	{
+		KillTimeCallback(20);
 		SetTimeCallback(100, THISBACK(CheckKeyPresses), 20);
 	}
 }
@@ -1575,7 +1520,7 @@ void CrySearchForm::ClearScanResultsWithoutWarning()
 	this->mSearchResultCount.SetLabel("Search Results: 0");
 }
 
-void CrySearchForm::WhenProcessOpened(Win32ProcessInformation& pProc)
+void CrySearchForm::WhenProcessOpened(Win32ProcessInformation* pProc)
 {
 	// Check whether a process was previously opened.
 	if (mMemoryScanner->GetProcessId())
@@ -1588,16 +1533,15 @@ void CrySearchForm::WhenProcessOpened(Win32ProcessInformation& pProc)
 	}
 	
 	// Process ID is -1, create process using ExeTitle.
-	if (pProc.ProcessId == -1)
+	if (pProc->ProcessId == -1)
 	{
-		if (mMemoryScanner->Initialize(pProc.ExeTitle, &pProc.ProcessId))
+		if (mMemoryScanner->InitializeNewProcess(pProc->ExeTitle, &pProc->ProcessId))
 		{
 			// Wait for the process to be fully started, otherwise initialization steps will fail.
 			Sleep(250);
 			
 			// Check if the process actually started correctly, if it didn't, the procedure failed.
-			DWORD exitCode;
-			if (GetExitCodeProcess(mMemoryScanner->GetHandle(), &exitCode) && exitCode == STILL_ACTIVE)
+			if (IsProcessActive(mMemoryScanner->GetHandle()))
 			{
 #ifndef _WIN64
 				this->mModuleList.Initialize();
@@ -1616,7 +1560,7 @@ void CrySearchForm::WhenProcessOpened(Win32ProcessInformation& pProc)
 				{
 					Prompt("Load Error", CtrlImg::error(), "Failed to open the selected process because it is 64-bit. Use CrySearch x64 to open it instead.", "OK");
 					mMemoryScanner->CloseProcess();
-					PostCallback(THISBACK(ReopenProcessMenu));
+					PostCallback(THISBACK(OpenProcessMenu));
 					return;
 				}
 #else
@@ -1650,7 +1594,7 @@ void CrySearchForm::WhenProcessOpened(Win32ProcessInformation& pProc)
 				}
 				else
 				{
-					this->Title(Format("CrySearch Memory Scanner - (%i) %s", pProc.ProcessId, mMemoryScanner->GetProcessName()));
+					this->Title(Format("CrySearch Memory Scanner - (%i) %s", pProc->ProcessId, mMemoryScanner->GetProcessName()));
 					this->mOpenedProcess.SetLabel("");
 				}
 				
@@ -1667,27 +1611,27 @@ void CrySearchForm::WhenProcessOpened(Win32ProcessInformation& pProc)
 				SetTimeCallback(GlobalSettingsInstance.GetAddressTableUpdateInterval(), THISBACK(AddressValuesUpdater), 10);
 				
 				// Set process name in the address table using the value from the FileSel.
-				loadedTable.SetProcessName(pProc.ExeTitle);
+				loadedTable.SetProcessName(pProc->ExeTitle);
 			}
 			else
 			{
 				// CreateProcess succeeded, but the process is not started succesfully. For example: write.exe starts wordpad.exe and then terminates.
 				Prompt("Load Error", CtrlImg::error(), "The process started succesfully but terminated before initialization. Possibly the process started another process and terminated.", "OK");
 				mMemoryScanner->CloseProcess();
-				PostCallback(THISBACK(ReopenProcessMenu));
+				PostCallback(THISBACK(OpenProcessMenu));
 			}
 		}
 		else
 		{
 			// CreateProcess failed, no process is loaded.
 			Prompt("Load Error", CtrlImg::error(), "Failed to create the process.", "OK");
-			PostCallback(THISBACK(ReopenProcessMenu));
+			PostCallback(THISBACK(OpenProcessMenu));
 		}
 	}
 	else
 	{
 		// Use process ID to open an existing process.
-		if (mMemoryScanner->Initialize(pProc.ProcessId, pProc.ExeTitle))
+		if (mMemoryScanner->InitializeExistingProcess(pProc->ProcessId, pProc->ExeTitle))
 		{
 #ifndef _WIN64
 			this->mModuleList.Initialize();
@@ -1706,7 +1650,7 @@ void CrySearchForm::WhenProcessOpened(Win32ProcessInformation& pProc)
 			{
 				Prompt("Load Error", CtrlImg::error(), "Failed to open the selected process because it is 64-bit. Use CrySearch x64 to open it instead.", "OK");
 				mMemoryScanner->CloseProcess();
-				PostCallback(THISBACK(ReopenProcessMenu));
+				PostCallback(THISBACK(OpenProcessMenu));
 				return;
 			}
 			
@@ -1743,7 +1687,7 @@ void CrySearchForm::WhenProcessOpened(Win32ProcessInformation& pProc)
 			}
 			else
 			{
-				this->Title(Format("CrySearch Memory Scanner - (%i) %s", pProc.ProcessId, mMemoryScanner->GetProcessName()));
+				this->Title(Format("CrySearch Memory Scanner - (%i) %s", pProc->ProcessId, mMemoryScanner->GetProcessName()));
 				this->mOpenedProcess.SetLabel("");
 			}
 			
@@ -1803,7 +1747,7 @@ void CrySearchForm::ScannerErrorOccuredThreadSafe(MemoryScannerError error)
 			
 			Prompt("Process Error", CtrlImg::error(), "Could not open the selected process. The process is either protected or 64-bit."\
 				" To open a protected process, try running CrySearch as Administrator.", "OK");
-			PostCallback(THISBACK(ReopenProcessMenu));
+			PostCallback(THISBACK(OpenProcessMenu));
 			break;
 		case PROCESSWASTERMINATED:
 			// Kill timer callback, otherwise the stack will overflow.
@@ -1831,9 +1775,7 @@ void CrySearchForm::ScannerCompletedScan()
 
 void CrySearchForm::ScannerCompletedThreadSafe()
 {
-	bool million = mMemoryScanner->GetScanResultCount() > MEMORYSCANNER_CACHE_LIMIT;
-	
-	if (million)
+	if (mMemoryScanner->GetScanResultCount() > MEMORYSCANNER_CACHE_LIMIT)
 	{
 		this->mScanResults.SetVirtualCount(MEMORYSCANNER_CACHE_LIMIT);
 		this->mSearchResultCount.SetLabel(Format("Search Results: %i (100.000 results shown)", mMemoryScanner->GetScanResultCount()));

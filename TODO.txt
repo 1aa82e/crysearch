@@ -4,7 +4,12 @@ CrySearch application TODO list by evolution536
 	- auto deploy correct plugins to build dir?
 	- new threads for opening plugins?
 	- Plugin DLL to override process opening sequence; (maybe other templates)
+	- Plugins have access to a menu in-app;
 
+- Process window: make SendMessageTimeout not block the process listing;
+- VTable finder / dissection (learn_more, maybe a plugin);
+- Find class instances based on a vtable;
+- Callstack tree, 'Code Map' as in Visual Studio;
 - Finish depcheck implementation;
 - Dump .NET modules?
 - Cancel IO on application shutdown when huge scan is still running (XP support blocks me here);

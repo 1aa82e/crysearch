@@ -1,6 +1,7 @@
 #include "../../../CrySearchLibrary/SDK/Plugin.h"
 
 CRYPLUGINHEADER SectionDumperPluginHeader;
+char creditArray[128];	//"CrySearch Section Dumper&&Default CrySearch dump engine&written by evolution536."
 
 // Custom memcpy to avoid linking against CRT.
 #pragma function(memcpy)
@@ -19,14 +20,46 @@ const BOOL __stdcall CryGetPluginInformation(PCRYPLUGINHEADER* const pInfoBuffer
 	return TRUE;
 }
 
+void __stdcall CryGetPluginAbout(char** const pOutputString)
+{
+	*pOutputString = creditArray;
+}
+
 const BOOL __stdcall CryInitializePlugin()
 {
-	SectionDumperPluginHeader.PluginType = CRYPLUGIN_DUMPER;
+	DWORD* iterator = (DWORD*)creditArray;
+
+	// Initialize the plugin header with information.
+	memset(&SectionDumperPluginHeader, 0, sizeof(CRYPLUGINHEADER));
+	SectionDumperPluginHeader.PluginType |= CRYPLUGIN_DUMPER;
 	SectionDumperPluginHeader.PluginName = "CrySearch Section Dumper";
 	SectionDumperPluginHeader.MajorVersion = 1;
 	SectionDumperPluginHeader.MinorVersion = 0;
-	SectionDumperPluginHeader.Flags &= PLUGIN_DEFAULT_DUMPER;		// THIS SHOULD BE USER-DEPENDANT!!!
+	SectionDumperPluginHeader.Flags |= PLUGIN_CLASS_DEFAULT;
 	SectionDumperPluginHeader.PluginState = CRYPLUGIN_STATE_LOADED;
+
+	// Fill the credit obf string array with its values.
+	*iterator++ = 0x53797243;
+	*iterator++ = 0x63726165;
+	*iterator++ = 0x65532068;
+	*iterator++ = 0x6f697463;
+	*iterator++ = 0x7544206e;
+	*iterator++ = 0x7265706d;
+	*iterator++ = 0x65442626;
+	*iterator++ = 0x6c756166;
+	*iterator++ = 0x72432074;
+	*iterator++ = 0x61655379;
+	*iterator++ = 0x20686372;
+	*iterator++ = 0x706d7564;
+	*iterator++ = 0x676e6520;
+	*iterator++ = 0x26656e69;
+	*iterator++ = 0x74697277;
+	*iterator++ = 0x206e6574;
+	*iterator++ = 0x65207962;
+	*iterator++ = 0x756c6f76;
+	*iterator++ = 0x6e6f6974;
+	*iterator++ = 0x2e363335;
+	*iterator = 0x0;
 
 	return TRUE;
 }
@@ -112,7 +145,7 @@ const BOOL __stdcall CreateModuleDump32(HANDLE hProcess, const void* moduleBase,
 	BYTE* const buffer = ReadModuleFromMemory32(hProcess, moduleBase, moduleSize);
 
 	// Create output file
-	HANDLE hFile = CreateFileA(fileName, GENERIC_WRITE, 0, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
+	HANDLE hFile = CreateFileA(fileName, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 	if (hFile == INVALID_HANDLE_VALUE)
 	{
 		result = FALSE;
@@ -140,7 +173,7 @@ const BOOL __stdcall CreateModuleDump32(HANDLE hProcess, const void* moduleBase,
 		BYTE* const buffer = ReadModuleFromMemory64(hProcess, moduleBase, moduleSize);
 
 		// Create output file
-		HANDLE hFile = CreateFileA(fileName, GENERIC_WRITE, 0, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
+		HANDLE hFile = CreateFileA(fileName, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 		if (hFile == INVALID_HANDLE_VALUE)
 		{
 			result = FALSE;

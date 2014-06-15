@@ -174,7 +174,7 @@ void MemoryScanner::CloseProcess()
 
 // Open an existing process by process ID.
 // Returns true if the process succesfully opened and false if it did not.
-bool MemoryScanner::Initialize(int processId, const String& exeTitle)
+bool MemoryScanner::InitializeExistingProcess(const int processId, const String& exeTitle)
 {
 	switch (GlobalSettingsInstance.GetOpenProcessRoutine())
 	{
@@ -228,7 +228,7 @@ bool MemoryScanner::Initialize(int processId, const String& exeTitle)
 
 // Create a new process using CreateProcess, putting the process ID of the created process in the 2nd parameter.
 // Returns true if the process succesfully created and opened and false if it did not.
-bool MemoryScanner::Initialize(const String& exetitle, int* pProcessId)
+bool MemoryScanner::InitializeNewProcess(const char* exetitle, int* const pProcessId)
 {
 	STARTUPINFO info = { sizeof(info) };
 	PROCESS_INFORMATION processInfo;

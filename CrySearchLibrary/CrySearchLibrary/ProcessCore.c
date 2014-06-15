@@ -172,3 +172,12 @@ const BOOL CloseRemoteHandle(HANDLE procHandle, HANDLE handle)
 	CloseHandle(hDup);
 	return TRUE;
 }
+
+// Checks whether a process is still active. This check actually checks whether the process still responds to user input.
+// Returns TRUE if the process is still active and FALSE otherwise.
+const BOOL IsProcessActive(HANDLE procHandle)
+{
+	DWORD exitCode;
+	GetExitCodeProcess(procHandle, &exitCode);
+	return exitCode == STILL_ACTIVE;
+}

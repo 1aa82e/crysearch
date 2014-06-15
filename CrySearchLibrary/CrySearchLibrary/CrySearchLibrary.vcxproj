@@ -193,7 +193,6 @@
     <ClCompile Include="CrySearchMain.c" />
     <ClCompile Include="HandlePermissions.c" />
     <ClCompile Include="PeUtil.c" />
-    <ClCompile Include="PluginUtil.c" />
     <ClCompile Include="ProcessCore.c" />
     <ClCompile Include="ProcessorInformation.c" />
     <ClCompile Include="UtilFunctions.c" />

@@ -39,6 +39,9 @@ CryModuleWindow::CryModuleWindow()
 	this->mModules.WhenBar = THISBACK(ModuleListRightClick);
 	
 	*this << this->mModules.SizePos();
+	
+	this->InjectionDone = THISBACK(LoadLibraryAsyncDone);
+	this->UnloadDone = THISBACK(UnloadModuleAsyncDone);
 }
 
 CryModuleWindow::~CryModuleWindow()
@@ -118,19 +121,41 @@ void CryModuleWindow::UnloadModule()
 	if (pName = mPluginSystem->IsPluginLoaded((HMODULE)oldBase))
 	{
 		// A plugin is about to be silently unloaded. Remove it from the list.
-		mPluginSystem->UnloadPlugin(pName);
+		if (mPluginSystem->UnloadPlugin(pName))
+		{
+			PromptOK("Module succesfully unloaded!");
+			this->RefreshModulesList();
+		}
+		else
+		{
+			Prompt("Unload Error", CtrlImg::error(), "The module could not be unloaded!", "OK");
+		}
 	}
 	else
 	{
 		// Module was not a plugin, use default procedure.
-		mPeInstance->UnloadLibraryExternal(oldBase);
+		Thread().Run(THISBACK1(UnloadModuleThread, oldBase));
 	}
-	
+}
+
+void CryModuleWindow::UnloadModuleThread(const SIZE_T pBase)
+{
+	mPeInstance->UnloadLibraryExternal(pBase);
+	this->UnloadDone(pBase);
+}
+
+void CryModuleWindow::UnloadModuleAsyncDone(const SIZE_T pBase)
+{
+	PostCallback(THISBACK1(UnloadModuleAsyncDoneThreadSafe, pBase));
+}
+
+void CryModuleWindow::UnloadModuleAsyncDoneThreadSafe(const SIZE_T pBase)
+{
 	// Check whether the module was actually unloaded. (not included in refresh)
 	this->RefreshModulesList();
 	for (int i = 0; i < LoadedModulesList.GetCount(); i++)
 	{
-		if (LoadedModulesList[i].BaseAddress == oldBase)
+		if (LoadedModulesList[i].BaseAddress == pBase)
 		{
 			Prompt("Unload Error", CtrlImg::error(), "The module could not be unloaded!", "OK");
 			return;
@@ -148,19 +173,34 @@ void CryModuleWindow::LoadLibraryButtonClicked()
 	
 	if (fs->ExecuteOpen("Select library file..."))
 	{
-		if (mPeInstance->LoadLibraryExternal(fs->Get()))
-		{
-			PromptOK("Library succesfully loaded!");
-		}
-		else
-		{
-			Prompt("Load Error", CtrlImg::error(), "The library was not loaded succesfully!", "OK");
-		}
-		
-		this->RefreshModulesList();
+		Thread().Run(THISBACK1(LoadLibraryThread, fs->Get()));		
 	}
 	
 	delete fs;
+}
+
+void CryModuleWindow::LoadLibraryThread(String pLibrary)
+{
+	this->InjectionDone(mPeInstance->LoadLibraryExternal(pLibrary));
+}
+
+void CryModuleWindow::LoadLibraryAsyncDone(BOOL result)
+{
+	PostCallback(THISBACK1(LoadLibraryAsyncDoneThreadSafe, result));
+}
+
+void CryModuleWindow::LoadLibraryAsyncDoneThreadSafe(BOOL result)
+{
+	if (result)
+	{
+		PromptOK("Library succesfully loaded!");
+	}
+	else
+	{
+		Prompt("Load Error", CtrlImg::error(), "The library was not loaded succesfully!", "OK");
+	}
+	
+	this->RefreshModulesList();
 }
 
 void CryModuleWindow::DumpAllModulesButton()
@@ -252,6 +292,9 @@ void CryModuleWindow::DumpModuleButton(const SIZE_T pluginBase)
 	
 	if (fs->ExecuteSaveAs("Select dump location"))
 	{
+		// If the file already exists it should be deleted first.
+		DeleteFile(fs->Get());
+		
 		const Win32ModuleInformation& toDump = LoadedModulesList[row];
 		
 #ifdef _WIN64
@@ -288,7 +331,6 @@ void CryModuleWindow::DumpModuleButton(const SIZE_T pluginBase)
 void CryModuleWindow::RefreshModulesList()
 {
 	EnumerateModules(mMemoryScanner->GetHandle(), mMemoryScanner->GetProcessId());
-	
 	this->mModules.SetVirtualCount(LoadedModulesList.GetCount());
 }
 

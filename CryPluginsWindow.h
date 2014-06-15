@@ -14,10 +14,11 @@ private:
 	
 	void PluginRightClick(Bar& pBar);
 	
+	void ShowPluginAbout();
 	void UnloadPluginButton();
 	void CloseWindow();
 	
-	typedef CryPluginsWindow CLASSNAME;	
+	typedef CryPluginsWindow CLASSNAME;
 public:
 	CryPluginsWindow();
 	~CryPluginsWindow();
