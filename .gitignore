@@ -12,3 +12,6 @@ CrySearchLibrary/CrySearchLibrary/Release/*
 Plugins/SectionDumper/SectionDumper/Debug/*
 Plugins/SectionDumper/SectionDumper/Release/*
 Plugins/SectionDumper/Bin/*
+Plugins/CryVirtualDump/Bin/*
+Plugins/CryVirtualDump/CryVirtualDump/Debug/*
+Plugins/CryVirtualDump/CryVirtualDump/Release/*
