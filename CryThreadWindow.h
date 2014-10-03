@@ -9,7 +9,7 @@ using namespace Upp;
 
 #include "CrySearchArrayCtrl.h"
 
-class CryThreadWindow sealed : public ParentCtrl
+class CryThreadWindow : public ParentCtrl
 {
 private:
 	ToolBar tBar;
@@ -27,6 +27,7 @@ private:
 	void ChangePriority();
 	void TerminateThread();
 	void ShowThreadInformationWindow();
+	void SnapContextButtonClicked();
 	
 	typedef CryThreadWindow CLASSNAME;
 public:

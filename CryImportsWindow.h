@@ -9,7 +9,7 @@ using namespace Upp;
 #include "CrySearchArrayCtrl.h"
 #include "VirtualDropList.h"
 
-class CryImportsWindow sealed : public ParentCtrl
+class CryImportsWindow : public ParentCtrl
 {
 private:
 	ToolBar mToolStrip;
@@ -39,7 +39,5 @@ public:
 	void Initialize();
 	void ModuleRedraw();
 };
-
-extern const Win32ModuleInformation* FindModuleInVector(const char* modName);
 
 #endif

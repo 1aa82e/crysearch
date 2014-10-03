@@ -4,52 +4,6 @@
 #include <VerRsrc.h>
 #include <DbgHelp.h>
 
-// Describes an exception.
-struct ExceptionLookupTableEntry
-{
-	DWORD ExceptionCode;
-	char* ExceptionString;
-};
-
-// The lookup table for exceptions and their string representations.
-const ExceptionLookupTableEntry ExceptionLookupTable[] =
-{
-	{ EXCEPTION_ACCESS_VIOLATION, "Access violation" },
-	{ EXCEPTION_ARRAY_BOUNDS_EXCEEDED, "Array bounds exceeded" },
-	{ EXCEPTION_DATATYPE_MISALIGNMENT, "Attempted to access misaligned data" },
-	{ EXCEPTION_FLT_DENORMAL_OPERAND, "Denormal floating point operand" },
-	{ EXCEPTION_FLT_DIVIDE_BY_ZERO, "Floating point division by zero" },
-	{ EXCEPTION_FLT_INEXACT_RESULT, "Inexact floating point operation result" },
-	{ EXCEPTION_FLT_INVALID_OPERATION, "Invalid floating point operation" },
-	{ EXCEPTION_FLT_OVERFLOW, "Floating point overflow" },
-	{ EXCEPTION_FLT_STACK_CHECK, "Floating point stack check" },
-	{ EXCEPTION_FLT_UNDERFLOW, "Floating point underflow" },
-	{ EXCEPTION_ILLEGAL_INSTRUCTION, "Attempted execution of illegal instruction" },
-	{ EXCEPTION_IN_PAGE_ERROR, "Unable to access memory page" },
-	{ EXCEPTION_INT_DIVIDE_BY_ZERO, "Attempted to divide integer by zero" },
-	{ EXCEPTION_INT_OVERFLOW, "Integer overflow" },
-	{ EXCEPTION_INVALID_DISPOSITION, "Invalid disposition of exception" },
-	{ EXCEPTION_NONCONTINUABLE_EXCEPTION, "Attempted non-continuable execution" },
-	{ EXCEPTION_PRIV_INSTRUCTION, "Attempted execution of priveleged instruction" },
-	{ EXCEPTION_STACK_OVERFLOW, "Stack overflow" },
-	{ DBG_CONTROL_C, "Ctrl + C was pressed (console interrupt)" }
-};
-
-// Parses an exception code into a string representation for the user interface.
-const char* ParseExceptionCode(LONG excCode)
-{
-	for (unsigned int i = 0; i < sizeof(ExceptionLookupTable) / sizeof(ExceptionLookupTable[0]); ++i)
-	{
-		if (ExceptionLookupTable[i].ExceptionCode == excCode)
-		{
-			return ExceptionLookupTable[i].ExceptionString;
-		}
-	}
-	
-	// This shouldn't be able to happen but just in case.
-	return "Unknown Exception";
-}
-
 // ---------------------------------------------------------------------------------------------
 
 CryCrashHandlerWindow::CryCrashHandlerWindow(const String& excMsg)
@@ -256,7 +210,7 @@ LONG __stdcall CrashHandler(PEXCEPTION_POINTERS ExceptionInfo)
 	HANDLE hCur = GetCurrentProcess();
 	SymInitialize(hCur, NULL, TRUE);
 	
-	Vector<String> callstack;
+	Vector<Win32StackTraceEntry> callstack;
 	
 #ifdef _WIN64
 	ConstructStackTrace(hCur, IMAGE_FILE_MACHINE_AMD64, ExceptionInfo->ContextRecord, callstack);
@@ -275,7 +229,7 @@ LONG __stdcall CrashHandler(PEXCEPTION_POINTERS ExceptionInfo)
 	// Iterate the obtained stack trace.
 	for (int i = 0; i < callstack.GetCount(); ++i)
 	{
-		excMsg += callstack[i] + "\r\n";
+		excMsg += callstack[i].StringRepresentation + "\r\n";
 	}
 	
 	// Pop up crash report window.

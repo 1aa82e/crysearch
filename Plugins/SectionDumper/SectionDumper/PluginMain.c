@@ -3,6 +3,8 @@
 CRYPLUGINHEADER SectionDumperPluginHeader;
 char creditArray[128];	//"CrySearch Section Dumper&&Default CrySearch dump engine&written by evolution536."
 
+#define ALIGN_ADDR(addr, alignment) (addr % alignment) ? (addr + alignment - (addr % alignment)) : (addr)
+
 // Custom memcpy to avoid linking against CRT.
 #pragma function(memcpy)
 void* memcpy(void* dest, const void* src, size_t n)
@@ -74,24 +76,21 @@ const BOOL __stdcall CryInitializePlugin()
 		IMAGE_SECTION_HEADER* pSecHeader;
 		DWORD bufPtr;
 
-		// Read headers
+		// Read headers.
 		ReadProcessMemory(hProcess, moduleBase, buffer, 0x400, NULL);
 
 		pNTHeader = (IMAGE_NT_HEADERS64*)(buffer + ((IMAGE_DOS_HEADER*)buffer)->e_lfanew);
 		pOptionalHeader = (IMAGE_OPTIONAL_HEADER64*)&pNTHeader->OptionalHeader;
-
-		// Read sections
 		bufPtr = pOptionalHeader->SizeOfHeaders;
 
 		// Iterate through sections and save them for application use.
 		pSecHeader = IMAGE_FIRST_SECTION(pNTHeader);
 		while (i < pNTHeader->FileHeader.NumberOfSections)
 		{
-			pSecHeader->Misc.VirtualSize = pSecHeader->SizeOfRawData;
-
 			memcpy(buffer + bufPtr, pSecHeader, sizeof(IMAGE_SECTION_HEADER));
 			bufPtr += sizeof(IMAGE_SECTION_HEADER);
 
+			pSecHeader->SizeOfRawData = ALIGN_ADDR(pSecHeader->SizeOfRawData, pOptionalHeader->FileAlignment);
 			ReadProcessMemory(hProcess, (void*)(pOptionalHeader->ImageBase + pSecHeader->VirtualAddress), buffer + pSecHeader->PointerToRawData, pSecHeader->SizeOfRawData, NULL);
 
 			++i;
@@ -111,24 +110,21 @@ BYTE* const ReadModuleFromMemory32(HANDLE hProcess, const void* moduleBase, cons
 	IMAGE_SECTION_HEADER* pSecHeader;
 	DWORD bufPtr;
 
-	// Read headers
+	// Read headers.
 	ReadProcessMemory(hProcess, moduleBase, buffer, 0x400, NULL);
 
 	pNTHeader = (IMAGE_NT_HEADERS32*)(buffer + ((IMAGE_DOS_HEADER*)buffer)->e_lfanew);
 	pOptionalHeader = (IMAGE_OPTIONAL_HEADER32*)&pNTHeader->OptionalHeader;
-
-	// Read sections
 	bufPtr = pOptionalHeader->SizeOfHeaders;
 
 	// Iterate through sections and save them for application use.
 	pSecHeader = IMAGE_FIRST_SECTION(pNTHeader);
 	while (i < pNTHeader->FileHeader.NumberOfSections)
 	{
-		pSecHeader->Misc.VirtualSize = pSecHeader->SizeOfRawData;
-
 		memcpy(buffer + bufPtr, pSecHeader, sizeof(IMAGE_SECTION_HEADER));
 		bufPtr += sizeof(IMAGE_SECTION_HEADER);
 
+		pSecHeader->SizeOfRawData = ALIGN_ADDR(pSecHeader->SizeOfRawData, pOptionalHeader->FileAlignment);
 		ReadProcessMemory(hProcess, (void*)(pOptionalHeader->ImageBase + pSecHeader->VirtualAddress), buffer + pSecHeader->PointerToRawData, pSecHeader->SizeOfRawData, NULL);
 
 		++i;

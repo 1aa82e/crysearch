@@ -12,53 +12,6 @@ void CreateCodeGenerator(const AddressTable* pTable, CodeGenerator** ppCodeGen)
 	*ppCodeGen = new CodeGenerator(pTable);
 }
 
-// Parses a data type field to a C++ type identifier.
-String ParseFieldType(const String& valueType)
-{
-	// Generate data type.
-	if (valueType == "Byte")
-	{
-		return "unsigned char";
-	}
-	else if (valueType == "2 Bytes")
-	{
-		return "short";
-	}
-	else if (valueType == "4 Bytes")
-	{
-		return "int";
-	}
-	else if (valueType == "8 Bytes")
-	{
-		return "__int64";
-	}
-	else if (valueType == "Float")
-	{
-		return "float";
-	}
-	else if (valueType == "Double")
-	{
-		return "double";
-	}
-	else if (valueType == "Array of Bytes")
-	{
-		return "unsigned char";
-	}
-	else if (valueType == "String")
-	{
-		return "char";
-	}
-	else if (valueType == "WString")
-	{
-		return "wchar_t";
-	}
-	else
-	{
-		// There are no other CrySearch types so this code path should never be reached.
-		__assume(0);
-	}
-}
-
 // CodeGenerator class default constructor, which takes an address table to generate code from.
 CodeGenerator::CodeGenerator(const AddressTable* pTable)
 {
@@ -137,7 +90,7 @@ String CodeGenerator::GenerateInternalEntry(const AddressTableEntry* entry, cons
 	String taskOutput;
 
 	// Parse field type to language version.
-	String fieldType = ParseFieldType(entry->ValueType);
+	String fieldType = CodeGeneratorParseFieldType(entry->ValueType);
 	String description = entry->Description;
 	
 	// If the description contains spaces, those must be removed and replaced by underscores.
@@ -160,7 +113,7 @@ String CodeGenerator::GenerateExternalEntry(const AddressTableEntry* entry, cons
 	String taskOutput;
 	
 	// Parse field type to language version.
-	String fieldType = ParseFieldType(entry->ValueType);
+	String fieldType = CodeGeneratorParseFieldType(entry->ValueType);
 	String description = entry->Description.IsEmpty() ? Format("__unknown%i", number) : entry->Description;
 	
 	// If the description contains spaces, those must be removed and replaced by underscores.
@@ -196,7 +149,8 @@ void CodeGenerator::Generate(String& codenz)
 		codenz += GENERATED_VOIDMAIN;
 		codenz += GENERATED_HANDLEOPENING;
 		
-		for (int i = 0; i < this->mTable->GetCount(); i++)
+		const int count = this->mTable->GetCount();
+		for (int i = 0; i < count; ++i)
 		{
 			codenz += this->GenerateExternalEntry((*this->mTable)[i], i);
 		}

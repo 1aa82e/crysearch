@@ -1,11 +1,9 @@
 #ifndef _CrySearch_ThreadChangePriorityWindow_h_
 #define _CrySearch_ThreadChangePriorityWindow_h_
 
-#include <CtrlLib/CtrlLib.h>
+#include "CryDialogTemplate.h"
 
-using namespace Upp;
-
-class ThreadChangePriorityWindow sealed : public TopWindow
+class CryThreadChangePriorityWindow : public CryDialogTemplate
 {
 private:
 	int threadID;
@@ -18,10 +16,10 @@ private:
 	void OkButton();
 	void CancelButton();
 	
-	typedef ThreadChangePriorityWindow CLASSNAME;
+	typedef CryThreadChangePriorityWindow CLASSNAME;
 public:
-	ThreadChangePriorityWindow(const int threadId, const int current);
-	~ThreadChangePriorityWindow();	
+	CryThreadChangePriorityWindow(const int threadId, const int current, const Image& icon);
+	~CryThreadChangePriorityWindow();	
 };
 
 #endif

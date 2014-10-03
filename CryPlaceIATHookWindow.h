@@ -3,7 +3,7 @@
 
 #include "CryDialogTemplate.h"
 
-class CryPlaceIATHookWindow sealed : public CryDialogTemplate
+class CryPlaceIATHookWindow : public CryDialogTemplate
 {
 private:
 	char* mFunction;

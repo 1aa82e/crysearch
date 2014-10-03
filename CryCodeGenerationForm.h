@@ -8,7 +8,7 @@
 
 using namespace Upp;
 
-class CryCodeGenerationForm sealed : public TopWindow
+class CryCodeGenerationForm : public TopWindow
 {
 private:
 	Button mGenerate;

@@ -10,7 +10,7 @@ using namespace Upp;
 #include "Disassembler.h"
 
 // Custom control to display the instruction that triggered a breakpoint and the values of its registers at that time.
-class CryDebuggerHitView sealed : public ParentCtrl
+class CryDebuggerHitView : public ParentCtrl
 {
 private:
 	SIZE_T disasmAddress;

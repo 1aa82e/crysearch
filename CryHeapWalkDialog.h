@@ -4,7 +4,7 @@
 #include "CryDialogTemplate.h"
 
 // Heap dialog that displays the heaps in the opened process.
-class CryHeapWalkDialog sealed : public CryDialogTemplate
+class CryHeapWalkDialog : public CryDialogTemplate
 {
 private:
 	Button mClose;

@@ -105,8 +105,9 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ModuleDefinitionFile>Exports32.def</ModuleDefinitionFile>
-      <NoEntryPoint>true</NoEntryPoint>
-      <IgnoreSpecificDefaultLibraries>libcmtd.lib</IgnoreSpecificDefaultLibraries>
+      <NoEntryPoint>false</NoEntryPoint>
+      <IgnoreSpecificDefaultLibraries>
+      </IgnoreSpecificDefaultLibraries>
     </Link>
     <PostBuildEvent>
       <Command>
@@ -158,9 +159,10 @@
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <NoEntryPoint>true</NoEntryPoint>
+      <NoEntryPoint>false</NoEntryPoint>
       <ModuleDefinitionFile>Exports32.def</ModuleDefinitionFile>
-      <IgnoreSpecificDefaultLibraries>libcmt.lib</IgnoreSpecificDefaultLibraries>
+      <IgnoreSpecificDefaultLibraries>
+      </IgnoreSpecificDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -183,13 +185,11 @@
       <OptimizeReferences>true</OptimizeReferences>
       <ModuleDefinitionFile>Exports64.def</ModuleDefinitionFile>
       <NoEntryPoint>true</NoEntryPoint>
-      <IgnoreSpecificDefaultLibraries>libcmt.lib</IgnoreSpecificDefaultLibraries>
+      <IgnoreSpecificDefaultLibraries>
+      </IgnoreSpecificDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="CrtFunctions.c">
-      <WholeProgramOptimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</WholeProgramOptimization>
-    </ClCompile>
     <ClCompile Include="CrySearchMain.c" />
     <ClCompile Include="HandlePermissions.c" />
     <ClCompile Include="PeUtil.c" />

@@ -15,6 +15,16 @@ struct Win32PESectionInformation : Moveable<Win32PESectionInformation>
 	SIZE_T SectionSize;
 	SIZE_T RawSectionSize;
 	bool CanContainStatic;
+	
+	// Parameter constructor because of the single initialization point, preventing feature envy detections.
+	Win32PESectionInformation(const char* pName, const SIZE_T pBaseAddr, const SIZE_T pSectionSize, const SIZE_T pRawSize, const bool pStatic)
+	{
+		this->SectionName = pName;
+		this->BaseAddress = pBaseAddr;
+		this->SectionSize = pSectionSize;
+		this->RawSectionSize = pRawSize;
+		this->CanContainStatic = pStatic;
+	};
 };
 
 // Represents a section within a .NET executable file.
@@ -106,14 +116,24 @@ struct Win32PEInformation
 // BufferEndAddress		The address totalling the base address, reaching until the end of the export directory;
 // DirectoryAddress:	The address of the data directory in local memory;
 // ExportDirectory:		The address of the export directory in local memory.
-typedef struct _addrStruct
+struct AddrStruct
 {
 	Byte* BaseAddress;
 	Byte* BufferBaseAddress;
 	Byte* BufferEndAddress;
 	IMAGE_DATA_DIRECTORY* DirectoryAddress;
 	IMAGE_EXPORT_DIRECTORY* ExportDirectory;
-} AddrStruct;
+	
+	// To reduce construction code clumps in the PortableExecutable classes, parameter constructor.
+	AddrStruct(Byte* const pBase, Byte* const pBufferBase, Byte* const pBufferEnd, IMAGE_DATA_DIRECTORY* const pDirAddr, IMAGE_EXPORT_DIRECTORY* const pExpDir)
+	{
+		this->BaseAddress = pBase;
+		this->BufferBaseAddress = pBufferBase;
+		this->BufferEndAddress = pBufferEnd;
+		this->DirectoryAddress = pDirAddr;
+		this->ExportDirectory = pExpDir;
+	};
+};
 
 // PE base class
 class PortableExecutable
@@ -145,6 +165,7 @@ public:
 	__declspec(noinline) void GetImageSectionsList(const IMAGE_SECTION_HEADER* pSecHeader, const DWORD numberOfSections, Vector<Win32PESectionInformation>& list) const;
 	
 	wchar* InlineResolveApiSetSchema(const WString& str) const;
+	const Win32ModuleInformation* GetResolvedModule(const Byte* bufferBase, int* const recurseIndex, const DWORD* funcPtr, const char* NameOrdinal) const;
 	
 	void* GetPebAddress() const;
 	
@@ -156,7 +177,7 @@ public:
 };
 
 // PE32
-class PortableExecutable32 sealed : public PortableExecutable
+class PortableExecutable32 : public PortableExecutable
 {
 protected:
 	virtual const char* GetOrdinalFunctionNameFromExportTable(const AddrStruct* addr, const WORD ordinal) const;
@@ -178,7 +199,7 @@ public:
 
 // PE64
 #ifdef _WIN64
-	class PortableExecutable64 sealed : public PortableExecutable
+	class PortableExecutable64 : public PortableExecutable
 	{
 	protected:
 		virtual const char* GetOrdinalFunctionNameFromExportTable(const AddrStruct* addr, const WORD ordinal) const;

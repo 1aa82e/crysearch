@@ -11,7 +11,7 @@ struct HotkeyLookupTableEntry
 	char* StringRepresentation;
 };
 
-class CryAddHotkeyWindow sealed : public CryDialogTemplate
+class CryAddHotkeyWindow : public CryDialogTemplate
 {
 private:
 	CrySearchHotKey* mAlterEntry;

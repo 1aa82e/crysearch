@@ -3,6 +3,8 @@ LIBRARY
 EXPORTS
 
 	CrySearchGetVersion
+	CrySearchGetMajorMinorVersion
+	ParseExceptionCode
 	GetProcessorSupportInformation
 	CrySetBits							
 	GetIsMultipleOf
@@ -18,3 +20,6 @@ EXPORTS
 	GetHandleObjectAccess
 	Wow64GetProcAddress
 	IsProcessActive
+	CodeGeneratorParseFieldType
+	GetCrySearchValueTypeFromCheatTableVariableType
+	SnapThreadContext32

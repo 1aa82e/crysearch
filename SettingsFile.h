@@ -33,7 +33,7 @@ struct CrySearchHotKey : Moveable<CrySearchHotKey>
 {
 	int Key;
 	String Description;
-	Callback1<bool> Action;
+	Callback Action;
 	
 	void Xmlize(XmlIO& pXml)
 	{
@@ -41,20 +41,11 @@ struct CrySearchHotKey : Moveable<CrySearchHotKey>
 			("Key", this->Key)
 			("Description", this->Description)
 		;
-	}
-};
-
-template <String (GetData) (const unsigned int index)>
-struct HotkeyValueConvert : public Convert
-{
-	virtual Value Format(const Value& q) const
-	{
-		return GetData(int(q));
-	}
+	};
 };
 
 // Represents the application settings manager
-class SettingsFile sealed
+class SettingsFile
 {
 private:
 	int mLanguage;
@@ -78,13 +69,27 @@ private:
 	
 	int mStackSnapshotLimit;
 	bool mAttemptHideDebuggerPeb;
+	bool mCatchAllExceptions;
 	bool mInvadeProcess;
 	Vector<String> mSymbolPaths;
 	
 	bool mEnableHotkeys;
 	Vector<CrySearchHotKey> hotkeys;
-public:
+	
+	int mDissectionUpdateInterval;
+	bool mDissectionHexView;
+	
 	SettingsFile();
+	~SettingsFile();
+	
+	SettingsFile(SettingsFile const&);
+	void operator=(SettingsFile const&);
+public:
+	static SettingsFile* GetInstance()
+	{
+		static SettingsFile instance;
+		return &instance;
+	}
 	
 	// inline getters for settings variables
 	const bool GetFastScanByDefault() const						{ return this->mFastScanByDefault; }
@@ -107,9 +112,13 @@ public:
 	const int GetStackSnapshotLimit() const						{ return this->mStackSnapshotLimit; }
 	const int GetAddressTableUpdateInterval() const				{ return this->mAddressTableUpdateInterval; }
 	const bool GetAttemptHideDebuggerFromPeb() const			{ return this->mAttemptHideDebuggerPeb; }
+	const bool GetCatchAllExceptions() const					{ return this->mCatchAllExceptions; }
 	
 	const bool GetEnableHotkeys() const							{ return this->mEnableHotkeys; }
 	const bool GetInvadeProcess() const							{ return this->mInvadeProcess; }
+	
+	const int GetDissectionUpdateInterval() const				{ return this->mDissectionUpdateInterval; }
+	const bool GetDissectionHexadecimalView() const				{ return this->mDissectionHexView; }
 	
 	// inline setters for settings variables
 	void SetFastScanByDefault(bool value = true)				{ this->mFastScanByDefault = value; }	
@@ -131,11 +140,15 @@ public:
 	
 	void SetAddressTableUpdateInterval(int value = 500)			{ this->mAddressTableUpdateInterval = value; }
 	void SetAttemptHideDebuggerFromPeb(bool value = true)		{ this->mAttemptHideDebuggerPeb = value; }
+	void SetCatchAllExceptions(bool value = false)				{ this->mCatchAllExceptions = value; }
 	
 	void SetStackSnapshotLimit(int value = 1024)				{ this->mStackSnapshotLimit = value; }
 	
 	void SetEnableHotkeys(bool value = true)					{ this->mEnableHotkeys = value; }
 	void SetInvadeProcess(bool value = true)					{ this->mInvadeProcess = value; }
+	
+	void SetDissectionUpdateInterval(int value = 500)			{ this->mDissectionUpdateInterval = value; }
+	void SetDissectionHexadecimalView(bool value = false)		{ this->mDissectionHexView = value; }
 	
 	// Hotkey list functions
 	void AddHotkey(const String& description, unsigned int key);
@@ -152,6 +165,8 @@ public:
 	bool Initialize();
 	void Save();
 	void Xmlize(XmlIO& pXml);
+	
+	void DefaultSettings();
 };
 
 #endif

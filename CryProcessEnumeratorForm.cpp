@@ -1,16 +1,20 @@
 #include "CryProcessEnumeratorForm.h"
 #include "ImlProvider.h"
 #include "HIconToImage.h"
+#include "GlobalDef.h"
+
+// Global variable indicates whether the process window was closed or not.
+bool ProcWndClosed;
 
 // Dragging area control code.
 ProcessSelectionDragArea::ProcessSelectionDragArea()
 {
 	// Get system dragging threshold values.
-	this->dragThreshold;
 	this->dragThreshold.x = GetSystemMetrics(SM_CXDRAG);
 	this->dragThreshold.y = GetSystemMetrics(SM_CYDRAG);
 	this->mIsDragging = false;
 	this->dragCursor = LoadCursor(NULL, IDC_CROSS);
+	this->prevCursor = NULL;
 }
 
 void ProcessSelectionDragArea::LeftDown(Point p, dword keyflags)
@@ -46,10 +50,12 @@ void ProcessSelectionDragArea::LeftUp(Point p, dword keyflags)
 		winp->y += thisCtrl.top;
 		HWND newWnd = WindowFromPoint(*winp);
 		
+		// Release capture for this control.
 		this->ReleaseCapture();
 		this->mIsDragging = false;
 		SetCursor(this->prevCursor);
 		
+		// Fire event for drag completed.
 		this->DragCompleted(newWnd);
 	}
 }
@@ -87,8 +93,13 @@ CryProcessEnumeratorForm::CryProcessEnumeratorForm(const Image& icon) : CryDialo
 		<< this->mRefresh.SetLabel("Refresh").RightPos(135, 65).BottomPos(5, 25)
 		<< this->mCreateProcess.SetLabel("Create Process").LeftPos(5, 130).BottomPos(5, 25)
 	;
-		
-	this->RefreshProcesses();
+	
+	ProcWndClosed = false;
+	this->tmpProc.ProcessId = 0;
+	this->mCompletionCounter = 0;
+	this->mThreadCount = 0;
+	this->IconWaitCompleted = THISBACK(IconProcesWaitCompleted);
+	this->RefreshProcesses(false);
 }
 
 void CryProcessEnumeratorForm::IdColumnHeaderClicked()
@@ -103,14 +114,7 @@ void CryProcessEnumeratorForm::TitleColumnHeaderClicked()
 
 void CryProcessEnumeratorForm::HideWindowsCheckedChanged()
 {
-	if (this->mHideWindowLessProcesses)
-	{
-		this->RefreshButtonWindowLess();
-	}
-	else
-	{
-		this->RefreshProcesses();
-	}
+	this->RefreshProcesses(this->mHideWindowLessProcesses);
 }
 
 void CryProcessEnumeratorForm::DragFromCtrlCompleted(HWND hwnd)
@@ -144,37 +148,7 @@ void CryProcessEnumeratorForm::CreateProcessButtonClicked()
 
 void CryProcessEnumeratorForm::SearchProcess()
 {
-	if (this->mHideWindowLessProcesses)
-	{
-		this->RefreshButtonWindowLess();
-	}
-	else
-	{
-		this->RefreshProcesses();
-	}
-	
-	if (this->mSearchBox.GetText().IsEmpty())
-	{
-		return;
-	}
-	else
-	{
-		String lowered = ToLower(this->mSearchBox.GetText().ToString());
-		for (int i = 0; i < this->mProcessList.GetCount(); ++i)
-		{
-			// Remove elements that do not match the search input.
-			if (!(ToLower(this->mProcessList.Get(i, 2).ToString()).StartsWith(lowered)))
-			{
-				this->mProcessList.Remove(i--);
-			}
-		}
-		
-		// Select first row for fast return press. Enables fast opening of processes when typing the entire process name instead of moving the mouse.
-		if (this->mProcessList.GetCount() > 0)
-		{
-			this->mProcessList.SetCursor(0);
-		}
-	}
+	this->RefreshProcesses(this->mHideWindowLessProcesses);
 }
 
 Win32ProcessInformation* const CryProcessEnumeratorForm::GetSelectedProcess()
@@ -203,34 +177,85 @@ void CryProcessEnumeratorForm::CancelButtonClicked()
 	this->Close();
 }
 
-void CryProcessEnumeratorForm::RefreshButtonWindowLess()
+void CryProcessEnumeratorForm::RefreshProcesses(bool less)
 {
+	// Clear the user interface and retrieve process list.
 	this->mProcessList.Clear();
 	Vector<Win32ProcessInformation> mProcesses;
 	EnumerateProcesses(mProcesses);
 	
-	for (int i = 0; i < mProcesses.GetCount(); ++i)
+	// Disable search box until the asynchronous operation completed.
+	this->mSearchBox.SetEditable(false);
+	this->mThreadCount = mProcesses.GetCount();
+	this->mCompletionCounter = 0;
+	
+	// Loop processes.
+	for (int i = 0; i < this->mThreadCount; ++i)
 	{
-		// Retrieve windows associated to the process and get its icon.
-		HICON ico = hIconForPID(mProcesses[i].ProcessId);
-		if (ico)
-		{
-			// Only add to list if window icon was found.
-			this->mProcessList.Add(CreateImageFromHICON(ico), mProcesses[i].ProcessId, mProcesses[i].ExeTitle);
-		}
+		// Start callbacks to asynchronously retrieve icons.
+		threadPool & PTEBACK2(ProcessWindowIconAsync, mProcesses[i], less);
 	}
 }
 
-void CryProcessEnumeratorForm::RefreshProcesses()
+void CryProcessEnumeratorForm::ProcessWindowIconAsync(Win32ProcessInformation pProcess, bool less)
 {
-	this->mProcessList.Clear();
-	Vector<Win32ProcessInformation> mProcesses;
-	EnumerateProcesses(mProcesses);
-	
-	for (int i = 0; i < mProcesses.GetCount(); ++i)
+	this->IconWaitCompleted(hIconForPID(pProcess.ProcessId), pProcess, less);
+}
+
+void CryProcessEnumeratorForm::IconProcesWaitCompleted(HICON hIcon, Win32ProcessInformation pProcess, bool less)
+{
+	PostCallback(THISBACK3(IconProcesWaitCompletedThreadSafe, hIcon, pProcess, less));
+}
+
+void CryProcessEnumeratorForm::IconProcesWaitCompletedThreadSafe(HICON hIcon, Win32ProcessInformation pProcess, bool less)
+{
+	String lowered = ToLower(this->mSearchBox.GetText().ToString());
+	if (lowered.IsEmpty())
 	{
-		// Retrieve windows associated to the process and get its icon.
-		HICON ico = hIconForPID(mProcesses[i].ProcessId);
-		this->mProcessList.Add(CreateImageFromHICON(ico), mProcesses[i].ProcessId, mProcesses[i].ExeTitle);
+		this->AddToProcessListMoreLess(hIcon, pProcess, less);
 	}
+	else
+	{
+		if (ToLower(pProcess.ExeTitle).StartsWith(lowered))
+		{
+			this->AddToProcessListMoreLess(hIcon, pProcess, less);
+		}
+	}
+	
+	// If the completion token is set this thread should reset user input state.
+	if (AtomicInc(this->mCompletionCounter) == this->mThreadCount)
+	{
+		this->mSearchBox.SetEditable(true);
+	}
+}
+
+void CryProcessEnumeratorForm::AddToProcessListMoreLess(HICON hIcon, const Win32ProcessInformation& proc, bool less)
+{
+	// For unknown reasons, the process may sometimes be added more than once. The solution is lazy but easy.
+	if (this->mProcessList.Find(proc.ProcessId, 1) != -1)
+	{
+		return;
+	}
+	
+	// The process was not yet found in the list. Add it to the list.
+	if (less)
+	{
+		if (hIcon)
+		{
+			this->mProcessList.Add(CreateImageFromHICON(hIcon), proc.ProcessId, proc.ExeTitle);
+		}
+	}
+	else
+	{
+		this->mProcessList.Add(CreateImageFromHICON(hIcon), proc.ProcessId, proc.ExeTitle);
+	}
+}
+
+// Override of the close function to block new callbacks.
+void CryProcessEnumeratorForm::Close()
+{
+	ProcWndClosed = true;
+	WaitCursor waitcursor;
+	threadPool.Finish();
+	CryDialogTemplate::Close();
 }

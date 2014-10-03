@@ -28,7 +28,7 @@ struct CrySearchPlugin : Moveable<CrySearchPlugin>
 };
 
 // Represents the CrySearch plugin system. It manages every plugin in the system.
-class PluginSystem sealed
+class PluginSystem
 {
 private:
 	Vector<CrySearchPlugin> mLoadedPlugins;

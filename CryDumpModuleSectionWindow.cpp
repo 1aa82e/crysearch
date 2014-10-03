@@ -20,7 +20,7 @@ CryDumpModuleSectionWindow::CryDumpModuleSectionWindow(const int modListIndex, c
 	;
 	
 	// Retrieve information about the module that was passed into the form.
-	this->mModuleInfo = &LoadedModulesList[modListIndex];
+	this->mModuleInfo = &(*mModuleManager)[modListIndex];
 	
 	// Get the sections associated to the module.
 	Byte* moduleBuffer = new Byte[0x400];

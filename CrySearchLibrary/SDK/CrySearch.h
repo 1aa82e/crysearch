@@ -22,6 +22,23 @@ extern "C"
 // inOutSize parameter will receive total amount of copied chars when function returns.
 const BOOL __stdcall CrySearchGetVersion(char* const pStringBuffer, DWORD* const inOutSize);
 
+// Retrieves the major and minor version number for CrySearch.
+// Both parameters must be writeable and valid pointers.
+void __stdcall CrySearchGetMajorMinorVersion(WORD* const pMajor, WORD* const pMinor);
+
+// -------------------------------------------------------------------------------------------------
+
+// Describes an exception that occurs inside CrySearch. May also be used to idenfity exceptions in other processes.
+typedef struct _ExceptionLookupTableEntry
+{
+	DWORD ExceptionCode;
+	char* ExceptionString;
+} ExceptionLookupTableEntry;
+
+// Parses an exception code into a string representation for the user interface.
+// Returns 'Unknown Exception' if the exception code could not be parsed to something existing.
+const char* ParseExceptionCode(const LONG excCode);
+
 #ifdef __cplusplus
 }
 #endif

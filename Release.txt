@@ -2,6 +2,39 @@ CrySearch Memory Scanner
 
 evolution536, www.unknowncheats.me
 
+v1.13
+	- Changed about dialog to show a list of loaded libraries including their runtime versions;
+	- Added thread context snapshot feature. Right-click thread in thread window to open the snapshot window;
+	- Finally fixed process window closure bug. Wait cursor is displayed and window closure is delayed until next possible break oppertunity;
+	- Fixed dialog bug where tab no key other than the ESC key could be used;
+	- Fixed tab indices of controls in new scan dialog being wrong;
+	- Added memory dissection feature containing the following functionality:
+		- Basic dissection of memory blocks. Click Tools->Memory Dissection;
+		- Time-based updating of display-visible memory region. The interval is configurable;
+		- Right-click address table entry and create a dissection from it with a single click;
+		- 
+	- Improved performance of memory scan that was decreased by the relative addresses feature;
+v1.12
+	- Fixed bug in process selection window where search box may reveal duplicate processes in the list;
+	- Added possibility to disable a breakpoint before removing it from the list to allow the breakpoint data to be available when the breakpoint is inactive. Available from right-click in debugger window;
+	- Changed the way the debugger catches unhandled exceptions:
+		- Added an option in the 'Settings' window to toggle whether exceptions should be caught;
+		- Changed exception message dialog to present 'Ignore' or 'Abort' choices to the user.
+	- Added toolstrip to the 'Debugger' tab window including button to clear breakpoints;
+	- Partial implementation of relative addresses:
+		- Search results that appear static are displayed in green. The appearance of an address is assumed based on address ranges;
+		- Address tables handle and persist offsets and address relativity, display as well as user input.
+	- Fixed implementation of editing hotkeys inside the 'Settings' window. It was never complete but it is now;
+	- Fixed bug in internal function improving performance and preventing possible memory leaks;
+	- Added byte-array generation for C++ and C# programming languages. Available from 'Disassembly' window by right-clicking multiple selected rows;
+	- Added CrySearch version number to address table file for future use;
+	- Fixed bug in address table file causing the process name to be incorrect in certain situations;
+	- Fixed bug in process selection window crashing when window is closed rapidly with callbacks running.
+v1.11
+	- Fixed bug with searching for processes in process selection dialog, not filtering because of previous async fix;
+	- Changed 'manually add address' dialog to support type selection too, as well as the title has changed slightly (Also affects edit address table entry);
+	- Fixed array of bytes' search results not being the correct length after being double-clicked;
+	- Added signature generation in FindPattern and bytearray (Evo) format. Available from 'Disassembly' window by right-clicking multiple selected rows.
 v1.10
 	- Added crash reporting system. When CrySearch crashes a crash report is generated for support;
 	- Changed data windows for module sections, heaps and handles to be sizeable and added count label;
@@ -11,9 +44,10 @@ v1.10
 		- Plugins folder for both architectures;
 		- Plugins window under 'Tools' with information and diagnostic options;
 		- Shipped plugin SDK to write own plugins.
-	- Changed module section dumper (default dumper) to be a plugin for CrySearch that is shipped by default;
-	- Changed loading and unloading of modules via the module window not to block in case the DLL entrypoint is blocking;
-
+	- Changed module section dumper (default dumper) to be a plugin for CrySearch that is shipped by default, and fixed its file alignment;
+	- Changed loading and unloading of modules via the module window not to block in case the DLL entrypoint is blocking; (5 seconds timeout)
+	- Changed process opening window to asynchronously enumerate icons for available windows to avoid blocking the ui thread;
+	- Added possibility to jump to disassembler from call stack entry using right-click.
 v1.09
 	- Applied several performance fixes, increasing overall performance and memory usage. The disassembler is noticably faster;
 	- Added option to manually associate the .csat file extension with CrySearch (elevation is necessary);

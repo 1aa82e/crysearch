@@ -57,9 +57,10 @@ unsigned int KeycodeFromString(const String& stringRepresentation)
 
 CryAddHotkeyWindow::CryAddHotkeyWindow(CrySearchHotKey* entry, const Image& icon) : CryDialogTemplate(icon)
 {
+	// If the dialog was created with a valid pointer, edit mode should be enabled.
 	this->mAlterEntry = entry;
 	
-	this->Title("Add Hotkey").SetRect(0, 0, 325, 100);
+	this->Title(entry ? "Edit Hotkey" : "Add Hotkey").SetRect(0, 0, 325, 100);
 	
 	this->mOK <<= THISBACK(DialogOkay);
 	this->mCancel <<= THISBACK(DialogCancel);
@@ -87,7 +88,7 @@ CryAddHotkeyWindow::CryAddHotkeyWindow(CrySearchHotKey* entry, const Image& icon
 	else
 	{
 		this->mHotkeyAction.SetIndex(0);
-		this->mHotkey.SetIndex(0);		
+		this->mHotkey.SetIndex(0);
 	}
 }
 
@@ -98,20 +99,33 @@ CryAddHotkeyWindow::~CryAddHotkeyWindow()
 
 void CryAddHotkeyWindow::DialogOkay()
 {
+	// Collect user inputted data.
 	const String& selectedKey = this->mHotkeyAction.GetValue();
 	unsigned int key = KeycodeFromString(this->mHotkey.GetValue());
+	SettingsFile* const settings = SettingsFile::GetInstance();
+	const unsigned int hCount = settings->GetHotkeyCount();
 	
-	for (unsigned int i = 0; i < GlobalSettingsInstance.GetHotkeyCount(); i++)
+	// Check if the specified hotkey already exists and if it's not being currently edited.
+	for (unsigned int i = 0; i < hCount; i++)
 	{
-		const CrySearchHotKey& curKey = GlobalSettingsInstance.GetHotkey(i);
-		if (curKey.Description == selectedKey || curKey.Key == key)
+		const CrySearchHotKey& curKey = settings->GetHotkey(i);
+		if ((curKey.Description == selectedKey || curKey.Key == key) && this->mAlterEntry != &curKey)
 		{
 			Prompt("Input Error", CtrlImg::error(), "The selected hotkey is already occupied. Please select a different key.", "OK");
 			return;
 		}
 	}
 	
-	GlobalSettingsInstance.AddHotkey(selectedKey, key);
+	// If the alter entry pointer is valid, it should be edited.
+	if (this->mAlterEntry)
+	{
+		this->mAlterEntry->Description = selectedKey;
+		this->mAlterEntry->Key = key;
+	}
+	else
+	{
+		settings->AddHotkey(selectedKey, key);
+	}
 	
 	this->Close();
 }

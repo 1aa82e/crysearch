@@ -2,8 +2,9 @@
 #define _CrySearch_CryThreadInformationBlockWindow_h_
 
 #include "CryDialogTemplate.h"
+#include "NativeAPI.h"
 
-class CryThreadInformationBlockWindow sealed : public CryDialogTemplate
+class CryThreadInformationBlockWindow : public CryDialogTemplate
 {
 private:
 	Label mThreadWindowDescription;
@@ -11,6 +12,12 @@ private:
 	Button mOk;
 	
 	void DialogClose();
+	
+	__declspec(noinline) void Initialize32(const TEB32* tib);
+	
+#ifdef _WIN64
+	__declspec(noinline) void Initialize64(const TEB* tib);
+#endif
 	
 	typedef CryThreadInformationBlockWindow CLASSNAME;
 public:

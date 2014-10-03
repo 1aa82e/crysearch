@@ -34,18 +34,22 @@ public:
 	};
 
 protected:
-	virtual void   DirtyFrom(int line);
-	virtual void   SelectionChanged();
-	virtual void   ClearLines();
-	virtual void   InsertLines(int line, int count);
-	virtual void   RemoveLines(int line, int count);
-	virtual void   PreInsert(int pos, const WString& text);
-	virtual void   PostInsert(int pos, const WString& text);
-	virtual void   PreRemove(int pos, int size);
-	virtual void   PostRemove(int pos, int size);
-	virtual void   SetSb();
-	virtual void   PlaceCaret(int newcursor, bool sel = false);
-	virtual void   InvalidateLine(int i);
+	virtual void    DirtyFrom(int line);
+	virtual void    SelectionChanged();
+	virtual void    ClearLines();
+	virtual void    InsertLines(int line, int count);
+	virtual void    RemoveLines(int line, int count);
+	virtual void    PreInsert(int pos, const WString& text);
+	virtual void    PostInsert(int pos, const WString& text);
+	virtual void    PreRemove(int pos, int size);
+	virtual void    PostRemove(int pos, int size);
+	virtual void    SetSb();
+	virtual void    PlaceCaret(int newcursor, bool sel = false);
+	virtual void    InvalidateLine(int i);
+	virtual int     RemoveRectSelection();
+	virtual WString CopyRectSelection();
+	virtual int     PasteRectSelection(const WString& s);
+	virtual String  GetPasteText();
 
 	struct Ln : Moveable<Ln> {
 		int    len;
@@ -63,6 +67,7 @@ protected:
 	int              cline, cpos;
 	int              cursor, anchor;
 	int              undoserial;
+	bool             rectsel;
 	bool             incundoserial;
 	int              undosteps;
 	BiArray<UndoRec> undo;
@@ -141,13 +146,15 @@ public:
 	int     GetCursorLine()                   { return GetLine(GetCursor()); }
 
 	void    SetSelection(int anchor = 0, int cursor = INT_MAX);
-	bool    IsSelection() const               { return anchor >= 0; }
+	bool    IsSelection() const               { return anchor >= 0 && !rectsel; }
+	bool    IsRectSelection() const           { return anchor >= 0 && rectsel; }
+	bool    IsAnySelection() const            { return anchor >= 0; }
 	bool    GetSelection(int& l, int& h) const;
 	String  GetSelection(byte charset = CHARSET_DEFAULT) const;
 	WString GetSelectionW() const;
 	void    ClearSelection();
 	bool    RemoveSelection();
-	void    SetCursor(int cursor)             { PlaceCaret(cursor); }
+	void    SetCursor(int cursor)                { PlaceCaret(cursor); }
 	int     Paste(const WString& text);
 
 	int     Insert(int pos, const WString& txt)  { return Insert(pos, txt, false); }
@@ -216,8 +223,11 @@ public:
 	virtual void   RefreshLine(int i);
 
 protected:
-	virtual void  SetSb();
-	virtual void  PlaceCaret(int newcursor, bool sel = false);
+	virtual void    SetSb();
+	virtual void    PlaceCaret(int newcursor, bool sel = false);
+	virtual int     RemoveRectSelection();
+	virtual WString CopyRectSelection();
+	virtual int     PasteRectSelection(const WString& s);
 
 public:
 	enum Flags {
@@ -270,6 +280,7 @@ protected:
 	//bool             showspaces;
 	//bool             showlines;
 	bool             showreadonly;
+	bool             dorectsel; // TODO: Refactor this ugly hack!
 
 	void   Paint0(Draw& w);
 
@@ -284,8 +295,10 @@ protected:
 	void   SetHBar();
 	Rect   DropCaret();
 	void   RefreshDropCaret();
+	void   DoPasteColumn() { PasteColumn(); }
 
 	struct RefreshDraw;
+	friend class TextCtrl;
 
 public:
 	Size   GetFontSize() const;
@@ -295,6 +308,9 @@ public:
 	int    GetColumnLinePos(Point pos) const  { return GetGPos(pos.y, pos.x); }
 	Point  GetIndexLine(int pos) const;
 	int    GetIndexLinePos(Point pos) const;
+
+	Rect   GetRectSelection() const;
+	bool   GetRectSelection(const Rect& rect, int line, int& l, int &h);
 
 	void   ScrollUp()                         { sb.LineUp(); }
 	void   ScrollDown()                       { sb.LineDown(); }
@@ -326,6 +342,9 @@ public:
 	void   Backspace();
 	void   DeleteLine();
 	void   CutLine();
+
+	void   PasteColumn(const WString& text);
+	void   PasteColumn();
 
 	Point   GetScrollPos() const              { return sb; }
 	Size    GetPageSize()                     { return sb.GetPage(); }

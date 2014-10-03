@@ -46,6 +46,10 @@ _CrySearchRoutines::_CrySearchRoutines()
 	this->NtReadVirtualMemory = (NtReadVirtualMemoryPrototype)GetProcAddress(ntdll, "NtReadVirtualMemory");
 	this->NtWriteVirtualMemory = (NtWriteVirtualMemoryPrototype)GetProcAddress(ntdll, "NtWriteVirtualMemory");
 	this->NtProtectVirtualMemory = (NtProtectVirtualMemoryPrototype)GetProcAddress(ntdll, "NtProtectVirtualMemory");
+	
+	this->ReadMemoryRoutine = NULL;
+	this->WriteMemoryRoutine = NULL;
+	this->ProtectMemoryRoutine = NULL;
 }
 
 void _CrySearchRoutines::SetCrySearchReadMemoryRoutine(CryReadMemoryRoutineType read)
@@ -81,8 +85,9 @@ const bool _CrySearchRoutines::CryProtectMemoryRoutine(HANDLE handle, LPVOID add
 
 void _CrySearchRoutines::InitializeRoutines()
 {
+	SettingsFile* const settings = SettingsFile::GetInstance();
 	// Assign correct memory reading routine.
-	switch (GlobalSettingsInstance.GetReadMemoryRoutine())
+	switch (settings->GetReadMemoryRoutine())
 	{
 		case ROUTINE_READPROCESSMEMORY:
 			this->SetCrySearchReadMemoryRoutine(CryReadMemoryRoutine32);
@@ -93,7 +98,7 @@ void _CrySearchRoutines::InitializeRoutines()
 	}
 	
 	// Assign the correct memory writing routine.
-	switch (GlobalSettingsInstance.GetWriteMemoryRoutine())
+	switch (settings->GetWriteMemoryRoutine())
 	{
 		case ROUTINE_WRITEPROCESSMEMORY:
 			this->SetCrySearchWriteMemoryRoutine(CryWriteMemoryRoutine32);
@@ -104,7 +109,7 @@ void _CrySearchRoutines::InitializeRoutines()
 	}
 	
 	// Assign the correct memory protection routine.
-	switch (GlobalSettingsInstance.GetProtectMemoryRoutine())
+	switch (settings->GetProtectMemoryRoutine())
 	{
 		case ROUTINE_VIRTUALPROTECTEX:
 			this->SetCrySearchProtectMemoryRoutine(CryProtectMemoryRoutine32);

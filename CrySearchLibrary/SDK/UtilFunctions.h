@@ -22,6 +22,8 @@ extern "C"
 	void CrySetBits(DWORD_PTR* const dw, const int lowBit, const int bits, const int newValue);
 	const BOOL GetIsMultipleOf(const LONG_PTR intVal, const int mulVal);
 	void GetHandleObjectAccess(const DWORD type, const DWORD mask, char** const outBuffer, DWORD* const outSize);
+	const char* CodeGeneratorParseFieldType(const char* valueType);
+	const char* GetCrySearchValueTypeFromCheatTableVariableType(const char* varType, const BOOLEAN unicode);
 
 	// Retrieves information about the processor in the current system.
 	// Returns a string of supported extensions into the first parameter.

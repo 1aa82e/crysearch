@@ -8,7 +8,7 @@ using namespace Upp;
 #include "GlobalDef.h"
 
 // The codegenerator class. Construct using Factory function and destroy using CodeGenerator::Release.
-class CodeGenerator sealed
+class CodeGenerator
 {
 private:
 	friend void CreateCodeGenerator(const AddressTable*, CodeGenerator**);

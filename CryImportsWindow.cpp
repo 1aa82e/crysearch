@@ -35,9 +35,9 @@ String GetVirtualAddress(const int index)
 String GetModuleStringRepresentation(const int index)
 {
 #ifdef _WIN64
-	return Format("%llX - %s", (__int64)LoadedModulesList[index].BaseAddress, LoadedModulesList[index].ModuleName);
+	return Format("%llX - %s", (__int64)(*mModuleManager)[index].BaseAddress, (*mModuleManager)[index].ModuleName);
 #else
-	return Format("%lX - %s", (int)LoadedModulesList[index].BaseAddress, LoadedModulesList[index].ModuleName);
+	return Format("%lX - %s", (int)(*mModuleManager)[index].BaseAddress, (*mModuleManager)[index].ModuleName);
 #endif
 }
 
@@ -82,19 +82,20 @@ void CryImportsWindow::ToolStrip(Bar& pBar)
 void CryImportsWindow::ModulesDropped()
 {
 	// Refresh modules before dropping the list.
-	EnumerateModules(mMemoryScanner->GetHandle(), mMemoryScanner->GetProcessId());
-	this->mModulesDropList.SetCount(LoadedModulesList.GetCount());
+	mModuleManager->Initialize();
+	this->mModulesDropList.SetCount(mModuleManager->GetModuleCount());
 }
 
 void CryImportsWindow::ModulesSelected()
 {
 	const int cursor = this->mModulesDropList.GetIndex();
-	if (cursor >= 0 && LoadedModulesList.GetCount() > 0)
+	const int modCount = mModuleManager->GetModuleCount();
+	if (cursor >= 0 && modCount > 0)
 	{
 		// Alter base address to match the module's one, get infos and quickly restore exe base address.
-		mPeInstance->SetBaseAddress(LoadedModulesList[cursor].BaseAddress);
+		mPeInstance->SetBaseAddress((*mModuleManager)[cursor].BaseAddress);
 		this->RefreshImports();
-		mPeInstance->SetBaseAddress(LoadedModulesList[0].BaseAddress);
+		mPeInstance->SetBaseAddress(mModuleManager->GetBaseAddress());
 		
 		// Set the new index of the drop list to the newly selected module.
 		this->mModulesDropList.SetIndex(cursor);
@@ -122,7 +123,7 @@ void CryImportsWindow::RestoreIATFunction()
 	const ImportAddressTableEntry& entry = LoadedProcessPEInformation.ImportAddressTable.Get(key)[this->mFunctionsList.GetCursor()];
 
 	// Set the base address to the correct module.
-	mPeInstance->SetBaseAddress(LoadedModulesList[this->mModulesDropList.GetIndex()].BaseAddress);
+	mPeInstance->SetBaseAddress((*mModuleManager)[this->mModulesDropList.GetIndex()].BaseAddress);
 	
 	if (key.LogicalBaseAddress)
 	{
@@ -130,7 +131,7 @@ void CryImportsWindow::RestoreIATFunction()
 	}
 	else
 	{
-		mPeInstance->RestoreExportTableAddressImport(FindModuleInVector(LoadedProcessPEInformation.ImportAddressTable.GetKey(this->mModulesList.GetCursor()).ModuleName)->BaseAddress, entry.Ordinal ? (char*)entry.Ordinal : entry.FunctionName, entry.Ordinal);
+		mPeInstance->RestoreExportTableAddressImport(mModuleManager->FindModule(LoadedProcessPEInformation.ImportAddressTable.GetKey(this->mModulesList.GetCursor()).ModuleName)->BaseAddress, entry.Ordinal ? (char*)entry.Ordinal : entry.FunctionName, entry.Ordinal);
 	}
 	
 	this->RefreshImports();
@@ -151,7 +152,7 @@ void CryImportsWindow::PlaceHookOnIATFunction()
 	}
 	
 	// Set the base address to the correct module.
-	mPeInstance->SetBaseAddress(LoadedModulesList[this->mModulesDropList.GetIndex()].BaseAddress);
+	mPeInstance->SetBaseAddress((*mModuleManager)[this->mModulesDropList.GetIndex()].BaseAddress);
 
 	// Ordinal import or named import? Differentiate here, the backend will take care of the rest.
 	if (entry.Ordinal == 0)
@@ -174,9 +175,9 @@ void CryImportsWindow::PlaceHookOnIATFunction()
 
 void CryImportsWindow::DataRetrievalDone()
 {
-	if (LoadedModulesList.GetCount() > 0)
+	if (mModuleManager->GetModuleCount() > 0)
 	{
-		mPeInstance->SetBaseAddress(LoadedModulesList[0].BaseAddress);
+		mPeInstance->SetBaseAddress(mModuleManager->GetBaseAddress());
 	}
 	else
 	{
@@ -218,9 +219,9 @@ void CryImportsWindow::RefreshImports()
 {
 	// If a module is selected, refresh the imports of this module. Otherwise refresh the exe imports.
 	const int cursor = this->mModulesDropList.GetIndex();
-	if (cursor >= 0 && LoadedModulesList.GetCount() > 0)
+	if (cursor >= 0 && mModuleManager->GetModuleCount() > 0)
 	{
-		mPeInstance->SetBaseAddress(LoadedModulesList[cursor].BaseAddress);
+		mPeInstance->SetBaseAddress((*mModuleManager)[cursor].BaseAddress);
 	}
 	else
 	{
@@ -233,10 +234,11 @@ void CryImportsWindow::RefreshImports()
 
 void CryImportsWindow::Initialize()
 {
+	const int modCount = mModuleManager->GetModuleCount();
 	mPeInstance->GetImportAddressTable();
-	this->mModulesDropList.SetCount(LoadedModulesList.GetCount());
+	this->mModulesDropList.SetCount(modCount);
 	const int cursor = this->mModulesDropList.GetIndex();
-	if (LoadedModulesList.GetCount() > 0)
+	if (modCount > 0)
 	{
 		if (cursor >= 0)
 		{

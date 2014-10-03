@@ -6,6 +6,7 @@
 #include "CryNewScanForm.h"
 #include "CryAllocateMemoryWindow.h"
 #include "CryCodeGenerationForm.h"
+#include "CryMemoryDissectionWindow.h"
 #include "CryProcessEnvironmentBlockWindow.h"
 #include "CrySystemHandleInformationWindow.h"
 #include "CryPluginsWindow.h"
@@ -21,12 +22,18 @@
 
 // ---------------------------------------------------------------------------------------------
 
-// Extern declaration of global variables.
+// Global declaration of the memory scanner class instance which technically runs the application.
 MemoryScanner* mMemoryScanner;
+
+// Global declaration of the plugin system class.
 PluginSystem* mPluginSystem;
+
+// Address table instance that provides the user access to address tables.
 AddressTable loadedTable;
-SettingsFile GlobalSettingsInstance;
 bool viewAddressTableValueHex;
+
+// Global declaration of the module manager class.
+ModuleManager* mModuleManager;
 
 // Global PE methodic class instance, nessecary for over half of the application.
 PortableExecutable* mPeInstance;
@@ -39,12 +46,19 @@ Win32PEInformation LoadedProcessPEInformation;
 
 // ---------------------------------------------------------------------------------------------
 
+// Subwindows or controls that are managed by the main window class may be needed outside. A globally defined pointer is necessary.
+CrySearchForm* frm;
+
+// ---------------------------------------------------------------------------------------------
+
 String GetAddress(const int index)
 {
 #ifdef _WIN64
-	return Format("%llX", CachedAddresses[index]);
+	const __int64 address = CachedAddresses[index].Address;
+	return Format("%llX", address);
 #else
-	return Format("%lX", CachedAddresses[index]);
+	const int address = CachedAddresses[index].Address;
+	return Format("%lX", address);
 #endif
 }
 
@@ -54,69 +68,106 @@ String GetValue(const int index)
 	return CachedValues[index].ToString();
 }
 
-String GetAddressTableDescription(const AddressTable& instance, const int index)
+String GetAddressTableDescription(const int index)
 {
-	return instance[index]->Description;
+	return loadedTable[index]->Description;
 }
 
-String GetAddressTableAddress(const AddressTable& instance, const int index)
+String GetAddressTableAddress(const int index)
 {
 #ifdef _WIN64
-	return Format("%llX", instance[index]->Address);
+	return Format("%llX", loadedTable[index]->Address);
 #else
-	return Format("%lX", instance[index]->Address);
+	return Format("%lX", loadedTable[index]->Address);
 #endif
 }
 
-String GetAddressTableValue(const AddressTable& instance, const int index)
+String GetAddressTableValue(const int index)
 {
-	const AddressTableEntry* entry = instance[index];
+	const AddressTableEntry* entry = loadedTable[index];
+	
+	// If no process is opened, or the address falls outside the address space of the process, the default unknown value should be displayed.
+	if (entry->Value == "???")
+	{
+		return entry->Value;
+	}
+	
 	if (entry->ValueType != "String" && entry->ValueType != "Array of Bytes" && entry->ValueType != "WString")
 	{
 #ifdef _WIN64
-		return viewAddressTableValueHex ? Format("%llX", ScanInt64(instance[index]->Value, NULL, 10)) : instance[index]->Value;
+		return viewAddressTableValueHex ? Format("%llX", ScanInt64(entry->Value, NULL, 10)) : entry->Value;
 #else
-		return viewAddressTableValueHex ? Format("%lX", ScanInt(instance[index]->Value, NULL, 10)) : instance[index]->Value;
+		return viewAddressTableValueHex ? Format("%lX", ScanInt(entry->Value, NULL, 10)) : entry->Value;
 #endif		
 	}
 	else
 	{
-		return instance[index]->Value;
+		return entry->Value;
 	}
 }
 
-String GetAddressTableValueType(const AddressTable& instance, const int index)
+String GetAddressTableValueType(const int index)
 {
-	return instance[index]->ValueType;
+	return loadedTable[index]->ValueType;
 }
 
 // ---------------------------------------------------------------------------------------------
 
-// global function to reload default settings whenever the settings file is not readable or not found.
-void ReloadDefaultSettings()
+// Checks key presses across all controls. Consider it a global key event function.
+void CrySearchForm::CheckKeyPresses()
 {
-	GlobalSettingsInstance.SetFastScanByDefault();
-	GlobalSettingsInstance.SetScanWritableMemory();
-	GlobalSettingsInstance.SetScanExecutableMemory();
-	GlobalSettingsInstance.SetScanMemImage();
-	GlobalSettingsInstance.SetScanMemPrivate();
-	GlobalSettingsInstance.SetScanMemImage();
-	GlobalSettingsInstance.SetScanThreadPriority();
-	GlobalSettingsInstance.SetOpenProcessRoutine();
-	GlobalSettingsInstance.SetReadMemoryRoutine();
-	GlobalSettingsInstance.SetWriteMemoryRoutine();
-	GlobalSettingsInstance.SetProtectMemoryRoutine();
-	GlobalSettingsInstance.SetAddressTableUpdateInterval();
-	GlobalSettingsInstance.SetStackSnapshotLimit();
-	GlobalSettingsInstance.Save();
+	if (SettingsFile::GetInstance()->GetEnableHotkeys())
+	{
+		const unsigned int count = SettingsFile::GetInstance()->GetHotkeyCount();
+		if (count > 0)
+		{
+			// Iterate saved hotkeys and configure parameters for its configured actions.
+			for (unsigned int i = 0; i < count; ++i)
+			{
+				const CrySearchHotKey& curKey = SettingsFile::GetInstance()->GetHotkey(i);
+				
+				// Check if the configured key is currently pressed.
+				if (GetAsyncKeyState(curKey.Key) & 1)
+				{
+					if (!mMemoryScanner->IsScanRunning() && mMemoryScanner->GetScanResultCount() > 0)
+					{
+						if (curKey.Description == "Refresh search results, changed value")
+						{
+							GlobalScanParameter->GlobalScanType = SCANTYPE_CHANGED;
+						}
+						else if (curKey.Description == "Refresh search results, unchanged value")
+						{
+							GlobalScanParameter->GlobalScanType = SCANTYPE_UNCHANGED;
+						}
+						else if (curKey.Description == "Refresh search results, increased value")
+						{
+							GlobalScanParameter->GlobalScanType = SCANTYPE_INCREASED;
+						}
+						else if (curKey.Description == "Refresh search results, decreased value")
+						{
+							GlobalScanParameter->GlobalScanType = SCANTYPE_DECREASED;
+						}
+						
+						// Finally, execute the action for all of these. (Since its the same for all)
+						curKey.Action();
+					}
+				}
+			}
+		}
+	}
+	
+	// Reinstate the callback for the next iteration.
+	SetTimeCallback(100, THISBACK(CheckKeyPresses), 20);
 }
+
+// ---------------------------------------------------------------------------------------------
 
 void CrySearchForm::AddressValuesUpdater()
 {
 	// If the address list is empty, don't execute this function at all. Just reset the callback.
 	if (this->mUserAddressList.GetCount() <= 0)
 	{
-		SetTimeCallback(GlobalSettingsInstance.GetAddressTableUpdateInterval(), THISBACK(AddressValuesUpdater), 10);
+		SetTimeCallback(SettingsFile::GetInstance()->GetAddressTableUpdateInterval(), THISBACK(AddressValuesUpdater), 10);
 		return;
 	}
 	
@@ -169,7 +220,6 @@ void CrySearchForm::AddressValuesUpdater()
 	
 	// Get range of visible items in ArrayCtrl using CrySearchArrayCtrl function.
 	Tuple2<int, int> addressTableRange = this->mUserAddressList.GetVisibleRange();
-	
 	if (addressTableRange.a >= 0 && addressTableRange.b < loadedTable.GetCount())
 	{
 		for (int start = addressTableRange.a; start <= addressTableRange.b; start++)
@@ -251,37 +301,40 @@ void CrySearchForm::AddressValuesUpdater()
 			else if (loadedTable[start]->ValueType == "Array of Bytes")
 			{
 				ArrayOfBytes value;
-				if (mMemoryScanner->Peek<ArrayOfBytes>(loadedTable[start]->Address, loadedTable[start]->Size, &value))
+				const AddressTableEntry* entry = loadedTable[start];
+				if (mMemoryScanner->Peek<ArrayOfBytes>(entry->Address, entry->Size, &value))
 				{
-					loadedTable[start]->Value = BytesToString(value.Data, value.Size);
+					entry->Value = BytesToString(value.Data, value.Size);
 				}
 				else
 				{
-					loadedTable[start]->Value = "???";
+					entry->Value = "???";
 				}
 			}
 			else if (loadedTable[start]->ValueType == "String")
 			{
 				String value;
-				if (mMemoryScanner->Peek<String>(loadedTable[start]->Address, loadedTable[start]->Size, &value))
+				const AddressTableEntry* entry = loadedTable[start];
+				if (mMemoryScanner->Peek<String>(entry->Address, entry->Size, &value))
 				{
-					loadedTable[start]->Value = value;
+					entry->Value = value;
 				}
 				else
 				{
-					loadedTable[start]->Value = "???";
+					entry->Value = "???";
 				}
 			}
 			else if (loadedTable[start]->ValueType == "WString")
 			{
 				WString value;
-				if (mMemoryScanner->Peek<WString>(loadedTable[start]->Address, loadedTable[start]->Size, &value))
+				const AddressTableEntry* entry = loadedTable[start];
+				if (mMemoryScanner->Peek<WString>(entry->Address, entry->Size, &value))
 				{
-					loadedTable[start]->Value = value.ToString();
+					entry->Value = value.ToString();
 				}
 				else
 				{
-					loadedTable[start]->Value = "???";
+					entry->Value = "???";
 				}
 			}
 		}
@@ -291,52 +344,7 @@ void CrySearchForm::AddressValuesUpdater()
 	this->mUserAddressList.SetVirtualCount(loadedTable.GetCount());
 	
 	// Reinstate timer queue callback to ensure timer keeps running.
-	SetTimeCallback(GlobalSettingsInstance.GetAddressTableUpdateInterval(), THISBACK(AddressValuesUpdater), 10);
-}
-
-void CrySearchForm::CheckKeyPresses()
-{
-	const unsigned int count = GlobalSettingsInstance.GetHotkeyCount();
-	
-	if (count)
-	{
-		// Iterate saved hotkeys and configure parameters for its configured actions.
-		for (unsigned int i = 0; i < count; ++i)
-		{
-			const CrySearchHotKey& curKey = GlobalSettingsInstance.GetHotkey(i);
-			
-			// Check if the configured key is currently pressed.
-			if (GetAsyncKeyState(curKey.Key) & 1)
-			{
-				if (!mMemoryScanner->IsScanRunning() && mMemoryScanner->GetScanResultCount() > 0)
-				{
-					if (curKey.Description == "Refresh search results, changed value")
-					{
-						GlobalScanParameter->GlobalScanType = SCANTYPE_CHANGED;
-						curKey.Action(false);
-					}
-					else if (curKey.Description == "Refresh search results, unchanged value")
-					{
-						GlobalScanParameter->GlobalScanType = SCANTYPE_UNCHANGED;
-						curKey.Action(false);
-					}
-					else if (curKey.Description == "Refresh search results, increased value")
-					{
-						GlobalScanParameter->GlobalScanType = SCANTYPE_INCREASED;
-						curKey.Action(false);
-					}
-					else if (curKey.Description == "Refresh search results, decreased value")
-					{
-						GlobalScanParameter->GlobalScanType = SCANTYPE_DECREASED;
-						curKey.Action(false);
-					}
-				}
-			}
-		}
-	}
-	
-	// Reinstate the callback for the next poll session.
-	SetTimeCallback(100, THISBACK(CheckKeyPresses), 20);
+	SetTimeCallback(SettingsFile::GetInstance()->GetAddressTableUpdateInterval(), THISBACK(AddressValuesUpdater), 10);
 }
 
 // This callback checks whether the process is still running, if one is opened.
@@ -361,28 +369,14 @@ void CrySearchForm::CheckProcessTermination()
 // Link hotkeys to the correct callbacks according to the settings file.
 void CrySearchForm::LinkHotkeysToActions()
 {
-	for (unsigned int i = 0; i < GlobalSettingsInstance.GetHotkeyCount(); i++)
+	SettingsFile* const settings = SettingsFile::GetInstance();
+	for (unsigned int i = 0; i < settings->GetHotkeyCount(); i++)
 	{
-		/*if (GlobalSettingsInstance.GetHotkey(i).Description == "Refresh search results, changed value")
-		{
-			GlobalSettingsInstance.GetHotkey(i).Action = THISBACK(StartMemoryScanReliefGUI);
-		}
-		else if (GlobalSettingsInstance.GetHotkey(i).Description == "Refresh search results, unchanged value")
-		{
-			GlobalSettingsInstance.GetHotkey(i).Action = THISBACK(StartMemoryScanReliefGUI);
-		}
-		else if (GlobalSettingsInstance.GetHotkey(i).Description == "Refresh search results, increased value")
-		{
-			GlobalSettingsInstance.GetHotkey(i).Action = THISBACK(StartMemoryScanReliefGUI);
-		}
-		else if (GlobalSettingsInstance.GetHotkey(i).Description == "Refresh search results, decreased value")
-		{
-			GlobalSettingsInstance.GetHotkey(i).Action = THISBACK(StartMemoryScanReliefGUI);
-		}*/
-		
-		GlobalSettingsInstance.GetHotkey(i).Action = THISBACK(StartMemoryScanReliefGUI);
+		settings->GetHotkey(i).Action = THISBACK(StartNextScanHotkey);
 	}
 }
+
+// ---------------------------------------------------------------------------------------------
 
 // If CrySearch was opened using a file association, open the file straight away.
 // If CrySearch was opened regularly, pass NULL as parameter.
@@ -405,10 +399,10 @@ CrySearchForm::CrySearchForm(const char* fn)
 	this->mScanResults.WhenLeftDouble = THISBACK(SearchResultDoubleClicked);
 	this->mScanResults.WhenBar = THISBACK(SearchResultWhenBar);
 	
-	this->mUserAddressList.AddRowNumColumn("Description").SetConvert(Single<AddressTableValueConvert<GetAddressTableDescription>>());
-	this->mUserAddressList.AddRowNumColumn("Address").SetConvert(Single<AddressTableValueConvert<GetAddressTableAddress>>());
-	this->mUserAddressList.AddRowNumColumn("Value").SetConvert(Single<AddressTableValueConvert<GetAddressTableValue>>());
-	this->mUserAddressList.AddRowNumColumn("Type").SetConvert(Single<AddressTableValueConvert<GetAddressTableValueType>>());
+	this->mUserAddressList.AddRowNumColumn("Description").SetConvert(Single<IndexBasedValueConvert<GetAddressTableDescription>>());
+	this->mUserAddressList.AddRowNumColumn("Address").SetConvert(Single<IndexBasedValueConvert<GetAddressTableAddress>>());
+	this->mUserAddressList.AddRowNumColumn("Value").SetConvert(Single<IndexBasedValueConvert<GetAddressTableValue>>());
+	this->mUserAddressList.AddRowNumColumn("Type").SetConvert(Single<IndexBasedValueConvert<GetAddressTableValueType>>());
 	this->mUserAddressList.WhenBar = THISBACK(UserDefinedEntryWhenBar);
 	this->mUserAddressList.WhenLeftDouble = THISBACK(UserDefinedEntryWhenDoubleClicked);
 
@@ -434,10 +428,10 @@ CrySearchForm::CrySearchForm(const char* fn)
 	this->mInputScanSplitter.SetMinPixels(1, 250);
 	
 	// If settings configuration file is not found, create a new one using default settings.
-	if (!ConfigFileExists() || !GlobalSettingsInstance.Initialize())
+	if (!ConfigFileExists() || !SettingsFile::GetInstance()->Initialize())
 	{
 		//Prompt("Settings Error", CtrlImg::exclamation(), "The settings file was not found or corrupt, and has been overwritten with the defaults. If this is your first run, you can ignore this warning.", "OK");
-		ReloadDefaultSettings();
+		SettingsFile::GetInstance()->DefaultSettings();
 	}
 	
 	// The settings file saves some routines too. Set the correct routines.
@@ -450,15 +444,18 @@ CrySearchForm::CrySearchForm(const char* fn)
 	mMemoryScanner->UpdateScanningProgress = THISBACK(ScannerUserInterfaceUpdate);
 	mMemoryScanner->ScanStarted = THISBACK(ScannerScanStarted);
 	
+	// Make sure the module manager is initialized.
+	mModuleManager = ModuleManager::GetInstance();
+	
 	// Initialize the plugin system.
 	mPluginSystem = PluginSystem::GetInstance();
 	mPluginSystem->RetrieveAndLoadAllPlugins();
 	
-	// Set timer that runs to keep the UI address table updated.
-	SetTimeCallback(GlobalSettingsInstance.GetAddressTableUpdateInterval(), THISBACK(AddressValuesUpdater), 10);
-	
 	// Set timer that runs keeping track of hotkeys.
 	SetTimeCallback(100, THISBACK(CheckKeyPresses), 20);
+
+	// Set timer callback that runs the address list update sequence.
+	SetTimeCallback(SettingsFile::GetInstance()->GetAddressTableUpdateInterval(), THISBACK(AddressValuesUpdater), 10);
 	
 	// Assign proper callback functions to configured hotkeys.
 	this->LinkHotkeysToActions();
@@ -548,6 +545,7 @@ void CrySearchForm::ToolsMenu(Bar& pBar)
 		pBar.Add("View Handles", CrySearchIml::ViewHandlesButton(), THISBACK(ViewSystemHandlesButtonClicked));
 		pBar.Separator();
 		pBar.Add("Allocate Memory", CrySearchIml::CrySearch(), THISBACK(AllocateMemoryButtonClicked));
+		pBar.Add("Memory Dissection", CrySearchIml::MemoryDissection(), THISBACK(MemoryDissectionButtonClicked));
 		pBar.Separator();
 		pBar.Add((this->mUserAddressList.GetCount() > 0), "Code Generation", CrySearchIml::CodeGenerationButton(), THISBACK(CodeGenerationButtonClicked));
 		pBar.Separator();
@@ -602,6 +600,7 @@ void CrySearchForm::ChangeRecordSubMenu(Bar& pBar)
 void CrySearchForm::UserDefinedEntryWhenBar(Bar& pBar)
 {
 	pBar.Add("Manually add address", CrySearchIml::AddToAddressList(), THISBACK(ManuallyAddAddressToTable));
+	pBar.Add("Dissect memory", CrySearchIml::MemoryDissection(), THISBACK(AddressListEntryMemoryDissection));
 	
 	const int row = this->mUserAddressList.GetCursor();
 	if (row >= 0 && loadedTable.GetCount() > 0)
@@ -634,6 +633,18 @@ void CrySearchForm::UserDefinedEntryWhenBar(Bar& pBar)
 		pBar.Separator();
 		pBar.Add("Delete", CrySearchIml::DeleteButton(), THISBACK(DeleteUserDefinedAddress));
 	}
+}
+
+// Opens up memory dissection window with new dissection dialog opened and selected address filled in.
+void CrySearchForm::AddressListEntryMemoryDissection()
+{
+	// Retrieve a pointer to the selected address table entry.
+	const AddressTableEntry* const pEntry = loadedTable[this->mUserAddressList.GetCursor()];
+	
+	// Execute the memory dissection window using the retrieved address table entry pointer.
+	CryMemoryDissectionWindow* cmdw = new CryMemoryDissectionWindow(pEntry);
+	cmdw->Execute();
+	delete cmdw;
 }
 
 // Toggles CrySearch's main window to be always on top or not.
@@ -783,10 +794,21 @@ void CrySearchForm::OpenFileMenu()
 		String filename = fs->Get();
 		if (!filename.IsEmpty())
 		{
-			if (filename.EndsWith(".ct") || filename.EndsWith(".CT"))
+			if (ToLower(filename).EndsWith(".ct"))
 			{
-				// Cheat table, cannot yet be opened.
-				PromptOK("Cheat tables cannot yet be opened. Not implemented.");
+				// Cheat table selected, use custom import function to convert to address table.
+				/*if (!AddressTable::CreateAddressTableFromCheatEngineFile(loadedTable, filename))
+				{
+					Prompt("Fatal Error", CtrlImg::error(), "The selected file does not appear to be a valid cheat table!", "OK");
+				}
+				else
+				{
+					// The cheat table was succesfully imported. Set the user interface to display it.
+					this->mUserAddressList.SetVirtualCount(loadedTable.GetCount());
+				}*/
+				
+				// Not yet implemented.
+				Prompt("Fatal Error", CtrlImg::error(), "Cheat-Engine table import is not yet implemented.", "OK");
 			}
 			else
 			{
@@ -810,37 +832,29 @@ void CrySearchForm::UserDefinedEntryWhenDoubleClicked()
 		{
 #ifdef _WIN64
 			case 0: // description
-				CryChangeRecordDialog(loadedTable, ScanInt64(GetAddressTableAddress(loadedTable, row).ToString(), NULL, 16)
-					, GetAddressTableValueType(loadedTable, row), CRDM_DESCRIPTION).Execute();				
+				CryChangeRecordDialog(loadedTable, row, CRDM_DESCRIPTION).Execute();				
 				break;
 			case 1: // address
-				CryChangeRecordDialog(loadedTable, ScanInt64(GetAddressTableAddress(loadedTable, row).ToString(), NULL, 16)
-					, GetAddressTableValueType(loadedTable, row), CRDM_ADDRESS).Execute();
+				CryChangeRecordDialog(loadedTable, row, CRDM_ADDRESS).Execute();
 				break;
 			case 2: // value
-				CryChangeRecordDialog(loadedTable, ScanInt64(GetAddressTableAddress(loadedTable, row).ToString(), NULL, 16)
-					, GetAddressTableValueType(loadedTable, row), CRDM_VALUE).Execute();
+				CryChangeRecordDialog(loadedTable, row, CRDM_VALUE).Execute();
 				break;
 			case 3: // type
-				CryChangeRecordDialog(loadedTable, ScanInt64(GetAddressTableAddress(loadedTable, row).ToString(), NULL, 16)
-					, GetAddressTableValueType(loadedTable, row), CRDM_TYPE).Execute();
+				CryChangeRecordDialog(loadedTable, row, CRDM_TYPE).Execute();
 				break;
 #else
 			case 0: // description
-				CryChangeRecordDialog(loadedTable, ScanInt(GetAddressTableAddress(loadedTable, row).ToString(), NULL, 16)
-					, GetAddressTableValueType(loadedTable, row), CRDM_DESCRIPTION).Execute();				
+				CryChangeRecordDialog(loadedTable, row, CRDM_DESCRIPTION).Execute();				
 				break;
 			case 1: // address
-				CryChangeRecordDialog(loadedTable, ScanInt(GetAddressTableAddress(loadedTable, row).ToString(), NULL, 16)
-					, GetAddressTableValueType(loadedTable, row), CRDM_ADDRESS).Execute();
+				CryChangeRecordDialog(loadedTable, row, CRDM_ADDRESS).Execute();
 				break;
 			case 2: // value
-				CryChangeRecordDialog(loadedTable, ScanInt(GetAddressTableAddress(loadedTable, row).ToString(), NULL, 16)
-					, GetAddressTableValueType(loadedTable, row), CRDM_VALUE).Execute();
+				CryChangeRecordDialog(loadedTable, row, CRDM_VALUE).Execute();
 				break;
 			case 3: // type
-				CryChangeRecordDialog(loadedTable, ScanInt(GetAddressTableAddress(loadedTable, row).ToString(), NULL, 16)
-					, GetAddressTableValueType(loadedTable, row), CRDM_TYPE).Execute();
+				CryChangeRecordDialog(loadedTable, row, CRDM_TYPE).Execute();
 				break;
 #endif
 			default:
@@ -862,7 +876,7 @@ void CrySearchForm::ToggleAddressTableValueView()
 
 void CrySearchForm::ManuallyAddAddressToTable()
 {
-	CryChangeRecordDialog(loadedTable, 0, "4 Bytes", CDRM_MANUALNEW).Execute();
+	CryChangeRecordDialog(loadedTable, 0, CRDM_MANUALNEW).Execute();
 	this->mUserAddressList.SetVirtualCount(loadedTable.GetCount());
 }
 
@@ -875,38 +889,30 @@ void CrySearchForm::AddressListChangeProperty(ChangeRecordDialogMode mode)
 		{
 			case CRDM_DESCRIPTION:
 #ifdef _WIN64
-				CryChangeRecordDialog(loadedTable, ScanInt64(GetAddressTableAddress(loadedTable, row).ToString(), NULL, 16)
-					, GetAddressTableValueType(loadedTable, row), CRDM_DESCRIPTION).Execute();
+				CryChangeRecordDialog(loadedTable, row, CRDM_DESCRIPTION).Execute();
 #else
-				CryChangeRecordDialog(loadedTable, ScanInt(GetAddressTableAddress(loadedTable, row).ToString(), NULL, 16)
-					, GetAddressTableValueType(loadedTable, row), CRDM_DESCRIPTION).Execute();
+				CryChangeRecordDialog(loadedTable, row, CRDM_DESCRIPTION).Execute();
 #endif
 				break;
 			case CRDM_ADDRESS:
 #ifdef _WIN64
-				CryChangeRecordDialog(loadedTable, ScanInt64(GetAddressTableAddress(loadedTable, row).ToString(), NULL, 16)
-					, GetAddressTableValueType(loadedTable, row), CRDM_ADDRESS).Execute();
+				CryChangeRecordDialog(loadedTable, row, CRDM_ADDRESS).Execute();
 #else
-				CryChangeRecordDialog(loadedTable, ScanInt(GetAddressTableAddress(loadedTable, row).ToString(), NULL, 16)
-					, GetAddressTableValueType(loadedTable, row), CRDM_ADDRESS).Execute();
+				CryChangeRecordDialog(loadedTable, row, CRDM_ADDRESS).Execute();
 #endif
 				break;
 			case CRDM_VALUE:
 #ifdef _WIN64
-				CryChangeRecordDialog(loadedTable, ScanInt64(GetAddressTableAddress(loadedTable, row).ToString(), NULL, 16)
-					, GetAddressTableValueType(loadedTable, row), CRDM_VALUE).Execute();
+				CryChangeRecordDialog(loadedTable, row, CRDM_VALUE).Execute();
 #else
-				CryChangeRecordDialog(loadedTable, ScanInt(GetAddressTableAddress(loadedTable, row).ToString(), NULL, 16)
-					, GetAddressTableValueType(loadedTable, row), CRDM_VALUE).Execute();
+				CryChangeRecordDialog(loadedTable, row, CRDM_VALUE).Execute();
 #endif
 				break;
 			case CRDM_TYPE:
 #ifdef _WIN64
-				CryChangeRecordDialog(loadedTable, ScanInt64(GetAddressTableAddress(loadedTable, row).ToString(), NULL, 16)
-					, GetAddressTableValueType(loadedTable, row), CRDM_TYPE).Execute();
+				CryChangeRecordDialog(loadedTable, row, CRDM_TYPE).Execute();
 #else
-				CryChangeRecordDialog(loadedTable, ScanInt(GetAddressTableAddress(loadedTable, row).ToString(), NULL, 16)
-					, GetAddressTableValueType(loadedTable, row), CRDM_TYPE).Execute();
+				CryChangeRecordDialog(loadedTable, row, CRDM_TYPE).Execute();
 #endif
 				break;
 			default:
@@ -969,11 +975,9 @@ void CrySearchForm::DeleteUserDefinedAddress()
 		}
 		
 #ifdef _WIN64
-		loadedTable.Remove(ScanInt64(GetAddressTableAddress(loadedTable, row).ToString(), NULL, 16)
-			, GetAddressTableValueType(loadedTable, row));
+		loadedTable.Remove(ScanInt64(GetAddressTableAddress(row).ToString(), NULL, 16), GetAddressTableValueType(row));
 #else
-		loadedTable.Remove(ScanInt(GetAddressTableAddress(loadedTable, row).ToString(), NULL, 16)
-			, GetAddressTableValueType(loadedTable, row));
+		loadedTable.Remove(ScanInt(GetAddressTableAddress(row).ToString(), NULL, 16), GetAddressTableValueType(row));
 #endif
 		this->mUserAddressList.SetVirtualCount(loadedTable.GetCount());
 	}
@@ -1040,42 +1044,25 @@ void CrySearchForm::SearchResultDoubleClicked()
 			break;
 	}
 	
-#ifdef _WIN64
-	const int curRow = loadedTable.Find(ScanInt64(addr, NULL, 16), toAddToAddressList);
-#else
-	const int curRow = loadedTable.Find(ScanInt(addr, NULL, 16), toAddToAddressList);
-#endif
+	// Try to find the address table entry in the existing table.
+	const int curRow = loadedTable.Find(CachedAddresses[cursor].Address, toAddToAddressList);
 	
+	// Check whether the address table entry already exists.
 	if (curRow != -1)
 	{
 		Prompt("Input Error", CtrlImg::error(), "The selected address is already added to the table.", "OK");
 		return;
 	}
 	
-	if (!this->mScanResults.IsCursor())
-	{
-		return;
-	}
-
-#ifdef _WIN64
-	const AddressTableEntry* newEntry = loadedTable.Add(STRING_EMPTY, ScanInt64(addr, NULL, 16), toAddToAddressList);
-#else
-	const AddressTableEntry* newEntry = loadedTable.Add(STRING_EMPTY, ScanInt(addr, NULL, 16), toAddToAddressList);
-#endif
+	// Add the entry to the address table.
+	const SearchResultCacheEntry& selEntry = CachedAddresses[cursor];
+	const AddressTableEntry* newEntry = loadedTable.Add(STRING_EMPTY, selEntry.Address, selEntry.StaticAddress, toAddToAddressList);
 	
+	// Special behavior for specific types of search results.
 	if (toAddToAddressList == "Array of Bytes")
 	{
 		// Retrieve size of byte array
-		int dataIndex = 0;
-		for (int c = 0; c <= value.GetLength(); c++)
-		{
-			if (value[c] == 0x20 || value[c] == 0x0) // scan for space/null character in string
-			{
-				++dataIndex;
-			}
-		}
-	
-		newEntry->Size = dataIndex;
+		newEntry->Size = StringToBytes(value).Size;
 	}
 	else if (toAddToAddressList == "String" || toAddToAddressList == "WString")
 	{
@@ -1107,7 +1094,6 @@ void CrySearchForm::MemorySearch()
 	}
 	
 	delete newScan;
-	
 	this->ClearScanResultsWithoutWarning();
 
 #ifdef _MULTITHREADED
@@ -1133,6 +1119,18 @@ void CrySearchForm::RefreshSearchResults()
 	
 	this->mScanResults.Clear();
 
+#ifdef _MULTITHREADED
+	Thread::Start(THISBACK1(StartMemoryScanReliefGUI, false));
+#else
+	StartMemoryScanReliefGUI(false);
+#endif
+}
+
+// Starts a next scan with a hotkey press.
+void CrySearchForm::StartNextScanHotkey()
+{
+	this->mScanResults.Clear();
+	
 #ifdef _MULTITHREADED
 	Thread::Start(THISBACK1(StartMemoryScanReliefGUI, false));
 #else
@@ -1314,7 +1312,7 @@ bool CrySearchForm::CloseProcess()
 	
 	// Kill running timers.
 	KillTimeCallback(10);
-	
+
 	// Clean process name inside address table.
 	loadedTable.ClearProcessName();
 	
@@ -1335,7 +1333,7 @@ void CrySearchForm::SettingsButtonClicked()
 	this->LinkHotkeysToActions();
 	
 	// If the hotkeys are enabled, reinstate the callback for the next poll session.
-	if (GlobalSettingsInstance.GetEnableHotkeys())
+	if (SettingsFile::GetInstance()->GetEnableHotkeys())
 	{
 		KillTimeCallback(20);
 		SetTimeCallback(100, THISBACK(CheckKeyPresses), 20);
@@ -1364,6 +1362,13 @@ void CrySearchForm::CodeGenerationButtonClicked()
 	CryCodeGenerationForm* ccgf = new CryCodeGenerationForm();
 	ccgf->Execute();
 	delete ccgf;
+}
+
+void CrySearchForm::MemoryDissectionButtonClicked()
+{
+	CryMemoryDissectionWindow* cmdw = new CryMemoryDissectionWindow(NULL);
+	cmdw->Execute();
+	delete cmdw;
 }
 
 void CrySearchForm::ViewSystemHandlesButtonClicked()
@@ -1520,6 +1525,60 @@ void CrySearchForm::ClearScanResultsWithoutWarning()
 	this->mSearchResultCount.SetLabel("Search Results: 0");
 }
 
+bool CrySearchForm::InitializeProcessUI()
+{
+#ifndef _WIN64
+	this->mModuleList.Initialize();
+	this->mThreadList.Initialize();
+
+	// Check the architecture of the loaded process. Under x64, processes can cause trouble.
+	if (mMemoryScanner->IsX86Process())
+	{
+		// Instantiate new PE class.
+		mPeInstance = new PortableExecutable32();
+		mDebugger = new CryDebugger32();
+		this->mPEWindow.Initialize();
+		this->mDisasmWindow.Initialize();
+	}
+	else
+	{
+		Prompt("Load Error", CtrlImg::error(), "Failed to open the selected process because it is 64-bit. Use CrySearch x64 to open it instead.", "OK");
+		mMemoryScanner->CloseProcess();
+		PostCallback(THISBACK(OpenProcessMenu));
+		return false;
+	}
+#else
+	this->mModuleList.Initialize();
+	this->mThreadList.Initialize();
+	
+	if (mMemoryScanner->IsX86Process())
+	{
+		mPeInstance = new PortableExecutable32();
+		mDebugger = new CryDebugger32();
+	}
+	else
+	{
+		mPeInstance = new PortableExecutable64();
+		mDebugger = new CryDebugger64();
+	}
+	
+	this->mPEWindow.Initialize();
+	this->mDisasmWindow.Initialize();
+#endif
+	this->mImportsWindow.Initialize();
+	this->mDbgWindow.Initialize();
+	
+	// Still here so the process loaded succesfully. Update user interface and prepare tabs.
+	this->processLoaded = true;
+	this->mToolStrip.Set(THISBACK(ToolStrip));	
+
+	// Set timer callback that runs the address list update sequence.
+	SetTimeCallback(SettingsFile::GetInstance()->GetAddressTableUpdateInterval(), THISBACK(AddressValuesUpdater), 10);
+	
+	// Succesfully initialized user interface.
+	return true;
+}
+
 void CrySearchForm::WhenProcessOpened(Win32ProcessInformation* pProc)
 {
 	// Check whether a process was previously opened.
@@ -1543,50 +1602,10 @@ void CrySearchForm::WhenProcessOpened(Win32ProcessInformation* pProc)
 			// Check if the process actually started correctly, if it didn't, the procedure failed.
 			if (IsProcessActive(mMemoryScanner->GetHandle()))
 			{
-#ifndef _WIN64
-				this->mModuleList.Initialize();
-				this->mThreadList.Initialize();
-	
-				// Check the architecture of the loaded process. Under x64, processes can cause trouble.
-				if (mMemoryScanner->IsX86Process())
+				if (!this->InitializeProcessUI())
 				{
-					// Instantiate new PE class.
-					mPeInstance = new PortableExecutable32();
-					mDebugger = new CryDebugger32();
-					this->mPEWindow.Initialize();
-					this->mDisasmWindow.Initialize();
-				}
-				else
-				{
-					Prompt("Load Error", CtrlImg::error(), "Failed to open the selected process because it is 64-bit. Use CrySearch x64 to open it instead.", "OK");
-					mMemoryScanner->CloseProcess();
-					PostCallback(THISBACK(OpenProcessMenu));
 					return;
 				}
-#else
-				this->mModuleList.Initialize();
-				this->mThreadList.Initialize();
-				
-				if (mMemoryScanner->IsX86Process())
-				{
-					mPeInstance = new PortableExecutable32();
-					mDebugger = new CryDebugger32();
-				}
-				else
-				{
-					mPeInstance = new PortableExecutable64();
-					mDebugger = new CryDebugger64();
-				}
-				
-				this->mPEWindow.Initialize();
-				this->mDisasmWindow.Initialize();
-#endif
-				this->mImportsWindow.Initialize();
-				this->mDbgWindow.Initialize();
-				
-				// Still here so the process loaded succesfully. Update user interface and prepare tabs.
-				this->processLoaded = true;
-				this->mToolStrip.Set(THISBACK(ToolStrip));
 				
 				if (this->wndTitleRandomized)
 				{
@@ -1608,7 +1627,6 @@ void CrySearchForm::WhenProcessOpened(Win32ProcessInformation* pProc)
 				
 				this->ProcessTerminated = false;
 				SetTimeCallback(250, THISBACK(CheckProcessTermination), 30);
-				SetTimeCallback(GlobalSettingsInstance.GetAddressTableUpdateInterval(), THISBACK(AddressValuesUpdater), 10);
 				
 				// Set process name in the address table using the value from the FileSel.
 				loadedTable.SetProcessName(pProc->ExeTitle);
@@ -1633,54 +1651,11 @@ void CrySearchForm::WhenProcessOpened(Win32ProcessInformation* pProc)
 		// Use process ID to open an existing process.
 		if (mMemoryScanner->InitializeExistingProcess(pProc->ProcessId, pProc->ExeTitle))
 		{
-#ifndef _WIN64
-			this->mModuleList.Initialize();
-			this->mThreadList.Initialize();
-
-			// A 64 bit process may not be loaded into 32 bit CrySearch. This check takes care of that.
-			if (mMemoryScanner->IsX86Process())
+			if (!this->InitializeProcessUI())
 			{
-				// Instantiate new PE class.
-				mPeInstance = new PortableExecutable32();
-				mDebugger = new CryDebugger32();
-				this->mPEWindow.Initialize();
-				this->mDisasmWindow.Initialize();
-			}
-			else
-			{
-				Prompt("Load Error", CtrlImg::error(), "Failed to open the selected process because it is 64-bit. Use CrySearch x64 to open it instead.", "OK");
-				mMemoryScanner->CloseProcess();
-				PostCallback(THISBACK(OpenProcessMenu));
 				return;
 			}
-			
-#else
-			this->mModuleList.Initialize();
-			this->mThreadList.Initialize();
-			
-			// Check whether the loaded process is x86 or x64 and create correct instances accordingly.
-			if (mMemoryScanner->IsX86Process())
-			{
-				mPeInstance = new PortableExecutable32();
-				mDebugger = new CryDebugger32();
-			}
-			else
-			{
-				mPeInstance = new PortableExecutable64();
-				mDebugger = new CryDebugger64();
-			}
-			
-			this->mPEWindow.Initialize();
-			this->mDisasmWindow.Initialize();
-#endif
-			
-			this->mImportsWindow.Initialize();
-			this->mDbgWindow.Initialize();
-			
-			// Still here so the process loaded succesfully. Update user interface and prepare tabs.
-			this->processLoaded = true;
-			this->mToolStrip.Set(THISBACK(ToolStrip));
-			
+					
 			if (this->wndTitleRandomized)
 			{
 				this->mOpenedProcess.SetLabel(Format("(%i) %s ", mMemoryScanner->GetProcessId(), mMemoryScanner->GetProcessName()));
@@ -1702,7 +1677,6 @@ void CrySearchForm::WhenProcessOpened(Win32ProcessInformation* pProc)
 			
 			this->ProcessTerminated = false;
 			SetTimeCallback(250, THISBACK(CheckProcessTermination), 30);
-			SetTimeCallback(GlobalSettingsInstance.GetAddressTableUpdateInterval(), THISBACK(AddressValuesUpdater), 10);
 			
 			// Since the process name is either retrieved or known, setting it here should not bring any problems.
 			loadedTable.SetProcessName(mMemoryScanner->GetProcessName());
@@ -1786,11 +1760,29 @@ void CrySearchForm::ScannerCompletedThreadSafe()
 		this->mSearchResultCount.SetLabel(Format("Search Results: %i", mMemoryScanner->GetScanResultCount()));
 	}
 	
+	// Create distinction between relative and dynamic addresses.
+	CrySearchArrayCtrl* const ctrl = frm->GetSearchResultCtrl();
+	const int aCount = CachedAddresses.GetCount();
+	for (int a = 0; a < aCount; ++a)
+	{
+		if (CachedAddresses[a].StaticAddress)
+		{
+			// Set green display color for relative addresses.
+			ctrl->SetRowDisplay(a, GreenDisplayDrawInstance);
+		}
+	}
+	
 	this->mScanningProgress.Hide();
 	this->mToolStrip.Set(THISBACK(ToolStrip));
 	
 	// Cheat Engine has this nice beep when a scan completes, why shouldn't I? :)
 	BeepExclamation();
+}
+
+// Returns a pointer to the search result control. Friend methods may need to set the display property.
+CrySearchArrayCtrl* CrySearchForm::GetSearchResultCtrl()
+{
+	return &this->mScanResults;
 }
 
 // Returns a pointer to the disassembly window.
@@ -1815,16 +1807,10 @@ bool CrySearchForm::SetActiveTabWindow(const String& wndText)
 
 // ---------------------------------------------------------------------------------------------
 
-// Subwindows or controls that are managed by the main window class may be needed outside. A globally defined pointer is necessary.
-CrySearchForm* frm;
-
 GUI_APP_MAIN
 {
 	// Wire up the crash handler.
 	SetUnhandledExceptionFilter(CrashHandler);
-	
-	// Delete temporary files from any earlier run, which might have crashed.
-	DeleteTemporaryFiles();
 	
 	// Get the command line. In case a .csat file was opened, the first argument is the path to the file.
 	const Vector<String>& cmdline = CommandLine();
@@ -1836,11 +1822,14 @@ GUI_APP_MAIN
 	{
 		frm = new CrySearchForm(NULL);
 	}
+
+	// Delete temporary files from any earlier run, which might have crashed.
+	DeleteTemporaryFiles();
 	
 	// Run main window.
 	frm->Run();
 	delete frm;
-	
+
 	// Force destruction of global objects to restore states of opened processes.
 	CryGlobalDestruct();
 	

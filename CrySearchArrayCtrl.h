@@ -7,7 +7,7 @@
 
 using namespace Upp;
 
-class CrySearchArrayCtrl sealed : public ArrayCtrl
+class CrySearchArrayCtrl : public ArrayCtrl
 {
 public:
 	Tuple2<int, int> GetVisibleRange();

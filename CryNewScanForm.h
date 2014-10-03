@@ -6,7 +6,7 @@
 #include "GlobalDef.h"
 #include "CryDialogTemplate.h"
 
-class CryNewScanForm sealed : public CryDialogTemplate
+class CryNewScanForm : public CryDialogTemplate
 {
 private:
 	bool mNextScan;

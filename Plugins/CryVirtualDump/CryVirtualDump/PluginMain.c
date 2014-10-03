@@ -152,8 +152,6 @@ const BOOL __stdcall CreateModuleDump32(HANDLE hProcess, const void* moduleBase,
 				startAddress = 0;
 			}
 
-			if (*(WORD*)buffer == 0x5A4D)
-				((IMAGE_NT_HEADERS32*)(buffer + ((IMAGE_DOS_HEADER*)buffer)->e_lfanew))->OptionalHeader.FileAlignment = 0x1000;
 			WriteFile(hFile, buffer, block.RegionSize, &bytesRead, NULL);
 		}
 

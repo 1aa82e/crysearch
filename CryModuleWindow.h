@@ -7,7 +7,7 @@ using namespace Upp;
 
 #include "GlobalDef.h"
 
-class CryModuleWindow sealed : public ParentCtrl
+class CryModuleWindow : public ParentCtrl
 {
 private:
 	ToolBar tBar;

@@ -8,6 +8,9 @@
 #include "PortableExecutable.h"
 #include "CryDebugger.h"
 #include "PluginSystem.h"
+#include "ModuleManager.h"
+
+// ---------------------------------------------------------------------------------------------
 
 #include "CrySearchLibrary/SDK/CrySearch.h"
 
@@ -31,13 +34,14 @@
 // Global variables for application wide access.
 extern CryDebugger* mDebugger;
 extern AddressTable loadedTable;
-extern SettingsFile GlobalSettingsInstance;
 extern MemoryScanner* mMemoryScanner;
 extern PluginSystem* mPluginSystem;
 extern PortableExecutable* mPeInstance;
-extern Vector<Win32ModuleInformation> LoadedModulesList;
+extern ModuleManager* mModuleManager;
 extern Win32PEInformation LoadedProcessPEInformation;
-extern String TemporaryFolderPath;
+
+// The memory scanner translation unit keeps a thread pool available for the entire application.
+extern CoWork threadPool;
 
 // All features for proper destruction of objects is available but these are not always called on application shutdown.
 // When CrySearch shuts down every opened application state must be restored. Force destruction on shutdown.

@@ -3,7 +3,7 @@
 
 #include "CryDialogTemplate.h"
 
-class CrySystemHandleAccessMaskWindow sealed : public CryDialogTemplate
+class CrySystemHandleAccessMaskWindow : public CryDialogTemplate
 {
 private:
 	ArrayCtrl mAccessConstants;

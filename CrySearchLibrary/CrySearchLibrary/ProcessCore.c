@@ -1,4 +1,9 @@
 #include "../SDK/ProcessCore.h"
+#include <Shlwapi.h>
+#include <Psapi.h>
+
+#pragma comment(lib, "Shlwapi.lib")
+#pragma comment(lib, "Psapi.lib")
 
 // This function is used by CrySearch to identify the architecture of the loaded process, very important and widely used, the whole application depends on it.
 // Returns true if the target process is running in wow64. When this function is called from an x86 operating system, the return value is undefined.
@@ -181,3 +186,99 @@ const BOOL IsProcessActive(HANDLE procHandle)
 	GetExitCodeProcess(procHandle, &exitCode);
 	return exitCode == STILL_ACTIVE;
 }
+
+// Creates a snapshot of the thread specified by the threadId parameter. The thread context is put into the second parameter.
+// Returns TRUE if the snapshot succeeded and FALSE otherwise.
+#ifdef _WIN64
+	const BOOL SnapThreadContext32(const int threadId, PWOW64_CONTEXT pContext)
+#else
+	const BOOL SnapThreadContext32(const int threadId, PCONTEXT pContext)
+#endif
+	{
+		HANDLE hThread = NULL;
+
+		// Check input pointer validity.
+		if (!pContext)
+		{
+			return FALSE;
+		}
+
+		// Open handle to specified thread.
+		hThread = OpenThread(THREAD_SUSPEND_RESUME | THREAD_GET_CONTEXT, FALSE, threadId);
+
+		// Check validity of handle.
+		if (!hThread || hThread == INVALID_HANDLE_VALUE)
+		{
+			return FALSE;
+		}
+
+		// Try to suspend specified thread.
+#ifdef _WIN64
+		if (Wow64SuspendThread(hThread) == (DWORD)-1)
+#else
+		if (SuspendThread(hThread) == (DWORD)-1)
+#endif
+		{
+			CloseHandle(hThread);
+			return FALSE;
+		}
+
+		// Get architecture specific context from thread.
+#ifdef _WIN64
+		memset(pContext, 0, sizeof(WOW64_CONTEXT));
+		pContext->ContextFlags = WOW64_CONTEXT_FULL;
+		Wow64GetThreadContext(hThread, pContext);
+#else
+		memset(pContext, 0, sizeof(CONTEXT));
+		pContext->ContextFlags = CONTEXT_FULL;
+		GetThreadContext(hThread, pContext);
+#endif
+
+		// Resume thread and return.
+		ResumeThread(hThread);
+		CloseHandle(hThread);
+
+		return TRUE;
+	}
+
+#ifdef _WIN64
+	// Creates a snapshot of the thread specified by the threadId parameter. The thread context is put into the second parameter.
+	// Returns TRUE if the snapshot succeeded and FALSE otherwise of if the pContext pointer is NULL.
+	const BOOL SnapThreadContext64(const int threadId, PCONTEXT pContext)
+	{
+		HANDLE hThread = NULL;
+
+		// Check input pointer validity.
+		if (!pContext)
+		{
+			return FALSE;
+		}
+
+		// Open handle to specified thread.
+		hThread = OpenThread(THREAD_SUSPEND_RESUME | THREAD_GET_CONTEXT, FALSE, threadId);
+
+		// Check validity of handle.
+		if (!hThread || hThread == INVALID_HANDLE_VALUE)
+		{
+			return FALSE;
+		}
+
+		// Try to suspend specified thread.
+		if (SuspendThread(hThread) == (DWORD)-1)
+		{
+			CloseHandle(hThread);
+			return FALSE;
+		}
+
+		// Get context from thread.
+		memset(pContext, 0, sizeof(CONTEXT));
+		pContext->ContextFlags = CONTEXT_FULL;
+		GetThreadContext(hThread, pContext);
+
+		// Resume thread and return.
+		ResumeThread(hThread);
+		CloseHandle(hThread);
+
+		return TRUE;
+	}
+#endif

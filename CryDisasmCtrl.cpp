@@ -1,4 +1,6 @@
 #include "CryDisasmCtrl.h"
+#include "CrySignatureGenerationWindow.h"
+#include "CryByteArrayGenerationWindow.h"
 #include "ImlProvider.h"
 #include "UIUtilities.h"
 #include "CryHeapWalkDialog.h"
@@ -75,7 +77,7 @@ CryDisasmCtrl::CryDisasmCtrl()
 	this->mToolStrip.Set(THISBACK(ToolStrip));
 	
 	*this
-		<< this->disasmDisplay.NoGrid().NoMovingHeader().SizePos()
+		<< this->disasmDisplay.MultiSelect().NoGrid().NoMovingHeader().SizePos()
 	;
 	
 	this->disasmDisplay.AddRowNumColumn("Address", 20).SetConvert(Single<IndexBasedValueConvert<GetDisasmAddress>>());
@@ -87,6 +89,8 @@ CryDisasmCtrl::CryDisasmCtrl()
 	this->mExecutablePages.SetConvert(Single<IndexBasedValueConvert<GetMemoryPageForDropList>>());
 	this->mExecutablePages.WhenDrop = THISBACK(ExecutablePagesDropped);
 	this->mExecutablePages.WhenAction = THISBACK(ExecutablePageSelected);
+	
+	this->mAsyncHelper = NULL;
 }
 
 CryDisasmCtrl::~CryDisasmCtrl()
@@ -104,21 +108,37 @@ void CryDisasmCtrl::ToolStrip(Bar& pBar)
 
 void CryDisasmCtrl::DisassemblyRightClick(Bar& pBar)
 {
+	// Whether an item is selected or not, these items should be always added to the menu.
 	pBar.Add("Go to Address\tCTRL + G", THISBACK(GoToAddressButtonClicked));
-	pBar.Add("Copy\t\tCTRL + C", CtrlImg::copy(), THISBACK(CopyCursorLineToClipboard));
 	pBar.Separator();
 	
-	const bool canDbg = (mDebugger && mDebugger->IsDebuggerAttached());
-	const int cursor = disasmDisplay.GetCursor();
-	
-	if ((cursor >= 0 && DisasmVisibleLines.GetCount() > 0) && mDebugger->FindBreakpoint(DisasmVisibleLines[cursor].VirtualAddress) == -1)
+	// One item must be always selected.
+	const int cursor = this->disasmDisplay.GetCursor();
+	if ((cursor >= 0 && DisasmVisibleLines.GetCount() > 0))
 	{
-		pBar.Add(canDbg, "Set Breakpoint", CrySearchIml::SetBreakpoint(), THISBACK(SetBreakpointMenu));
+		pBar.Add("Copy\t\tCTRL + C", CtrlImg::copy(), THISBACK(CopyCursorLineToClipboard));
+		
+		// Debugger menu items should depend on whether the debugger is attached or not.
+		const bool canDbg = (mDebugger && mDebugger->IsDebuggerAttached());
+		if (mDebugger->FindBreakpoint(DisasmVisibleLines[cursor].VirtualAddress) == -1)
+		{
+			pBar.Add(canDbg, "Set Breakpoint", CrySearchIml::SetBreakpoint(), THISBACK(SetBreakpointMenu));
+		}
+		else
+		{
+			pBar.Add(canDbg, "Remove Breakpoint", CrySearchIml::DeleteButton(), THISBACK(RemoveBreakpointButtonClicked));
+		}
+		
+		// Below the single selection menu items, this item should go for both, even though it should be located below.
+		pBar.Separator();
+		pBar.Add("Generate", THISBACK(DisasmGenerateSubmenu));
 	}
-	else
-	{
-		pBar.Add(canDbg, "Remove Breakpoint", CrySearchIml::DeleteButton(), THISBACK(RemoveBreakpointButtonClicked));
-	}
+}
+
+void CryDisasmCtrl::DisasmGenerateSubmenu(Bar& pBar)
+{
+	pBar.Add("Signature", CrySearchIml::GenerateSignatureButton(), THISBACK(GenerateSignatureButtonClicked));
+	pBar.Add("Byte-array", CrySearchIml::GenerateByteArrayButton(), THISBACK(GenerateByteArrayButtonClicked));
 }
 
 bool CryDisasmCtrl::Key(dword key, int count)
@@ -135,6 +155,42 @@ bool CryDisasmCtrl::Key(dword key, int count)
 	}
 	
 	return false;
+}
+
+void CryDisasmCtrl::GenerateSignatureButtonClicked()
+{
+	Vector<int> selectedRows;
+	for (int i = 0; i < this->disasmDisplay.GetCount(); ++i)
+	{
+		// Check which rows are selected for the signature generation.
+		if (this->disasmDisplay.IsSelected(i))
+		{
+			selectedRows.Add(i);
+		}
+	}
+	
+	// Launch signature generation form with selected rows as parameter.
+	CrySignatureGenerationWindow* csgw = new CrySignatureGenerationWindow(selectedRows);
+	csgw->Execute();
+	delete csgw;
+}
+
+void CryDisasmCtrl::GenerateByteArrayButtonClicked()
+{
+	Vector<int> selectedRows;
+	for (int i = 0; i < this->disasmDisplay.GetCount(); ++i)
+	{
+		// Check which rows are selected for the signature generation.
+		if (this->disasmDisplay.IsSelected(i))
+		{
+			selectedRows.Add(i);
+		}
+	}
+	
+	// Launch signature generation form with selected rows as parameter.
+	CryByteArrayGenerationWindow* cbagw = new CryByteArrayGenerationWindow(selectedRows);
+	cbagw->Execute();
+	delete cbagw;
 }
 
 void CryDisasmCtrl::HeapWalkMenuClicked()
@@ -233,7 +289,7 @@ void CryDisasmCtrl::ExecutablePageSelected()
 	if (cursor >= 0 && mExecutablePagesList.GetCount() > 0)
 	{
 		const MemoryRegion& found = mExecutablePagesList[cursor];
-		this->disasmDisplay.SetVirtualCount(0);
+		this->disasmDisplay.Clear();
 		this->mAsyncHelper->Start(found.BaseAddress);	
 	}
 }
@@ -282,6 +338,7 @@ void CryDisasmCtrl::AsyncDisasmCompletedThreadSafe(const SIZE_T address)
 		this->mExecutablePages.SetIndex(index);
 	}
 	
+	// Scroll down to the selected address.
 	this->disasmDisplay.ScrollInto(GetDisasmLineIndexFromAddress(address));
 }
 
@@ -304,9 +361,9 @@ void CryDisasmCtrl::Initialize()
 	const SIZE_T pageAddress = mExecutablePagesList.GetCount() > 0 ? mExecutablePagesList[0].BaseAddress : 0;
 	
 #ifdef _WIN64
-	SIZE_T epAddress = LoadedProcessPEInformation.PEFields.GetCount() > 0 ? LoadedModulesList[0].BaseAddress + ScanInt64(LoadedProcessPEInformation.PEFields.Get("Address of entrypoint").ToString(), NULL, 16) : pageAddress;
+	SIZE_T epAddress = LoadedProcessPEInformation.PEFields.GetCount() > 0 ? (*mModuleManager)[0].BaseAddress + ScanInt64(LoadedProcessPEInformation.PEFields.Get("Address of entrypoint").ToString(), NULL, 16) : pageAddress;
 #else
-	SIZE_T epAddress = LoadedProcessPEInformation.PEFields.GetCount() > 0 ? LoadedModulesList[0].BaseAddress + ScanInt(LoadedProcessPEInformation.PEFields.Get("Address of entrypoint").ToString(), NULL, 16) : pageAddress;
+	SIZE_T epAddress = LoadedProcessPEInformation.PEFields.GetCount() > 0 ? (*mModuleManager)[0].BaseAddress + ScanInt(LoadedProcessPEInformation.PEFields.Get("Address of entrypoint").ToString(), NULL, 16) : pageAddress;
 #endif
 	
 	// Initialize UI-seperate on another thread to speed up the process.

@@ -8,7 +8,7 @@ const int GetPageIndexFromAddress(const SIZE_T address);
 const MemoryRegion* GetPageFromAddress(const SIZE_T address);
 
 // Single helper class that allows the user interface of CrySearch to disassemble pages in a thread-safe way.
-class AsyncDisassembler sealed
+class AsyncDisassembler
 {
 private:
 	volatile bool mRunning;

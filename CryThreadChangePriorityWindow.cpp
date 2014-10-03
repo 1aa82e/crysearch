@@ -1,7 +1,7 @@
 #include "CryThreadChangePriorityWindow.h"
 #include "GlobalDef.h"
 
-ThreadChangePriorityWindow::ThreadChangePriorityWindow(const int threadId, const int current)
+CryThreadChangePriorityWindow::CryThreadChangePriorityWindow(const int threadId, const int current, const Image& icon) : CryDialogTemplate(icon)
 {
 	this->threadID = threadId;
 
@@ -21,12 +21,12 @@ ThreadChangePriorityWindow::ThreadChangePriorityWindow(const int threadId, const
 	this->priorSelect.SetIndex(current);
 }
 
-ThreadChangePriorityWindow::~ThreadChangePriorityWindow()
+CryThreadChangePriorityWindow::~CryThreadChangePriorityWindow()
 {
 	
 }
 
-void ThreadChangePriorityWindow::OkButton()
+void CryThreadChangePriorityWindow::OkButton()
 {
 	int newPrior;
 	
@@ -66,7 +66,7 @@ void ThreadChangePriorityWindow::OkButton()
 	this->Close();
 }
 
-void ThreadChangePriorityWindow::CancelButton()
+void CryThreadChangePriorityWindow::CancelButton()
 {
 	this->Close();
 }

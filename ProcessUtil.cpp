@@ -2,12 +2,8 @@
 #include "NativeAPI.h"
 
 #include <Psapi.h>
-#include <Shlwapi.h>
 #include <VerRsrc.h>
 #include <DbgHelp.h>
-
-#pragma comment(lib, "Shlwapi.lib")
-#pragma comment(lib, "Psapi.lib")
 
 #include "GlobalDef.h"
 
@@ -46,7 +42,7 @@ void EnumerateProcesses(Vector<Win32ProcessInformation>& outList)
 			{
 				Win32ProcessInformation wpi;
 				wpi.ProcessId = (int)curProc->UniqueProcessId;
-				wpi.ExeTitle = WString(curProc->ImageName.Buffer, curProc->ImageName.Length).ToString();
+				wpi.ExeTitle = WString(curProc->ImageName.Buffer, curProc->ImageName.Length / 2).ToString();
 
 				outList.Add(wpi);
 			}
@@ -56,41 +52,6 @@ void EnumerateProcesses(Vector<Win32ProcessInformation>& outList)
 	
 	// Free heap allocated process information.
 	VirtualFree(procInfo, 0, MEM_RELEASE);
-}
-
-// Retrieves all modules loaded from a process including base and size.
-void EnumerateModules(HANDLE procHandle, const int processId)
-{
-	LoadedModulesList.Clear();
-	
-	// Some processes have so many modules. Better safe than sorry.
-	HMODULE* modules = (HMODULE*)VirtualAlloc(NULL, 1024, MEM_COMMIT, PAGE_READWRITE);
-	DWORD modulesFound = 0;
-
-#ifdef _WIN64
-	EnumProcessModulesEx(procHandle, modules, 1024 * sizeof(HMODULE), &modulesFound, mMemoryScanner->IsX86Process() ? LIST_MODULES_32BIT : LIST_MODULES_64BIT);
-#else
-	EnumProcessModules(procHandle, modules, 1024 * sizeof(HMODULE), &modulesFound);
-#endif
-	
-	for (unsigned int i = 0; i < modulesFound / sizeof(HMODULE); ++i)
-	{
-		Win32ModuleInformation curMod;
-				
-		char dllName[MAX_PATH];
-		GetModuleFileNameEx(procHandle, modules[i], dllName, MAX_PATH);
-		curMod.ModuleName = GetFileName(dllName);
-		
-		MODULEINFO modInfo;
-		GetModuleInformation(procHandle, modules[i], &modInfo, sizeof(MODULEINFO));
-		curMod.Length = modInfo.SizeOfImage;
-		curMod.BaseAddress = (SIZE_T)modInfo.lpBaseOfDll;
-		
-		LoadedModulesList.Add(curMod);
-	}
-
-	// Free allocated memory.
-	VirtualFree(modules, 0, MEM_RELEASE);
 }
 
 // Retrieves all threads loaded from a process.
@@ -133,7 +94,7 @@ void EnumerateThreads(const int processId, Vector<Win32ThreadInformation>& threa
 					Win32ThreadInformation& newEntry = threads.Add();
 					newEntry.ThreadIdentifier = (int)curThread->ThreadInfo.ClientId.UniqueThread;
 					newEntry.StartAddress = curThread->Win32StartAddress ? (SIZE_T)curThread->Win32StartAddress : (SIZE_T)curThread->ThreadInfo.StartAddress;
-					newEntry.Suspended = curThread->ThreadInfo.WaitReason == Suspended;
+					newEntry.IsSuspended = curThread->ThreadInfo.WaitReason == Suspended;
 				}
 			}
 		}
@@ -330,24 +291,8 @@ void EnumerateHandles(const int processId, Vector<Win32HandleInformation>& handl
 	VirtualFree(handleInfo, 0, MEM_RELEASE);
 }
 
-// Retrieves the module of a contained executable address. Stack trace functions need this.
-void GetModuleFromContainedAddress(Win32ModuleInformation** module, SIZE_T address)
-{
-	for (int i = 0; i < LoadedModulesList.GetCount(); i++)
-	{
-		Win32ModuleInformation* const tmp = &LoadedModulesList[i];
-		if (address > tmp->BaseAddress && address < tmp->BaseAddress + tmp->Length)
-		{
-			*module = tmp;
-			return;
-		}
-	}
-	
-	*module = NULL;
-}
-
 // Obtains the stack trace for a hit breakpoint and puts it into the last parameter.
-void ConstructStackTrace(HANDLE hProcess, const DWORD machineType, const void* const contextPtr, Vector<String>& outStackTrace)
+void ConstructStackTrace(HANDLE hProcess, const DWORD machineType, const void* const contextPtr, Vector<Win32StackTraceEntry>& outStackTrace)
 {
 	outStackTrace.Clear();
 
@@ -407,8 +352,7 @@ void ConstructStackTrace(HANDLE hProcess, const DWORD machineType, const void* c
         symbol->MaxNameLength = MAX_SYM_NAME;
         
         // Obtain module from stack trace.
-        Win32ModuleInformation* module = NULL;
-        GetModuleFromContainedAddress(&module, (SIZE_T)StackFrame.AddrPC.Offset);
+        const Win32ModuleInformation* module = mModuleManager->GetModuleFromContainedAddress((SIZE_T)StackFrame.AddrPC.Offset);
         
         char name[MAX_SYM_NAME];
         char* symNamePtr;
@@ -416,6 +360,8 @@ void ConstructStackTrace(HANDLE hProcess, const DWORD machineType, const void* c
         
         // Set stack trace entry name array to zero to avoid cluttered results.
 		memset(name, 0, MAX_SYM_NAME);
+        Win32StackTraceEntry& newEntry = outStackTrace.Add();
+        newEntry.Address = (SIZE_T)StackFrame.AddrPC.Offset;
         
         if (module)
         {
@@ -426,17 +372,17 @@ void ConstructStackTrace(HANDLE hProcess, const DWORD machineType, const void* c
 			customizedLength = strLen + 1;
             symNamePtr = name + customizedLength;
         }
-            
+        
         // Attempt to retrieve symbol name from PDB file.
         if (SymGetSymFromAddr64(hProcess, StackFrame.AddrPC.Offset, NULL, symbol))
         {
             UnDecorateSymbolName(symbol->Name, symNamePtr, MAX_SYM_NAME - customizedLength, UNDNAME_COMPLETE);
-            outStackTrace.Add(name);
+            newEntry.StringRepresentation = name;
         }
         else
         {
             // Symbol name was not found, just put module name with address.
-            outStackTrace.Add(Format("%s%llX", name, (LONG_PTR)StackFrame.AddrPC.Offset));
+            newEntry.StringRepresentation = Format("%s%llX", name, (LONG_PTR)StackFrame.AddrPC.Offset);
         }
 	}
 	while (result);

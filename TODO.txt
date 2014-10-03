@@ -1,16 +1,34 @@
 CrySearch application TODO list by evolution536
 
+- Structure dissections
+	- settings window, default offset;
+	- Right-click row and select its type;
+	- type guessing;
+	- data schema (smth like xsd but for memory dissections);
+	- generate struct definition from selection;
+	- save struct (selection) to address table (not entirely, I guess, with type guessing I should save different offsets);
+
+- There is a bug in the process selection window when fooling around with non-responsive processes;
+- Also a bug in the main window complaining about GUI locking (hard to reproduce);
+
+- Identify static addresses:
+	- Code generation customized to use offsets;
+	- Pointers as addresses (using offsets);
+
+- Opening PDB files to navigate through disassembly with symbols, or just view symbols?
+- value in between;
+- Ability to import cheat tables; (skipend, parse variabletype correctly and parse relative addresses!!!!)
+
 - Plugin system:
 	- auto deploy correct plugins to build dir?
 	- new threads for opening plugins?
 	- Plugin DLL to override process opening sequence; (maybe other templates)
 	- Plugins have access to a menu in-app;
 
-- Process window: make SendMessageTimeout not block the process listing;
 - VTable finder / dissection (learn_more, maybe a plugin);
 - Find class instances based on a vtable;
-- Callstack tree, 'Code Map' as in Visual Studio;
 - Finish depcheck implementation;
+- Callstack tree, 'Code Map' as in Visual Studio;
 - Dump .NET modules?
 - Cancel IO on application shutdown when huge scan is still running (XP support blocks me here);
 - Detect handles that are 'malicious'?
@@ -23,11 +41,10 @@ CrySearch application TODO list by evolution536
 - Debugger:
 	- Far Cry doesn't want to listen to meh;
 	- manipulation lock, fix setting breakpoints and removing them pause the exception loop.
-	- Remove breakpoint without removing the results of the stack frame;
-	- Single step (step over);
-	- Call stack -> go to disasm;
+	- Single step (step over); (THE ICONS ARE IMPLEMENTED, BUT NOT YET USED!)
 	- VEH debugger
 
+- Heartbeat system for evading AC;
 - Main window:
 	- Use right toolbar space for message queue:
 		- Warning messages:
@@ -37,9 +54,6 @@ CrySearch application TODO list by evolution536
 		- Info messages:
 			- Could be anything...
 
-- Address Table:
-	- Add option checkbox / indicator to indicate whether address is frozen or not;
-
 - Encryption in target process & hide CrySearch from signature scan
 	- Look at AesStream example in bazaar;
 	- Metamorphic code.
@@ -48,28 +62,15 @@ CrySearch application TODO list by evolution536
 	- Scan for a custom data type, a C structure;
 	- Import structs from ReClass;
 
-- Identify static addresses:
-	- IMAGE_SCN_INITIALIZED_DATA;
-	- Green display of static addresses;
-	- Save address data in structure with bool field to indicate type;
-	- Code generation customized to use offsets;
-	- Manually add = offsets.
-	- Pointers as addresses (using offsets);
-
+- Winsock analysis, debugging packages sent/received;
 - Pointer scan;
-- Ability to import cheat tables;
-- value in between;
 
 - Module window:
 	- Manual mapping as injection method.
 
-- Thread list:
-	- Queue user APC to thread (to inject a DLL);
-
 - Code generation:
 	- Change C++ to C and implement TCC?
 	- Configure Microsoft Visual C++ compiler to compile generated code?
-	- Look at Tcc example in Bazaar.
 
 - Scan for hooked functions inside a process based on:
 	- Detours;
@@ -77,8 +78,6 @@ CrySearch application TODO list by evolution536
 	
 - Add function: "Generate C++"->Fields / Struct / Union:
 	- Expand to be used with pointers, maybe structs;
-- Thread-specific stack/heap walk and search inside stack/heap
-- Structure dissections
 - VirtualProtectEx for addresses/blocks
 - Code caves scanning
 - Write x86 driver using WinDDK (.sys) and create UI module to load it:
@@ -141,14 +140,13 @@ Add this function to the AMap class:
 
 ------------------------------------------------------------------------------------------------
 
-- Comment out FileSel.h and FileSel.cpp Networking codenz.
 - Log.cpp: Comment out GetUserNameA calls and OutputDebugString calls;
 - App.h: Comment out GetUserName function;
 - App.cpp: Comment out GetUserName function;
 - ArrayCtrl.h:
 	- Move cellInfo variable in to protected;
 	- Comment out SerializeHeader and IsLineDisabled;
-- DropList.h:
+- DropChoice.h:
 	- Comment out operator[int], NotNull, DropWidth, DropWidthZ;
 - Ctrl.iml:
 	- Remove networking icon(s);

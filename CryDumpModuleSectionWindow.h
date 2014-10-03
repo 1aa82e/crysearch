@@ -5,10 +5,10 @@
 #include "CryDialogTemplate.h"
 
 // Represents the window that allows users to dump specific sections of a loaded module.
-class CryDumpModuleSectionWindow sealed : public CryDialogTemplate
+class CryDumpModuleSectionWindow : public CryDialogTemplate
 {
 private:
-	Win32ModuleInformation* mModuleInfo;
+	const Win32ModuleInformation* mModuleInfo;
 	Vector<Win32PESectionInformation> imageSections;
 	
 	Label mSectionCount;

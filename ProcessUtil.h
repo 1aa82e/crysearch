@@ -17,9 +17,6 @@ struct Win32ModuleInformation : Moveable<Win32ModuleInformation>
 #endif
 };
 
-const Win32ModuleInformation* FindModuleInVector(const char* modName);
-void GetModuleFromContainedAddress(Win32ModuleInformation** module, SIZE_T address);
-
 // Represents a Win32 process
 struct Win32ProcessInformation : Moveable<Win32ProcessInformation>
 {
@@ -32,7 +29,7 @@ struct Win32ThreadInformation : Moveable<Win32ThreadInformation>
 {
 	int ThreadIdentifier;
 	SIZE_T StartAddress;
-	bool Suspended;
+	bool IsSuspended;
 };
 
 // Contains information about a heap block inside a process.
@@ -55,12 +52,18 @@ struct Win32HandleInformation : Moveable<Win32HandleInformation>
 	LONG Access;	
 };
 
+// Represents an entry in the call stack from a debugger breakpoint.
+struct Win32StackTraceEntry : Moveable<Win32StackTraceEntry>
+{
+	SIZE_T Address;
+	String StringRepresentation;
+};
+
 void EnumerateHandles(const int processId, Vector<Win32HandleInformation>& handles);
 void EnumerateThreads(const int processId, Vector<Win32ThreadInformation>& threads);
 void EnumerateProcesses(Vector<Win32ProcessInformation>& outList);
-void EnumerateModules(HANDLE procHandle, const int processId);
 bool EnumerateHeaps(Vector<Win32HeapInformation>& heapInfoList);
-void ConstructStackTrace(HANDLE hProcess, const DWORD machineType, const void* const contextPtr, Vector<String>& outStackTrace);
+void ConstructStackTrace(HANDLE hProcess, const DWORD machineType, const void* const contextPtr, Vector<Win32StackTraceEntry>& outStackTrace);
 
 // Extern thread list definition, which is needed by the disassembly window to set hardware breakpoints.
 extern Vector<Win32ThreadInformation> mThreadsList;

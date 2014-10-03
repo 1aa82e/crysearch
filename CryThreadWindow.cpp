@@ -5,6 +5,7 @@
 #include "CryThreadChangePriorityWindow.h"
 #include "CryCreateExternalThreadWindow.h"
 #include "CryThreadInformationBlockWindow.h"
+#include "CryThreadContextSnapWindow.h"
 #include "UIUtilities.h"
 
 Vector<Win32ThreadInformation> mThreadsList;
@@ -83,6 +84,7 @@ void CryThreadWindow::ThreadListRightClick(Bar& pBar)
 	if (threadRow >= 0 && mThreadsList.GetCount() > 0)
 	{
 		pBar.Add("View thread info", CrySearchIml::AboutButton(), THISBACK(ShowThreadInformationWindow));
+		pBar.Add("Snap Context", CrySearchIml::SnapContextSmall(), THISBACK(SnapContextButtonClicked));
 		pBar.Separator();
 		pBar.Add("Suspend", CrySearchIml::SuspendButtonSmall(), THISBACK(SuspendThread));
 		pBar.Add("Resume", CrySearchIml::ResumeButtonSmall(), THISBACK(ResumeThread));
@@ -101,7 +103,7 @@ void CryThreadWindow::LoadThreads()
 	const int threadCount = mThreadsList.GetCount();
 	for (int i = 0; i < threadCount; ++i)
 	{
-		this->mThreads.SetRowDisplay(i, mThreadsList[i].Suspended ? RedDisplayDrawInstance : StdDisplay());
+		this->mThreads.SetRowDisplay(i, mThreadsList[i].IsSuspended ? RedDisplayDrawInstance : StdDisplay());
 	}
 }
 
@@ -229,7 +231,7 @@ void CryThreadWindow::ChangePriority()
 		current = 6;
 	}
 
-	ThreadChangePriorityWindow(mThreadsList[this->mThreads.GetCursor()].ThreadIdentifier, current).Execute();
+	CryThreadChangePriorityWindow(mThreadsList[this->mThreads.GetCursor()].ThreadIdentifier, current, CrySearchIml::ChangePrioritySmall()).Execute();
 	
 	this->LoadThreads();
 }
@@ -276,4 +278,11 @@ void CryThreadWindow::ShowThreadInformationWindow()
 	CryThreadInformationBlockWindow* ctibw = new CryThreadInformationBlockWindow(mThreadsList[this->mThreads.GetCursor()].ThreadIdentifier);
 	ctibw->Execute();
 	delete ctibw;
+}
+
+void CryThreadWindow::SnapContextButtonClicked()
+{
+	CryThreadContextSnapWindow* ctcsw = new CryThreadContextSnapWindow(CrySearchIml::SnapContextSmall(), mThreadsList[this->mThreads.GetCursor()].ThreadIdentifier);
+	ctcsw->Execute();
+	delete ctcsw;
 }

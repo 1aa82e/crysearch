@@ -23,6 +23,13 @@ extern "C"
 	DWORD Wow64GetProcAddress(HANDLE hProcess, const DWORD moduleBase, const char* const funcName);
 	const BOOL IsProcessActive(HANDLE procHandle);
 
+#ifdef _WIN64
+	const BOOL SnapThreadContext32(const int threadId, PWOW64_CONTEXT pContext);
+	const BOOL SnapThreadContext64(const int threadId, PCONTEXT pContext);
+#else
+	const BOOL SnapThreadContext32(const int threadId, PCONTEXT pContext);
+#endif
+
 #ifdef __cplusplus
 }
 #endif

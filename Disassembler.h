@@ -11,10 +11,23 @@ using namespace Upp;
 #include "MemoryScanner.h"
 #include "BeaEngine/include/BeaEngine.h"
 
+// Dynamically link to disassembler library.
+#ifdef _WIN64
+	#pragma comment(lib, "BeaEngine/lib/BeaEngine64.lib")
+#else
+	#pragma comment(lib, "BeaEngine/lib/BeaEngine.lib")
+#endif
+
 #ifdef _cplusplus
 extern "C"
+{
 #endif
+
 int __stdcall CryDisasm(LPDISASM lpDisasm);
+
+#ifdef _cplusplus
+}
+#endif
 
 #ifdef _WIN64
 	#define ASM_LINE_MAX_BYTES 19

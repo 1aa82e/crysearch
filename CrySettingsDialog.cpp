@@ -9,23 +9,24 @@ extern "C" const BOOL RegisterAddressTableExtension();
 extern "C" const BOOL GetIsAddressTableExtensionRegistered();
 extern "C" const BOOL DeleteAddressTableRegistration();
 
-String GetHotkeyKey(const unsigned int index)
+String GetHotkeyKey(const int index)
 {
-	return HotkeyToString(GlobalSettingsInstance.GetHotkey(index).Key);
+	return HotkeyToString(SettingsFile::GetInstance()->GetHotkey(index).Key);
 }
 
-String GetHotkeyAction(const unsigned int index)
+String GetHotkeyAction(const int index)
 {
-	return GlobalSettingsInstance.GetHotkey(index).Description;
+	return SettingsFile::GetInstance()->GetHotkey(index).Description;
 }
 
 String GetSymbolPathString(const int index)
 {
-	return GlobalSettingsInstance.GetSymbolPath(index);
+	return SettingsFile::GetInstance()->GetSymbolPath(index);
 }
 
 CrySearchSettingsDialog::CrySearchSettingsDialog()
 {
+	this->mSettingsInstance = SettingsFile::GetInstance();
 	this->Title("Settings").Icon(CrySearchIml::SettingsButton).SetRect(0, 0, 400, 300);
 	
 	this->mOk <<= THISBACK(SettingsOk);
@@ -38,8 +39,8 @@ CrySearchSettingsDialog::CrySearchSettingsDialog()
 	this->dbgInvadeProcess.WhenAction = THISBACK(InvadeProcessEnablerChanged);
 	this->mHotkeysList.WhenBar = THISBACK(WhenRightClickHotkeyList);
 	
-	this->mHotkeysList.AddRowNumColumn("Action", 75).SetConvert(Single<HotkeyValueConvert<GetHotkeyAction>>());
-	this->mHotkeysList.AddRowNumColumn("Hotkey", 25).SetConvert(Single<HotkeyValueConvert<GetHotkeyKey>>());
+	this->mHotkeysList.AddRowNumColumn("Action", 75).SetConvert(Single<IndexBasedValueConvert<GetHotkeyAction>>());
+	this->mHotkeysList.AddRowNumColumn("Hotkey", 25).SetConvert(Single<IndexBasedValueConvert<GetHotkeyKey>>());
 	this->mSymbolPathsList.AddRowNumColumn("Path").SetConvert(Single<IndexBasedValueConvert<GetSymbolPathString>>());
 	
 	this->mScanningTab
@@ -79,7 +80,8 @@ CrySearchSettingsDialog::CrySearchSettingsDialog()
 		<< this->mStackSnapshotLimitDescriptor.SetLabel("Stack snapshot read limit:").LeftPos(5, 180).TopPos(5, 20)
 		<< this->mStackSnapshotLimitEdit.HSizePos(200, 5).TopPos(5, 20)
 		<< this->dbgAttemptHidePeb.SetLabel("Attempt to hide the debugger from PEB").HSizePos(5, 5).TopPos(28, 20)
-		<< this->dbgInvadeProcess.SetLabel("Attempt to load symbols for all modules").HSizePos(5, 5).TopPos(48, 20)
+		<< this->dbgCatchAllExceptions.SetLabel("Catch all exceptions").HSizePos(5, 5).TopPos(48, 20)
+		<< this->dbgInvadeProcess.SetLabel("Attempt to load symbols for all modules").HSizePos(5, 5).TopPos(68, 20)
 		<< this->mSymbolPathsDescriptor.SetLabel("Symbol Paths:").HSizePos(5, 5).TopPos(110, 20)
 		<< this->mBrowseSymbolPath.SetLabel("Add").RightPos(5, 60).TopPos(110, 20)
 		<< this->mSymbolPathsList.HSizePos(5, 5).VSizePos(135, 5)
@@ -110,31 +112,32 @@ CrySearchSettingsDialog::CrySearchSettingsDialog()
 void CrySearchSettingsDialog::LoadSettings()
 {
 	// Load settings from file into static controls.
-	this->fastScanByDefault = GlobalSettingsInstance.GetFastScanByDefault();
-	this->scanWritable = GlobalSettingsInstance.GetScanWritableMemory();
-	this->scanExecutable = GlobalSettingsInstance.GetScanExecutableMemory();
-	this->scanCopyOnWrite = GlobalSettingsInstance.GetScanCopyOnWriteMemory();
-	this->memPrivate = GlobalSettingsInstance.GetScanMemPrivate();
-	this->memImage = GlobalSettingsInstance.GetScanMemImage();
-	this->memMapped = GlobalSettingsInstance.GetScanMemMapped();
-	this->scanningThreadPriority.SetIndex(GlobalSettingsInstance.GetScanThreadPriority());
-	this->mOpenProcRoutineSelector.SetIndex(GlobalSettingsInstance.GetOpenProcessRoutine());
-	this->mReadMemoryProcRoutineSelector.SetIndex(GlobalSettingsInstance.GetReadMemoryRoutine());
-	this->mWriteMemoryProcRoutineSelector.SetIndex(GlobalSettingsInstance.GetWriteMemoryRoutine());
-	this->mProtectMemoryProcRoutineSelector.SetIndex(GlobalSettingsInstance.GetProtectMemoryRoutine());
-	this->mAddressTableUpdaterIntervalEditField.SetText(IntStr(GlobalSettingsInstance.GetAddressTableUpdateInterval()));
-	this->mStackSnapshotLimitEdit.SetText(IntStr(GlobalSettingsInstance.GetStackSnapshotLimit()));
-	this->dbgAttemptHidePeb = GlobalSettingsInstance.GetAttemptHideDebuggerFromPeb();
-	this->mHotkeysOption = GlobalSettingsInstance.GetEnableHotkeys();
-	this->dbgInvadeProcess = GlobalSettingsInstance.GetInvadeProcess();
+	this->fastScanByDefault = this->mSettingsInstance->GetFastScanByDefault();
+	this->scanWritable = this->mSettingsInstance->GetScanWritableMemory();
+	this->scanExecutable = this->mSettingsInstance->GetScanExecutableMemory();
+	this->scanCopyOnWrite = this->mSettingsInstance->GetScanCopyOnWriteMemory();
+	this->memPrivate = this->mSettingsInstance->GetScanMemPrivate();
+	this->memImage = this->mSettingsInstance->GetScanMemImage();
+	this->memMapped = this->mSettingsInstance->GetScanMemMapped();
+	this->scanningThreadPriority.SetIndex(this->mSettingsInstance->GetScanThreadPriority());
+	this->mOpenProcRoutineSelector.SetIndex(this->mSettingsInstance->GetOpenProcessRoutine());
+	this->mReadMemoryProcRoutineSelector.SetIndex(this->mSettingsInstance->GetReadMemoryRoutine());
+	this->mWriteMemoryProcRoutineSelector.SetIndex(this->mSettingsInstance->GetWriteMemoryRoutine());
+	this->mProtectMemoryProcRoutineSelector.SetIndex(this->mSettingsInstance->GetProtectMemoryRoutine());
+	this->mAddressTableUpdaterIntervalEditField.SetText(IntStr(this->mSettingsInstance->GetAddressTableUpdateInterval()));
+	this->mStackSnapshotLimitEdit.SetText(IntStr(this->mSettingsInstance->GetStackSnapshotLimit()));
+	this->dbgAttemptHidePeb = this->mSettingsInstance->GetAttemptHideDebuggerFromPeb();
+	this->mHotkeysOption = this->mSettingsInstance->GetEnableHotkeys();
+	this->dbgInvadeProcess = this->mSettingsInstance->GetInvadeProcess();
+	this->dbgCatchAllExceptions = this->mSettingsInstance->GetCatchAllExceptions();
 	
 	// Based on the loaded settings, make sure the disable/enable options are set correctly.
 	this->InvadeProcessEnablerChanged();
 	this->HotkeyEnablerChanged();
 	
 	// Set virtual arrays to display settings correctly.
-	this->mHotkeysList.SetVirtualCount(GlobalSettingsInstance.GetHotkeyCount());
-	this->mSymbolPathsList.SetVirtualCount(GlobalSettingsInstance.GetSymbolPathCount());
+	this->mHotkeysList.SetVirtualCount(this->mSettingsInstance->GetHotkeyCount());
+	this->mSymbolPathsList.SetVirtualCount(this->mSettingsInstance->GetSymbolPathCount());
 	
 	this->mRegisterFileExtensionWithCrySearch = GetIsAddressTableExtensionRegistered();
 	this->mStartCheckedExtensionState = this->mRegisterFileExtensionWithCrySearch;
@@ -143,21 +146,22 @@ void CrySearchSettingsDialog::LoadSettings()
 void CrySearchSettingsDialog::SaveSettings()
 {	
 	// Save static controls to settings file.
-	GlobalSettingsInstance.SetFastScanByDefault(this->fastScanByDefault);
-	GlobalSettingsInstance.SetScanWritableMemory(this->scanWritable);
-	GlobalSettingsInstance.SetScanExecutableMemory(this->scanExecutable);
-	GlobalSettingsInstance.SetScanCopyOnWriteMemory(this->scanCopyOnWrite);
-	GlobalSettingsInstance.SetScanMemPrivate(this->memPrivate);
-	GlobalSettingsInstance.SetScanMemImage(this->memImage);
-	GlobalSettingsInstance.SetScanMemMapped(this->memMapped);
-	GlobalSettingsInstance.SetScanThreadPriority(this->scanningThreadPriority.GetIndex());
-	GlobalSettingsInstance.SetOpenProcessRoutine(this->mOpenProcRoutineSelector.GetIndex());
-	GlobalSettingsInstance.SetReadMemoryRoutine(this->mReadMemoryProcRoutineSelector.GetIndex());
-	GlobalSettingsInstance.SetWriteMemoryRoutine(this->mWriteMemoryProcRoutineSelector.GetIndex());	
-	GlobalSettingsInstance.SetProtectMemoryRoutine(this->mProtectMemoryProcRoutineSelector.GetIndex());
-	GlobalSettingsInstance.SetAttemptHideDebuggerFromPeb(this->dbgAttemptHidePeb);
-	GlobalSettingsInstance.SetEnableHotkeys(this->mHotkeysOption);
-	GlobalSettingsInstance.SetInvadeProcess(this->dbgInvadeProcess);
+	this->mSettingsInstance->SetFastScanByDefault(this->fastScanByDefault);
+	this->mSettingsInstance->SetScanWritableMemory(this->scanWritable);
+	this->mSettingsInstance->SetScanExecutableMemory(this->scanExecutable);
+	this->mSettingsInstance->SetScanCopyOnWriteMemory(this->scanCopyOnWrite);
+	this->mSettingsInstance->SetScanMemPrivate(this->memPrivate);
+	this->mSettingsInstance->SetScanMemImage(this->memImage);
+	this->mSettingsInstance->SetScanMemMapped(this->memMapped);
+	this->mSettingsInstance->SetScanThreadPriority(this->scanningThreadPriority.GetIndex());
+	this->mSettingsInstance->SetOpenProcessRoutine(this->mOpenProcRoutineSelector.GetIndex());
+	this->mSettingsInstance->SetReadMemoryRoutine(this->mReadMemoryProcRoutineSelector.GetIndex());
+	this->mSettingsInstance->SetWriteMemoryRoutine(this->mWriteMemoryProcRoutineSelector.GetIndex());	
+	this->mSettingsInstance->SetProtectMemoryRoutine(this->mProtectMemoryProcRoutineSelector.GetIndex());
+	this->mSettingsInstance->SetAttemptHideDebuggerFromPeb(this->dbgAttemptHidePeb);
+	this->mSettingsInstance->SetEnableHotkeys(this->mHotkeysOption);
+	this->mSettingsInstance->SetInvadeProcess(this->dbgInvadeProcess);
+	this->mSettingsInstance->SetCatchAllExceptions(this->dbgCatchAllExceptions);
 	
 	// As a special case, update the search routine in this part of the program.
 	CrySearchRoutines.InitializeRoutines();
@@ -172,7 +176,7 @@ void CrySearchSettingsDialog::SaveSettings()
 		Prompt("Fatal Error", CtrlImg::error(), "Failed to delete the file extension from the registry. Please run CrySearch as Administrator.", "OK");
 	}
 	
-	GlobalSettingsInstance.Save();
+	this->mSettingsInstance->Save();
 }
 
 void CrySearchSettingsDialog::AddHotkeyToList()
@@ -180,7 +184,7 @@ void CrySearchSettingsDialog::AddHotkeyToList()
 	CryAddHotkeyWindow* cahw = new CryAddHotkeyWindow(NULL, CrySearchIml::AddToAddressList());
 	cahw->Execute();
 	delete cahw;
-	this->mHotkeysList.SetVirtualCount(GlobalSettingsInstance.GetHotkeyCount());
+	this->mHotkeysList.SetVirtualCount(this->mSettingsInstance->GetHotkeyCount());
 }
 
 void CrySearchSettingsDialog::InvadeProcessEnablerChanged()
@@ -198,7 +202,7 @@ void CrySearchSettingsDialog::HotkeyEnablerChanged()
 
 void CrySearchSettingsDialog::WhenRightClickHotkeyList(Bar& pBar)
 {
-	if (this->mHotkeysList.GetCursor() >= 0 && GlobalSettingsInstance.GetHotkeyCount() > 0)
+	if (this->mHotkeysList.GetCursor() >= 0 && this->mSettingsInstance->GetHotkeyCount() > 0)
 	{
 		pBar.Add("Edit", CrySearchIml::ChangeRecordIcon(), THISBACK(EditHotkeyFromList));
 		pBar.Separator();
@@ -208,7 +212,7 @@ void CrySearchSettingsDialog::WhenRightClickHotkeyList(Bar& pBar)
 
 void CrySearchSettingsDialog::WhenRightClickSymbolPathList(Bar& pBar)
 {
-	if (this->mSymbolPathsList.GetCursor() >= 0 && GlobalSettingsInstance.GetSymbolPathCount() > 0)
+	if (this->mSymbolPathsList.GetCursor() >= 0 && this->mSettingsInstance->GetSymbolPathCount() > 0)
 	{
 		pBar.Add("Delete", CrySearchIml::DeleteButton(), THISBACK(DeleteSymbolPathFromList));
 	}
@@ -216,34 +220,34 @@ void CrySearchSettingsDialog::WhenRightClickSymbolPathList(Bar& pBar)
 
 void CrySearchSettingsDialog::EditHotkeyFromList()
 {
-	CryAddHotkeyWindow* cahw = new CryAddHotkeyWindow(&GlobalSettingsInstance.GetHotkey(this->mHotkeysList.GetCursor()), CrySearchIml::AddToAddressList());
+	CryAddHotkeyWindow* cahw = new CryAddHotkeyWindow(&this->mSettingsInstance->GetHotkey(this->mHotkeysList.GetCursor()), CrySearchIml::ChangeRecordIcon());
 	cahw->Execute();
 	delete cahw;
-	this->mHotkeysList.SetVirtualCount(GlobalSettingsInstance.GetHotkeyCount());
+	this->mHotkeysList.SetVirtualCount(this->mSettingsInstance->GetHotkeyCount());
 }
 
 void CrySearchSettingsDialog::DeleteHotkeyFromList()
 {
-	GlobalSettingsInstance.DeleteHotKey(this->mHotkeysList.GetCursor());
-	this->mHotkeysList.SetVirtualCount(GlobalSettingsInstance.GetHotkeyCount());
+	this->mSettingsInstance->DeleteHotKey(this->mHotkeysList.GetCursor());
+	this->mHotkeysList.SetVirtualCount(this->mSettingsInstance->GetHotkeyCount());
 }
 
 void CrySearchSettingsDialog::AddSymbolPathToList()
 {
 	FileSel* fs = new FileSel;
-	if (fs->ExecuteSelectDir("Select Directory...") && !GlobalSettingsInstance.AddSymbolPath(fs->Get()))
+	if (fs->ExecuteSelectDir("Select Directory...") && !this->mSettingsInstance->AddSymbolPath(fs->Get()))
 	{
 		Prompt("Input Error", CtrlImg::error(), "The selected path was already added!", "OK");
 	}
 	
-	this->mSymbolPathsList.SetVirtualCount(GlobalSettingsInstance.GetSymbolPathCount());
+	this->mSymbolPathsList.SetVirtualCount(this->mSettingsInstance->GetSymbolPathCount());
 	delete fs;
 }
 
 void CrySearchSettingsDialog::DeleteSymbolPathFromList()
 {
-	GlobalSettingsInstance.DeleteSymbolPath(this->mSymbolPathsList.GetCursor());
-	this->mSymbolPathsList.SetVirtualCount(GlobalSettingsInstance.GetSymbolPathCount());
+	this->mSettingsInstance->DeleteSymbolPath(this->mSymbolPathsList.GetCursor());
+	this->mSymbolPathsList.SetVirtualCount(this->mSettingsInstance->GetSymbolPathCount());
 }
 
 void CrySearchSettingsDialog::SettingsOk()
@@ -257,7 +261,7 @@ void CrySearchSettingsDialog::SettingsOk()
 	}
 	else
 	{
-		GlobalSettingsInstance.SetAddressTableUpdateInterval(interval);
+		this->mSettingsInstance->SetAddressTableUpdateInterval(interval);
 	}
 	
 	const int stackLimit = StrInt(this->mStackSnapshotLimitEdit.GetText().ToString());
@@ -273,7 +277,7 @@ void CrySearchSettingsDialog::SettingsOk()
 	}
 	else
 	{
-		GlobalSettingsInstance.SetStackSnapshotLimit(stackLimit);
+		this->mSettingsInstance->SetStackSnapshotLimit(stackLimit);
 	}
 	
 	this->SaveSettings();

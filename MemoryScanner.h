@@ -10,6 +10,8 @@ using namespace Upp;
 #define MEM_EXECUTABLE (PAGE_EXECUTE_WRITECOPY | PAGE_EXECUTE_READWRITE | PAGE_EXECUTE_READ | PAGE_EXECUTE)
 #define MEM_COPYONWRITE (PAGE_EXECUTE_WRITECOPY | PAGE_WRITECOPY)
 
+#include "SettingsFile.h"
+
 // Defines the valuetypes that are scannable by the memory scanner.
 enum MemoryScanValueType
 {
@@ -73,6 +75,37 @@ enum MemoryScannerError
 	NOREADABLEMEMORYFOUND,
 	NATIVEROUTINEGETPROCFAILED,
 	DATAFILENOTFOUND
+};
+
+// Represents a search result cache entry.
+struct SearchResultCacheEntry : Moveable<SearchResultCacheEntry>
+{
+#ifdef _WIN64
+	__int64 Address;
+#else
+	int Address;
+#endif
+
+	// Indicates whether the address should be displayed as a static one in the user interface.
+	bool StaticAddress;
+	
+	// We should at least manually set the second field in order to prevent mahem in the user interface.
+	SearchResultCacheEntry()
+	{
+		this->Address = 0;
+		this->StaticAddress = false; // Accidentally true could cause unexplainable user interface behavior.
+	};
+	
+	// Default constructor for adding cache entries.
+#ifdef _WIN64
+	SearchResultCacheEntry(const __int64 address, const bool staticAddr)
+#else
+	SearchResultCacheEntry(const int address, const bool staticAddr)
+#endif
+	{
+		this->Address = address;
+		this->StaticAddress = staticAddr;
+	};
 };
 
 // Represents a memory region found by the memory scanner.
@@ -142,9 +175,10 @@ struct ArrayOfBytes
 		this->CopyConstructAob(next);
 	};
 
-	void operator=(ArrayOfBytes const& next)
+	ArrayOfBytes& operator=(ArrayOfBytes const& next)
 	{
 		this->CopyConstructAob(next);
+		return *this;
 	};
 
 private:
@@ -203,8 +237,11 @@ struct ValueComparator : public CompareFunction
 			case SCANTYPE_DECREASED:
 				this->function = CompareSmaller;
 				break;
+			default:
+				this->function = NULL;
+				break;
 		}
-	}
+	};
 	
 	bool operator ()(const T& input, const T& expected)
 	{
@@ -213,7 +250,7 @@ struct ValueComparator : public CompareFunction
 };
 
 // The memory scanning class. Used for main memory scanning and reading.
-class MemoryScanner sealed
+class MemoryScanner
 {
 private:
 	HANDLE mOpenedProcessHandle;
@@ -221,6 +258,9 @@ private:
 	String mProcessName;
 	bool isX86Process;
 	bool ScanRunning;
+	SettingsFile* mSettingsInstance;
+	CompareFunction* mCompareValues;
+	int threadCount;
 	
 	// Vector that contains the order of worker completions. Needed to ensure next scan accuracy.
 	Vector<WorkerRegionParameterData> mWorkerFileOrder;
@@ -272,7 +312,7 @@ public:
 	
 	// Size parameter is optional. If AOB or String types are used, parameter is used, otherwise ignored.
 	template <class T>
-	bool Peek(const SIZE_T address, const unsigned int size, T* outBuffer);
+	bool Peek(const SIZE_T address, const unsigned int size, T* outBuffer) const;
 	
 	const String& GetProcessName() const;
 	const bool IsX86Process() const;
@@ -281,6 +321,8 @@ public:
 	bool IsScanRunning() const;
 	const Vector<WorkerRegionParameterData>& QueryWorkerData() const;
 	const int GetScanResultCount() const;
+	const char* GetTempFolderPath() const;
+	const int GetSystemThreadCount() const;
 	
 	Callback1<int> ScanStarted;
 	Callback ScanCompleted;
@@ -288,12 +330,8 @@ public:
 	Callback1<Atomic> UpdateScanningProgress;
 };
 
-#ifdef _WIN64
-	extern Vector<__int64> CachedAddresses;
-#else
-	extern Vector<int> CachedAddresses;
-#endif
-
+// User interface would like access to the cache containers.
+extern Vector<SearchResultCacheEntry> CachedAddresses;
 extern Vector<Value> CachedValues;
 
 template <class T>

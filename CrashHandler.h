@@ -5,7 +5,7 @@
 
 using namespace Upp;
 
-class CryCrashHandlerWindow sealed : public TopWindow
+class CryCrashHandlerWindow : public TopWindow
 {
 private:
 	ImageCtrl mErrorImage;
@@ -25,8 +25,5 @@ public:
 
 // Global application crash handler function.
 extern "C" LONG __stdcall CrashHandler(PEXCEPTION_POINTERS ExceptionInfo);
-
-// The CrySearch debugger also needs this information.
-const char* ParseExceptionCode(LONG excCode);
 
 #endif

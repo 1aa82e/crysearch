@@ -4,7 +4,7 @@
 #include "CrySearchArrayCtrl.h"
 #include "CryDialogTemplate.h"
 
-class CrySystemHandleInformationWindow sealed : public CryDialogTemplate
+class CrySystemHandleInformationWindow : public CryDialogTemplate
 {
 private:
 	Button mOK;

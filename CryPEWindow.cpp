@@ -104,7 +104,7 @@ void CryPEWindow::DotNetSectionsListRightClick(Bar& pBar)
 void CryPEWindow::Initialize()
 {
 	// Get executable file PE information.
-	if (LoadedModulesList.GetCount() > 0)
+	if (mModuleManager->GetModuleCount() > 0)
 	{
 		mPeInstance->GetExecutablePeInformation();
 	}

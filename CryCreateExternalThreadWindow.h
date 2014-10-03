@@ -11,7 +11,7 @@ struct CreateNewThreadStruct
 	bool StartSuspended;
 };
 
-class CryCreateExternalThreadWindow sealed : public CryDialogTemplate
+class CryCreateExternalThreadWindow : public CryDialogTemplate
 {
 private:
 	CreateNewThreadStruct* outStructDataPtr;

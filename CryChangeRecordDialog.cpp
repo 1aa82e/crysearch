@@ -1,48 +1,16 @@
 #include "CryChangeRecordDialog.h"
 #include "ImlProvider.h"
 
-#ifdef _WIN64
-CryChangeRecordDialog::CryChangeRecordDialog(AddressTable& addrTable, const __int64 address, const String& type, ChangeRecordDialogMode mode) : CryDialogTemplate(CrySearchIml::ChangeRecordIcon())
-#else
-CryChangeRecordDialog::CryChangeRecordDialog(AddressTable& addrTable, const int address, const String& type, ChangeRecordDialogMode mode) : CryDialogTemplate(CrySearchIml::ChangeRecordIcon())
-#endif
+CryChangeRecordDialog::CryChangeRecordDialog(AddressTable& addrTable, const int row, ChangeRecordDialogMode mode) : CryDialogTemplate(CrySearchIml::ChangeRecordIcon())
 {
 	this->mMode = mode;
 	this->mLoadedTable = &addrTable;
-	this->mLoadedEntry = (mode == CDRM_MANUALNEW) ? new AddressTableEntry() : const_cast<AddressTableEntry*>(addrTable[addrTable.Find(address, type)]);
-	
-	// Apply appropriate window title for used open mode.
-	switch (mode)
-	{
-		case CDRM_MANUALNEW:
-			this->Title("Change Address");
-			break;
-		case CRDM_DESCRIPTION:
-			this->Title("Change Description");
-			this->mFieldValue.SetText(this->mLoadedEntry->Description);
-			break;
-		case CRDM_ADDRESS:
-			this->Title("Change Address");
-#ifdef _WIN64
-			this->mFieldValue.SetText(Format("%llX", this->mLoadedEntry->Address));
-#else
-			this->mFieldValue.SetText(Format("%lX", this->mLoadedEntry->Address));
-#endif
-			break;
-		case CRDM_VALUE:
-			this->Title("Change Value");
-			this->mFieldValue.SetText(this->mLoadedEntry->Value);
-			break;
-		case CRDM_TYPE:
-			this->Title("Change Type");
-			break;
-	}
-	
-	this->SetRect(0, 0, 250, 100);
+	this->mLoadedEntry = (mode == CRDM_MANUALNEW) ? NULL : const_cast<AddressTableEntry*>(addrTable[row]);
+
+	this->SetRect(0, 0, 250, 120);
 	
 	this->mCancel <<= THISBACK(CancelDialog);
 	this->mOk <<= THISBACK(DialogOkay);
-	
 	this->mTypeSelector.WhenAction = THISBACK(BlockSizeSelected);
 	
 	*this
@@ -50,98 +18,150 @@ CryChangeRecordDialog::CryChangeRecordDialog(AddressTable& addrTable, const int 
 		<< this->mOk.Ok().SetLabel("OK").HSizePos(130, 60).BottomPos(5, 25)
 	;
 	
-	// If the window is opened for altering the data type of an entry, add the necessary controls.
-	if (mode == CRDM_TYPE)
+	// Begin: window open type specific user interface alter operations.
+	if (mode == CRDM_DESCRIPTION)
 	{
 		*this
-			<< this->mTypeSelector.Add("Byte").Add("2 Bytes").Add("4 Bytes").Add("8 Bytes").Add("Float").Add("Double")
-				.Add("Array of Bytes").Add("String").HSizePos(92, 5).TopPos(5, 20)
-			<< this->mUnicodeString.SetLabel("Unicode").HSizePos(5, 5).TopPos(30, 20)
+			<< this->mFieldDescription.SetLabel("Description:").HSizePos(5, 100).TopPos(5, 20)
+			<< this->mFieldValue.HSizePos(110, 5).TopPos(5, 20)
 		;
 		
+		this->Title("Change Description");
+		this->mFieldValue.SetText(this->mLoadedEntry->Description);		
+	}
+	else if (mode == CRDM_ADDRESS)
+	{
+		*this
+			<< this->mFieldDescription.SetLabel("Address (Hex):").HSizePos(5, 100).TopPos(5, 20)
+			<< this->mFieldValue.HSizePos(110, 5).TopPos(5, 20)
+		;
+		
+		this->Title("Change Address");
+		
+		// If the address is relative the display should be relative too.
+		String str;
+		if (this->mLoadedEntry->IsRelative && this->mLoadedTable->GetRelativeDisplayString(this->mLoadedEntry, str))
+		{
+			this->mFieldValue.SetText(str);
+		}
+		else
+		{
+#ifdef _WIN64
+		this->mFieldValue.SetText(Format("%llX", this->mLoadedEntry->Address));
+#else
+		this->mFieldValue.SetText(Format("%lX", this->mLoadedEntry->Address));
+#endif
+		}
+	}
+	else if (mode == CRDM_TYPE)
+	{
+		this->Title("Change Type");
+		
+		// If the window is opened for altering the data type of an entry, add the necessary controls.
+		*this
+			<< this->mFieldDescription.SetLabel("Type:").HSizePos(5, 100).TopPos(5, 20)
+			<< this->mTypeSelector.Add("Byte").Add("2 Bytes").Add("4 Bytes").Add("8 Bytes").Add("Float").Add("Double")
+				.Add("Array of Bytes").Add("String").HSizePos(92, 5).TopPos(5, 20)
+			<< this->mUnicodeString.SetLabel("Unicode").HSizePos(180, 5).TopPos(30, 20)
+			<< this->mTypeLengthDescription.SetLabel("Length:").HSizePos(5, 100).TopPos(30, 20)
+			<< this->mTypeLength.Min(1).HSizePos(92, 80).TopPos(30, 20)
+		;
+		
+		// Value size depends on the current value type.
+		this->mTypeLength = max(this->mLoadedEntry->Size, 1);
+		
+		// If the current value type is a string or wide string, the unicode checkbox must be made visible.
 		if (this->mLoadedEntry->ValueType != "String" && this->mLoadedEntry->ValueType != "WString")
 		{
 			this->mUnicodeString.Hide();
+			
+			if (this->mLoadedEntry->ValueType != "Array of Bytes")
+			{
+				this->mTypeLengthDescription.Hide();
+				this->mTypeLength.Hide();
+			}
+		}
+		
+		// Set current value type index for opened entry correctly.
+		if (this->mLoadedEntry->ValueType == "Byte")
+		{
+			this->mTypeSelector.SetIndex(0);
+		}
+		else if (this->mLoadedEntry->ValueType == "2 Bytes")
+		{
+			this->mTypeSelector.SetIndex(1);
+		}
+		else if (this->mLoadedEntry->ValueType == "4 Bytes")
+		{
+			this->mTypeSelector.SetIndex(2);
+		}
+		else if (this->mLoadedEntry->ValueType == "8 Bytes")
+		{
+			this->mTypeSelector.SetIndex(3);
+		}
+		else if (this->mLoadedEntry->ValueType == "Float")
+		{
+			this->mTypeSelector.SetIndex(4);
+		}
+		else if (this->mLoadedEntry->ValueType == "Double")
+		{
+			this->mTypeSelector.SetIndex(5);
+		}
+		else if (this->mLoadedEntry->ValueType == "Array of Bytes")
+		{
+			this->mTypeSelector.SetIndex(6);
+		}
+		else if (this->mLoadedEntry->ValueType == "String")
+		{
+			this->mTypeSelector.SetIndex(7);
+		}
+		else if (this->mLoadedEntry->ValueType == "WString")
+		{
+			this->mTypeSelector.SetIndex(7);
+			this->mUnicodeString = true;
 		}
 	}
-	else
+	else if (mode == CRDM_MANUALNEW)
 	{
-		*this << this->mFieldValue.HSizePos(110, 5).TopPos(5, 20);
+		this->Title("Add Address");
+		
+		*this
+			<< this->mFieldDescription.SetLabel("Address (Hex):").HSizePos(5, 100).TopPos(5, 20)
+			<< this->mFieldValue.HSizePos(110, 5).TopPos(5, 20)
+			<< this->mSecondFieldDescription.SetLabel("Type:").HSizePos(5, 100).TopPos(30, 20)
+			<< this->mTypeSelector.Add("Byte").Add("2 Bytes").Add("4 Bytes").Add("8 Bytes").Add("Float").Add("Double")
+				.Add("Array of Bytes").Add("String").HSizePos(110, 5).TopPos(30, 20)
+			<< this->mUnicodeString.SetLabel("Unicode").HSizePos(180, 5).TopPos(55, 20)
+			<< this->mTypeLengthDescription.SetLabel("Length:").HSizePos(5, 100).TopPos(55, 20)
+			<< this->mTypeLength.Min(1).HSizePos(110, 80).TopPos(55, 20)
+		;
+		
+		// Manually added addresses will always have 0 as initial length, so 1 needs to be set as minimum.
+		this->mTypeLength = 1;
+		
+		this->mUnicodeString.Hide();
+		this->mTypeLengthDescription.Hide();
+		this->mTypeLength.Hide();
+		
+		// Set the default data type for a manually added address to 4 bytes.
+		this->mTypeSelector.SetIndex(2);
 	}
-	
-	// Add appropriate controls for used open mode.
-	switch (mode)
+	else if (mode == CRDM_VALUE)
 	{
-		case CDRM_MANUALNEW:
-			*this
-				<< this->mFieldDescription.SetLabel("Address (Hex):").HSizePos(5, 100).TopPos(5, 20)
-			;
-			break;
-		case CRDM_DESCRIPTION:
-			*this
-				<< this->mFieldDescription.SetLabel("Description:").HSizePos(5, 100).TopPos(5, 20)
-			;
-			break;
-		case CRDM_ADDRESS:
-			*this
-				<< this->mFieldDescription.SetLabel("Address (Hex):").HSizePos(5, 100).TopPos(5, 20)
-			;
-			break;
-		case CRDM_VALUE:
-			*this
-				<< this->mFieldDescription.SetLabel("Value:").HSizePos(5, 100).TopPos(5, 20)
-			;
-			
-			if (this->mLoadedEntry->ValueType == "Byte" || this->mLoadedEntry->ValueType == "2 Bytes" ||
-			    this->mLoadedEntry->ValueType == "4 Bytes" || this->mLoadedEntry->ValueType == "8 Bytes")
-			{
-				*this << this->mValueIsHex.SetLabel("Hexadecimal").HSizePos(5, 100).TopPos(30, 20);
-				this->mValueIsHex.WhenAction = THISBACK(ValueModeHexOptionChanged);
-			}
-			break;
-		case CRDM_TYPE:
-			*this
-				<< this->mFieldDescription.SetLabel("Type:").HSizePos(5, 100).TopPos(5, 20)
-			;
-			
-			if (this->mLoadedEntry->ValueType == "Byte")
-			{
-				this->mTypeSelector.SetIndex(0);
-			}
-			else if (this->mLoadedEntry->ValueType == "2 Bytes")
-			{
-				this->mTypeSelector.SetIndex(1);
-			}
-			else if (this->mLoadedEntry->ValueType == "4 Bytes")
-			{
-				this->mTypeSelector.SetIndex(2);
-			}
-			else if (this->mLoadedEntry->ValueType == "8 Bytes")
-			{
-				this->mTypeSelector.SetIndex(3);
-			}
-			else if (this->mLoadedEntry->ValueType == "Float")
-			{
-				this->mTypeSelector.SetIndex(4);
-			}
-			else if (this->mLoadedEntry->ValueType == "Double")
-			{
-				this->mTypeSelector.SetIndex(5);
-			}
-			else if (this->mLoadedEntry->ValueType == "Array of Bytes")
-			{
-				this->mTypeSelector.SetIndex(6);
-			}
-			else if (this->mLoadedEntry->ValueType == "String")
-			{
-				this->mTypeSelector.SetIndex(7);
-			}
-			else if (this->mLoadedEntry->ValueType == "WString")
-			{
-				this->mTypeSelector.SetIndex(7);
-				this->mUnicodeString = true;
-			}
-			break;
+		*this
+			<< this->mFieldDescription.SetLabel("Value:").HSizePos(5, 100).TopPos(5, 20)
+			<< this->mFieldValue.HSizePos(110, 5).TopPos(5, 20)
+		;
+		
+		this->Title("Change Value");
+		this->mFieldValue.SetText(this->mLoadedEntry->Value);
+		
+		if (this->mLoadedEntry->ValueType == "Byte" || this->mLoadedEntry->ValueType == "2 Bytes" ||
+		    this->mLoadedEntry->ValueType == "4 Bytes" || this->mLoadedEntry->ValueType == "8 Bytes")
+		{
+			*this << this->mValueIsHex.SetLabel("Hexadecimal").HSizePos(5, 100).TopPos(30, 20);
+			this->mValueIsHex.WhenAction = THISBACK(ValueModeHexOptionChanged);
+		}
 	}
 }
 
@@ -211,179 +231,272 @@ void CryChangeRecordDialog::ValueModeHexOptionChanged()
 void CryChangeRecordDialog::BlockSizeSelected()
 {
 	// If the data type 'String' is selected, the option to select Unicode should become visible.
-	if (this->mTypeSelector.GetIndex() == 7)
+	if (this->mTypeSelector.GetIndex() == 6)
+	{
+		this->mUnicodeString.Hide();
+		this->mTypeLengthDescription.Show();
+		this->mTypeLength.Show();		
+	}
+	else if (this->mTypeSelector.GetIndex() == 7)
 	{
 		this->mUnicodeString.Show();
+		this->mTypeLengthDescription.Show();
+		this->mTypeLength.Show();
 	}
 	else
 	{
 		this->mUnicodeString.Hide();
+		this->mTypeLengthDescription.Hide();
+		this->mTypeLength.Hide();
 	}
 }
 
 void CryChangeRecordDialog::CancelDialog()
 {
-	if (this->mMode == CDRM_MANUALNEW)
-	{
-		delete this->mLoadedEntry;
-	}
-	
 	this->Close();
 }
 
 void CryChangeRecordDialog::DialogOkay()
 {
+	// Temporarely save the edited values locally to avoid race conditions.
+	LONG_PTR tempAddress;
+	String tempType;
+	int optionalSize = this->mLoadedEntry ? this->mLoadedEntry->Size : 0;
+	
+	// Globally save input value for every type.
+	const String& inputVal = this->mFieldValue.GetText().ToString();
+	
 	// Apply appropriate change to addresstable instance.
-	switch (this->mMode)
+	if (this->mMode == CRDM_MANUALNEW)
 	{
-		case CDRM_MANUALNEW:
-			if (this->mFieldValue.GetText().IsEmpty())
+		bool relative = false;
+		
+		// Check for empty input value.
+		if (inputVal.IsEmpty())
+		{
+			Prompt("Input Error", CtrlImg::error(), "Please enter an address.", "OK");
+			return;
+		}
+		
+		// If the address input contains a plus, the input is a relative address.
+		const int plusIndex = inputVal.Find("+");
+		if (plusIndex != -1)
+		{
+			// Parse the relative address into the new address table entry.
+			const Win32ModuleInformation* mod = mModuleManager->FindModule(inputVal.Left(plusIndex));
+			if (!mod)
 			{
-				Prompt("Input Error", CtrlImg::error(), "Please enter an address.", "OK");
+				// If the module was not found in the loaded modules list, the relative address cannot be calculated.
+				Prompt("Input Error", CtrlImg::error(), "The typed module was not found!", "OK");
 				return;
 			}
-#ifdef _WIN64
-			this->mLoadedEntry->Address = ScanInt64(this->mFieldValue.GetText().ToString(), NULL, 16);
-#else
-			this->mLoadedEntry->Address = ScanInt(this->mFieldValue.GetText().ToString(), NULL, 16);
-#endif	
 			
-			// Copy entry to table and delete local one.
-			this->mLoadedTable->Add("", this->mLoadedEntry->Address, this->mLoadedEntry->ValueType);
-			delete this->mLoadedEntry;
-			break;
-		case CRDM_DESCRIPTION:
-			this->mLoadedEntry->Description = this->mFieldValue.GetText().ToString();
-			break;
-		case CRDM_ADDRESS:
-			if (this->mFieldValue.GetText().IsEmpty())
-			{
-				Prompt("Input Error", CtrlImg::error(), "Please enter an address.", "OK");
-				return;
-			}
+			// Still here, so calculate the address.
+			tempAddress = mod->BaseAddress + ScanInt(inputVal.Mid(plusIndex + 1), NULL, 16);
+			relative = true;
+		}
+		else
+		{
+		
+			// Regularly parse the address. It is not a relative one.	
 #ifdef _WIN64
-			this->mLoadedEntry->Address = ScanInt64(this->mFieldValue.GetText().ToString(), NULL, 16);
+			tempAddress = ScanInt64(inputVal, NULL, 16);
 #else
-			this->mLoadedEntry->Address = ScanInt(this->mFieldValue.GetText().ToString(), NULL, 16);
+			tempAddress = ScanInt(inputVal, NULL, 16);
 #endif
-			break;
-		case CRDM_VALUE:
-			if (this->mFieldValue.GetText().IsEmpty())
+		}
+
+		// Set the data type of the address table entry.
+		if (this->mTypeSelector.GetIndex() == 6)
+		{
+			optionalSize = this->mTypeLength;
+			tempType = this->mTypeSelector.Get();
+		}
+		else if (this->mTypeSelector.GetIndex() == 7)
+		{
+			optionalSize = this->mTypeLength;
+			tempType = this->mUnicodeString ? "WString" : "String";
+		}
+		else
+		{
+			tempType = this->mTypeSelector.Get();
+		}
+
+		// Make sure the address combined with the selected data type isn't already present in the address table.
+		if (this->mLoadedTable->Find(tempAddress, tempType) != -1)
+		{
+			Prompt("Input Error", CtrlImg::error(), "The selected address is already added to the table.", "OK");
+			return;
+		}
+
+		// Copy entry to table and delete local one.
+		const AddressTableEntry* newEntry = this->mLoadedTable->Add("", tempAddress, relative, tempType);
+		newEntry->Size = optionalSize;
+	}
+	else if (this->mMode == CRDM_VALUE)
+	{
+		// Check for empty input value.
+		if (inputVal.IsEmpty())
+		{
+			Prompt("Input Error", CtrlImg::error(), "Please enter a value.", "OK");
+			return;
+		}
+		
+		// Value is not managed by address table itself, so WPM.
+		if (this->mLoadedEntry->ValueType == "Byte")
+		{
+			if (this->mValueIsHex)
 			{
-				Prompt("Input Error", CtrlImg::error(), "Please enter a value.", "OK");
+				mMemoryScanner->Poke(this->mLoadedEntry->Address, (Byte)ScanInt(inputVal, NULL, 16));
+			}
+			else
+			{
+				mMemoryScanner->Poke(this->mLoadedEntry->Address, (Byte)ScanInt(inputVal));
+			}
+		}
+		else if (this->mLoadedEntry->ValueType == "2 Bytes")
+		{
+			if (this->mValueIsHex)
+			{
+				mMemoryScanner->Poke(this->mLoadedEntry->Address, (short)ScanInt(inputVal, NULL, 16));
+			}
+			else
+			{
+				mMemoryScanner->Poke(this->mLoadedEntry->Address, (short)ScanInt(inputVal));
+			}
+		}
+		else if (this->mLoadedEntry->ValueType == "4 Bytes")
+		{
+			if (this->mValueIsHex)
+			{
+				mMemoryScanner->Poke(this->mLoadedEntry->Address, ScanInt(inputVal, NULL, 16));
+			}
+			else
+			{
+				mMemoryScanner->Poke(this->mLoadedEntry->Address, ScanInt(inputVal));
+			}
+		}
+		else if (this->mLoadedEntry->ValueType == "8 Bytes")
+		{
+			if (this->mValueIsHex)
+			{
+				mMemoryScanner->Poke(this->mLoadedEntry->Address, ScanInt64(inputVal, NULL, 16));
+			}
+			else
+			{
+				mMemoryScanner->Poke(this->mLoadedEntry->Address, ScanInt64(inputVal));
+			}
+		}
+		else if (this->mLoadedEntry->ValueType == "Float")
+		{
+			mMemoryScanner->Poke(this->mLoadedEntry->Address, (float)ScanDouble(inputVal, NULL, true));
+		}
+		else if (this->mLoadedEntry->ValueType == "Double")
+		{
+			mMemoryScanner->Poke(this->mLoadedEntry->Address, ScanDouble(inputVal, NULL, true));
+		}
+		else if (this->mLoadedEntry->ValueType == "String")
+		{
+			mMemoryScanner->Poke(this->mLoadedEntry->Address, inputVal);
+			this->mLoadedEntry->Size = this->mFieldValue.GetLength();
+		}
+		else if (this->mLoadedEntry->ValueType == "WString")
+		{
+			mMemoryScanner->Poke(this->mLoadedEntry->Address, this->mFieldValue.GetText());
+			this->mLoadedEntry->Size = this->mFieldValue.GetLength();
+		}
+		else if (this->mLoadedEntry->ValueType == "Array of Bytes")
+		{
+			ArrayOfBytes aob = StringToBytes(inputVal);	
+			mMemoryScanner->Poke(this->mLoadedEntry->Address, aob);
+			this->mLoadedEntry->Size = aob.Size;
+		}
+	}
+	else if (this->mMode == CRDM_TYPE)
+	{
+		// Assign proper value type including size parameter.
+		if (this->mTypeSelector.GetIndex() == 6)
+		{
+			tempType = this->mTypeSelector.Get();
+			optionalSize = this->mTypeLength;
+		}
+		else if (this->mTypeSelector.GetIndex() == 7)
+		{
+			tempType = this->mUnicodeString ? "WString" : "String";
+			optionalSize = this->mTypeLength;
+		}
+		else
+		{
+			optionalSize = -1;
+			tempType = this->mTypeSelector.Get();
+		}
+
+		// Make sure the address combined with the selected data type isn't already present in the address table.
+		const int oldIndex = this->mLoadedTable->Find(this->mLoadedEntry->Address, tempType);
+		if ((oldIndex != -1) && ((*this->mLoadedTable)[oldIndex] != this->mLoadedEntry))
+		{
+			Prompt("Input Error", CtrlImg::error(), "The selected address is already added to the table.", "OK");
+			return;
+		}
+		
+		// Finally, pass temporary values through to address table entry.
+		this->mLoadedEntry->ValueType = tempType;
+		this->mLoadedEntry->Size = optionalSize != -1 ? optionalSize : 0;
+	}
+	else if (this->mMode == CRDM_DESCRIPTION)
+	{
+		this->mLoadedEntry->Description = this->mFieldValue.GetText().ToString();
+	}
+	else if (this->mMode == CRDM_ADDRESS)
+	{
+		const String& inputVal = this->mFieldValue.GetText().ToString();
+		// Check for empty input value.
+		if (inputVal.IsEmpty())
+		{
+			Prompt("Input Error", CtrlImg::error(), "Please enter an address.", "OK");
+			return;
+		}
+		
+		// Make sure the address combined with the selected data type isn't already present in the address table.
+		const int oldIndex = this->mLoadedTable->Find(this->mLoadedEntry->Address, this->mLoadedEntry->ValueType);
+		if ((oldIndex != -1) && ((*this->mLoadedTable)[oldIndex] != this->mLoadedEntry))
+		{
+			Prompt("Input Error", CtrlImg::error(), "The selected address is already added to the table.", "OK");
+			return;
+		}
+		
+		// If the address input contains a plus, the input is a relative address.
+		const int plusIndex = inputVal.Find("+");
+		if (plusIndex != -1)
+		{
+			// Parse the relative address into the existing address table entry.
+			const Win32ModuleInformation* mod = mModuleManager->FindModule(inputVal.Left(plusIndex));
+			if (!mod)
+			{
+				// If the module was not found in the loaded modules list, the relative address cannot be calculated.
+				Prompt("Input Error", CtrlImg::error(), "The typed module was not found!", "OK");
 				return;
 			}
 			
-			// Value is not managed by address table itself, so WPM.
-			if (this->mLoadedEntry->ValueType == "Byte")
-			{
-				if (this->mValueIsHex)
-				{
-					mMemoryScanner->Poke(this->mLoadedEntry->Address, (Byte)ScanInt(this->mFieldValue.GetText().ToString(), NULL, 16));
-				}
-				else
-				{
-					mMemoryScanner->Poke(this->mLoadedEntry->Address, (Byte)ScanInt(this->mFieldValue.GetText().ToString()));
-				}
-			}
-			else if (this->mLoadedEntry->ValueType == "2 Bytes")
-			{
-				if (this->mValueIsHex)
-				{
-					mMemoryScanner->Poke(this->mLoadedEntry->Address, (short)ScanInt(this->mFieldValue.GetText().ToString(), NULL, 16));
-				}
-				else
-				{
-					mMemoryScanner->Poke(this->mLoadedEntry->Address, (short)ScanInt(this->mFieldValue.GetText().ToString()));
-				}
-			}
-			else if (this->mLoadedEntry->ValueType == "4 Bytes")
-			{
-				if (this->mValueIsHex)
-				{
-					mMemoryScanner->Poke(this->mLoadedEntry->Address, ScanInt(this->mFieldValue.GetText().ToString(), NULL, 16));
-				}
-				else
-				{
-					mMemoryScanner->Poke(this->mLoadedEntry->Address, ScanInt(this->mFieldValue.GetText().ToString()));
-				}
-			}
-			else if (this->mLoadedEntry->ValueType == "8 Bytes")
-			{
-				if (this->mValueIsHex)
-				{
-					mMemoryScanner->Poke(this->mLoadedEntry->Address, ScanInt64(this->mFieldValue.GetText().ToString(), NULL, 16));
-				}
-				else
-				{
-					mMemoryScanner->Poke(this->mLoadedEntry->Address, ScanInt64(this->mFieldValue.GetText().ToString()));
-				}
-			}
-			else if (this->mLoadedEntry->ValueType == "Float")
-			{
-				mMemoryScanner->Poke(this->mLoadedEntry->Address, (float)ScanDouble(this->mFieldValue.GetText().ToString(), NULL, true));
-			}
-			else if (this->mLoadedEntry->ValueType == "Double")
-			{
-				mMemoryScanner->Poke(this->mLoadedEntry->Address, ScanDouble(this->mFieldValue.GetText().ToString(), NULL, true));
-			}
-			else if (this->mLoadedEntry->ValueType == "String")
-			{
-				mMemoryScanner->Poke(this->mLoadedEntry->Address, this->mFieldValue.GetText().ToString());
-				this->mLoadedEntry->Size = this->mFieldValue.GetLength();
-			}
-			else if (this->mLoadedEntry->ValueType == "WString")
-			{
-				mMemoryScanner->Poke(this->mLoadedEntry->Address, this->mFieldValue.GetText());
-				this->mLoadedEntry->Size = this->mFieldValue.GetLength();
-			}
-			else if (this->mLoadedEntry->ValueType == "Array of Bytes")
-			{
-				ArrayOfBytes aob = StringToBytes(this->mFieldValue.GetText().ToString());	
-				mMemoryScanner->Poke(this->mLoadedEntry->Address, aob);
-				this->mLoadedEntry->Size = aob.Size;
-			}
-			break;
-		case CRDM_TYPE:
-			switch (this->mTypeSelector.GetIndex())
-			{
-				case 0:
-					this->mLoadedEntry->ValueType = "Byte";
-					break;
-				case 1:
-					this->mLoadedEntry->ValueType = "2 Bytes";
-					break;
-				case 2:
-					this->mLoadedEntry->ValueType = "4 Bytes";
-					break;
-				case 3:
-					this->mLoadedEntry->ValueType = "8 Bytes";
-					break;
-				case 4:
-					this->mLoadedEntry->ValueType = "Float";
-					break;
-				case 5:
-					this->mLoadedEntry->ValueType = "Double";
-					break;
-				case 6:
-					this->mLoadedEntry->ValueType = "Array of Bytes";
-					break;
-				case 7:
-					if (this->mUnicodeString)
-					{
-						this->mLoadedEntry->ValueType = "WString";
-					}
-					else
-					{
-						this->mLoadedEntry->ValueType = "String";
-					}
-					break;
-				default:
-					// The compiler cannot know what value GetIndex() will return so it must be made assume that the value will not exceed the cases.
-					__assume(0);
-			}
-			break;
+			// Still here, so calculate the address.
+			this->mLoadedEntry->Address = mod->BaseAddress + ScanInt(inputVal.Mid(plusIndex + 1), NULL, 16);
+			this->mLoadedEntry->IsRelative = true;
+		}
+		else
+		{
+		
+			// Regularly parse the address. It is not a relative one.	
+#ifdef _WIN64
+			this->mLoadedEntry->Address = ScanInt64(inputVal, NULL, 16);
+#else
+			this->mLoadedEntry->Address = ScanInt(inputVal, NULL, 16);
+#endif
+			
+			// Drop the relative flag from the address table entry.
+			this->mLoadedEntry->IsRelative = false;
+		}
 	}
 	
+	// Close the form to pass execution back to the main window.
 	this->Close();
 }

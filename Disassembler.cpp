@@ -1,7 +1,7 @@
 #include "Disassembler.h"
 #include "GlobalDef.h"
 
-// Stub function is needed to avoid linker errors from multiple usage of the Disasm function.
+// Stub functions are needed to avoid linker errors from multiple usage of the Disasm functions.
 int __stdcall CryDisasm(LPDISASM lpDisasm)
 {
 	return Disasm(lpDisasm);

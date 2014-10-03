@@ -108,6 +108,8 @@ CryDebuggerHitView::CryDebuggerHitView()
 	
 	this->mRegisterView.AddRowNumColumn("Register", 40).SetConvert(Single<IndexBasedValueConvert<GetRegisterName>>());
 	this->mRegisterView.AddRowNumColumn("Value", 60).SetConvert(Single<IndexBasedValueConvert<GetRegisterValue>>());
+	
+	this->disasmAddress = 0;
 }
 
 CryDebuggerHitView::~CryDebuggerHitView()

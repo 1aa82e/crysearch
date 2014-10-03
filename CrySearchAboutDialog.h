@@ -7,7 +7,7 @@
 #include "CryClickLabel.h"
 
 // Simple about dialog for CrySearch, displaying its version, architecture and credits.
-class CrySearchAboutDialog sealed : public CryDialogTemplate
+class CrySearchAboutDialog : public CryDialogTemplate
 {
 private:
 	DWORD forumLink[27];
@@ -18,11 +18,13 @@ private:
 	Label mProcessorSupportLabel;
 	Label mUppLinkDescription;
 	CryClickLabel mUppLinkLabel;
+	ArrayCtrl mLibraryVersions;
 	Button mOk;
 	
 	void CloseAboutWindow();
 public:
 	CrySearchAboutDialog();
+	~CrySearchAboutDialog();
 	
 	typedef CrySearchAboutDialog CLASSNAME;
 };

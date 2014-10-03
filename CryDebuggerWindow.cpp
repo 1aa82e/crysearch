@@ -2,6 +2,7 @@
 #include "ImlProvider.h"
 #include "GlobalDef.h"
 #include "CrashHandler.h"
+#include "CrySearchForm.h"
 
 // Master index indicates which hit breakpoint is currently selected.
 int BreakpointMasterIndex = 0;
@@ -63,13 +64,16 @@ String GetStackViewValue(const int index)
 
 String GetCallStackFunctionCall(const int index)
 {
-	return (*mDebugger)[BreakpointMasterIndex].BreakpointSnapshot.CallStackView[index];
+	return (*mDebugger)[BreakpointMasterIndex].BreakpointSnapshot.CallStackView[index].StringRepresentation;
 }
 
 // ---------------------------------------------------------------------------------------------
 
 CryDebuggerWindow::CryDebuggerWindow()
 {
+	this->AddFrame(mToolStrip);
+	this->mToolStrip.Set(THISBACK(ToolStrip));
+	
 	*this
 		<< this->mGlobalSplitter.Horz(this->mLeftSplitter.Horz(this->mBreakpointsHitList.SizePos(), this->mDebuggerHitView.SizePos())
 			, this->mRightSplitter.Vert(this->mCallStackView.SizePos(), this->mStackView.SizePos()))
@@ -83,6 +87,7 @@ CryDebuggerWindow::CryDebuggerWindow()
 	this->mStackView.AddRowNumColumn("Value").SetConvert(Single<IndexBasedValueConvert<GetStackViewValue>>());
 	
 	this->mCallStackView.AddRowNumColumn("Function Call").SetConvert(Single<IndexBasedValueConvert<GetCallStackFunctionCall>>());
+	this->mCallStackView.WhenBar = THISBACK(CallStackListRightClick);
 	
 	this->mBreakpointsHitList.WhenSel = THISBACK(BreakpointSelectionChanged);
 	this->mDebuggerHitView.SetTooltip("Click to follow in disassembler.");
@@ -91,6 +96,12 @@ CryDebuggerWindow::CryDebuggerWindow()
 CryDebuggerWindow::~CryDebuggerWindow()
 {
 	
+}
+
+void CryDebuggerWindow::ToolStrip(Bar& pBar)
+{
+	const bool elegible = mDebugger && mDebugger->GetBreakpointCount() > 0;
+	pBar.Add(elegible, "Clear Breakpoints", CrySearchIml::ClearBreakpointsSmall(), THISBACK(DebuggerClearBreakpoints));
 }
 
 void CryDebuggerWindow::BreakpointSelectionChanged()
@@ -104,6 +115,9 @@ void CryDebuggerWindow::BreakpointSelectionChanged()
 		this->mStackView.SetVirtualCount(bp.BreakpointSnapshot.StackView.GetCount());
 		this->mCallStackView.SetVirtualCount(bp.BreakpointSnapshot.CallStackView.GetCount());
 	}
+	
+	// Refresh the toolstrip.
+	this->mToolStrip.Set(THISBACK(ToolStrip));	
 }
 
 void CryDebuggerWindow::BreakpointListRightClick(Bar& pBar)
@@ -113,9 +127,38 @@ void CryDebuggerWindow::BreakpointListRightClick(Bar& pBar)
 		const int cursor = this->mBreakpointsHitList.GetCursor();
 		if (cursor >= 0 && mDebugger->GetBreakpointCount() > 0)
 		{
-			pBar.Add("Remove Breakpoint", CrySearchIml::DeleteButton(), THISBACK(RemoveBreakpointButtonClicked));
+			pBar.Add(!(*mDebugger)[cursor].Disabled, "Disable", THISBACK(DisableBreakpointButtonClicked));
+			pBar.Add("Remove Breakpoint", CrySearchIml::DeleteButton(), THISBACK(RemoveBreakpointButtonClicked));	
 		}
 	}
+}
+
+void CryDebuggerWindow::CallStackListRightClick(Bar& pBar)
+{
+	if (mDebugger->IsDebuggerAttached())
+	{
+		const int cursor = this->mCallStackView.GetCursor();
+		if (cursor >= 0 && mDebugger->GetBreakpointCount() > 0)
+		{
+			pBar.Add("Go to Disassembly", CrySearchIml::DisassemblyIcon(), THISBACK(FollowStackTraceInDisassembler));
+		}
+	}
+}
+
+void CryDebuggerWindow::FollowStackTraceInDisassembler()
+{
+	extern CrySearchForm* frm;
+	const Win32StackTraceEntry& entry = (*mDebugger)[BreakpointMasterIndex].BreakpointSnapshot.CallStackView[this->mCallStackView.GetCursor()];
+	frm->GetDisasmWindow()->MoveToAddress(entry.Address);
+	frm->SetActiveTabWindow("Disassembly");
+}
+
+void CryDebuggerWindow::DisableBreakpointButtonClicked()
+{
+	const int cursor = this->mBreakpointsHitList.GetCursor();
+	mDebugger->DisableBreakpoint((*mDebugger)[cursor].Address);
+	this->mBreakpointsHitList.SetRowDisplay(cursor, RedDisplayDrawInstance);
+	this->mBreakpointsHitList.SetVirtualCount(mDebugger->GetBreakpointCount());
 }
 
 void CryDebuggerWindow::RemoveBreakpointButtonClicked()
@@ -143,6 +186,7 @@ void CryDebuggerWindow::CryDebuggerEventOccured(DebugEvent event, void* param)
 	PostCallback(THISBACK2(CryDebuggerEventOccuredThreadSafe, event, param));
 }
 
+// Beware: the parameter: 'param' may not be NULL if the 'event' parameter is DBG_EVENT_UNCAUGHT_EXCEPTION!
 void CryDebuggerWindow::CryDebuggerEventOccuredThreadSafe(DebugEvent event, void* param)
 {
 	switch (event)
@@ -165,14 +209,13 @@ void CryDebuggerWindow::CryDebuggerEventOccuredThreadSafe(DebugEvent event, void
 			// Define an anonymous scope to avoid case skipping errors.
 			{
 				const int bpCount = mDebugger->GetBreakpointCount();
-				this->mBreakpointsHitList.SetVirtualCount(bpCount);
-					
+				
 				if (bpCount > 0)
 				{
 					BreakpointMasterIndex = 0;
-
-					// Update the snapshot lists.
 					const DbgBreakpoint& bp = (*mDebugger)[(int)param];
+					
+					// Update the snapshot lists.
 					this->mDebuggerHitView.SetInstructionString(bp.BreakpointSnapshot.DisassemblyAccessLine);
 					this->mDebuggerHitView.SetRegisterCount(bp.BreakpointSnapshot.RegisterFieldCount);
 					this->mStackView.SetVirtualCount(bp.BreakpointSnapshot.StackView.GetCount());
@@ -186,25 +229,46 @@ void CryDebuggerWindow::CryDebuggerEventOccuredThreadSafe(DebugEvent event, void
 					this->mStackView.SetVirtualCount(0);
 					this->mCallStackView.SetVirtualCount(0);					
 				}
+				
+				// Recheck all breakpoints and reset display colors. This is the most stable way.
+				for (int i = 0; i < bpCount; ++i)
+				{
+					this->mBreakpointsHitList.SetRowDisplay(i, (*mDebugger)[i].Disabled ? RedDisplayDrawInstance : StdDisplay());
+				}
+				
+				// Set breakpoint count and redraw user interface.
+				this->mBreakpointsHitList.SetVirtualCount(bpCount);
 			}
 			break;
 		case DBG_EVENT_UNCAUGHT_EXCEPTION: // the debugger caught an exception in the opened process that cannot be handled.
 			// Define an anonymous scope to avoid case skipping errors.
 			{
+				// Retrieve the pointer to the exception data.
 				UnhandledExceptionData* excData = (UnhandledExceptionData*)param;
-				Prompt("Fatal Error", CtrlImg::error(), Format("An unhandled exception occured in the opened process:&&Exception: %s&Address: %llX", ParseExceptionCode(excData->ExceptionCode), (LONG_PTR)excData->ExceptionAddress), "OK");
 				
-				// If the debugger didn't already clean up the application because of the crash, do it anyway.
-				if (mDebugger)
+				int result = Prompt("Unhandled Exception", CtrlImg::exclamation(), Format("An unhandled exception occured in the opened process:&&Exception: %s&Address: %llX", ParseExceptionCode(excData->ExceptionCode), (LONG_PTR)excData->ExceptionAddress), "Ignore", "Abort");
+				if (result == 1)
 				{
-					mDebugger->Stop();
+					// The ignore button was clicked. Let the exception slip through and continue debugging.
+					excData->UserResponse = EXCEPTION_RESPONSE_CONTINUE;
+				}
+				else if (result == 0)
+				{
+					// The abort button was clicked. Exit the debugger and let the exception drop into its own exception handlers.
+					excData->UserResponse = EXCEPTION_RESPONSE_ABORT;
+					
+					// If the debugger didn't already clean up the application because of the crash, do it anyway.
+					if (mDebugger)
+					{
+						mDebugger->Stop();
+					}
+
+					// Throw error occured event, to close debugger window.
+					this->DebugErrorOccured();
 				}
 				
 				// Free the memory pointed to by the parameter pointer.
 				delete param;
-				
-				// Throw error occured event, to close debugger window.
-				this->DebugErrorOccured();
 			}
 			break;
 		case DBG_EVENT_BREAKPOINT_HIT:
@@ -221,5 +285,18 @@ void CryDebuggerWindow::CryDebuggerEventOccuredThreadSafe(DebugEvent event, void
 			// Hit count of breakpoint should have changed, so refresh the breakpoint list too.
 			this->mBreakpointsHitList.SetVirtualCount(mDebugger->GetBreakpointCount());
 			break;
+	}
+	
+	// Refresh the toolstrip.
+	this->mToolStrip.Set(THISBACK(ToolStrip));
+}
+
+// Clears all breakpoints in the list.
+void CryDebuggerWindow::DebuggerClearBreakpoints()
+{
+	if (Prompt("Are you sure?", CtrlImg::exclamation(), "Are you sure you want to remove all breakpoints?", "Yes", "No"))
+	{
+		mDebugger->ClearBreakpoints();
+		this->CryDebuggerEventOccuredThreadSafe(DBG_EVENT_BREAKPOINTS_CHANGED, NULL);
 	}
 }

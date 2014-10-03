@@ -45,6 +45,9 @@ struct DbgBreakpoint : Moveable<DbgBreakpoint>
 	SIZE_T Address;
 	int HitCount;
 	
+	// Indicates whether a breakpoint is in disabled state.
+	BOOLEAN Disabled;
+	
 	// Contains the old instruction byte that is replaced with INT3 when a software breakpoint is placed.
 	// In case of a hardware breakpoint, this field is used to indicate a trap flag.
 	union
@@ -69,7 +72,7 @@ struct DbgBreakpoint : Moveable<DbgBreakpoint>
 		Vector<StackViewData> StackView;
 		
 		// Contains the call stack at the moment of breakpoint hit.
-		Vector<String> CallStackView;
+		Vector<Win32StackTraceEntry> CallStackView;
 		
 		// Releases memory used by the thread context.
 		inline void Release()
@@ -140,6 +143,7 @@ struct UnhandledExceptionData
 {
 	SIZE_T ExceptionAddress;
 	LONG ExceptionCode;
+	int UserResponse;
 };
 
 // Represents the type of debugger event that occured.
@@ -155,6 +159,14 @@ enum DebugEvent
 	DBG_EVENT_BREAKPOINTS_CHANGED,
 	DBG_EVENT_BREAKPOINT_HIT,
 	DBG_EVENT_UNCAUGHT_EXCEPTION
+};
+
+// Represents the response the user may give to an unhandled exception message.
+enum ExceptionUserResponse
+{
+	EXCEPTION_RESPONSE_NONE,
+	EXCEPTION_RESPONSE_CONTINUE,
+	EXCEPTION_RESPONSE_ABORT
 };
 
 // The debugger class CrySearch uses to achieve several debugging actions.
@@ -181,11 +193,12 @@ protected:
 	volatile bool mAttached;
 	volatile bool shouldBreakLoop;
 	bool isDetaching;
+	const SettingsFile* mSettingsInstance;
 	
 	// Linked list with ownership property to take care of polymorphic breakpoint data structures.
 	Array<DbgBreakpoint> mBreakpoints;
 	
-	void HandleMiscellaneousExceptions(const SIZE_T address, const LONG excCode);
+	void HandleMiscellaneousExceptions(const SIZE_T address, const LONG excCode, DWORD* dwContinueStatus);
 	
 	virtual void CreateStackSnapshot(DbgBreakpoint* pBp, const SIZE_T pEsp) = 0;
 	virtual void ObtainCallStackTrace(DbgBreakpoint* pBp, void* const ctx) = 0;
@@ -198,6 +211,8 @@ public:
 	
 	bool SetHardwareBreakpoint(const Vector<Win32ThreadInformation>& threads, const SIZE_T address, const HWBP_SIZE size, const HWBP_TYPE type);
 	bool SetBreakpoint(const SIZE_T address);
+	
+	bool DisableBreakpoint(const SIZE_T address);
 	bool RemoveBreakpoint(const SIZE_T address);
 	
 	void ClearBreakpoints();
@@ -217,7 +232,7 @@ public:
 };
 
 // x86 specific debugger implementations.
-class CryDebugger32 sealed : public CryDebugger
+class CryDebugger32 : public CryDebugger
 {
 private:
 	virtual bool BreakpointRoutine(HardwareBreakpoint* pHwbp) const;
@@ -238,7 +253,7 @@ public:
 
 // x64 specific debugger implementations.
 #ifdef _WIN64
-	class CryDebugger64 sealed : public CryDebugger
+	class CryDebugger64 : public CryDebugger
 	{
 	private:
 		virtual bool BreakpointRoutine(HardwareBreakpoint* pHwbp) const;

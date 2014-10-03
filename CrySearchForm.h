@@ -19,17 +19,7 @@
 
 using namespace Upp;
 
-// UI value retrieval functionality
-template <String (GetData) (const AddressTable& instance, const int index)>
-struct AddressTableValueConvert : public Convert
-{
-	virtual Value Format(const Value& q) const
-	{
-		return GetData(loadedTable, int(q));
-	}
-};
-
-class CrySearchForm sealed : public TopWindow
+class CrySearchForm : public TopWindow
 {
 private:
 	bool processLoaded;
@@ -83,9 +73,11 @@ private:
 	void AllocateMemoryButtonClicked();
 	void ViewPEBButtonClicked();
 	void CodeGenerationButtonClicked();
+	void MemoryDissectionButtonClicked();
 	void ToggleDebuggerWindow();
 	void ToggleAddressTableFreezeThaw();
 	void ToggleAddressTableValueView();
+	void AddressListEntryMemoryDissection();
 	void OpenProcessMenu();
 	void CloseProcessMenu();
 	bool CloseProcess();
@@ -117,10 +109,11 @@ private:
 	void PluginsMenuClicked();
 	//void DependencyCheckerButtonClicked();
 	
+	bool InitializeProcessUI();
 	void WhenProcessOpened(Win32ProcessInformation* pProc);
 	void MemorySearch();
 	void RefreshSearchResults();
-
+	void StartNextScanHotkey();
 	void StartMemoryScanReliefGUI(bool FirstScan);
 	void ScannerCompletedScan();
 	void ScannerCompletedThreadSafe();
@@ -136,6 +129,7 @@ public:
 	CrySearchForm(const char* fn);
 	~CrySearchForm();
 	
+	CrySearchArrayCtrl* GetSearchResultCtrl();
 	CryDisasmCtrl* GetDisasmWindow();
 	bool SetActiveTabWindow(const String& wndText);
 };

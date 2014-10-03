@@ -24,6 +24,16 @@ const int GetDataSizeFromValueType(const String& type);
 // Generates a random string to use as window title.
 String GenerateRandomWindowTitle();
 
+// Generates a string-style signature of disassembly to be used in C or C++ code.
+String GenerateStringStyleSignature(const Vector<ArrayOfBytes*>& byteArrays, DWORD* outSigLength);
+
+// Parameter definitions for the function below.
+#define ARRAYTYPE_CPP		0
+#define ARRAYTYPE_CSHARP	1
+
+// Generates a byte array for either C# or C++ code files.
+String GenerateByteArray(const Vector<ArrayOfBytes*>& byteArrays, const DWORD arrayType);
+
 // Custom red text drawing for hooked imports.
 __declspec(selectany) struct ImportAddressHookedDisplay : public Display
 {
@@ -34,5 +44,16 @@ public:
 		w.DrawText(r.left, r.top, q.ToString(), StdFont(), LtRed());
 	}
 } RedDisplayDrawInstance;
+
+// Custom green text drawing for static addresses.
+__declspec(selectany) struct StaticAddressDisplay : public Display
+{
+public:
+	void Paint(Draw& w, const Rect& r, const Value& q, Color ink, Color paper, dword style) const
+	{
+		PaintBackground(w, r, q, ink, paper, style);
+		w.DrawText(r.left, r.top, q.ToString(), StdFont(), Color(0, 160, 0));
+	}
+} GreenDisplayDrawInstance;
 
 #endif

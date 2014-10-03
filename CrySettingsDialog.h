@@ -9,10 +9,11 @@
 
 using namespace Upp;
 
-class CrySearchSettingsDialog sealed : public TopWindow
+class CrySearchSettingsDialog : public TopWindow
 {
 private:
 	bool mStartCheckedExtensionState;
+	SettingsFile* mSettingsInstance;
 	
 	// Dialog main Ctrls
 	TabCtrl mainTabCtrl;
@@ -63,6 +64,7 @@ private:
 	Label mSymbolPathsDescriptor;
 	ArrayCtrl mSymbolPathsList;
 	Button mBrowseSymbolPath;
+	Option dbgCatchAllExceptions;
 	
 	// Hotkeys tab
 	Option mHotkeysOption;

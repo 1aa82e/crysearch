@@ -7,7 +7,7 @@
 #include "CryDialogTemplate.h"
 
 // Represents a small area that can be clicked to begin a mouse dragging sequence.
-class ProcessSelectionDragArea sealed : public ParentCtrl
+class ProcessSelectionDragArea : public ParentCtrl
 {
 private:
 	bool mIsDragging;
@@ -33,11 +33,13 @@ public:
 };
 
 // The form where the user selects the process to open in CrySearch.
-class CryProcessEnumeratorForm sealed : public CryDialogTemplate
+class CryProcessEnumeratorForm : public CryDialogTemplate
 {
 private:
+	volatile Atomic mCompletionCounter;
+	int mThreadCount;
 	Win32ProcessInformation tmpProc;
-
+	
 	Label mInfoAboutDialog;
 	EditField mSearchBox;
 	Option mHideWindowLessProcesses;
@@ -54,19 +56,27 @@ private:
 	void CreateProcessButtonClicked();
 	void OkButtonClicked();
 	void CancelButtonClicked();
-	void RefreshButtonWindowLess();
-	void RefreshProcesses();
+	void RefreshProcesses(bool less);
 	void IdColumnHeaderClicked();
 	void TitleColumnHeaderClicked();
 	
 	void DragFromCtrlCompleted(HWND hwnd);
+	void ProcessWindowIconAsync(Win32ProcessInformation pProcess, bool less);
+	void IconProcesWaitCompleted(HICON hIcon, Win32ProcessInformation pProcess, bool less);
+	void IconProcesWaitCompletedThreadSafe(HICON hIcon, Win32ProcessInformation pProcess, bool less);
+	void AddToProcessListMoreLess(HICON hIcon, const Win32ProcessInformation& proc, bool less);
+	
+	Callback3<HICON, Win32ProcessInformation, bool> IconWaitCompleted;
+	
+	virtual void Close();
+	
+	typedef CryProcessEnumeratorForm CLASSNAME;
 public:
 	CryProcessEnumeratorForm(const Image& icon);
 	~CryProcessEnumeratorForm() { }
 	
 	Win32ProcessInformation* const GetSelectedProcess();
-	
-	typedef CryProcessEnumeratorForm CLASSNAME;
+	CryProcessEnumeratorForm* const GetPtr() const;
 };
 
 #endif

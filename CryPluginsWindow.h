@@ -5,7 +5,7 @@
 #include "CrySearchArrayCtrl.h"
 
 // Represents the plugin window. It shows information about the loaded plugins.
-class CryPluginsWindow sealed : public CryDialogTemplate
+class CryPluginsWindow : public CryDialogTemplate
 {
 private:
 	Button mOK;	

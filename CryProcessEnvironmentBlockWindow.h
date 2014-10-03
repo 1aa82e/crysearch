@@ -2,8 +2,9 @@
 #define _CrySearch_CryProcessEnvironmentBlockWindow_h_
 
 #include "CryDialogTemplate.h"
+#include "NativeAPI.h"
 
-class CryProcessEnvironmentBlockWindow sealed : public CryDialogTemplate
+class CryProcessEnvironmentBlockWindow : public CryDialogTemplate
 {
 private:
 	BYTE* pIsBeingDebuggedPtr;
@@ -16,6 +17,12 @@ private:
 	void Initialize();
 	void DialogClose();
 	void ResetDebugFlag();
+	
+	__declspec(noinline) void Initialize32(const PEB32* peb);
+
+#ifdef _WIN64
+	__declspec(noinline) void Initialize64(const PEB* peb);
+#endif
 	
 	typedef CryProcessEnvironmentBlockWindow CLASSNAME;
 public:

@@ -48,7 +48,7 @@ void CryCreateExternalThreadWindow::OkButton()
 		addrField.Remove(0, exclamationPos < addrField.GetLength() ? exclamationPos + 1 : 0);
 		
 		// Check whether the module has been found or not.
-		const Win32ModuleInformation* dll = FindModuleInVector(dllName);
+		const Win32ModuleInformation* dll = mModuleManager->FindModule(dllName);
 		if (!dll)
 		{
 			Prompt("Fatal Error", CtrlImg::error(), "The DLL was not found in the target process!", "OK");

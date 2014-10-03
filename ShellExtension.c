@@ -84,7 +84,6 @@ const BOOL RegisterAddressTableExtension()
 const BOOL DeleteAddressTableRegistration()
 {
 	char regKey[MAX_PATH];
-	DWORD regLength = MAX_PATH;
 	
 	// Create the same path as during the registration function.
 	CreatePathCommand(extension, action, regKey);

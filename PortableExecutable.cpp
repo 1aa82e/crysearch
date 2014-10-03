@@ -12,8 +12,6 @@
 
 #define EAT_ADDRESS_NOT_FOUND -1
 
-Vector<Win32ModuleInformation> LoadedModulesList;
-
 // Checks whether a RVA points inside a section of the executable. Returns true if so and false if not.
 const bool RVAPointsInsideSection(const DWORD rva)
 {
@@ -29,21 +27,6 @@ const bool RVAPointsInsideSection(const DWORD rva)
 	return false;
 }
 
-// Looks up a module in the module list by name. Returns the found module or NULL if the module was not found.
-const Win32ModuleInformation* FindModuleInVector(const char* modName)
-{
-	const Vector<Win32ModuleInformation>& constVec = LoadedModulesList;
-	for (int i = 0; i < constVec.GetCount(); ++i)
-	{
-		if (_stricmp(constVec[i].ModuleName, modName) == 0)
-		{
-			return &constVec[i];
-		}
-	}
-	
-	return NULL;
-}
-
 // -------------------------------------------------------------------------------------------------------------------------------
 // Base class methods
 // -------------------------------------------------------------------------------------------------------------------------------
@@ -52,7 +35,7 @@ const Win32ModuleInformation* FindModuleInVector(const char* modName)
 PortableExecutable::PortableExecutable()
 {
 	this->mProcessHandle = mMemoryScanner->GetHandle();
-	this->mBaseAddress = LoadedModulesList.GetCount () > 0 ? LoadedModulesList[0].BaseAddress : 0;
+	this->mBaseAddress = mModuleManager->GetBaseAddress();
 }
 
 // Default PE class destructor. Virtual destructor, always use derived class' destructor to execute this one.
@@ -184,18 +167,11 @@ void PortableExecutable::GetImageSectionsList(const IMAGE_SECTION_HEADER* pSecHe
 		{
 			continue;
 		}
-
-		Win32PESectionInformation& section = list.Add();
 		
 		// The name of a section can only be 8 characters long. A longer name has a different notation.
 		// This is not taken into account because the chance of it appearing in an executable is very small.
-		section.SectionName = (char*)pSecHeader->Name;
-		section.CanContainStatic = (pSecHeader->Characteristics & IMAGE_SCN_CNT_INITIALIZED_DATA) || (pSecHeader->Characteristics & IMAGE_SCN_CNT_UNINITIALIZED_DATA);
-		section.BaseAddress = pSecHeader->VirtualAddress;
-		
-		// Watcom's linker sucks ass
-		section.SectionSize = pSecHeader->Misc.VirtualSize == 0 ? pSecHeader->SizeOfRawData : pSecHeader->Misc.VirtualSize;
-		section.RawSectionSize = pSecHeader->SizeOfRawData;
+		list.Add(Win32PESectionInformation((char*)pSecHeader->Name, pSecHeader->VirtualAddress, pSecHeader->Misc.VirtualSize == 0 ? pSecHeader->SizeOfRawData : pSecHeader->Misc.VirtualSize
+			, pSecHeader->SizeOfRawData, (pSecHeader->Characteristics & IMAGE_SCN_CNT_INITIALIZED_DATA) || (pSecHeader->Characteristics & IMAGE_SCN_CNT_UNINITIALIZED_DATA)));
 	}
 }
 
@@ -363,6 +339,29 @@ void PortableExecutable::GetDotNetDirectoryInformation(const IMAGE_DATA_DIRECTOR
 	}
 }
 
+// Resolves ApiSetSchema module names and returns a pointer to the resolved module.
+const Win32ModuleInformation* PortableExecutable::GetResolvedModule(const Byte* bufferBase, int* const recurseIndex, const DWORD* funcPtr, const char* NameOrdinal) const
+{
+	String forwardedModName = (char*)(bufferBase + *funcPtr);
+	*recurseIndex = forwardedModName.Find('.');
+
+	if (ToLower(forwardedModName).StartsWith("api-ms-win"))
+	{
+		WString unicodeBuffer(forwardedModName);
+		unicodeBuffer.Remove(0, 4);
+		unicodeBuffer.Remove(unicodeBuffer.Find('.'), (int)strlen(NameOrdinal) + 1);
+
+		const wchar* const outWString = this->InlineResolveApiSetSchema(unicodeBuffer);
+		forwardedModName = WString(outWString).ToString();
+		delete[] outWString;
+	}
+
+	const int dotIndex = forwardedModName.Find('.');
+	forwardedModName.Remove(dotIndex, forwardedModName.GetLength() - dotIndex);
+	forwardedModName += ".dll";
+	return mModuleManager->FindModule(forwardedModName);
+}
+
 // -------------------------------------------------------------------------------------------------------------------------------
 // PE32 class methods
 // -------------------------------------------------------------------------------------------------------------------------------
@@ -456,6 +455,9 @@ SIZE_T PortableExecutable32::GetAddressFromExportTable(const AddrStruct* addr, c
 {
 	if (addr->ExportDirectory->AddressOfNameOrdinals)
 	{
+		int ResurseDotIndex = 0;
+		const DWORD* funcAddrPtr = NULL;
+		
 		for (unsigned int i = 0; i < addr->ExportDirectory->NumberOfFunctions; ++i)
 		{
 			const WORD* const ordValue = (WORD*)((addr->BufferBaseAddress + addr->ExportDirectory->AddressOfNameOrdinals) + (i * sizeof(WORD)));
@@ -463,7 +465,6 @@ SIZE_T PortableExecutable32::GetAddressFromExportTable(const AddrStruct* addr, c
 			if (IsOrdinal)
 			{
 				bool found = false;
-				const DWORD* funcAddrPtr = NULL;
 
 				// Compare ordinal values without magic bitoperations!
 				if ((addr->ExportDirectory->Base + *ordValue) == (WORD)NameOrdinal)
@@ -479,23 +480,7 @@ SIZE_T PortableExecutable32::GetAddressFromExportTable(const AddrStruct* addr, c
 				
 				if (*funcAddrPtr > addr->DirectoryAddress->VirtualAddress && *funcAddrPtr < (addr->DirectoryAddress->VirtualAddress + addr->DirectoryAddress->Size))
 				{
-					String forwardedModName = (char*)(addr->BufferBaseAddress + *funcAddrPtr);
-					const int ResurseDotIndex = forwardedModName.Find('.');
-					if (ToLower(forwardedModName).StartsWith("api-ms-win"))
-					{
-						WString unicodeBuffer(forwardedModName);
-						unicodeBuffer.Remove(0, 4);
-						unicodeBuffer.Remove(unicodeBuffer.Find('.'), (int)strlen(NameOrdinal) + 1);
-			
-						const wchar* const outWString = this->InlineResolveApiSetSchema(unicodeBuffer);
-						forwardedModName = WString(outWString).ToString();
-						delete[] outWString;
-					}
-						
-					const int dotIndex = forwardedModName.Find('.');
-					forwardedModName.Remove(dotIndex, forwardedModName.GetLength() - dotIndex);
-					forwardedModName += ".dll";
-					const Win32ModuleInformation* modBaseAddr = FindModuleInVector(forwardedModName);
+					const Win32ModuleInformation* modBaseAddr = this->GetResolvedModule(addr->BufferBaseAddress, &ResurseDotIndex, funcAddrPtr, NameOrdinal);
 					
 					// Sometimes infinite redirecting causes stack overflowing. Terminate this sequence by returning not found.
 					if ((SIZE_T)addr->BaseAddress == modBaseAddr->BaseAddress)
@@ -513,13 +498,10 @@ SIZE_T PortableExecutable32::GetAddressFromExportTable(const AddrStruct* addr, c
 			            
 			        Byte* const exportDirectoryBuffer = new Byte[dataDir.Size];
 			        CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(modBaseAddr->BaseAddress + dataDir.VirtualAddress), exportDirectoryBuffer, dataDir.Size, NULL);
-						
-					AddrStruct addrStruct;
-			        addrStruct.BaseAddress = (Byte*)modBaseAddr->BaseAddress;
-			        addrStruct.BufferBaseAddress = (exportDirectoryBuffer - dataDir.VirtualAddress);
-			        addrStruct.BufferEndAddress = addrStruct.BufferBaseAddress + dataDir.VirtualAddress + dataDir.Size;
-			        addrStruct.ExportDirectory = (IMAGE_EXPORT_DIRECTORY*)exportDirectoryBuffer;
-			        addrStruct.DirectoryAddress = &dataDir;
+					
+					Byte* const bufBase = exportDirectoryBuffer - dataDir.VirtualAddress;
+					AddrStruct addrStruct((Byte*)modBaseAddr->BaseAddress, (exportDirectoryBuffer - dataDir.VirtualAddress), bufBase + dataDir.VirtualAddress + dataDir.Size
+						, &dataDir, (IMAGE_EXPORT_DIRECTORY*)exportDirectoryBuffer);
 			            
 					SIZE_T forwardedAddress = this->GetAddressFromExportTable(&addrStruct, (char*)ScanInt((char*)(addr->BufferBaseAddress + *funcAddrPtr + ResurseDotIndex + 2), NULL, 10), true);
 					delete[] exportDirectoryBuffer;
@@ -536,26 +518,10 @@ SIZE_T PortableExecutable32::GetAddressFromExportTable(const AddrStruct* addr, c
 				const size_t strlength = strlen(NameOrdinal);
 				if ((functionName > (char*)addr->BufferBaseAddress + addr->DirectoryAddress->VirtualAddress && (functionName + strlength + 1) < (char*)addr->BufferEndAddress) && memcmp(NameOrdinal, functionName, strlength) == 0)
 				{
-					const DWORD* const funcAddrPtr = (DWORD*)((addr->BufferBaseAddress + addr->ExportDirectory->AddressOfFunctions) + (sizeof(DWORD) * *ordValue));	
+					funcAddrPtr = (DWORD*)((addr->BufferBaseAddress + addr->ExportDirectory->AddressOfFunctions) + (sizeof(DWORD) * *ordValue));	
 					if (*funcAddrPtr > addr->DirectoryAddress->VirtualAddress && *funcAddrPtr < (addr->DirectoryAddress->VirtualAddress + addr->DirectoryAddress->Size))
 					{
-						String forwardedModName = (char*)(addr->BufferBaseAddress + *funcAddrPtr);
-						const int ResurseDotIndex = forwardedModName.Find('.');
-						if (ToLower(forwardedModName).StartsWith("api-ms-win"))
-						{	
-							WString unicodeBuffer(forwardedModName);
-							unicodeBuffer.Remove(0, 4);
-							unicodeBuffer.Remove(unicodeBuffer.Find('.'), (int)strlength + 1);
-				
-							const wchar* const outWString = this->InlineResolveApiSetSchema(unicodeBuffer);
-							forwardedModName = WString(outWString).ToString();
-							delete[] outWString;
-						}
-					
-						const int dotIndex = forwardedModName.Find('.');
-						forwardedModName.Remove(dotIndex, forwardedModName.GetLength() - dotIndex);
-						forwardedModName += ".dll";
-						const Win32ModuleInformation* modBaseAddr = FindModuleInVector(forwardedModName);
+						const Win32ModuleInformation* modBaseAddr = this->GetResolvedModule(addr->BufferBaseAddress, &ResurseDotIndex, funcAddrPtr, NameOrdinal);
 						
 						if ((SIZE_T)addr->BaseAddress == modBaseAddr->BaseAddress)
 						{
@@ -573,12 +539,9 @@ SIZE_T PortableExecutable32::GetAddressFromExportTable(const AddrStruct* addr, c
 			            Byte* const exportDirectoryBuffer = new Byte[dataDir.Size];
 			            CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(modBaseAddr->BaseAddress + dataDir.VirtualAddress), exportDirectoryBuffer, dataDir.Size, NULL);
 						
-						AddrStruct addrStruct;
-			            addrStruct.BaseAddress = (Byte*)modBaseAddr->BaseAddress;
-			            addrStruct.BufferBaseAddress = (exportDirectoryBuffer - dataDir.VirtualAddress);
-						addrStruct.BufferEndAddress = addrStruct.BufferBaseAddress + dataDir.VirtualAddress + dataDir.Size;
-			            addrStruct.ExportDirectory = (IMAGE_EXPORT_DIRECTORY*)exportDirectoryBuffer;
-			            addrStruct.DirectoryAddress = &dataDir;
+						Byte* const bufBase = exportDirectoryBuffer - dataDir.VirtualAddress;
+						AddrStruct addrStruct((Byte*)modBaseAddr->BaseAddress, (exportDirectoryBuffer - dataDir.VirtualAddress), bufBase + dataDir.VirtualAddress + dataDir.Size
+							, &dataDir, (IMAGE_EXPORT_DIRECTORY*)exportDirectoryBuffer);
 			            
 						SIZE_T forwardedAddress = this->GetAddressFromExportTable(&addrStruct, (char*)(addr->BufferBaseAddress + *funcAddrPtr + ResurseDotIndex + 1), false);
 						delete[] exportDirectoryBuffer;
@@ -666,13 +629,13 @@ void PortableExecutable32::GetImportAddressTable() const
 				WString redirectedDll = outWString;
 				delete[] outWString;
 			
-				modBaseAddr = FindModuleInVector(redirectedDll.ToString());
+				modBaseAddr = mModuleManager->FindModule(redirectedDll.ToString());
 				impDesc.LogicalBaseAddress = modBaseAddr->BaseAddress;
 			}
 		}
 		else
 		{
-			modBaseAddr = FindModuleInVector(dllName);
+			modBaseAddr = mModuleManager->FindModule(dllName);
 			impDesc.LogicalBaseAddress = 0;
 		}
         
@@ -689,12 +652,9 @@ void PortableExecutable32::GetImportAddressTable() const
             Byte* const exportDirectoryBuffer = new Byte[dataDir.Size];
             CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(modBaseAddr->BaseAddress + dataDir.VirtualAddress), exportDirectoryBuffer, dataDir.Size, NULL);
             
-            AddrStruct addrStruct;
-            addrStruct.BaseAddress = (Byte*)modBaseAddr->BaseAddress;
-            addrStruct.BufferBaseAddress = (exportDirectoryBuffer - dataDir.VirtualAddress);
-            addrStruct.BufferEndAddress = addrStruct.BufferBaseAddress + dataDir.VirtualAddress + dataDir.Size;
-            addrStruct.ExportDirectory = (IMAGE_EXPORT_DIRECTORY*)exportDirectoryBuffer;
-            addrStruct.DirectoryAddress = &dataDir;
+			Byte* const bufBase = (exportDirectoryBuffer - dataDir.VirtualAddress);
+			AddrStruct addrStruct((Byte*)modBaseAddr->BaseAddress, (exportDirectoryBuffer - dataDir.VirtualAddress), bufBase + dataDir.VirtualAddress + dataDir.Size
+				, &dataDir, (IMAGE_EXPORT_DIRECTORY*)exportDirectoryBuffer);
 
 			IMAGE_THUNK_DATA32 thunk;
 			unsigned int count = 0;
@@ -791,8 +751,8 @@ void PortableExecutable32::GetImportAddressTable() const
 // First parameter is either a pointer to a buffer containing the function name or an ordinal value.
 void PortableExecutable32::PlaceIATHook(const char* NameOrdinal, const SIZE_T newAddress, bool IsOrdinal) const
 {
-	Byte* const moduleBuffer = new Byte[LoadedModulesList[0].Length];
-	CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)this->mBaseAddress, moduleBuffer, LoadedModulesList[0].Length, NULL);
+	Byte* const moduleBuffer = new Byte[(*mModuleManager)[0].Length];
+	CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)this->mBaseAddress, moduleBuffer, (*mModuleManager)[0].Length, NULL);
 	
 	const IMAGE_NT_HEADERS32* const pNTHeader =(IMAGE_NT_HEADERS32*)(moduleBuffer + ((IMAGE_DOS_HEADER*)moduleBuffer)->e_lfanew);
 	const IMAGE_OPTIONAL_HEADER32* const pOptionalHeader = (IMAGE_OPTIONAL_HEADER32*)&pNTHeader->OptionalHeader;
@@ -1010,7 +970,7 @@ bool PortableExecutable32::HideModuleFromProcess(const Win32ModuleInformation& m
 		// Desired module was not yet found, traverse to the next one.
         Node = curModule.InMemoryOrderModuleList.Flink;
     }
-    while(Head != Node && moduleCount < LoadedModulesList.GetCount());
+    while(Head != Node && moduleCount < mModuleManager->GetModuleCount());
 
 	return found;
 }
@@ -1076,11 +1036,12 @@ bool PortableExecutable32::LoadLibraryExternal(const String& library) const
 	HANDLE hThread = CreateRemoteThread(this->mProcessHandle, NULL, NULL, (LPTHREAD_START_ROUTINE)GetProcAddress(GetModuleHandle("kernel32.dll"), "LoadLibraryA"), lpRemoteAddress, NULL, NULL);
 #else
 	DWORD krnl32Base;
-	for (int i = 0; i < LoadedModulesList.GetCount(); ++i)
+	const int modCount = mModuleManager->GetModuleCount();
+	for (int i = 0; i < modCount; ++i)
 	{
-		if (ToLower(LoadedModulesList[i].ModuleName) == "kernel32.dll")
+		if (ToLower((*mModuleManager)[i].ModuleName) == "kernel32.dll")
 		{
-			krnl32Base = (DWORD)LoadedModulesList[i].BaseAddress;
+			krnl32Base = (DWORD)(*mModuleManager)[i].BaseAddress;
 			break;
 		}
 	}
@@ -1091,7 +1052,7 @@ bool PortableExecutable32::LoadLibraryExternal(const String& library) const
 	// Succesfully created thread, wait for it to complete and free resources after.
 	if (hThread && hThread != INVALID_HANDLE_VALUE)
 	{
-		WaitForSingleObject(hThread, INFINITE);
+		WaitForSingleObject(hThread, 5000);
 		CloseHandle(hThread);
 	}
 	
@@ -1107,11 +1068,12 @@ void PortableExecutable32::UnloadLibraryExternal(const SIZE_T module) const
 	HANDLE hThread = CreateRemoteThread(this->mProcessHandle, NULL, NULL, (LPTHREAD_START_ROUTINE)GetProcAddress(GetModuleHandle("kernel32.dll"), "FreeLibrary"), (void*)module, NULL, NULL);
 #else
 	DWORD krnl32Base;
-	for (int i = 0; i < LoadedModulesList.GetCount(); ++i)
+	const int modCount = mModuleManager->GetModuleCount();
+	for (int i = 0; i < modCount; ++i)
 	{
-		if (ToLower(LoadedModulesList[i].ModuleName) == "kernel32.dll")
+		if (ToLower((*mModuleManager)[i].ModuleName) == "kernel32.dll")
 		{
-			krnl32Base = (DWORD)LoadedModulesList[i].BaseAddress;
+			krnl32Base = (DWORD)(*mModuleManager)[i].BaseAddress;
 			break;
 		}
 	}
@@ -1123,7 +1085,7 @@ void PortableExecutable32::UnloadLibraryExternal(const SIZE_T module) const
 	// Succesfully created thread, wait for it to complete and free resources after.	
 	if (hThread && hThread != INVALID_HANDLE_VALUE)
 	{
-		WaitForSingleObject(hThread, INFINITE);
+		WaitForSingleObject(hThread, 5000);
 		CloseHandle(hThread);
 	}
 }
@@ -1142,12 +1104,9 @@ void PortableExecutable32::RestoreExportTableAddressImport(const SIZE_T baseAddr
     Byte* const exportDirectoryBuffer = new Byte[dataDir.Size];
     CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(baseAddress + dataDir.VirtualAddress), exportDirectoryBuffer, dataDir.Size, NULL);
     
-    AddrStruct addrStruct;
-    addrStruct.BaseAddress = (Byte*)baseAddress;
-    addrStruct.BufferBaseAddress = (exportDirectoryBuffer - dataDir.VirtualAddress);
-	addrStruct.BufferEndAddress = addrStruct.BufferBaseAddress + dataDir.VirtualAddress + dataDir.Size;
-    addrStruct.ExportDirectory = (IMAGE_EXPORT_DIRECTORY*)exportDirectoryBuffer;
-    addrStruct.DirectoryAddress = &dataDir;
+	Byte* const bufBase = (exportDirectoryBuffer - dataDir.VirtualAddress);
+	AddrStruct addrStruct((Byte*)baseAddress, (exportDirectoryBuffer - dataDir.VirtualAddress), bufBase + dataDir.VirtualAddress + dataDir.Size
+		, &dataDir, (IMAGE_EXPORT_DIRECTORY*)exportDirectoryBuffer);
     
 	this->PlaceIATHook(NameOrdinal, this->GetAddressFromExportTable(&addrStruct, NameOrdinal, IsOrdinal), IsOrdinal);
 	
@@ -1238,6 +1197,9 @@ void PortableExecutable32::RestoreExportTableAddressImport(const SIZE_T baseAddr
 	{
 		if (addr->ExportDirectory->AddressOfNameOrdinals)
 		{
+			const DWORD* funcAddrPtr = NULL;
+			int RecurseDotIndex = 0;
+			
 			for (unsigned int i = 0; i < addr->ExportDirectory->NumberOfFunctions; ++i)
 			{
 				const WORD* const ordValue = (WORD*)(addr->BufferBaseAddress + addr->ExportDirectory->AddressOfNameOrdinals + (i * sizeof(WORD)));
@@ -1245,7 +1207,6 @@ void PortableExecutable32::RestoreExportTableAddressImport(const SIZE_T baseAddr
 				if (IsOrdinal)
 				{
 					bool found = false;
-					DWORD* funcAddrPtr = NULL;
 					
 					// Compare ordinal values without magic bitoperations!
 					if ((addr->ExportDirectory->Base + *ordValue) == (WORD)NameOrdinal)
@@ -1261,24 +1222,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const SIZE_T baseAddr
 
 					if (*funcAddrPtr > addr->DirectoryAddress->VirtualAddress && *funcAddrPtr < addr->DirectoryAddress->VirtualAddress + addr->DirectoryAddress->Size)
 					{
-						String forwardedModName = (char*)(addr->BufferBaseAddress + *funcAddrPtr);
-						const int ResurseDotIndex = forwardedModName.Find('.');
-						if (ToLower(forwardedModName).StartsWith("api-ms-win"))
-						{
-							WString unicodeBuffer(forwardedModName);
-							unicodeBuffer.Remove(0, 4);
-							unicodeBuffer.Remove(unicodeBuffer.Find('.'), (int)strlen(NameOrdinal) + 1);
-				
-							const wchar* const outWString = this->InlineResolveApiSetSchema(unicodeBuffer);
-							forwardedModName = WString(outWString).ToString();
-							delete[] outWString;
-						}
-						
-						const int dotIndex = forwardedModName.Find('.');
-						forwardedModName.Remove(dotIndex, forwardedModName.GetLength() - dotIndex);
-						forwardedModName += ".dll";
-						const Win32ModuleInformation* modBaseAddr = FindModuleInVector(forwardedModName);
-						
+						const Win32ModuleInformation* modBaseAddr = this->GetResolvedModule(addr->BufferBaseAddress, &RecurseDotIndex, funcAddrPtr, NameOrdinal);	
 						if ((SIZE_T)addr->BaseAddress == modBaseAddr->BaseAddress)
 						{
 							return EAT_ADDRESS_NOT_FOUND;
@@ -1295,14 +1239,11 @@ void PortableExecutable32::RestoreExportTableAddressImport(const SIZE_T baseAddr
 				        Byte* const exportDirectoryBuffer = new Byte[dataDir.Size];
 				        CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(modBaseAddr->BaseAddress + dataDir.VirtualAddress), exportDirectoryBuffer, dataDir.Size, NULL);
 						
-						AddrStruct addrStruct;
-				        addrStruct.BaseAddress = (Byte*)modBaseAddr->BaseAddress;
-				        addrStruct.BufferBaseAddress = (exportDirectoryBuffer - dataDir.VirtualAddress);
-				    	addrStruct.BufferEndAddress = addrStruct.BufferBaseAddress + dataDir.VirtualAddress + dataDir.Size;
-				        addrStruct.ExportDirectory = (IMAGE_EXPORT_DIRECTORY*)exportDirectoryBuffer;
-				        addrStruct.DirectoryAddress = &dataDir;
+						Byte* const bufBase = exportDirectoryBuffer - dataDir.VirtualAddress;
+						AddrStruct addrStruct((Byte*)modBaseAddr->BaseAddress, (exportDirectoryBuffer - dataDir.VirtualAddress), bufBase + dataDir.VirtualAddress + dataDir.Size
+							, &dataDir, (IMAGE_EXPORT_DIRECTORY*)exportDirectoryBuffer);
 
-						SIZE_T forwardedAddress = this->GetAddressFromExportTable(&addrStruct, (char*)ScanInt((char*)(addr->BufferBaseAddress + *funcAddrPtr + ResurseDotIndex + 1), NULL, 10), true);
+						SIZE_T forwardedAddress = this->GetAddressFromExportTable(&addrStruct, (char*)ScanInt((char*)(addr->BufferBaseAddress + *funcAddrPtr + RecurseDotIndex + 1), NULL, 10), true);
 						delete[] exportDirectoryBuffer;						
 						return forwardedAddress;
 					}
@@ -1317,27 +1258,10 @@ void PortableExecutable32::RestoreExportTableAddressImport(const SIZE_T baseAddr
 					const size_t strlength = strlen(NameOrdinal);
 					if ((functionName > (char*)addr->BufferBaseAddress + addr->DirectoryAddress->VirtualAddress && (functionName + strlength + 1) < (char*)addr->BufferEndAddress) && memcmp(NameOrdinal, functionName, strlength) == 0)
 					{
-						const DWORD* const funcAddrPtr = (DWORD*)(addr->BufferBaseAddress + addr->ExportDirectory->AddressOfFunctions + (sizeof(DWORD) * *ordValue));	
+						funcAddrPtr = (DWORD*)(addr->BufferBaseAddress + addr->ExportDirectory->AddressOfFunctions + (sizeof(DWORD) * *ordValue));	
 						if (*funcAddrPtr > addr->DirectoryAddress->VirtualAddress && *funcAddrPtr < addr->DirectoryAddress->VirtualAddress + addr->DirectoryAddress->Size)
 						{
-							String forwardedModName = (char*)(addr->BufferBaseAddress + *funcAddrPtr);
-							const int ResurseDotIndex = forwardedModName.Find('.');
-							if (ToLower(forwardedModName).StartsWith("api-ms-win"))
-							{	
-								WString unicodeBuffer(forwardedModName);
-								unicodeBuffer.Remove(0, 4);
-								unicodeBuffer.Remove(unicodeBuffer.Find('.'), (int)strlength + 1);
-				
-								const wchar* const outWString = this->InlineResolveApiSetSchema(unicodeBuffer);
-								forwardedModName = WString(outWString).ToString();
-								delete[] outWString;
-							}
-					
-							const int dotIndex = forwardedModName.Find('.');
-							forwardedModName.Remove(dotIndex, forwardedModName.GetLength() - dotIndex);
-							forwardedModName += ".dll";
-							const Win32ModuleInformation* modBaseAddr = FindModuleInVector(forwardedModName);
-
+							const Win32ModuleInformation* modBaseAddr = this->GetResolvedModule(addr->BufferBaseAddress, &RecurseDotIndex, funcAddrPtr, NameOrdinal);
 							if ((SIZE_T)addr->BaseAddress == modBaseAddr->BaseAddress)
 							{
 								return EAT_ADDRESS_NOT_FOUND;
@@ -1354,14 +1278,11 @@ void PortableExecutable32::RestoreExportTableAddressImport(const SIZE_T baseAddr
 				            Byte* const exportDirectoryBuffer = new Byte[dataDir.Size];
 				            CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(modBaseAddr->BaseAddress + dataDir.VirtualAddress), exportDirectoryBuffer, dataDir.Size, NULL);
 							
-							AddrStruct addrStruct;
-				            addrStruct.BaseAddress = (Byte*)modBaseAddr->BaseAddress;
-				            addrStruct.BufferBaseAddress = (exportDirectoryBuffer - dataDir.VirtualAddress);
-				            addrStruct.BufferEndAddress = addrStruct.BufferBaseAddress + dataDir.VirtualAddress + dataDir.Size;
-				            addrStruct.ExportDirectory = (IMAGE_EXPORT_DIRECTORY*)exportDirectoryBuffer;
-				            addrStruct.DirectoryAddress = &dataDir;
+							Byte* const bufBase = exportDirectoryBuffer - dataDir.VirtualAddress;
+							AddrStruct addrStruct((Byte*)modBaseAddr->BaseAddress, (exportDirectoryBuffer - dataDir.VirtualAddress), bufBase + dataDir.VirtualAddress + dataDir.Size
+								, &dataDir, (IMAGE_EXPORT_DIRECTORY*)exportDirectoryBuffer);
 				            
-							SIZE_T forwardedAddress = this->GetAddressFromExportTable(&addrStruct, (char*)(addr->BufferBaseAddress + *funcAddrPtr + ResurseDotIndex + 1), false);
+							SIZE_T forwardedAddress = this->GetAddressFromExportTable(&addrStruct, (char*)(addr->BufferBaseAddress + *funcAddrPtr + RecurseDotIndex + 1), false);
 							delete[] exportDirectoryBuffer;
 							return forwardedAddress;
 						}
@@ -1447,13 +1368,13 @@ void PortableExecutable32::RestoreExportTableAddressImport(const SIZE_T baseAddr
 					WString redirectedDll = outWString;
 					delete[] outWString;
 				
-					modBaseAddr = FindModuleInVector(redirectedDll.ToString());
+					modBaseAddr = mModuleManager->FindModule(redirectedDll.ToString());
 					impDesc.LogicalBaseAddress = modBaseAddr->BaseAddress;
 				}
 			}
 			else
 			{
-				modBaseAddr = FindModuleInVector(dllName);
+				modBaseAddr = mModuleManager->FindModule(dllName);
 				impDesc.LogicalBaseAddress = 0;
 			}
 	        
@@ -1470,12 +1391,9 @@ void PortableExecutable32::RestoreExportTableAddressImport(const SIZE_T baseAddr
 	            Byte* exportDirectoryBuffer = new Byte[dataDir.Size];
 	            CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(modBaseAddr->BaseAddress + dataDir.VirtualAddress), exportDirectoryBuffer, dataDir.Size, NULL);
 	            
-	            AddrStruct addrStruct;
-	            addrStruct.BaseAddress = (Byte*)modBaseAddr->BaseAddress;
-	            addrStruct.BufferBaseAddress = (exportDirectoryBuffer - dataDir.VirtualAddress);
-	            addrStruct.BufferEndAddress = addrStruct.BufferBaseAddress + dataDir.VirtualAddress + dataDir.Size;
-	            addrStruct.ExportDirectory = (IMAGE_EXPORT_DIRECTORY*)exportDirectoryBuffer;
-	            addrStruct.DirectoryAddress = &dataDir;
+				Byte* const bufBase = exportDirectoryBuffer - dataDir.VirtualAddress;
+				AddrStruct addrStruct((Byte*)modBaseAddr->BaseAddress, (exportDirectoryBuffer - dataDir.VirtualAddress), bufBase + dataDir.VirtualAddress + dataDir.Size
+					, &dataDir, (IMAGE_EXPORT_DIRECTORY*)exportDirectoryBuffer);
 	        
 	        	IMAGE_THUNK_DATA thunk;
 		        unsigned int count = 0;
@@ -1570,8 +1488,8 @@ void PortableExecutable32::RestoreExportTableAddressImport(const SIZE_T baseAddr
 	// First parameter is either a pointer to a buffer containing the function name or an ordinal value.
 	void PortableExecutable64::PlaceIATHook(const char* NameOrdinal, const SIZE_T newAddress, bool IsOrdinal) const
 	{
-		Byte* const moduleBuffer = new Byte[LoadedModulesList[0].Length];
-		CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)this->mBaseAddress, moduleBuffer, LoadedModulesList[0].Length, NULL);
+		Byte* const moduleBuffer = new Byte[(*mModuleManager)[0].Length];
+		CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)this->mBaseAddress, moduleBuffer, (*mModuleManager)[0].Length, NULL);
 		
 		const IMAGE_NT_HEADERS* const pNTHeader =(IMAGE_NT_HEADERS*)(moduleBuffer + ((IMAGE_DOS_HEADER*)moduleBuffer)->e_lfanew);
 		const IMAGE_IMPORT_DESCRIPTOR* pDesc = (IMAGE_IMPORT_DESCRIPTOR*)(moduleBuffer + ((IMAGE_OPTIONAL_HEADER*)&pNTHeader->OptionalHeader)->DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress);
@@ -1783,7 +1701,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const SIZE_T baseAddr
 			// Desired module was not yet found, traverse to the next one.
 	        Node = curModule.InMemoryOrderModuleList.Flink;
 	    }
-	    while(Head != Node && moduleCount < LoadedModulesList.GetCount());
+	    while(Head != Node && moduleCount < mModuleManager->GetModuleCount());
 	
 		return found;
 	}
@@ -1845,7 +1763,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const SIZE_T baseAddr
 		// Succesfully created thread, wait for it to complete and free resources after.
 		if (hThread && hThread != INVALID_HANDLE_VALUE)
 		{
-			WaitForSingleObject(hThread, INFINITE);
+			WaitForSingleObject(hThread, 5000);
 			CloseHandle(hThread);
 		}
 		
@@ -1863,7 +1781,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const SIZE_T baseAddr
 		// Succesfully created thread, wait for it to complete and free resources after.
 		if (hThread && hThread != INVALID_HANDLE_VALUE)
 		{
-			WaitForSingleObject(hThread, INFINITE);
+			WaitForSingleObject(hThread, 5000);
 			CloseHandle(hThread);
 		}
 	}
@@ -1882,12 +1800,9 @@ void PortableExecutable32::RestoreExportTableAddressImport(const SIZE_T baseAddr
 	    Byte* const exportDirectoryBuffer = new Byte[dataDir.Size];
 	    CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(baseAddress + dataDir.VirtualAddress), exportDirectoryBuffer, dataDir.Size, NULL);
 	    
-	    AddrStruct addrStruct;
-	    addrStruct.BaseAddress = (Byte*)baseAddress;
-	    addrStruct.BufferBaseAddress = (exportDirectoryBuffer - dataDir.VirtualAddress);
-		addrStruct.BufferEndAddress = addrStruct.BufferBaseAddress + dataDir.VirtualAddress + dataDir.Size;
-	    addrStruct.ExportDirectory = (IMAGE_EXPORT_DIRECTORY*)exportDirectoryBuffer;
-	    addrStruct.DirectoryAddress = &dataDir;
+		Byte* const bufBase = exportDirectoryBuffer - dataDir.VirtualAddress;
+		AddrStruct addrStruct((Byte*)baseAddress, (exportDirectoryBuffer - dataDir.VirtualAddress), bufBase + dataDir.VirtualAddress + dataDir.Size
+			, &dataDir, (IMAGE_EXPORT_DIRECTORY*)exportDirectoryBuffer);
 	    
 		this->PlaceIATHook(NameOrdinal, this->GetAddressFromExportTable(&addrStruct, NameOrdinal, IsOrdinal), IsOrdinal);
 		

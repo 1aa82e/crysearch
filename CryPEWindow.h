@@ -9,7 +9,7 @@ using namespace Upp;
 
 #pragma warning(disable : 4005)
 
-class CryPEWindow sealed : public ParentCtrl
+class CryPEWindow : public ParentCtrl
 {
 private:
 	ToolBar tBar;

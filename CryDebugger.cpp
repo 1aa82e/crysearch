@@ -44,17 +44,18 @@ extern Vector<DisasmLine> DisasmVisibleLines;
 // Debugger default constructor.
 CryDebugger::CryDebugger()
 {
+	this->mSettingsInstance = SettingsFile::GetInstance();
 	HANDLE loc = mMemoryScanner->GetHandle();
 	
 	// Initialize symbol handler for the process using configured symbol paths.
-	const int pathCount = GlobalSettingsInstance.GetSymbolPathCount();
+	const int pathCount = this->mSettingsInstance->GetSymbolPathCount();
 	if (pathCount > 0)
 	{
 		// Add manually configured paths.
-		String paths = GlobalSettingsInstance.GetSymbolPath(0);
+		String paths = this->mSettingsInstance->GetSymbolPath(0);
 		for (int i = 1; i < pathCount; ++i)
 		{
-			paths += ";" + GlobalSettingsInstance.GetSymbolPath(i);
+			paths += ";" + this->mSettingsInstance->GetSymbolPath(i);
 		}
 		
 		// Add environmentally decided paths for possible invading.
@@ -66,12 +67,12 @@ CryDebugger::CryDebugger()
 		paths += envvar;
 		
 		// Initialize symbol handler with configured pathing.
-		SymInitialize(loc, paths, GlobalSettingsInstance.GetInvadeProcess() ? TRUE : FALSE);
+		SymInitialize(loc, paths, this->mSettingsInstance->GetInvadeProcess() ? TRUE : FALSE);
 	}
 	else
 	{
 		// No symbol paths were configured, use Windows default ones.
-		SymInitialize(loc, NULL, GlobalSettingsInstance.GetInvadeProcess() ? TRUE : FALSE);
+		SymInitialize(loc, NULL, this->mSettingsInstance->GetInvadeProcess() ? TRUE : FALSE);
 	}
 	
 	// Set options for the symbol handler.
@@ -80,7 +81,7 @@ CryDebugger::CryDebugger()
 	SymSetOptions(options);
 	
 	// If the process should not be invaded, the symbols for the executable module should be loaded manually.
-	if (!GlobalSettingsInstance.GetInvadeProcess())
+	if (!this->mSettingsInstance->GetInvadeProcess())
 	{
 		// Retrieve the full path to the executable file of the process.
 		char fn[MAX_PATH];
@@ -91,7 +92,7 @@ CryDebugger::CryDebugger()
 		int retryCount = 0;
 		
 		// Try to get the first module but set a threshold for it to fail.
-		while (retryCount++ < 3 && !(exeMod = LoadedModulesList.GetCount() > 0 ? &LoadedModulesList[0] : NULL))
+		while ((retryCount++ < 3) && !(exeMod = (mModuleManager->GetModuleCount() > 0 ? &(*mModuleManager)[0] : NULL)))
 		{
 			Sleep(25);
 		}
@@ -144,7 +145,7 @@ void CryDebugger::DbgThread()
 	this->DebuggerEvent(DBG_EVENT_ATTACH, NULL);
 	
 	// If the hide setting is enabled, execute PEB writing to hide debugger from process.
-	if (GlobalSettingsInstance.GetAttemptHideDebuggerFromPeb())
+	if (this->mSettingsInstance->GetAttemptHideDebuggerFromPeb())
 	{
 		this->HideDebuggerFromPeb();
 	}
@@ -237,6 +238,7 @@ bool CryDebugger::SetHardwareBreakpoint(const Vector<Win32ThreadInformation>& th
 		hwbp.Type = type;
 		hwbp.MustSet = true;
 		hwbp.PreviousInstructionAddress = 0;
+		hwbp.Disabled = FALSE;
 		
 		// Set old instruction to 0 to indicate that it is a hardware breakpoint.
 		hwbp.OldInstruction = 0;
@@ -265,6 +267,7 @@ bool CryDebugger::SetBreakpoint(const SIZE_T address)
 	bp.BpType = BPTYPE_SOFTWARE;
 	bp.HitCount = 0;
 	bp.Address = address;
+	bp.Disabled = FALSE;
 	
 	// Read out current byte.
 	if (!CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), (void*)address, &bp.OldInstruction, sizeof(Byte), NULL))
@@ -288,7 +291,58 @@ bool CryDebugger::SetBreakpoint(const SIZE_T address)
 	return true;
 }
 
-// Remove a regular software breakpoint from the process.
+// Disable a breakpoint set in the process.
+bool CryDebugger::DisableBreakpoint(const SIZE_T address)
+{
+	bool error = false;
+	
+	// Check whether the breakpoint actually exists on this address.
+	const int pos = this->FindBreakpoint(address);
+	if (pos < 0)
+	{
+		return true;
+	}
+	
+	DbgBreakpoint* const bp = &this->mBreakpoints[pos];
+	if (bp->BpType == BPTYPE_HARDWARE)
+	{
+		// Attempt to remove breakpoint as being a hardware breakpoint.
+		HardwareBreakpoint* const hwbp = static_cast<HardwareBreakpoint*>(bp);
+		hwbp->MustSet = false;
+		
+		for (int i = 0; i < hwbp->ThreadId.GetCount(); ++i)
+		{
+			if (!BreakpointRoutine(hwbp))
+			{
+				error = true;
+			}
+		}
+	}
+	else
+	{
+		// Write the old instruction back to the address.
+		if (!CrySearchRoutines.CryWriteMemoryRoutine(mMemoryScanner->GetHandle(), (void*)address, &bp->OldInstruction, sizeof(Byte), NULL))
+		{
+			return false;
+		}
+		
+		// Flush instruction cache to apply instruction to executable code.
+		FlushInstructionCache(mMemoryScanner->GetHandle(), (void*)address, sizeof(Byte));
+	}
+	
+	// Set disabled flag for user interface.
+	bp->Disabled = TRUE;
+
+	// Only trigger the UI events in case the removal is just a single breakpoint. If the debugger is cleaning up before detaching, nothing has to be done.
+	if (!isDetaching)
+	{
+		this->DebuggerEvent(DBG_EVENT_BREAKPOINTS_CHANGED, NULL);
+	}
+
+	return !error;
+}
+
+// Remove a breakpoint from the process.
 bool CryDebugger::RemoveBreakpoint(const SIZE_T address)
 {
 	bool error = false;
@@ -390,16 +444,30 @@ void CryDebugger::ClearBreakpoints()
 }
 
 // Handles any exception that occured in the opened process except for breakpoints.
-void CryDebugger::HandleMiscellaneousExceptions(const SIZE_T address, const LONG excCode)
+void CryDebugger::HandleMiscellaneousExceptions(const SIZE_T address, const LONG excCode, DWORD* dwContinueStatus)
 {
+	// Create exception data structure to pass to the user interface.
 	UnhandledExceptionData* const param = new UnhandledExceptionData;
 	param->ExceptionAddress = address;
 	param->ExceptionCode = excCode;
 	
-	this->ClearBreakpoints();
-	this->shouldBreakLoop = true;
-
+	// Execute debugger event in user interface.
 	this->DebuggerEvent(DBG_EVENT_UNCAUGHT_EXCEPTION, param);
+	
+	// Wait for the user to response to the exception message.
+	param->UserResponse = EXCEPTION_RESPONSE_NONE;
+	while (param->UserResponse == EXCEPTION_RESPONSE_NONE)
+	{
+		Sleep(50);
+	}
+	
+	// Response has been given, handle accordingly.
+	if (param->UserResponse == DBG_EXCEPTION_NOT_HANDLED)
+	{
+		// The user chose to abort the process and close the debugger.
+		*dwContinueStatus = DBG_EXCEPTION_NOT_HANDLED;
+		this->Stop();
+	}
 }
 
 // The debugger loop that is ran by the debugger thread and will keep that thread alive until detach.
@@ -522,10 +590,17 @@ void CryDebugger::ExceptionWatch()
 			}
 			else
 			{
-				// Another exception occured, but CrySearch is not able to handle anything other than breakpoints.
-				// Report the exception to the user but let the debugger lose control.
-				dwContinueStatus = DBG_EXCEPTION_NOT_HANDLED;
-				this->HandleMiscellaneousExceptions((SIZE_T)DebugEv.u.Exception.ExceptionRecord.ExceptionAddress, DebugEv.u.Exception.ExceptionRecord.ExceptionCode);				
+				// If the user wanted to, catch exception.
+				if (this->mSettingsInstance->GetCatchAllExceptions())
+				{
+					// Another exception occured, but CrySearch is not able to handle anything other than breakpoints. Report it to the user.
+					this->HandleMiscellaneousExceptions((SIZE_T)DebugEv.u.Exception.ExceptionRecord.ExceptionAddress, DebugEv.u.Exception.ExceptionRecord.ExceptionCode, &dwContinueStatus);
+				}
+				else
+				{
+					// Exceptions are set to not being caught by the debugger. Let the process crash.
+					dwContinueStatus = DBG_EXCEPTION_NOT_HANDLED;
+				}
 			}
 		}
 		
@@ -581,7 +656,7 @@ void CryDebugger32::CreateStackSnapshot(DbgBreakpoint* pBp, const SIZE_T pEsp)
 	Byte stack[1024];
 	CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), (void*)pEsp, stack, 1024, NULL);
 	DWORD stackPtr = (DWORD)stack;
-	const DWORD endAddress = (DWORD)pEsp + GlobalSettingsInstance.GetStackSnapshotLimit();
+	const DWORD endAddress = (DWORD)pEsp + this->mSettingsInstance->GetStackSnapshotLimit();
 	
 	for (DWORD addr = (DWORD)pEsp; addr < endAddress; addr += sizeof(DWORD), stackPtr += sizeof(DWORD))
 	{
@@ -1008,7 +1083,7 @@ void CryDebugger32::HandleHardwareBreakpoint(const DWORD threadId, const SIZE_T 
 		Byte stack[1024];
 		CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), (void*)pEsp, stack, 1024, NULL);
 		SIZE_T stackPtr = (SIZE_T)stack;
-		const SIZE_T endAddress = (SIZE_T)pEsp + GlobalSettingsInstance.GetStackSnapshotLimit();
+		const SIZE_T endAddress = (SIZE_T)pEsp + this->mSettingsInstance->GetStackSnapshotLimit();
 		
 		for (SIZE_T addr = (SIZE_T)pEsp; addr < endAddress; addr += sizeof(SIZE_T), stackPtr += sizeof(SIZE_T))
 		{

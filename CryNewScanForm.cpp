@@ -52,22 +52,22 @@ CryNewScanForm::CryNewScanForm(bool FirstScan, const Image& icon) : CryDialogTem
 	this->Title(FirstScan ? "New Scan" : "Next Scan").SetRect(0, 0, 275, 130);
 	
 	this->mOk <<= THISBACK(OkButtonClicked);
-	this->Rejector(mCancel, IDCANCEL);
+	this->Rejector(this->mCancel, IDCANCEL);
 	
 	*this
 		<< this->mValueInfoLabel.SetLabel("Value:").LeftPos(5, 75).TopPos(5, 20)
 		<< this->mValueToSearchFor.HSizePos(75, 5).TopPos(5, 20)
-		<< this->mOk.Ok().SetLabel("OK").RightPos(85, 75).BottomPos(5, 25)
-		<< this->mCancel.SetLabel("Cancel").RightPos(5, 75).BottomPos(5, 25)
 		<< this->mBlockSizeSelectorLabel.SetLabel("Size:").LeftPos(5, 75).TopPos(30, 20)
 		<< this->mBlockSizeSelector.Add("Byte").Add("Short (2 Bytes)").Add("Integer (4 Bytes)")
 			.Add("Long (8 Bytes)").Add("Float (4 Bytes)").Add("Double (8 Bytes)").Add("Array of Bytes")
 			.Add("String (Slower scan, be patient)").HSizePos(75, 5).TopPos(30, 20)
 		<< this->mScanTypeSelectorLabel.SetLabel("Type:").LeftPos(5, 75).TopPos(55, 20)
 		<< this->mScanTypeSelector.Add("Exact Value").Add("Smaller Than").Add("Greater Than").HSizePos(75, 5).TopPos(55, 20)
-		<< this->useFastScan.Set(GlobalSettingsInstance.GetFastScanByDefault()).SetLabel("Fast Scan")
+		<< this->useFastScan.Set(SettingsFile::GetInstance()->GetFastScanByDefault()).SetLabel("Fast Scan")
 			.LeftPos(5, 100).TopPos(75, 25)
 		<< this->stringUnicode.SetLabel("Unicode").RightPos(5, 75).TopPos(75, 25)
+		<< this->mOk.Ok().SetLabel("OK").RightPos(85, 75).BottomPos(5, 25)
+		<< this->mCancel.SetLabel("Cancel").RightPos(5, 75).BottomPos(5, 25)
 	;
 	
 	this->mBlockSizeSelector.WhenAction = THISBACK(BlockSizeSelected);

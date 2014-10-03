@@ -11,7 +11,7 @@
 // Defines the mode the dialog should be opened. 4 different ways to edit a record in the addresstable.
 enum ChangeRecordDialogMode
 {
-	CDRM_MANUALNEW,
+	CRDM_MANUALNEW,
 	CRDM_DESCRIPTION,
 	CRDM_ADDRESS,
 	CRDM_VALUE,
@@ -19,7 +19,7 @@ enum ChangeRecordDialogMode
 };
 
 // The record change dialog class definition.
-class CryChangeRecordDialog sealed : public CryDialogTemplate
+class CryChangeRecordDialog : public CryDialogTemplate
 {
 private:
 	ChangeRecordDialogMode mMode;
@@ -31,8 +31,11 @@ private:
 	Label mFieldDescription;
 	EditField mFieldValue;
 	DropList mTypeSelector;
+	Label mTypeLengthDescription;
+	EditIntNotNull mTypeLength;
 	Option mUnicodeString;
 	Option mValueIsHex;
+	Label mSecondFieldDescription;
 	
 	void CancelDialog();
 	void DialogOkay();
@@ -42,11 +45,7 @@ private:
 	
 	typedef CryChangeRecordDialog CLASSNAME;
 public:
-#ifdef _WIN64
-	CryChangeRecordDialog(AddressTable& addrTable, const __int64 address, const String& type, ChangeRecordDialogMode mode);
-#else
-	CryChangeRecordDialog(AddressTable& addrTable, const int address, const String& type, ChangeRecordDialogMode mode);
-#endif
+	CryChangeRecordDialog(AddressTable& addrTable, const int row, ChangeRecordDialogMode mode);
 	~CryChangeRecordDialog();
 };
 

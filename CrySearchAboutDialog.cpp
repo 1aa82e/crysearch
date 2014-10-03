@@ -1,10 +1,22 @@
 #include "CrySearchAboutDialog.h"
 #include "ImlProvider.h"
-#include "GlobalDef.h"
 
+// Because of the BeaEngine declaration the header should be loosely included here.
+#include "CrySearchLibrary/SDK/CrySearch.h"
+
+// Overridden BeaEngine function declarations.
+extern "C"
+{
+	const char* __stdcall BeaEngineVersion();
+	const char* __stdcall BeaEngineRevision();
+};
+
+// ---------------------------------------------------------------------------------------------
+
+// About dialog constructor.
 CrySearchAboutDialog::CrySearchAboutDialog() : CryDialogTemplate(CrySearchIml::AboutButton())
 {
-	this->Title("About CrySearch").SetRect(0, 0, 445, 210);
+	this->Title("About CrySearch").SetRect(0, 0, 445, 250);
 	this->mOk <<= THISBACK(CloseAboutWindow);
 	
 	const DWORD hyperLink[] = { 0x372B5B01, 0x5E5B2030, 0x2E777777, 0x6E6B6E75, 0x636E776F, 0x74616568, 0x656D2E73, 0x6E55205E, 0x576F6E4B, 0x6568436E, 0x2E735461, 0x5D5D656D, 0x00000000 };
@@ -63,14 +75,28 @@ CrySearchAboutDialog::CrySearchAboutDialog() : CryDialogTemplate(CrySearchIml::A
 		<< this->mProgramImage.SetImage(CrySearchIml::CrySearch()).LeftPos(5, 64).TopPos(5, 64)
 		<< this->mProgramInformation.SetLabel(t_(msg)).HSizePos(80, 5).TopPos(2, 75)
 		<< this->mLinkLabel.SetLabel(t_((char*)hyperLink)).HSizePos(80, 200).TopPos(70, 25)
-		<< this->mProcessorSupportLabel.SetLabel(info).HSizePos(80, 5).BottomPos(73, 35)
-		<< this->mUppLinkDescription.SetLabel(t_((char*)uppDesc)).HSizePos(80, 80).BottomPos(40, 35)
-		<< this->mUppLinkLabel.SetLabel(t_((char*)uppLinkDesc)).HSizePos(80, 200).BottomPos(20, 25)
+		<< this->mProcessorSupportLabel.SetLabel(info).HSizePos(80, 5).TopPos(100, 35)
+		<< this->mUppLinkDescription.SetLabel(t_((char*)uppDesc)).HSizePos(80, 80).TopPos(130, 35)
+		<< this->mUppLinkLabel.SetLabel(t_((char*)uppLinkDesc)).HSizePos(80, 200).BottomPos(70, 25)
+		<< this->mLibraryVersions.HSizePos(80, 70).BottomPos(5, 60)
 		<< this->mOk.Ok().SetLabel("OK").RightPos(5, 60).BottomPos(5, 25)
 	;
 	
+	// Set up library runtime versions array control.
+	this->mLibraryVersions.AddColumn("Library");
+	this->mLibraryVersions.AddColumn("Version");
+
+	// Add BeaEngine library version to the versions control.
+	this->mLibraryVersions.Add("BeaEngine", Format("%s rev %s", BeaEngineVersion(), BeaEngineRevision()));
+	
+	// Set up callbacks to make it possible to resolve the clickable links to its webpage.
 	this->mLinkLabel.WhenLeftUp = callback1(LaunchWebBrowser, (char*)this->forumLink);
 	this->mUppLinkLabel.WhenLeftUp = callback1(LaunchWebBrowser, (char*)this->uppLink);
+}
+
+CrySearchAboutDialog::~CrySearchAboutDialog()
+{
+	
 }
 
 void CrySearchAboutDialog::CloseAboutWindow()

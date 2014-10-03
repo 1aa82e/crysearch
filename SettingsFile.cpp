@@ -24,19 +24,49 @@ void SettingsFile::Xmlize(XmlIO& pXml)
 		("AddressTableUpdateInterval", this->mAddressTableUpdateInterval)
 		("StackSnapshotLimit", this->mStackSnapshotLimit)
 		("AttemptHideDebuggerFromPeb", this->mAttemptHideDebuggerPeb)
+		("CatchAllExceptions", this->mCatchAllExceptions)
 		("InvadeProcess", this->mInvadeProcess)
 		("SymbolPaths", this->mSymbolPaths)
 		("EnableHotkeys", this->mEnableHotkeys)
 		("HotkeyList", this->hotkeys)
+		("DissectionUpdateInterval", this->mDissectionUpdateInterval)
+		("DissectionHexView", this->mDissectionHexView)
 	;
 }
 
-// Constructor loads settings data from file and stores it in memory.
 SettingsFile::SettingsFile()
 {
 	
 }
 
+SettingsFile::~SettingsFile()
+{
+	
+}
+
+// (Re)-loads the default settings for a CrySearch distribution.
+void SettingsFile::DefaultSettings()
+{
+	this->SetFastScanByDefault();
+	this->SetScanWritableMemory();
+	this->SetScanExecutableMemory();
+	this->SetScanMemImage();
+	this->SetScanMemPrivate();
+	this->SetScanMemImage();
+	this->SetScanThreadPriority();
+	this->SetOpenProcessRoutine();
+	this->SetReadMemoryRoutine();
+	this->SetWriteMemoryRoutine();
+	this->SetProtectMemoryRoutine();
+	this->SetAddressTableUpdateInterval();
+	this->SetStackSnapshotLimit();
+	this->SetCatchAllExceptions();
+	this->SetDissectionUpdateInterval();
+	this->SetDissectionHexadecimalView();
+	this->Save();
+}
+
+// Loads settings data from file and stores it in memory.
 bool SettingsFile::Initialize()
 {
 	bool b;

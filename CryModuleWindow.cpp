@@ -7,24 +7,24 @@
 
 String GetName(const int index)
 {
-	return LoadedModulesList[index].ModuleName;
+	return (*mModuleManager)[index].ModuleName;
 }
 
 String GetBaseAddress(const int index)
 {
 #ifdef _WIN64
-	return Format("%llX", (__int64)LoadedModulesList[index].BaseAddress);
+	return Format("%llX", (__int64)(*mModuleManager)[index].BaseAddress);
 #else
-	return Format("%lX", (int)LoadedModulesList[index].BaseAddress);
+	return Format("%lX", (int)(*mModuleManager)[index].BaseAddress);
 #endif
 }
 
 String GetLength(const int index)
 {
 #ifdef _WIN64
-	return Format("%llX", LoadedModulesList[index].Length);
+	return Format("%llX", (*mModuleManager)[index].Length);
 #else
-	return Format("%lX", LoadedModulesList[index].Length);
+	return Format("%lX", (*mModuleManager)[index].Length);
 #endif
 }
 
@@ -60,7 +60,8 @@ void CryModuleWindow::ToolBar(Bar& pBar)
 void CryModuleWindow::ModuleListRightClick(Bar& pBar)
 {
 	const int modRow = this->mModules.GetCursor();
-	if (modRow >= 0 && LoadedModulesList.GetCount() > 0)
+	const int modCount = mModuleManager->GetModuleCount();
+	if (modRow >= 0 && modCount > 0)
 	{
 		pBar.Add("Dump module", CrySearchIml::DumpModuleSmall(), THISBACK(DumpModuleSubMenu));
 		pBar.Add("Restore Headers", CrySearchIml::RestorePEHeadersSmall(), THISBACK(RestorePEHeader));
@@ -100,13 +101,13 @@ void CryModuleWindow::DumpModuleButtonSubMenu(Bar& pBar)
 
 void CryModuleWindow::OpenModulePathInExplorer()
 {
+	// Execute the working directory of the selected module in explorer.
 	char folder[MAX_PATH];
-	if (!GetModuleFileNameEx(mMemoryScanner->GetHandle(), (HMODULE)LoadedModulesList[this->mModules.GetCursor()].BaseAddress, folder, MAX_PATH))
+	if (!GetModuleFileNameEx(mMemoryScanner->GetHandle(), (HMODULE)(*mModuleManager)[this->mModules.GetCursor()].BaseAddress, folder, MAX_PATH))
 	{
 		Prompt("Module Error", CtrlImg::error(), "The working directory of the selected module could not be retrieved!", "OK");
-		return;
 	}
-	
+
 	// Open retrieved path in explorer.
 	PathRemoveFileSpec(folder);
 	ShellExecute(this->GetHWND(), "explore", folder, NULL, NULL, SW_SHOWNORMAL);
@@ -114,7 +115,7 @@ void CryModuleWindow::OpenModulePathInExplorer()
 
 void CryModuleWindow::UnloadModule()
 {
-	const SIZE_T oldBase = LoadedModulesList[this->mModules.GetCursor()].BaseAddress;
+	const SIZE_T oldBase = (*mModuleManager)[this->mModules.GetCursor()].BaseAddress;
 	const char* pName = NULL;
 	
 	// The module that was unloaded may be a CrySearch plugin. Make sure it is fixed up.
@@ -153,9 +154,10 @@ void CryModuleWindow::UnloadModuleAsyncDoneThreadSafe(const SIZE_T pBase)
 {
 	// Check whether the module was actually unloaded. (not included in refresh)
 	this->RefreshModulesList();
-	for (int i = 0; i < LoadedModulesList.GetCount(); i++)
+	const int modCount = mModuleManager->GetModuleCount();
+	for (int i = 0; i < modCount; i++)
 	{
-		if (LoadedModulesList[i].BaseAddress == pBase)
+		if ((*mModuleManager)[i].BaseAddress == pBase)
 		{
 			Prompt("Unload Error", CtrlImg::error(), "The module could not be unloaded!", "OK");
 			return;
@@ -212,15 +214,15 @@ void CryModuleWindow::DumpAllModulesButton()
 		String dir = fs->Get();
 		
 #ifdef _WIN64
-		const char* funcStr = NULL;
+		const int modCount = mModuleManager->GetModuleCount();
 		if (mMemoryScanner->IsX86Process())
 		{
 			CreateModuleDumpProc32 pCMDP = (CreateModuleDumpProc32)GetProcAddress(mPluginSystem->GetDefaultDumperEnginePlugin(), "CreateModuleDump32");
 			
 			// Dump all loaded modules.
-			for (int i = 0; i < LoadedModulesList.GetCount(); ++i)
+			for (int i = 0; i < modCount; ++i)
 			{
-				const Win32ModuleInformation& mod = LoadedModulesList[i];
+				const Win32ModuleInformation& mod = (*mModuleManager)[i];
 				if (!pCMDP || !pCMDP(mMemoryScanner->GetHandle(), (void*)mod.BaseAddress, (DWORD)mod.Length, AppendFileName(dir, mod.ModuleName)))
 				{
 					error = true;
@@ -232,9 +234,9 @@ void CryModuleWindow::DumpAllModulesButton()
 			CreateModuleDumpProc64 pCMDP = (CreateModuleDumpProc64)GetProcAddress(mPluginSystem->GetDefaultDumperEnginePlugin(), "CreateModuleDump64");
 			
 			// Dump all loaded modules.
-			for (int i = 0; i < LoadedModulesList.GetCount(); ++i)
+			for (int i = 0; i < modCount; ++i)
 			{
-				const Win32ModuleInformation& mod = LoadedModulesList[i];
+				const Win32ModuleInformation& mod = (*mModuleManager)[i];
 				if (!pCMDP || !pCMDP(mMemoryScanner->GetHandle(), (void*)mod.BaseAddress, (DWORD)mod.Length, AppendFileName(dir, mod.ModuleName)))
 				{
 					error = true;
@@ -245,9 +247,10 @@ void CryModuleWindow::DumpAllModulesButton()
 		CreateModuleDumpProc32 pCMDP = (CreateModuleDumpProc32)GetProcAddress(mPluginSystem->GetDefaultDumperEnginePlugin(), "CreateModuleDump32");
 		
 		// Dump all loaded modules.
-		for (int i = 0; i < LoadedModulesList.GetCount(); ++i)
+		const int modCount = mModuleManager->GetModuleCount();
+		for (int i = 0; i < modCount; ++i)
 		{
-			const Win32ModuleInformation& mod = LoadedModulesList[i];
+			const Win32ModuleInformation& mod = (*mModuleManager)[i];
 			if (!pCMDP || !pCMDP(mMemoryScanner->GetHandle(), (void*)mod.BaseAddress, (DWORD)mod.Length, AppendFileName(dir, mod.ModuleName)))
 			{
 				error = true;
@@ -295,7 +298,7 @@ void CryModuleWindow::DumpModuleButton(const SIZE_T pluginBase)
 		// If the file already exists it should be deleted first.
 		DeleteFile(fs->Get());
 		
-		const Win32ModuleInformation& toDump = LoadedModulesList[row];
+		const Win32ModuleInformation& toDump = (*mModuleManager)[row];
 		
 #ifdef _WIN64
 		BOOL result = FALSE;
@@ -330,8 +333,8 @@ void CryModuleWindow::DumpModuleButton(const SIZE_T pluginBase)
 
 void CryModuleWindow::RefreshModulesList()
 {
-	EnumerateModules(mMemoryScanner->GetHandle(), mMemoryScanner->GetProcessId());
-	this->mModules.SetVirtualCount(LoadedModulesList.GetCount());
+	mModuleManager->Initialize();
+	this->mModules.SetVirtualCount(mModuleManager->GetModuleCount());
 }
 
 void CryModuleWindow::RestorePEHeader()
@@ -343,7 +346,7 @@ void CryModuleWindow::RestorePEHeader()
 
 	// Try to get the working directory of the desired module first.
 	char folder[MAX_PATH];
-	if (GetModuleFileNameEx(mMemoryScanner->GetHandle(), (HMODULE)LoadedModulesList[this->mModules.GetCursor()].BaseAddress, folder, MAX_PATH))
+	if (GetModuleFileNameEx(mMemoryScanner->GetHandle(), (HMODULE)(*mModuleManager)[this->mModules.GetCursor()].BaseAddress, folder, MAX_PATH))
 	{
 		// Remove the file specification from the path and use it as default path in the FileSel.
 		PathRemoveFileSpec(folder);
@@ -353,7 +356,7 @@ void CryModuleWindow::RestorePEHeader()
 	// Open the FileSel window. If a file was selected, attempt to restore it.
 	if (fs->ExecuteOpen("Select restore file"))
 	{
-		if (mPeInstance->RestorePEHeaderFromFile(fs->Get(), LoadedModulesList[modRow]))
+		if (mPeInstance->RestorePEHeaderFromFile(fs->Get(), (*mModuleManager)[modRow]))
 		{
 			PromptOK("Headers succesfully restored!");
 		}
@@ -368,7 +371,7 @@ void CryModuleWindow::RestorePEHeader()
 
 void CryModuleWindow::HideModule()
 {
-	if (mPeInstance->HideModuleFromProcess(LoadedModulesList[this->mModules.GetCursor()]))
+	if (mPeInstance->HideModuleFromProcess((*mModuleManager)[this->mModules.GetCursor()]))
 	{
 		PromptOK("Module succesfully hidden!");
 		this->RefreshModulesList();
@@ -389,6 +392,6 @@ void CryModuleWindow::Initialize()
 
 void CryModuleWindow::ClearList()
 {
-	LoadedModulesList.Clear();
+	mModuleManager->ClearModules();
 	this->mModules.SetVirtualCount(0);
 }

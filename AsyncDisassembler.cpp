@@ -1,13 +1,6 @@
 #include "AsyncDisassembler.h"
 #include "GlobalDef.h"
 
-// Dynamically link to disassembler library.
-#ifdef _WIN64
-	#pragma comment(lib, "BeaEngine/lib/BeaEngine64.lib")
-#else
-	#pragma comment(lib, "BeaEngine/lib/BeaEngine.lib")
-#endif
-
 // Container of all currently UI visible lines of disassembly.
 Vector<DisasmLine> DisasmVisibleLines;
 
@@ -46,7 +39,7 @@ const MemoryRegion* GetPageFromAddress(const SIZE_T address)
 
 AsyncDisassembler::AsyncDisassembler()
 {
-	
+	this->mRunning = false;
 }
 
 AsyncDisassembler::~AsyncDisassembler()

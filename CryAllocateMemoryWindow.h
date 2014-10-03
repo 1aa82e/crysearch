@@ -6,11 +6,11 @@
 // Represents a data package that is needed to pass data from one window to another.
 struct AllocateMemoryDataStruct
 {
-	unsigned int MemorySize;
+	int MemorySize;
 	int BlockProtection;
 };
 
-class CryAllocateMemoryWindow sealed : public CryDialogTemplate
+class CryAllocateMemoryWindow : public CryDialogTemplate
 {
 private:
 	AllocateMemoryDataStruct* dataStruct;

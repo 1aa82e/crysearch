@@ -16,9 +16,6 @@
     <Filter Include="Header Files\SDK">
       <UniqueIdentifier>{9ad7a547-e799-45a5-b1f6-ab84524c6d79}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\CRT">
-      <UniqueIdentifier>{a1be6574-f26a-4146-9f56-8d4c34ab5bd2}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="UtilFunctions.c">
@@ -26,9 +23,6 @@
     </ClCompile>
     <ClCompile Include="CrySearchMain.c">
       <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="CrtFunctions.c">
-      <Filter>Source Files\CRT</Filter>
     </ClCompile>
     <ClCompile Include="HandlePermissions.c">
       <Filter>Source Files</Filter>

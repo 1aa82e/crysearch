@@ -8,7 +8,7 @@
 #include "ImlProvider.h"
 
 // Small dialog that is opened when the 'Go to address' context menu action is chosen from the disassembly view.
-class CryDisasmGoToAddressDialog sealed : public CryDialogTemplate
+class CryDisasmGoToAddressDialog : public CryDialogTemplate
 {
 private:
 	Label mAddressDesc;
@@ -64,7 +64,7 @@ public:
 };
 
 // Disassembly control, can be placed on a tab page.
-class CryDisasmCtrl sealed : public ParentCtrl
+class CryDisasmCtrl : public ParentCtrl
 {
 private:
 	AsyncDisassembler* mAsyncHelper;
@@ -82,6 +82,7 @@ private:
 	void ToolStrip(Bar& pBar);
 	void SetBreakpointMenu(Bar& pBar);
 	void DisassemblyRightClick(Bar& pBar);
+	void DisasmGenerateSubmenu(Bar& pBar);
 	
 	void HeapWalkMenuClicked();
 	void RemoveBreakpointButtonClicked();
@@ -89,6 +90,8 @@ private:
 	void SetHardwareBreakpoint();
 	void GoToAddressButtonClicked();
 	void CopyCursorLineToClipboard();
+	void GenerateSignatureButtonClicked();
+	void GenerateByteArrayButtonClicked();
 	
 	void AsyncDisasmStarted();
 	void AsyncDisasmCompleted(SIZE_T address);
