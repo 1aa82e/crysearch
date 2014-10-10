@@ -101,22 +101,6 @@ MemoryDissectionEntry* const AddressTable::GetDissection(const int index)
 	return &this->mDissections[index];
 }
 
-// Tries to find a memory dissection entry by its base address.
-// Returns a const pointer to the entry if it is found, or NULL otherwise.
-/*const MemoryDissectionEntry* const AddressTable::FindDissectionByAddress(const SIZE_T address) const
-{
-	const int count = this->mDissections.GetCount();
-	for (int i = 0; i < count; ++i)
-	{
-		if (this->mDissections[i].AssociatedDissector.GetBaseAddress() == address)
-		{
-			return &this->mDissections[i];
-		}
-	}
-	
-	return NULL;
-}*/
-
 // Gets the amount of dissection entries currently in the address table.
 const int AddressTable::GetDissectionCount() const
 {
@@ -233,14 +217,11 @@ const bool AddressTable::GetRelativeDisplayString(const AddressTableEntry* entry
 	}
 #endif
 
-// Creates an address table from a .csat XML data file.
-void AddressTable::CreateAddressTableFromFile(AddressTable& at, const String& filename)
+// ---------------------------------------------------------------------------------------------
+
+// Resolves relative address table entries to their associated module.
+void AddressTable::ResolveRelativeEntries(AddressTable& at)
 {
-	// Load address table from persisted file.
-	LoadFromXMLFile(at, filename);
-	at.SetFileName(filename);
-	
-	// Resolve the addresses of relative entries.
 	const int aCount = at.GetCount();
 	for (int i = 0; i < aCount; ++i)
 	{
@@ -258,6 +239,17 @@ void AddressTable::CreateAddressTableFromFile(AddressTable& at, const String& fi
 			}
 		}
 	}
+}
+
+// Creates an address table from a .csat XML data file.
+void AddressTable::CreateAddressTableFromFile(AddressTable& at, const String& filename)
+{
+	// Load address table from persisted file.
+	LoadFromXMLFile(at, filename);
+	at.SetFileName(filename);
+	
+	// Resolve the addresses of relative entries.
+	AddressTable::ResolveRelativeEntries(at);
 }
 
 // Cheat table entry recursion function.

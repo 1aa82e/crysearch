@@ -14,6 +14,7 @@ v1.13
 		- Right-click address table entry and create a dissection from it with a single click;
 		- 
 	- Improved performance of memory scan that was decreased by the relative addresses feature;
+	- Fixed bug in address table where relative address weren't resolved if process was loaded after address table file was loaded;
 v1.12
 	- Fixed bug in process selection window where search box may reveal duplicate processes in the list;
 	- Added possibility to disable a breakpoint before removing it from the list to allow the breakpoint data to be available when the breakpoint is inactive. Available from right-click in debugger window;

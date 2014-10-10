@@ -1061,6 +1061,13 @@ bool PortableExecutable32::LoadLibraryExternal(const String& library) const
 	return hThread;
 }
 
+// Attempts to load a dynamic link library into the target process.
+// Returns true if the operation succeeded, and false if it did not succeed.
+bool PortableExecutable32::LoadLibraryExternalHijack(const String& library) const
+{
+	return true;
+}
+
 // Attempts to unload a loaded module from the target process.
 void PortableExecutable32::UnloadLibraryExternal(const SIZE_T module) const
 {
@@ -1770,6 +1777,13 @@ void PortableExecutable32::RestoreExportTableAddressImport(const SIZE_T baseAddr
 		VirtualFreeEx(this->mProcessHandle, lpRemoteAddress, 0, MEM_RELEASE);
 		
 		return hThread;
+	}
+	
+	// Attempts to load a dynamic link library into the target process.
+	// Returns true if the operation succeeded, and false if it did not succeed.
+	bool PortableExecutable64::LoadLibraryExternalHijack(const String& library) const
+	{
+		return true;
 	}
 	
 	// Attempts to unload a loaded module from the target process.

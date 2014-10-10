@@ -22,6 +22,7 @@ void SettingsFile::Xmlize(XmlIO& pXml)
 		("WriteMemoryRoutine", this->mWriteMemoryRoutine)
 		("ProtectMemoryRoutine", this->mProtectMemoryRoutine)
 		("AddressTableUpdateInterval", this->mAddressTableUpdateInterval)
+		("LibraryInjectionMethod", this->mLibraryInjectionMethod)
 		("StackSnapshotLimit", this->mStackSnapshotLimit)
 		("AttemptHideDebuggerFromPeb", this->mAttemptHideDebuggerPeb)
 		("CatchAllExceptions", this->mCatchAllExceptions)
@@ -58,6 +59,7 @@ void SettingsFile::DefaultSettings()
 	this->SetReadMemoryRoutine();
 	this->SetWriteMemoryRoutine();
 	this->SetProtectMemoryRoutine();
+	this->SetLibraryInjectionMethod();
 	this->SetAddressTableUpdateInterval();
 	this->SetStackSnapshotLimit();
 	this->SetCatchAllExceptions();

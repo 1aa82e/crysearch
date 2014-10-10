@@ -23,3 +23,4 @@ EXPORTS
 	CodeGeneratorParseFieldType
 	GetCrySearchValueTypeFromCheatTableVariableType
 	SnapThreadContext32
+	GetDataSizeFromValueType

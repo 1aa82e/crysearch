@@ -30,7 +30,7 @@ PluginSystem* mPluginSystem;
 
 // Address table instance that provides the user access to address tables.
 AddressTable loadedTable;
-bool viewAddressTableValueHex;
+bool viewAddressTableValueHex = false;
 
 // Global declaration of the module manager class.
 ModuleManager* mModuleManager;
@@ -172,7 +172,7 @@ void CrySearchForm::AddressValuesUpdater()
 	}
 	
 	// Handle frozen addresses
-	for (int i = 0; i < loadedTable.GetCount(); i++)
+	for (int i = 0; i < loadedTable.GetCount(); ++i)
 	{
 		const AddressTableEntry* curEntry = loadedTable[i];
 		if (curEntry->Frozen)
@@ -222,55 +222,27 @@ void CrySearchForm::AddressValuesUpdater()
 	Tuple2<int, int> addressTableRange = this->mUserAddressList.GetVisibleRange();
 	if (addressTableRange.a >= 0 && addressTableRange.b < loadedTable.GetCount())
 	{
-		for (int start = addressTableRange.a; start <= addressTableRange.b; start++)
+		for (int start = addressTableRange.a; start <= addressTableRange.b; ++start)
 		{
 			if (loadedTable[start]->ValueType == "Byte")
 			{
 				Byte value;
-				if (mMemoryScanner->Peek<Byte>(loadedTable[start]->Address, 0, &value))
-				{
-					loadedTable[start]->Value = IntStr(value);
-				}
-				else
-				{
-					loadedTable[start]->Value = "???";
-				}
+				loadedTable[start]->Value = mMemoryScanner->Peek<Byte>(loadedTable[start]->Address, 0, &value) ? IntStr(value) : "???";
 			}
 			else if (loadedTable[start]->ValueType == "2 Bytes")
 			{
 				short value;
-				if (mMemoryScanner->Peek<short>(loadedTable[start]->Address, 0, &value))
-				{
-					loadedTable[start]->Value = IntStr(value);
-				}
-				else
-				{
-					loadedTable[start]->Value = "???";
-				}
+				loadedTable[start]->Value = mMemoryScanner->Peek<short>(loadedTable[start]->Address, 0, &value) ? IntStr(value) : "???";
 			}
 			else if (loadedTable[start]->ValueType == "4 Bytes")
 			{
 				int value;
-				if (mMemoryScanner->Peek<int>(loadedTable[start]->Address, 0, &value))
-				{
-					loadedTable[start]->Value = IntStr(value);
-				}
-				else
-				{
-					loadedTable[start]->Value = "???";
-				}
+				loadedTable[start]->Value = mMemoryScanner->Peek<int>(loadedTable[start]->Address, 0, &value) ? IntStr(value) : "???";
 			}
 			else if (loadedTable[start]->ValueType == "8 Bytes")
 			{
 				__int64 value;
-				if (mMemoryScanner->Peek<__int64>(loadedTable[start]->Address, 0, &value))
-				{
-					loadedTable[start]->Value = IntStr64(value);
-				}
-				else
-				{
-					loadedTable[start]->Value = "???";
-				}
+				loadedTable[start]->Value = mMemoryScanner->Peek<__int64>(loadedTable[start]->Address, 0, &value) ? IntStr64(value) : "???";
 			}
 			else if (loadedTable[start]->ValueType == "Float")
 			{
@@ -289,53 +261,25 @@ void CrySearchForm::AddressValuesUpdater()
 			else if (loadedTable[start]->ValueType == "Double")
 			{
 				double value;
-				if (mMemoryScanner->Peek<double>(loadedTable[start]->Address, 0, &value))
-				{
-					loadedTable[start]->Value = DblStr(value);
-				}
-				else
-				{
-					loadedTable[start]->Value = "???";
-				}
+				loadedTable[start]->Value = mMemoryScanner->Peek<double>(loadedTable[start]->Address, 0, &value) ? DblStr(value) : "???";
 			}
 			else if (loadedTable[start]->ValueType == "Array of Bytes")
 			{
 				ArrayOfBytes value;
 				const AddressTableEntry* entry = loadedTable[start];
-				if (mMemoryScanner->Peek<ArrayOfBytes>(entry->Address, entry->Size, &value))
-				{
-					entry->Value = BytesToString(value.Data, value.Size);
-				}
-				else
-				{
-					entry->Value = "???";
-				}
+				entry->Value = mMemoryScanner->Peek<ArrayOfBytes>(entry->Address, entry->Size, &value) ? BytesToString(value.Data, value.Size) : "???";
 			}
 			else if (loadedTable[start]->ValueType == "String")
 			{
 				String value;
 				const AddressTableEntry* entry = loadedTable[start];
-				if (mMemoryScanner->Peek<String>(entry->Address, entry->Size, &value))
-				{
-					entry->Value = value;
-				}
-				else
-				{
-					entry->Value = "???";
-				}
+				entry->Value = mMemoryScanner->Peek<String>(entry->Address, entry->Size, &value) ? value : "???";
 			}
 			else if (loadedTable[start]->ValueType == "WString")
 			{
 				WString value;
 				const AddressTableEntry* entry = loadedTable[start];
-				if (mMemoryScanner->Peek<WString>(entry->Address, entry->Size, &value))
-				{
-					entry->Value = value.ToString();
-				}
-				else
-				{
-					entry->Value = "???";
-				}
+				entry->Value = mMemoryScanner->Peek<WString>(entry->Address, entry->Size, &value) ? value.ToString() : "???";
 			}
 		}
 	}
@@ -1682,6 +1626,9 @@ void CrySearchForm::WhenProcessOpened(Win32ProcessInformation* pProc)
 			loadedTable.SetProcessName(mMemoryScanner->GetProcessName());
 		}
 	}
+	
+	// Resolve relative addresses. An address table may be loaded before the process was loaded, hence the entries weren't yet resolved.
+	AddressTable::ResolveRelativeEntries(loadedTable);
 }
 
 void CrySearchForm::ScannerScanStarted(int threadCount)

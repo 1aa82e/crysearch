@@ -8,6 +8,8 @@ CrySearch application TODO list by evolution536
 	- generate struct definition from selection;
 	- save struct (selection) to address table (not entirely, I guess, with type guessing I should save different offsets);
 
+- Saving AOB relative addresses to address table file crashes application;
+- User interface saving of value inside a string can be different, taking up less code;
 - There is a bug in the process selection window when fooling around with non-responsive processes;
 - Also a bug in the main window complaining about GUI locking (hard to reproduce);
 
@@ -18,6 +20,9 @@ CrySearch application TODO list by evolution536
 - Opening PDB files to navigate through disassembly with symbols, or just view symbols?
 - value in between;
 - Ability to import cheat tables; (skipend, parse variabletype correctly and parse relative addresses!!!!)
+
+- Disassembler:
+	- Resolve function calls in disasm to IAT functions;
 
 - Plugin system:
 	- auto deploy correct plugins to build dir?
@@ -67,6 +72,9 @@ CrySearch application TODO list by evolution536
 
 - Module window:
 	- Manual mapping as injection method.
+	- QueueUserAPC
+	- Manually hijacking thread (Thread context)
+	- ntdll.dll proces injection (LdrLoadDll,LdrpLoadDll)
 
 - Code generation:
 	- Change C++ to C and implement TCC?

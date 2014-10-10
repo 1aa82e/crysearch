@@ -59,6 +59,45 @@ const char* CodeGeneratorParseFieldType(const char* valueType)
 	}
 }
 
+// Converts a string representation for a data type size.
+// Returns the size in bytes of the type of data.
+const int GetDataSizeFromValueType(const char* type)
+{
+	if (strcmp(type, "Byte") == 0)
+	{
+		return 1;
+	}
+	else if (strcmp(type, "2 Bytes") == 0)
+	{
+		return 2;
+	}
+	else if (strcmp(type, "4 Bytes") == 0)
+	{
+		return 4;
+	}
+	else if (strcmp(type, "8 Bytes") == 0)
+	{
+		return 8;
+	}
+	else if (strcmp(type, "Float") == 0)
+	{
+		return 4;
+	}
+	else if (strcmp(type, "Double") == 0)
+	{
+		return 8;
+	}
+	else if (strcmp(type, "String") == 0 || strcmp(type, "WString") == 0 || strcmp(type, "Array of Bytes") == 0)
+	{
+		return 1;
+	}
+
+	// Technically seen, this code path will never be reached. Tell the compiler to assume so.
+	// Whenever the caller attempts to call this function with a parameter that is not listed in the conditional
+	// listing, the behavior is undefined.
+	__assume(0);
+}
+
 // Takes cheat table VariableType as input and outputs CrySearch ValueType.
 const char* GetCrySearchValueTypeFromCheatTableVariableType(const char* varType, const BOOLEAN unicode)
 {

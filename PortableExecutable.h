@@ -153,6 +153,7 @@ public:
 	virtual bool HideModuleFromProcess(const Win32ModuleInformation& module) const = 0;
 	virtual bool DumpProcessSection(const String& fileName, const SIZE_T address, const SIZE_T size) const = 0;
 	virtual bool LoadLibraryExternal(const String& library) const = 0;
+	virtual bool LoadLibraryExternalHijack(const String& library) const = 0;
 	virtual void UnloadLibraryExternal(const SIZE_T module) const = 0;
 	virtual void RestoreExportTableAddressImport(const SIZE_T baseAddress, const char* NameOrdinal, bool IsOrdinal) const = 0;
 	virtual SIZE_T GetAddressFromExportTable(const AddrStruct* addr, const char* NameOrdinal, bool IsOrdinal) const = 0;
@@ -189,6 +190,7 @@ public:
 	virtual bool HideModuleFromProcess(const Win32ModuleInformation& module) const;
 	virtual bool DumpProcessSection(const String& fileName, const SIZE_T address, const SIZE_T size) const;
 	virtual bool LoadLibraryExternal(const String& library) const;
+	virtual bool LoadLibraryExternalHijack(const String& library) const;
 	virtual void UnloadLibraryExternal(const SIZE_T module) const;
 	virtual void RestoreExportTableAddressImport(const SIZE_T baseAddress, const char* NameOrdinal, bool IsOrdinal) const;
 	virtual SIZE_T GetAddressFromExportTable(const AddrStruct* addr, const char* NameOrdinal, bool IsOrdinal) const;
@@ -211,6 +213,7 @@ public:
 		virtual bool HideModuleFromProcess(const Win32ModuleInformation& module) const;
 		virtual bool DumpProcessSection(const String& fileName, const SIZE_T address, const SIZE_T size) const;
 		virtual bool LoadLibraryExternal(const String& library) const;
+		virtual bool LoadLibraryExternalHijack(const String& library) const;
 		virtual void UnloadLibraryExternal(const SIZE_T module) const;
 		virtual void RestoreExportTableAddressImport(const SIZE_T baseAddress, const char* NameOrdinal, bool IsOrdinal) const;
 		virtual SIZE_T GetAddressFromExportTable(const AddrStruct* addr, const char* NameOrdinal, bool IsOrdinal) const;

@@ -55,6 +55,9 @@ private:
 	Label mProtectMemoryProcRoutineSelectorLabel;
 	DropList mProtectMemoryProcRoutineSelector;
 	Option mRegisterFileExtensionWithCrySearch;
+	LabelBox mInjectionBox;
+	Label mInjectionMethodDescriptor;
+	DropList mInjectionMethod;
 	
 	// Debugger tab
 	Label mStackSnapshotLimitDescriptor;

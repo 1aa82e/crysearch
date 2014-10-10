@@ -24,6 +24,7 @@ extern "C"
 	void GetHandleObjectAccess(const DWORD type, const DWORD mask, char** const outBuffer, DWORD* const outSize);
 	const char* CodeGeneratorParseFieldType(const char* valueType);
 	const char* GetCrySearchValueTypeFromCheatTableVariableType(const char* varType, const BOOLEAN unicode);
+	const int GetDataSizeFromValueType(const char* type);
 
 	// Retrieves information about the processor in the current system.
 	// Returns a string of supported extensions into the first parameter.

@@ -190,6 +190,7 @@ public:
 	void AddDissection(const char* pFriendlyName, const SIZE_T baseAddress, const DWORD memorySize);
 	void RemoveDissection(const int index);
 	
+	static void ResolveRelativeEntries(AddressTable& at);
 	static void CreateAddressTableFromFile(AddressTable& at, const String& filename);
 	//static bool CreateAddressTableFromCheatEngineFile(AddressTable& at, const String& filename);
 	static void SaveAddressTableToFile(AddressTable& pTable, const String& filename);

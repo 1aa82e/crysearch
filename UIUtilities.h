@@ -18,9 +18,6 @@ String BytesToString(const Byte* const buffer, const unsigned int length);
 // not opened returns -1.
 const int IsTabPageOpened(const TabCtrl& ctrl, const String& text);
 
-// Parses memory scanner address table entries and returns the correct data type size for the debugger.
-const int GetDataSizeFromValueType(const String& type);
-
 // Generates a random string to use as window title.
 String GenerateRandomWindowTitle();
 

@@ -25,6 +25,10 @@ using namespace Upp;
 #define ROUTINE_VIRTUALPROTECTEX		0
 #define ROUTINE_NTPROTECTVIRTUALMEMORY	1
 
+// Library injection method definitions. Using macros due to enum compilation issues.
+#define INJECTION_METHOD_CRT			0
+#define INJECTION_METHOD_HIJACKTHREAD	1
+
 // Checks wether the application settings file exists or not
 bool ConfigFileExists();
 
@@ -66,6 +70,7 @@ private:
 	int mWriteMemoryRoutine;
 	int mProtectMemoryRoutine;
 	int mAddressTableUpdateInterval;
+	int mLibraryInjectionMethod;
 	
 	int mStackSnapshotLimit;
 	bool mAttemptHideDebuggerPeb;
@@ -108,6 +113,7 @@ public:
 	const int GetReadMemoryRoutine() const						{ return this->mReadMemoryRoutine; }
 	const int GetWriteMemoryRoutine() const						{ return this->mWriteMemoryRoutine; }
 	const int GetProtectMemoryRoutine() const					{ return this->mProtectMemoryRoutine; }
+	const int GetLibraryInjectionMethod() const					{ return this->mLibraryInjectionMethod; }
 	
 	const int GetStackSnapshotLimit() const						{ return this->mStackSnapshotLimit; }
 	const int GetAddressTableUpdateInterval() const				{ return this->mAddressTableUpdateInterval; }
@@ -137,6 +143,7 @@ public:
 	void SetReadMemoryRoutine(int value = 0)					{ this->mReadMemoryRoutine = value; }
 	void SetWriteMemoryRoutine(int value = 0)					{ this->mWriteMemoryRoutine = value; }
 	void SetProtectMemoryRoutine(int value = 0)					{ this->mProtectMemoryRoutine = value; }
+	void SetLibraryInjectionMethod(int value = 0)				{ this->mLibraryInjectionMethod = value; }
 	
 	void SetAddressTableUpdateInterval(int value = 500)			{ this->mAddressTableUpdateInterval = value; }
 	void SetAttemptHideDebuggerFromPeb(bool value = true)		{ this->mAttemptHideDebuggerPeb = value; }

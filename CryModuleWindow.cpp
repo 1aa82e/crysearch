@@ -175,6 +175,7 @@ void CryModuleWindow::LoadLibraryButtonClicked()
 	
 	if (fs->ExecuteOpen("Select library file..."))
 	{
+		// Execute the library injection asynchronously.
 		Thread().Run(THISBACK1(LoadLibraryThread, fs->Get()));		
 	}
 	
@@ -183,7 +184,24 @@ void CryModuleWindow::LoadLibraryButtonClicked()
 
 void CryModuleWindow::LoadLibraryThread(String pLibrary)
 {
-	this->InjectionDone(mPeInstance->LoadLibraryExternal(pLibrary));
+	BOOL result;
+	
+	// Check which injection method is selected. Call the correct one accordingly.
+	switch (SettingsFile::GetInstance()->GetLibraryInjectionMethod())
+	{
+		case INJECTION_METHOD_CRT:
+			result = mPeInstance->LoadLibraryExternal(pLibrary);
+			break;
+		case INJECTION_METHOD_HIJACKTHREAD:
+			// inject by hijacking an existing thread, random or selectable?
+			result = mPeInstance->LoadLibraryExternalHijack(pLibrary);
+			break;
+		default:
+			result = FALSE;
+	}
+	
+	// The result can be passed into the asynchronous completion callback.
+	this->InjectionDone(result);
 }
 
 void CryModuleWindow::LoadLibraryAsyncDone(BOOL result)

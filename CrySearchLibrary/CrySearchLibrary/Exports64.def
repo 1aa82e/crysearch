@@ -25,3 +25,4 @@ EXPORTS
 	GetCrySearchValueTypeFromCheatTableVariableType
 	SnapThreadContext32
 	SnapThreadContext64
+	GetDataSizeFromValueType

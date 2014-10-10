@@ -1,44 +1,5 @@
 #include "UIUtilities.h"
 
-// Converts a string representation for a data type size.
-// Returns the size in bytes of the type of data.
-const int GetDataSizeFromValueType(const String& type)
-{
-	if (type == "Byte")
-	{
-		return 1;
-	}
-	else if (type == "2 Bytes")
-	{
-		return 2;
-	}
-	else if (type == "4 Bytes")
-	{
-		return 4;
-	}
-	else if (type == "8 Bytes")
-	{
-		return 8;
-	}
-	else if (type == "Float")
-	{
-		return 4;
-	}
-	else if (type == "Double")
-	{
-		return 8;
-	}
-	else if (type == "String" || type == "WString" || type == "Array of Bytes")
-	{
-		return 1;
-	}
-	
-	// Technically seen, this code path will never be reached. Tell the compiler to assume so.
-	// Whenever the caller attempts to call this function with a parameter that is not listed in the conditional
-	// listing, the behavior is undefined.
-	__assume(0);
-}
-
 // Checks whether a tab page is opened in the CrySearch main window.
 // Returns the index of the tab page if it is opened or -1 if it is not opened.
 const int IsTabPageOpened(const TabCtrl& ctrl, const String& text)
