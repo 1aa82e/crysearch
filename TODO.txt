@@ -8,7 +8,6 @@ CrySearch application TODO list by evolution536
 	- generate struct definition from selection;
 	- save struct (selection) to address table (not entirely, I guess, with type guessing I should save different offsets);
 
-- Saving AOB relative addresses to address table file crashes application;
 - User interface saving of value inside a string can be different, taking up less code;
 - There is a bug in the process selection window when fooling around with non-responsive processes;
 - Also a bug in the main window complaining about GUI locking (hard to reproduce);
@@ -23,6 +22,7 @@ CrySearch application TODO list by evolution536
 
 - Disassembler:
 	- Resolve function calls in disasm to IAT functions;
+	- Memory usage can be way to high, I gotta fix it (90 seconds to load ARMA 2);
 
 - Plugin system:
 	- auto deploy correct plugins to build dir?

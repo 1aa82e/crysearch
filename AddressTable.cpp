@@ -237,6 +237,12 @@ void AddressTable::ResolveRelativeEntries(AddressTable& at)
 			{
 				cur->Address = foundMod->BaseAddress + cur->Address;
 			}
+			else
+			{
+				// It may be possible that saved relative entries do not resolve to a valid module upon load.
+				// Resaving these entries will crash the application if they are saved as relatives.
+				cur->IsRelative = false;
+			}
 		}
 	}
 }

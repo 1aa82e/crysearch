@@ -75,10 +75,11 @@ void MemoryDissector::DissectPartial(const Tuple2<int, int>& range)
 	}
 	
 	// Read calculated memory block into local buffer.
-	Byte* buffer = new Byte[size];
+	const DWORD endSz = size + sizeof(SIZE_T);
+	Byte* buffer = new Byte[endSz];
 	SIZE_T bytesRead;
-	const BOOL b = CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), (void*)customBase, buffer, size, &bytesRead);
-	if (b && bytesRead == size)
+	const BOOL b = CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), (void*)customBase, buffer, endSz, &bytesRead);
+	if (b && bytesRead == endSz)
 	{
 		// Change values inside visible rows.
 		size = 0;

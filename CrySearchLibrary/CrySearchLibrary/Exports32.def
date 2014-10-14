@@ -19,6 +19,7 @@ EXPORTS
 	CloseRemoteHandle
 	GetHandleObjectAccess
 	Wow64GetProcAddress
+	AlignPointer
 	IsProcessActive
 	CodeGeneratorParseFieldType
 	GetCrySearchValueTypeFromCheatTableVariableType

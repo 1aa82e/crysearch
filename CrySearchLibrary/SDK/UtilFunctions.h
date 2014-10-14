@@ -25,14 +25,11 @@ extern "C"
 	const char* CodeGeneratorParseFieldType(const char* valueType);
 	const char* GetCrySearchValueTypeFromCheatTableVariableType(const char* varType, const BOOLEAN unicode);
 	const int GetDataSizeFromValueType(const char* type);
+	void AlignPointer(DWORD_PTR* Address, const DWORD Boundary);
 
 	// Retrieves information about the processor in the current system.
 	// Returns a string of supported extensions into the first parameter.
 	void GetProcessorSupportInformation(char pProcInformationString[128]);
-
-#ifdef _WIN64
-	void AlignPointer(DWORD_PTR* Address, const DWORD Boundary);
-#endif
 
 #ifdef __cplusplus
 }

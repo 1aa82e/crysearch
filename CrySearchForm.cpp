@@ -1019,6 +1019,7 @@ void CrySearchForm::SearchResultDoubleClicked()
 		newEntry->Value = "???";
 	}
 	
+	// Refresh address table in user interface.
 	this->mUserAddressList.SetVirtualCount(loadedTable.GetCount());
 }
 
@@ -1725,6 +1726,8 @@ void CrySearchForm::ScannerCompletedThreadSafe()
 	// Cheat Engine has this nice beep when a scan completes, why shouldn't I? :)
 	BeepExclamation();
 }
+
+// ---------------------------------------------------------------------------------------------
 
 // Returns a pointer to the search result control. Friend methods may need to set the display property.
 CrySearchArrayCtrl* CrySearchForm::GetSearchResultCtrl()

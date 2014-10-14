@@ -120,17 +120,15 @@ const char* GetCrySearchValueTypeFromCheatTableVariableType(const char* varType,
 	}
 }
 
-#ifdef _WIN64
-	// Aligns an address in memory to the specific boundary.
-	void AlignPointer(DWORD_PTR* Address, const DWORD Boundary)
+// Aligns an address in memory to the specific boundary.
+void AlignPointer(DWORD_PTR* Address, const DWORD Boundary)
+{
+	if (Boundary > 0)
 	{
-		if (Boundary > 0)
+		if ((*Address % Boundary) > 0)
 		{
-			if ((*Address % Boundary) > 0)
-			{
-				const DWORD_PTR tmp = *Address;
-				*Address = (tmp + Boundary) - (tmp % Boundary);
-			}
+			const DWORD_PTR tmp = *Address;
+			*Address = (tmp + Boundary) - (tmp % Boundary);
 		}
 	}
-#endif
+}

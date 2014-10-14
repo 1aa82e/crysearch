@@ -208,6 +208,7 @@ void CryMemoryDissectionWindow::IntervalUpdateDissection()
 void CryMemoryDissectionWindow::RefreshDissection()
 {
 	const int count = loadedTable.GetDissectionCount() > 0;
+	
 	// Master index is not always safe. We should check the dissection count, just in case.
 	if (count)
 	{
