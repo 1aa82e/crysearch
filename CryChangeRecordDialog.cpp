@@ -40,7 +40,7 @@ CryChangeRecordDialog::CryChangeRecordDialog(AddressTable& addrTable, const int 
 		
 		// If the address is relative the display should be relative too.
 		String str;
-		if (this->mLoadedEntry->IsRelative && this->mLoadedTable->GetRelativeDisplayString(this->mLoadedEntry, str))
+		if (this->mLoadedEntry->IsRelative == TRUE && this->mLoadedTable->GetRelativeDisplayString(this->mLoadedEntry, str))
 		{
 			this->mFieldValue.SetText(str);
 		}
@@ -480,7 +480,7 @@ void CryChangeRecordDialog::DialogOkay()
 			
 			// Still here, so calculate the address.
 			this->mLoadedEntry->Address = mod->BaseAddress + ScanInt(inputVal.Mid(plusIndex + 1), NULL, 16);
-			this->mLoadedEntry->IsRelative = true;
+			this->mLoadedEntry->IsRelative = TRUE;
 		}
 		else
 		{
@@ -493,7 +493,7 @@ void CryChangeRecordDialog::DialogOkay()
 #endif
 			
 			// Drop the relative flag from the address table entry.
-			this->mLoadedEntry->IsRelative = false;
+			this->mLoadedEntry->IsRelative = FALSE;
 		}
 	}
 	

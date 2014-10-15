@@ -11,6 +11,11 @@ using namespace Upp;
 
 // ---------------------------------------------------------------------------------------------
 
+// When a relative address table entry was not succesfully resolved, it should be still written
+// back to the address table file as if it was never changed. This indication value helps
+// CrySearch know when a dangling entry is the case.
+#define ADDRESS_ENTRY_DANGLING (BOOLEAN)0xFF
+
 // Represents an entry in the user defined address list.
 struct AddressTableEntry : Moveable<AddressTableEntry>
 {
@@ -27,7 +32,7 @@ struct AddressTableEntry : Moveable<AddressTableEntry>
 	
 	// Indicates whether the address table entry resolves to a relative address. This field
 	// is considered leading information for a great part of the address table behavior.
-	bool IsRelative;
+	BOOLEAN IsRelative;
 	
 	// If the address is relative the module name should be saved in order to be able to
 	// resolve the real address at runtime. This field contains the module name.
@@ -55,6 +60,14 @@ struct AddressTableEntry : Moveable<AddressTableEntry>
 	// XML serialization logic function.
 	void Xmlize(XmlIO& s)
 	{
+		// Upon loading, this will always be either TRUE or FALSE. Upon saving, an entry may be dangling.
+		// If it is dangling, it should be saved as relative.
+		if (this->IsRelative == ADDRESS_ENTRY_DANGLING)
+		{
+			this->IsRelative = TRUE;
+		}
+		
+		// Serialize address table entry to file.
 		s
 			("Description", this->Description)
 			("Address", this->Address)
@@ -126,18 +139,16 @@ struct MemoryDissectionEntry : Moveable<MemoryDissectionEntry>
 	// XML serialization logic function.
 	void Xmlize(XmlIO& s)
 	{
-#ifdef _WIN64
-		__int64 addr = this->AssociatedDissector.mBaseAddress;
-		__int64 size = this->AssociatedDissector.mRegionSize;
-#else
-		int addr = this->AssociatedDissector.mBaseAddress;
-		int size = this->AssociatedDissector.mRegionSize;
-#endif
-
 		s
 			("FriendlyName", this->FriendlyName)
-			("BaseAddress", addr)
-			("MemorySize", size)
+			
+			// I don't really like this construction but it is the way to a correct compiler interpretation on x64.
+#ifdef _WIN64
+			("BaseAddress", (LONG_PTR&)this->AssociatedDissector.mBaseAddress)
+#else
+			("BaseAddress", this->AssociatedDissector.mBaseAddress)
+#endif
+			("MemorySize", this->AssociatedDissector.mRegionSize)
 		;
 	};
 };
@@ -157,11 +168,11 @@ public:
 	
 #ifdef _WIN64
 	void Remove(const __int64 address, const String& valueType);
-	AddressTableEntry* Add(const String& description, const __int64 address, const bool IsRelative, const String& valueType);
+	AddressTableEntry* Add(const String& description, const __int64 address, const BOOLEAN IsRelative, const String& valueType);
 	const int Find(const __int64 address, const String& valueType) const;
 #else
 	void Remove(const int address, const String& valueType);
-	AddressTableEntry* Add(const String& description, const int address, const bool IsRelative, const String& valueType);
+	AddressTableEntry* Add(const String& description, const int address, const BOOLEAN IsRelative, const String& valueType);
 	const int Find(const int address, const String& valueType) const;
 #endif
 	
@@ -185,10 +196,11 @@ public:
 	};
 	
 	MemoryDissectionEntry* const GetDissection(const int index);
-	//const MemoryDissectionEntry* const FindDissectionByAddress(const SIZE_T address) const;
 	const int GetDissectionCount() const;
+
 	void AddDissection(const char* pFriendlyName, const SIZE_T baseAddress, const DWORD memorySize);
 	void RemoveDissection(const int index);
+	void ResolveEntryRelative(AddressTableEntry* const entry);
 	
 	static void ResolveRelativeEntries(AddressTable& at);
 	static void CreateAddressTableFromFile(AddressTable& at, const String& filename);

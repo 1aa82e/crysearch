@@ -932,9 +932,12 @@ void CrySearchForm::ClearAddressList()
 	if (Prompt("I need your confirmation", CtrlImg::exclamation(), "Are you sure you want to clear the address list?", "Yes", "No"))
 	{
 		// When clearing the list, assurance of all data breakpoints being removed must be made.
-		for (int i = 0; i < loadedTable.GetCount(); i++)
+		if (mDebugger)
 		{
-			mDebugger->RemoveBreakpoint(loadedTable[i]->Address);
+			for (int i = 0; i < loadedTable.GetCount(); i++)
+			{
+				mDebugger->RemoveBreakpoint(loadedTable[i]->Address);
+			}			
 		}
 		
 		// Clear UI and underlying data table structures.
@@ -1260,6 +1263,9 @@ bool CrySearchForm::CloseProcess()
 
 	// Clean process name inside address table.
 	loadedTable.ClearProcessName();
+	
+	// Refresh address table for user interface.
+	this->mUserAddressList.SetVirtualCount(loadedTable.GetCount());
 	
 	return true;
 }

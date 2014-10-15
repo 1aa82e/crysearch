@@ -32,7 +32,6 @@ AddressTable::~AddressTable()
 void AddressTable::Clear()
 {
 	this->mEntries.Clear();
-	this->mEntries.Shrink();
 }
 
 // Finds an entry in the table.
@@ -142,7 +141,7 @@ const bool AddressTable::GetRelativeDisplayString(const AddressTableEntry* entry
 
 // Adds / removes an entry in/from the address table.
 #ifdef _WIN64
-	AddressTableEntry* AddressTable::Add(const String& description, const __int64 address, const bool IsRelative, const String& valueType)
+	AddressTableEntry* AddressTable::Add(const String& description, const __int64 address, const BOOLEAN IsRelative, const String& valueType)
 	{
 		AddressTableEntry ent;
 		ent.Frozen = false;
@@ -152,7 +151,7 @@ const bool AddressTable::GetRelativeDisplayString(const AddressTableEntry* entry
 		ent.IsRelative = IsRelative;
 
 		// Address is relative. Try to retrieve the module name.
-		if (IsRelative)
+		if (IsRelative == TRUE)
 		{
 			// Retrieve the module that the address points into.
 			const Win32ModuleInformation* mod = mModuleManager->GetModuleFromContainedAddress(address);
@@ -179,7 +178,7 @@ const bool AddressTable::GetRelativeDisplayString(const AddressTableEntry* entry
 		}
 	}
 #else
-	AddressTableEntry* AddressTable::Add(const String& description, const int address, const bool IsRelative, const String& valueType)
+	AddressTableEntry* AddressTable::Add(const String& description, const int address, const BOOLEAN IsRelative, const String& valueType)
 	{
 		AddressTableEntry ent;
 		ent.Frozen = false;
@@ -189,7 +188,7 @@ const bool AddressTable::GetRelativeDisplayString(const AddressTableEntry* entry
 		ent.IsRelative = IsRelative;
 		
 		// Address is relative. Try to retrieve the module name.
-		if (IsRelative)
+		if (IsRelative == TRUE)
 		{
 			// Retrieve the module that the address points into.
 			const Win32ModuleInformation* mod = mModuleManager->GetModuleFromContainedAddress(address);
@@ -219,31 +218,43 @@ const bool AddressTable::GetRelativeDisplayString(const AddressTableEntry* entry
 
 // ---------------------------------------------------------------------------------------------
 
+// Resolves the address table entry as single entity.
+void AddressTable::ResolveEntryRelative(AddressTableEntry* const entry)
+{
+	if (entry->IsRelative == TRUE)
+	{
+		// Resolve module base and calculate real address.
+		const Win32ModuleInformation* const foundMod = mModuleManager->FindModule(entry->ModuleName);
+
+		// If module was not found, for example when no process was opened, the application would crash.
+		// This check prevents CrySearch from crashing. A process must be opened.
+		if (foundMod)
+		{
+			entry->Address = foundMod->BaseAddress + entry->Address;
+		}
+		else
+		{
+			// It may be possible that saved relative entries do not resolve to a valid module upon load.
+			// Resaving these entries will crash the application if they are saved as relatives.
+			entry->IsRelative = ADDRESS_ENTRY_DANGLING;
+		}
+	}
+	else if (entry->IsRelative == ADDRESS_ENTRY_DANGLING)
+	{
+		// When a process is loaded after the address table was opened, the entry is dangling.
+		entry->IsRelative = TRUE;
+		this->ResolveEntryRelative(entry);
+	}
+}
+
 // Resolves relative address table entries to their associated module.
 void AddressTable::ResolveRelativeEntries(AddressTable& at)
 {
 	const int aCount = at.GetCount();
 	for (int i = 0; i < aCount; ++i)
 	{
-		AddressTableEntry* const cur = at[i];
-		if (cur->IsRelative)
-		{
-			// Resolve module base and calculate real address.
-			const Win32ModuleInformation* const foundMod = mModuleManager->FindModule(cur->ModuleName);
-
-			// If module was not found, for example when no process was opened, the application would crash.
-			// This check prevents CrySearch from crashing. A process must be opened.
-			if (foundMod)
-			{
-				cur->Address = foundMod->BaseAddress + cur->Address;
-			}
-			else
-			{
-				// It may be possible that saved relative entries do not resolve to a valid module upon load.
-				// Resaving these entries will crash the application if they are saved as relatives.
-				cur->IsRelative = false;
-			}
-		}
+		// Resolve each entry seperately.
+		at.ResolveEntryRelative(at[i]);
 	}
 }
 
@@ -436,7 +447,7 @@ void AddressTable::SaveAddressTableToFile(AddressTable& pTable, const String& fi
 		memAddresses << cur->Address;
 		
 		// If the address is relative it should be recalculated to the file.
-		if (cur->IsRelative)
+		if (cur->IsRelative == TRUE)
 		{
 			// Set offset from module base as address before persisting.
 			cur->Address = cur->Address - mModuleManager->FindModule(cur->ModuleName)->BaseAddress;
