@@ -5,19 +5,21 @@
 
 using namespace Upp;
 
+#include "CrySearchLibrary/SDK/CrySearch.h"
+
 // Represents a row of dissection in an available dissection.
 struct DissectionRowEntry : Moveable<DissectionRowEntry>
 {
 	int RowOffset;
 	SIZE_T RowValue;
-	int RowSize;
+	CCryDataType RowType;
 	
 	// Default constructor to add new entry straight to vector.
-	DissectionRowEntry(const int rowOffset, const SIZE_T val, const int rowSize)
+	DissectionRowEntry(const int rowOffset, const SIZE_T val, const int rowType)
 	{
 		this->RowOffset = rowOffset;
 		this->RowValue = val;
-		this->RowSize = rowSize;
+		this->RowType = rowType;
 	};
 };
 

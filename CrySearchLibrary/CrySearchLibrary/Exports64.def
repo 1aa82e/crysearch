@@ -26,3 +26,4 @@ EXPORTS
 	SnapThreadContext32
 	SnapThreadContext64
 	GetDataSizeFromValueType
+	GetCrySearchDataTypeRepresentation

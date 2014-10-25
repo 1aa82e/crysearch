@@ -92,7 +92,7 @@ String GetAddressTableValue(const int index)
 		return entry->Value;
 	}
 	
-	if (entry->ValueType != "String" && entry->ValueType != "Array of Bytes" && entry->ValueType != "WString")
+	if (entry->ValueType != CRYDATATYPE_STRING && entry->ValueType != CRYDATATYPE_AOB && entry->ValueType != CRYDATATYPE_WSTRING)
 	{
 #ifdef _WIN64
 		return viewAddressTableValueHex ? Format("%llX", ScanInt64(entry->Value, NULL, 10)) : entry->Value;
@@ -108,7 +108,7 @@ String GetAddressTableValue(const int index)
 
 String GetAddressTableValueType(const int index)
 {
-	return loadedTable[index]->ValueType;
+	return GetCrySearchDataTypeRepresentation(loadedTable[index]->ValueType);
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -177,41 +177,41 @@ void CrySearchForm::AddressValuesUpdater()
 		const AddressTableEntry* curEntry = loadedTable[i];
 		if (curEntry->Frozen)
 		{
-			if (curEntry->ValueType == "Byte")
+			if (curEntry->ValueType == CRYDATATYPE_BYTE)
 			{
 				mMemoryScanner->Poke<Byte>(curEntry->Address, (Byte)ScanInt(curEntry->Value, NULL, 10));
 			}
-			else if (curEntry->ValueType == "2 Bytes")
+			else if (curEntry->ValueType == CRYDATATYPE_2BYTES)
 			{
 				mMemoryScanner->Poke<short>(curEntry->Address, (short)ScanInt(curEntry->Value, NULL, 10));
 			}
-			else if (curEntry->ValueType == "4 Bytes")
+			else if (curEntry->ValueType == CRYDATATYPE_4BYTES)
 			{
 				mMemoryScanner->Poke<int>(curEntry->Address, ScanInt(curEntry->Value, NULL, 10));
 			}
-			else if (curEntry->ValueType == "8 Bytes")
+			else if (curEntry->ValueType == CRYDATATYPE_8BYTES)
 			{
 				mMemoryScanner->Poke<__int64>(curEntry->Address, ScanInt64(curEntry->Value, NULL, 10));
 			}
-			else if (curEntry->ValueType == "Float")
+			else if (curEntry->ValueType == CRYDATATYPE_FLOAT)
 			{
 				mMemoryScanner->Poke<float>(curEntry->Address, (float)StrDbl(curEntry->Value));
 			}
-			else if (curEntry->ValueType == "Double")
+			else if (curEntry->ValueType == CRYDATATYPE_DOUBLE)
 			{
 				mMemoryScanner->Poke<double>(curEntry->Address, StrDbl(curEntry->Value));
 			}
-			else if (curEntry->ValueType == "Array of Bytes")
+			else if (curEntry->ValueType == CRYDATATYPE_AOB)
 			{
 				ArrayOfBytes aob = StringToBytes(curEntry->Value);
 				mMemoryScanner->Poke(curEntry->Address, aob);
 				curEntry->Size = aob.Size;
 			}
-			else if (curEntry->ValueType == "String")
+			else if (curEntry->ValueType == CRYDATATYPE_STRING)
 			{
 				mMemoryScanner->Poke<String>(curEntry->Address, curEntry->Value);
 			}
-			else if (curEntry->ValueType == "WString")
+			else if (curEntry->ValueType == CRYDATATYPE_WSTRING)
 			{
 				mMemoryScanner->Poke<WString>(curEntry->Address, curEntry->Value.ToWString());
 			}
@@ -224,27 +224,27 @@ void CrySearchForm::AddressValuesUpdater()
 	{
 		for (int start = addressTableRange.a; start <= addressTableRange.b; ++start)
 		{
-			if (loadedTable[start]->ValueType == "Byte")
+			if (loadedTable[start]->ValueType == CRYDATATYPE_BYTE)
 			{
 				Byte value;
 				loadedTable[start]->Value = mMemoryScanner->Peek<Byte>(loadedTable[start]->Address, 0, &value) ? IntStr(value) : "???";
 			}
-			else if (loadedTable[start]->ValueType == "2 Bytes")
+			else if (loadedTable[start]->ValueType == CRYDATATYPE_2BYTES)
 			{
 				short value;
 				loadedTable[start]->Value = mMemoryScanner->Peek<short>(loadedTable[start]->Address, 0, &value) ? IntStr(value) : "???";
 			}
-			else if (loadedTable[start]->ValueType == "4 Bytes")
+			else if (loadedTable[start]->ValueType == CRYDATATYPE_4BYTES)
 			{
 				int value;
 				loadedTable[start]->Value = mMemoryScanner->Peek<int>(loadedTable[start]->Address, 0, &value) ? IntStr(value) : "???";
 			}
-			else if (loadedTable[start]->ValueType == "8 Bytes")
+			else if (loadedTable[start]->ValueType == CRYDATATYPE_8BYTES)
 			{
 				__int64 value;
 				loadedTable[start]->Value = mMemoryScanner->Peek<__int64>(loadedTable[start]->Address, 0, &value) ? IntStr64(value) : "???";
 			}
-			else if (loadedTable[start]->ValueType == "Float")
+			else if (loadedTable[start]->ValueType == CRYDATATYPE_FLOAT)
 			{
 				float value;
 				if (mMemoryScanner->Peek<float>(loadedTable[start]->Address, 0, &value))
@@ -258,24 +258,24 @@ void CrySearchForm::AddressValuesUpdater()
 					loadedTable[start]->Value = "???";
 				}
 			}
-			else if (loadedTable[start]->ValueType == "Double")
+			else if (loadedTable[start]->ValueType == CRYDATATYPE_DOUBLE)
 			{
 				double value;
 				loadedTable[start]->Value = mMemoryScanner->Peek<double>(loadedTable[start]->Address, 0, &value) ? DblStr(value) : "???";
 			}
-			else if (loadedTable[start]->ValueType == "Array of Bytes")
+			else if (loadedTable[start]->ValueType == CRYDATATYPE_AOB)
 			{
 				ArrayOfBytes value;
 				const AddressTableEntry* entry = loadedTable[start];
 				entry->Value = mMemoryScanner->Peek<ArrayOfBytes>(entry->Address, entry->Size, &value) ? BytesToString(value.Data, value.Size) : "???";
 			}
-			else if (loadedTable[start]->ValueType == "String")
+			else if (loadedTable[start]->ValueType == CRYDATATYPE_STRING)
 			{
 				String value;
 				const AddressTableEntry* entry = loadedTable[start];
 				entry->Value = mMemoryScanner->Peek<String>(entry->Address, entry->Size, &value) ? value : "???";
 			}
-			else if (loadedTable[start]->ValueType == "WString")
+			else if (loadedTable[start]->ValueType == CRYDATATYPE_WSTRING)
 			{
 				WString value;
 				const AddressTableEntry* entry = loadedTable[start];
@@ -544,11 +544,11 @@ void CrySearchForm::ChangeRecordSubMenu(Bar& pBar)
 void CrySearchForm::UserDefinedEntryWhenBar(Bar& pBar)
 {
 	pBar.Add("Manually add address", CrySearchIml::AddToAddressList(), THISBACK(ManuallyAddAddressToTable));
-	pBar.Add("Dissect memory", CrySearchIml::MemoryDissection(), THISBACK(AddressListEntryMemoryDissection));
 	
 	const int row = this->mUserAddressList.GetCursor();
 	if (row >= 0 && loadedTable.GetCount() > 0)
 	{
+		pBar.Add("Dissect memory", CrySearchIml::MemoryDissection(), THISBACK(AddressListEntryMemoryDissection));
 		pBar.Separator();
 		
 		if (loadedTable[row]->Frozen)
@@ -919,9 +919,9 @@ void CrySearchForm::DeleteUserDefinedAddress()
 		}
 		
 #ifdef _WIN64
-		loadedTable.Remove(ScanInt64(GetAddressTableAddress(row).ToString(), NULL, 16), GetAddressTableValueType(row));
+		loadedTable.Remove(ScanInt64(GetAddressTableAddress(row).ToString(), NULL, 16), loadedTable[row]->ValueType);
 #else
-		loadedTable.Remove(ScanInt(GetAddressTableAddress(row).ToString(), NULL, 16), GetAddressTableValueType(row));
+		loadedTable.Remove(ScanInt(GetAddressTableAddress(row).ToString(), NULL, 16), loadedTable[row]->ValueType);
 #endif
 		this->mUserAddressList.SetVirtualCount(loadedTable.GetCount());
 	}
@@ -958,39 +958,39 @@ void CrySearchForm::SearchResultDoubleClicked()
 	const String& addr = GetAddress(cursor);
 	const String& value = GetValue(cursor);
 	
-	String toAddToAddressList;
-	
+	// The first value of the scan type is unknown, so + 1 should be the correct value.
+	CCryDataType toAddToAddressList;
 	switch (GlobalScanParameter->GlobalScanValueType)
 	{
 		case VALUETYPE_BYTE:
-			toAddToAddressList = "Byte";
+			toAddToAddressList = CRYDATATYPE_BYTE;
 			break;
 		case VALUETYPE_2BYTE:
-			toAddToAddressList = "2 Bytes";
+			toAddToAddressList = CRYDATATYPE_2BYTES;
 			break;
 		case VALUETYPE_4BYTE:
-			toAddToAddressList = "4 Bytes";
+			toAddToAddressList = CRYDATATYPE_4BYTES;
 			break;
 		case VALUETYPE_8BYTE:
-			toAddToAddressList = "8 Bytes";
+			toAddToAddressList = CRYDATATYPE_8BYTES;
 			break;
 		case VALUETYPE_FLOAT:
-			toAddToAddressList = "Float";
+			toAddToAddressList = CRYDATATYPE_FLOAT;
 			break;
 		case VALUETYPE_DOUBLE:
-			toAddToAddressList = "Double";
-			break;
-		case VALUETYPE_STRING:
-			toAddToAddressList = "String";
-			break;
-		case VALUETYPE_WSTRING:
-			toAddToAddressList = "WString";
+			toAddToAddressList = CRYDATATYPE_DOUBLE;
 			break;
 		case VALUETYPE_AOB:
-			toAddToAddressList = "Array of Bytes";
+			toAddToAddressList = CRYDATATYPE_AOB;
+			break;
+		case VALUETYPE_STRING:
+			toAddToAddressList = CRYDATATYPE_STRING;
+			break;
+		case VALUETYPE_WSTRING:
+			toAddToAddressList = CRYDATATYPE_WSTRING;
 			break;
 	}
-	
+		
 	// Try to find the address table entry in the existing table.
 	const int curRow = loadedTable.Find(CachedAddresses[cursor].Address, toAddToAddressList);
 	
@@ -1006,12 +1006,12 @@ void CrySearchForm::SearchResultDoubleClicked()
 	const AddressTableEntry* newEntry = loadedTable.Add(STRING_EMPTY, selEntry.Address, selEntry.StaticAddress, toAddToAddressList);
 	
 	// Special behavior for specific types of search results.
-	if (toAddToAddressList == "Array of Bytes")
+	if (toAddToAddressList == CRYDATATYPE_AOB)
 	{
 		// Retrieve size of byte array
 		newEntry->Size = StringToBytes(value).Size;
 	}
-	else if (toAddToAddressList == "String" || toAddToAddressList == "WString")
+	else if (toAddToAddressList == CRYDATATYPE_STRING || toAddToAddressList == CRYDATATYPE_WSTRING)
 	{
 		newEntry->Size = value.GetLength();
 	}

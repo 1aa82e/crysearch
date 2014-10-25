@@ -71,54 +71,27 @@ CryChangeRecordDialog::CryChangeRecordDialog(AddressTable& addrTable, const int 
 		this->mTypeLength = max(this->mLoadedEntry->Size, 1);
 		
 		// If the current value type is a string or wide string, the unicode checkbox must be made visible.
-		if (this->mLoadedEntry->ValueType != "String" && this->mLoadedEntry->ValueType != "WString")
+		if (this->mLoadedEntry->ValueType != CRYDATATYPE_STRING && this->mLoadedEntry->ValueType != CRYDATATYPE_WSTRING)
 		{
 			this->mUnicodeString.Hide();
 			
-			if (this->mLoadedEntry->ValueType != "Array of Bytes")
+			if (this->mLoadedEntry->ValueType != CRYDATATYPE_AOB)
 			{
 				this->mTypeLengthDescription.Hide();
 				this->mTypeLength.Hide();
 			}
 		}
 		
-		// Set current value type index for opened entry correctly.
-		if (this->mLoadedEntry->ValueType == "Byte")
+		// If the data type is a unicode string, enable the checkbox.
+		if (this->mLoadedEntry->ValueType == CRYDATATYPE_WSTRING)
 		{
-			this->mTypeSelector.SetIndex(0);
-		}
-		else if (this->mLoadedEntry->ValueType == "2 Bytes")
-		{
-			this->mTypeSelector.SetIndex(1);
-		}
-		else if (this->mLoadedEntry->ValueType == "4 Bytes")
-		{
-			this->mTypeSelector.SetIndex(2);
-		}
-		else if (this->mLoadedEntry->ValueType == "8 Bytes")
-		{
-			this->mTypeSelector.SetIndex(3);
-		}
-		else if (this->mLoadedEntry->ValueType == "Float")
-		{
-			this->mTypeSelector.SetIndex(4);
-		}
-		else if (this->mLoadedEntry->ValueType == "Double")
-		{
-			this->mTypeSelector.SetIndex(5);
-		}
-		else if (this->mLoadedEntry->ValueType == "Array of Bytes")
-		{
-			this->mTypeSelector.SetIndex(6);
-		}
-		else if (this->mLoadedEntry->ValueType == "String")
-		{
-			this->mTypeSelector.SetIndex(7);
-		}
-		else if (this->mLoadedEntry->ValueType == "WString")
-		{
-			this->mTypeSelector.SetIndex(7);
+			// Set current value type index for opened entry correctly.
+			this->mTypeSelector.SetIndex(this->mLoadedEntry->ValueType - 1);
 			this->mUnicodeString = true;
+		}
+		else
+		{
+			this->mTypeSelector.SetIndex(this->mLoadedEntry->ValueType);
 		}
 	}
 	else if (mode == CRDM_MANUALNEW)
@@ -156,8 +129,8 @@ CryChangeRecordDialog::CryChangeRecordDialog(AddressTable& addrTable, const int 
 		this->Title("Change Value");
 		this->mFieldValue.SetText(this->mLoadedEntry->Value);
 		
-		if (this->mLoadedEntry->ValueType == "Byte" || this->mLoadedEntry->ValueType == "2 Bytes" ||
-		    this->mLoadedEntry->ValueType == "4 Bytes" || this->mLoadedEntry->ValueType == "8 Bytes")
+		if (this->mLoadedEntry->ValueType == CRYDATATYPE_BYTE || this->mLoadedEntry->ValueType == CRYDATATYPE_2BYTES ||
+		    this->mLoadedEntry->ValueType == CRYDATATYPE_4BYTES || this->mLoadedEntry->ValueType == CRYDATATYPE_8BYTES)
 		{
 			*this << this->mValueIsHex.SetLabel("Hexadecimal").HSizePos(5, 100).TopPos(30, 20);
 			this->mValueIsHex.WhenAction = THISBACK(ValueModeHexOptionChanged);
@@ -174,24 +147,24 @@ void CryChangeRecordDialog::ValueModeHexOptionChanged()
 {
 	if (this->mValueIsHex)
 	{
-		if (this->mLoadedEntry->ValueType == "8 Bytes")
+		if (this->mLoadedEntry->ValueType == CRYDATATYPE_8BYTES)
 		{
 			__int64 v = ScanInt64(this->mFieldValue.GetText().ToString());
 			this->mFieldValue.SetText(Format("%llX", v));
 		}
-		else if (this->mLoadedEntry->ValueType == "4 Bytes")
+		else if (this->mLoadedEntry->ValueType == CRYDATATYPE_4BYTES)
 		{
 			int v = ScanInt(this->mFieldValue.GetText().ToString());
 			this->mFieldValue.SetText(Format("%lX", v));
 		}
-		else if (this->mLoadedEntry->ValueType == "2 Bytes")
+		else if (this->mLoadedEntry->ValueType == CRYDATATYPE_2BYTES)
 		{
 			short v = ScanInt(this->mFieldValue.GetText().ToString());
 			char text[64];
 			sprintf_s(text, 64, "%hX", v);
 			this->mFieldValue.SetText(text);	
 		}
-		else if (this->mLoadedEntry->ValueType == "Byte")
+		else if (this->mLoadedEntry->ValueType == CRYDATATYPE_BYTE)
 		{
 			Byte v = ScanInt(this->mFieldValue.GetText().ToString());
 			char text[64];
@@ -201,24 +174,24 @@ void CryChangeRecordDialog::ValueModeHexOptionChanged()
 	}
 	else
 	{
-		if (this->mLoadedEntry->ValueType == "8 Bytes")
+		if (this->mLoadedEntry->ValueType == CRYDATATYPE_8BYTES)
 		{
 			__int64 v = ScanInt64(this->mFieldValue.GetText().ToString(), NULL, 16);
 			this->mFieldValue.SetText(Format("%lli", v));
 		}
-		else if (this->mLoadedEntry->ValueType == "4 Bytes")
+		else if (this->mLoadedEntry->ValueType == CRYDATATYPE_4BYTES)
 		{
 			int v = ScanInt(this->mFieldValue.GetText().ToString(), NULL, 16);
 			this->mFieldValue.SetText(Format("%li", v));
 		}
-		else if (this->mLoadedEntry->ValueType == "2 Bytes")
+		else if (this->mLoadedEntry->ValueType == CRYDATATYPE_2BYTES)
 		{
 			short v = ScanInt(this->mFieldValue.GetText().ToString(), NULL, 16);
 			char text[64];
 			sprintf_s(text, 64, "%hi", v);
 			this->mFieldValue.SetText(text);
 		}
-		else if (this->mLoadedEntry->ValueType == "Byte")
+		else if (this->mLoadedEntry->ValueType == CRYDATATYPE_BYTE)
 		{
 			Byte v = ScanInt(this->mFieldValue.GetText().ToString(), NULL, 16);
 			char text[64];
@@ -260,7 +233,7 @@ void CryChangeRecordDialog::DialogOkay()
 {
 	// Temporarely save the edited values locally to avoid race conditions.
 	LONG_PTR tempAddress;
-	String tempType;
+	CCryDataType tempType;
 	int optionalSize = this->mLoadedEntry ? this->mLoadedEntry->Size : 0;
 	
 	// Globally save input value for every type.
@@ -307,19 +280,20 @@ void CryChangeRecordDialog::DialogOkay()
 		}
 
 		// Set the data type of the address table entry.
-		if (this->mTypeSelector.GetIndex() == 6)
+		const int newindex = this->mTypeSelector.GetIndex();
+		if (newindex == 6)
 		{
 			optionalSize = this->mTypeLength;
-			tempType = this->mTypeSelector.Get();
+			tempType = newindex;
 		}
 		else if (this->mTypeSelector.GetIndex() == 7)
 		{
 			optionalSize = this->mTypeLength;
-			tempType = this->mUnicodeString ? "WString" : "String";
+			tempType = this->mUnicodeString ? CRYDATATYPE_WSTRING : CRYDATATYPE_STRING;
 		}
 		else
 		{
-			tempType = this->mTypeSelector.Get();
+			tempType = newindex;
 		}
 
 		// Make sure the address combined with the selected data type isn't already present in the address table.
@@ -343,7 +317,7 @@ void CryChangeRecordDialog::DialogOkay()
 		}
 		
 		// Value is not managed by address table itself, so WPM.
-		if (this->mLoadedEntry->ValueType == "Byte")
+		if (this->mLoadedEntry->ValueType == CRYDATATYPE_BYTE)
 		{
 			if (this->mValueIsHex)
 			{
@@ -354,7 +328,7 @@ void CryChangeRecordDialog::DialogOkay()
 				mMemoryScanner->Poke(this->mLoadedEntry->Address, (Byte)ScanInt(inputVal));
 			}
 		}
-		else if (this->mLoadedEntry->ValueType == "2 Bytes")
+		else if (this->mLoadedEntry->ValueType == CRYDATATYPE_2BYTES)
 		{
 			if (this->mValueIsHex)
 			{
@@ -365,7 +339,7 @@ void CryChangeRecordDialog::DialogOkay()
 				mMemoryScanner->Poke(this->mLoadedEntry->Address, (short)ScanInt(inputVal));
 			}
 		}
-		else if (this->mLoadedEntry->ValueType == "4 Bytes")
+		else if (this->mLoadedEntry->ValueType == CRYDATATYPE_4BYTES)
 		{
 			if (this->mValueIsHex)
 			{
@@ -376,7 +350,7 @@ void CryChangeRecordDialog::DialogOkay()
 				mMemoryScanner->Poke(this->mLoadedEntry->Address, ScanInt(inputVal));
 			}
 		}
-		else if (this->mLoadedEntry->ValueType == "8 Bytes")
+		else if (this->mLoadedEntry->ValueType == CRYDATATYPE_8BYTES)
 		{
 			if (this->mValueIsHex)
 			{
@@ -387,25 +361,25 @@ void CryChangeRecordDialog::DialogOkay()
 				mMemoryScanner->Poke(this->mLoadedEntry->Address, ScanInt64(inputVal));
 			}
 		}
-		else if (this->mLoadedEntry->ValueType == "Float")
+		else if (this->mLoadedEntry->ValueType == CRYDATATYPE_FLOAT)
 		{
 			mMemoryScanner->Poke(this->mLoadedEntry->Address, (float)ScanDouble(inputVal, NULL, true));
 		}
-		else if (this->mLoadedEntry->ValueType == "Double")
+		else if (this->mLoadedEntry->ValueType == CRYDATATYPE_DOUBLE)
 		{
 			mMemoryScanner->Poke(this->mLoadedEntry->Address, ScanDouble(inputVal, NULL, true));
 		}
-		else if (this->mLoadedEntry->ValueType == "String")
+		else if (this->mLoadedEntry->ValueType == CRYDATATYPE_STRING)
 		{
 			mMemoryScanner->Poke(this->mLoadedEntry->Address, inputVal);
 			this->mLoadedEntry->Size = this->mFieldValue.GetLength();
 		}
-		else if (this->mLoadedEntry->ValueType == "WString")
+		else if (this->mLoadedEntry->ValueType == CRYDATATYPE_WSTRING)
 		{
 			mMemoryScanner->Poke(this->mLoadedEntry->Address, this->mFieldValue.GetText());
 			this->mLoadedEntry->Size = this->mFieldValue.GetLength();
 		}
-		else if (this->mLoadedEntry->ValueType == "Array of Bytes")
+		else if (this->mLoadedEntry->ValueType == CRYDATATYPE_AOB)
 		{
 			ArrayOfBytes aob = StringToBytes(inputVal);	
 			mMemoryScanner->Poke(this->mLoadedEntry->Address, aob);
@@ -415,20 +389,21 @@ void CryChangeRecordDialog::DialogOkay()
 	else if (this->mMode == CRDM_TYPE)
 	{
 		// Assign proper value type including size parameter.
-		if (this->mTypeSelector.GetIndex() == 6)
+		const int newindex = this->mTypeSelector.GetIndex();
+		if (newindex == 6)
 		{
-			tempType = this->mTypeSelector.Get();
+			tempType = newindex;
 			optionalSize = this->mTypeLength;
 		}
 		else if (this->mTypeSelector.GetIndex() == 7)
 		{
-			tempType = this->mUnicodeString ? "WString" : "String";
+			tempType = this->mUnicodeString ? CRYDATATYPE_WSTRING : CRYDATATYPE_STRING;
 			optionalSize = this->mTypeLength;
 		}
 		else
 		{
 			optionalSize = -1;
-			tempType = this->mTypeSelector.Get();
+			tempType = newindex;
 		}
 
 		// Make sure the address combined with the selected data type isn't already present in the address table.

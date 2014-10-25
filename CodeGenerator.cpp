@@ -120,7 +120,7 @@ String CodeGenerator::GenerateExternalEntry(const AddressTableEntry* entry, cons
 	description.Replace(" ", "_");
 	
 	// Create value data field, readprocessmemory and writeprocessmemory calls. The user may choose which he wants himself.
-	if (entry->ValueType == "String" || entry->ValueType == "Array of Bytes")
+	if (entry->ValueType == CRYDATATYPE_STRING || entry->ValueType == CRYDATATYPE_AOB)
 	{
 		taskOutput += Format("\t%s %s[%i]; // Value is read/written to/from here...\r\n", fieldType, description, entry->Size);
 	}

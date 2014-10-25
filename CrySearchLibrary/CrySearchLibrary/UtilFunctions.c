@@ -14,42 +14,42 @@ const BOOL GetIsMultipleOf(const LONG_PTR intVal, const int mulVal)
 }
 
 // Converts a CrySearch builtin type to a C++ type. Returns NULL if the type could not be converted.
-const char* CodeGeneratorParseFieldType(const char* valueType)
+const char* CodeGeneratorParseFieldType(const CCryDataType valueType)
 {
 	// Generate data type. (Based on a cheater's data type probability, the data types are sorted manually for human-like optimization.
-	if (strcmp(valueType, "4 Bytes") == 0)
+	if (valueType == CRYDATATYPE_4BYTES)
 	{
 		return "int";
 	}
-	else if (strcmp(valueType, "2 Bytes") == 0)
+	else if (valueType == CRYDATATYPE_2BYTES)
 	{
 		return "short";
 	}
-	else if (strcmp(valueType, "Float") == 0)
+	else if (valueType == CRYDATATYPE_FLOAT)
 	{
 		return "float";
 	}
-	if (strcmp(valueType, "Byte") == 0)
+	if (valueType == CRYDATATYPE_BYTE)
 	{
 		return "unsigned char";
 	}
-	else if (strcmp(valueType, "8 Bytes") == 0)
+	else if (valueType == CRYDATATYPE_8BYTES)
 	{
 		return "__int64";
 	}
-	else if (strcmp(valueType, "Double") == 0)
+	else if (valueType == CRYDATATYPE_DOUBLE)
 	{
 		return "double";
 	}
-	else if (strcmp(valueType, "Array of Bytes") == 0)
+	else if (valueType == CRYDATATYPE_AOB)
 	{
 		return "unsigned char";
 	}
-	else if (strcmp(valueType, "String") == 0)
+	else if (valueType == CRYDATATYPE_STRING)
 	{
 		return "char";
 	}
-	else if (strcmp(valueType, "WString") == 0)
+	else if (valueType == CRYDATATYPE_WSTRING)
 	{
 		return "wchar_t";
 	}
@@ -61,33 +61,33 @@ const char* CodeGeneratorParseFieldType(const char* valueType)
 
 // Converts a string representation for a data type size.
 // Returns the size in bytes of the type of data.
-const int GetDataSizeFromValueType(const char* type)
+const int GetDataSizeFromValueType(CCryDataType type)
 {
-	if (strcmp(type, "Byte") == 0)
+	if (type == CRYDATATYPE_BYTE)
 	{
 		return 1;
 	}
-	else if (strcmp(type, "2 Bytes") == 0)
+	else if (type == CRYDATATYPE_2BYTES)
 	{
 		return 2;
 	}
-	else if (strcmp(type, "4 Bytes") == 0)
+	else if (type == CRYDATATYPE_4BYTES)
 	{
 		return 4;
 	}
-	else if (strcmp(type, "8 Bytes") == 0)
+	else if (type == CRYDATATYPE_8BYTES)
 	{
 		return 8;
 	}
-	else if (strcmp(type, "Float") == 0)
+	else if (type == CRYDATATYPE_FLOAT)
 	{
 		return 4;
 	}
-	else if (strcmp(type, "Double") == 0)
+	else if (type == CRYDATATYPE_DOUBLE)
 	{
 		return 8;
 	}
-	else if (strcmp(type, "String") == 0 || strcmp(type, "WString") == 0 || strcmp(type, "Array of Bytes") == 0)
+	else if (type == CRYDATATYPE_AOB || type == CRYDATATYPE_STRING || type == CRYDATATYPE_WSTRING)
 	{
 		return 1;
 	}
@@ -131,4 +131,33 @@ void AlignPointer(DWORD_PTR* Address, const DWORD Boundary)
 			*Address = (tmp + Boundary) - (tmp % Boundary);
 		}
 	}
+}
+
+// Retrieves the string representation of a CrySearch data type.
+const char* GetCrySearchDataTypeRepresentation(const CCryDataType type)
+{
+	switch (type)
+	{
+		case CRYDATATYPE_BYTE:
+			return "Byte";
+		case CRYDATATYPE_2BYTES:
+			return "2 Bytes";
+		case CRYDATATYPE_4BYTES:
+			return "4 Bytes";
+		case CRYDATATYPE_8BYTES:
+			return "8 Bytes";
+		case CRYDATATYPE_FLOAT:
+			return "Float";
+		case CRYDATATYPE_DOUBLE:
+			return "Double";
+		case CRYDATATYPE_AOB:
+			return "Array of Bytes";
+		case CRYDATATYPE_STRING:
+			return "String";
+		case CRYDATATYPE_WSTRING:
+			return "WString";
+	}
+
+	// The data type could not be resolved.
+	return NULL;
 }

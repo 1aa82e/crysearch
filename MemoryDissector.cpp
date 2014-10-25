@@ -71,7 +71,7 @@ void MemoryDissector::DissectPartial(const Tuple2<int, int>& range)
 	// Calculate memory block to read.
 	for (; i <= range.b; ++i)
 	{
-		size += this->mDissectionRows[i].RowSize;
+		size += GetDataSizeFromValueType(this->mDissectionRows[i].RowType);
 	}
 	
 	// Read calculated memory block into local buffer.
@@ -87,7 +87,7 @@ void MemoryDissector::DissectPartial(const Tuple2<int, int>& range)
 		{
 			DissectionRowEntry* const row = &this->mDissectionRows[i];
 			row->RowValue = *(SIZE_T*)(buffer + size);
-			size += row->RowSize;
+			size += GetDataSizeFromValueType(row->RowType);
 		}
 	}
 	

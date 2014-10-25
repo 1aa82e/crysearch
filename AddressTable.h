@@ -44,7 +44,7 @@ struct AddressTableEntry : Moveable<AddressTableEntry>
 	
 	// Represents the value type of the address table entry. This field is trivial and 
 	// is considered leading information for a great part of the address table behavior.
-	String ValueType;
+	CCryDataType ValueType;
 	
 	// Represents the value of the address table entry. This field contains the user interface
 	// representation of the value because it is not persisted in the file.
@@ -83,7 +83,7 @@ struct AddressTableEntry : Moveable<AddressTableEntry>
 	// Default address table entry constructor.
 	AddressTableEntry()
 	{
-		this->ValueType = "4 Bytes";
+		this->ValueType = CRYDATATYPE_4BYTES;
 		this->Size = 0;
 		this->Frozen = false;
 		this->Address = 0;
@@ -167,13 +167,13 @@ public:
 	void Xmlize(XmlIO& s);
 	
 #ifdef _WIN64
-	void Remove(const __int64 address, const String& valueType);
-	AddressTableEntry* Add(const String& description, const __int64 address, const BOOLEAN IsRelative, const String& valueType);
-	const int Find(const __int64 address, const String& valueType) const;
+	void Remove(const __int64 address, const CCryDataType valueType);
+	AddressTableEntry* Add(const String& description, const __int64 address, const BOOLEAN IsRelative, const CCryDataType valueType);
+	const int Find(const __int64 address, const CCryDataType valueType) const;
 #else
-	void Remove(const int address, const String& valueType);
-	AddressTableEntry* Add(const String& description, const int address, const BOOLEAN IsRelative, const String& valueType);
-	const int Find(const int address, const String& valueType) const;
+	void Remove(const int address, const CCryDataType valueType);
+	AddressTableEntry* Add(const String& description, const int address, const BOOLEAN IsRelative, const CCryDataType valueType);
+	const int Find(const int address, const CCryDataType valueType) const;
 #endif
 	
 	void Clear();

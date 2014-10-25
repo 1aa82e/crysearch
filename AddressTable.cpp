@@ -36,7 +36,7 @@ void AddressTable::Clear()
 
 // Finds an entry in the table.
 #ifdef _WIN64
-	const int AddressTable::Find(const __int64 address, const String& valueType) const
+	const int AddressTable::Find(const __int64 address, const CCryDataType valueType) const
 	{
 		for (int i = 0; i < this->mEntries.GetCount(); i++)
 		{
@@ -49,7 +49,7 @@ void AddressTable::Clear()
 		return -1;
 	}
 #else
-	const int AddressTable::Find(const int address, const String& valueType) const
+	const int AddressTable::Find(const int address, const CCryDataType valueType) const
 	{
 		for (int i = 0; i < this->mEntries.GetCount(); i++)
 		{
@@ -141,7 +141,7 @@ const bool AddressTable::GetRelativeDisplayString(const AddressTableEntry* entry
 
 // Adds / removes an entry in/from the address table.
 #ifdef _WIN64
-	AddressTableEntry* AddressTable::Add(const String& description, const __int64 address, const BOOLEAN IsRelative, const String& valueType)
+	AddressTableEntry* AddressTable::Add(const String& description, const __int64 address, const BOOLEAN IsRelative, const CCryDataType valueType)
 	{
 		AddressTableEntry ent;
 		ent.Frozen = false;
@@ -166,7 +166,7 @@ const bool AddressTable::GetRelativeDisplayString(const AddressTableEntry* entry
 		return &(this->mEntries.Add(ent));
 	}
 	
-	void AddressTable::Remove(const __int64 address, const String& valueType)
+	void AddressTable::Remove(const __int64 address, const CCryDataType valueType)
 	{
 		for (int i = 0; i < this->mEntries.GetCount(); i++)
 		{
@@ -178,7 +178,7 @@ const bool AddressTable::GetRelativeDisplayString(const AddressTableEntry* entry
 		}
 	}
 #else
-	AddressTableEntry* AddressTable::Add(const String& description, const int address, const BOOLEAN IsRelative, const String& valueType)
+	AddressTableEntry* AddressTable::Add(const String& description, const int address, const BOOLEAN IsRelative, const CCryDataType valueType)
 	{
 		AddressTableEntry ent;
 		ent.Frozen = false;
@@ -203,7 +203,7 @@ const bool AddressTable::GetRelativeDisplayString(const AddressTableEntry* entry
 		return &(this->mEntries.Add(ent));
 	}
 	
-	void AddressTable::Remove(const int address, const String& valueType)
+	void AddressTable::Remove(const int address, const CCryDataType valueType)
 	{
 		for (int i = 0; i < this->mEntries.GetCount(); i++)
 		{

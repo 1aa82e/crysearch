@@ -247,6 +247,7 @@ void CryMemoryDissectionWindow::RefreshDissection()
 void CryMemoryDissectionWindow::AddressViewModeClicked()
 {
 	DissectionAddressViewMode = !DissectionAddressViewMode;
+	this->mDissection.SetVirtualCount(loadedTable.GetDissection(MemoryDissectionMasterIndex)->AssociatedDissector.GetDissectionRowCount());
 }
 
 // Sets the memory dissection size to one byte.

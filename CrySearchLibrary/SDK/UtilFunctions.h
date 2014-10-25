@@ -14,6 +14,20 @@
 #define SAFE_BUFFER_SIZE_PROCESS	13
 #define SAFE_BUFFER_SIZE_REGKEY		11
 
+// Defines a CrySearch data type representation.
+typedef int CCryDataType;
+
+// Possible CrySearch data types. Droplist indices can be used to identify.
+#define CRYDATATYPE_BYTE			0
+#define CRYDATATYPE_2BYTES			1
+#define CRYDATATYPE_4BYTES			2
+#define CRYDATATYPE_8BYTES			3
+#define CRYDATATYPE_FLOAT			4
+#define CRYDATATYPE_DOUBLE			5
+#define CRYDATATYPE_AOB				6
+#define CRYDATATYPE_STRING			7
+#define CRYDATATYPE_WSTRING			8
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -22,10 +36,11 @@ extern "C"
 	void CrySetBits(DWORD_PTR* const dw, const int lowBit, const int bits, const int newValue);
 	const BOOL GetIsMultipleOf(const LONG_PTR intVal, const int mulVal);
 	void GetHandleObjectAccess(const DWORD type, const DWORD mask, char** const outBuffer, DWORD* const outSize);
-	const char* CodeGeneratorParseFieldType(const char* valueType);
+	const char* CodeGeneratorParseFieldType(const CCryDataType valueType);
 	const char* GetCrySearchValueTypeFromCheatTableVariableType(const char* varType, const BOOLEAN unicode);
-	const int GetDataSizeFromValueType(const char* type);
+	const int GetDataSizeFromValueType(CCryDataType type);
 	void AlignPointer(DWORD_PTR* Address, const DWORD Boundary);
+	const char* GetCrySearchDataTypeRepresentation(const CCryDataType type);
 
 	// Retrieves information about the processor in the current system.
 	// Returns a string of supported extensions into the first parameter.

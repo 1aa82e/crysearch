@@ -8,7 +8,6 @@ CrySearch application TODO list by evolution536
 	- generate struct definition from selection;
 	- save struct (selection) to address table (not entirely, I guess, with type guessing I should save different offsets);
 
-- User interface saving of value inside a string can be different, taking up less code;
 - There is a bug in the process selection window when fooling around with non-responsive processes;
 - Also a bug in the main window complaining about GUI locking (hard to reproduce);
 
@@ -42,6 +41,7 @@ CrySearch application TODO list by evolution536
 - Allow entering string as argument for create thread (let's make a custom data type of it);
 - Indicate architecture in process list;
 - Implement process polling by name, open when it polls succesfully;
+- Find import function in window (button on top)?
 
 - Debugger:
 	- Far Cry doesn't want to listen to meh;
