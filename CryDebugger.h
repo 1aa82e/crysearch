@@ -176,11 +176,11 @@ private:
 	Thread dbgThread;
 
 	void ExceptionWatch();
-	void HideDebuggerFromPeb() const;
 	void DbgThread();
 	
 	const int FindBreakpointByPreviousInstruction(const SIZE_T address);
 	
+	virtual void HideDebuggerFromPeb() const = 0;
 	virtual void HandleSoftwareBreakpoint(const DWORD threadId, const SIZE_T addr) = 0;
 	virtual void HandleHardwareBreakpoint(const DWORD threadId, const SIZE_T addr) = 0;
 	virtual void RemoveSingleStepFromBreakpoint(const DWORD threadId) = 0;
@@ -235,6 +235,7 @@ public:
 class CryDebugger32 : public CryDebugger
 {
 private:
+	virtual void HideDebuggerFromPeb() const;
 	virtual bool BreakpointRoutine(HardwareBreakpoint* pHwbp) const;
 	virtual void HandleSoftwareBreakpoint(const DWORD threadId, const SIZE_T addr);
 	virtual void HandleHardwareBreakpoint(const DWORD threadId, const SIZE_T addr);
@@ -256,6 +257,7 @@ public:
 	class CryDebugger64 : public CryDebugger
 	{
 	private:
+		virtual void HideDebuggerFromPeb() const;
 		virtual bool BreakpointRoutine(HardwareBreakpoint* pHwbp) const;
 		virtual void RemoveSingleStepFromBreakpoint(const DWORD threadId);
 		virtual void HandleSoftwareBreakpoint(const DWORD threadId, const SIZE_T addr);

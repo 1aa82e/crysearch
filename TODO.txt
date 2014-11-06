@@ -11,6 +11,8 @@ CrySearch application TODO list by evolution536
 - There is a bug in the process selection window when fooling around with non-responsive processes;
 - Also a bug in the main window complaining about GUI locking (hard to reproduce);
 
+- MASM SDK for plugins;
+
 - Identify static addresses:
 	- Code generation customized to use offsets;
 	- Pointers as addresses (using offsets);
@@ -153,7 +155,7 @@ Add this function to the AMap class:
 - App.cpp: Comment out GetUserName function;
 - ArrayCtrl.h:
 	- Move cellInfo variable in to protected;
-	- Comment out SerializeHeader and IsLineDisabled;
+	- Comment out SerializeHeader.
 - DropChoice.h:
 	- Comment out operator[int], NotNull, DropWidth, DropWidthZ;
 - Ctrl.iml:

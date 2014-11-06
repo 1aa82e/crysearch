@@ -8,6 +8,7 @@ using namespace Upp;
 #include "CrySearchArrayCtrl.h"
 #include "VirtualDropList.h"
 #include "AddressTable.h"
+#include "DissectionRowSizeCtrl.h"
 
 // Represents the memory dissection window inside the CrySearch main window menu.
 class CryMemoryDissectionWindow : public TopWindow
@@ -17,6 +18,7 @@ private:
 	MenuBar mMenuBar;
 	VirtualDropList mAvailableDissections;
 	CrySearchArrayCtrl mDissection;
+	DissectionRowSizeCtrl mRowSizeControl;
 	
 	void WindowMenuBar(Bar& pBar);
 	void FileMenuBar(Bar& pBar);
@@ -42,11 +44,20 @@ private:
 	void OffsetMenuTwoBytes();
 	void OffsetMenuFourBytes();
 	void OffsetMenuEightBytes();
+	void OffsetMenuFloat();
+	void OffsetMenuDouble();
 	void RowOffsetMenuByte();
 	void RowOffsetMenuTwoBytes();
 	void RowOffsetMenuFourBytes();
 	void RowOffsetMenuEightBytes();
+	void RowOffsetMenuFloat();
+	void RowOffsetMenuDouble();
+	void RowOffsetMenuAOB();
+	void RowOffsetMenuString();
+	void RowOffsetMenuWString();
 	void AddressViewModeClicked();
+	void RowEntryChangeDataSize(const int value);
+	void AlterSuccessingRows(const int row, const int diff);
 	
 	typedef CryMemoryDissectionWindow CLASSNAME;
 public:

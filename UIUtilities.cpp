@@ -180,3 +180,37 @@ String GenerateByteArray(const Vector<ArrayOfBytes*>& byteArrays, const DWORD ar
 	retVal += " };";
 	return retVal;
 }
+
+// Parses the input data as string representation for the input value type.
+// Returns a newly constructed string containing the string representation.
+// The size parameter is optional, and is only used for string, wstring and AOB types.
+// If the function failed, the return value is an empty string.
+String ValueAsStringInternal(const Byte* data, const CCryDataType type, const int size)
+{
+	switch (type)
+	{
+		case CRYDATATYPE_BYTE:
+			return IntStr(*(Byte*)data);
+		case CRYDATATYPE_2BYTES:
+			return IntStr(*(short*)data);
+		case CRYDATATYPE_4BYTES:
+			return IntStr(*(int*)data);
+		case CRYDATATYPE_8BYTES:
+			return IntStr64(*(__int64*)data);
+		case CRYDATATYPE_FLOAT:
+			char str[DBL_MAX_10_EXP + 2];
+			sprintf_s(str, DBL_MAX_10_EXP + 2, "%f", *(float*)data);
+			return str;
+		case CRYDATATYPE_DOUBLE:
+			return DblStr(*(double*)data);
+		case CRYDATATYPE_AOB:
+			return BytesToString(data, size);
+		case CRYDATATYPE_STRING:
+			return String(data, size);
+		case CRYDATATYPE_WSTRING:
+			return WString((wchar*)data, size).ToString();
+	}
+	
+	// Empty string is returned in case the type is invalid.
+	return "";
+}

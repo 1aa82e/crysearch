@@ -249,8 +249,8 @@ void CrySearchForm::AddressValuesUpdater()
 				float value;
 				if (mMemoryScanner->Peek<float>(loadedTable[start]->Address, 0, &value))
 				{
-					char str[32];
-					sprintf_s(str, 32, "%f", value);
+					char str[DBL_MAX_10_EXP + 2];
+					sprintf_s(str, DBL_MAX_10_EXP + 2, "%f", value);
 					loadedTable[start]->Value = str;
 				}
 				else

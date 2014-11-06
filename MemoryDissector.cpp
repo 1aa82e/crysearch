@@ -1,4 +1,5 @@
 #include "MemoryDissector.h"
+#include "UIUtilities.h"
 #include "GlobalDef.h"
 
 // Default constructor of the MemoryDissector class.
@@ -50,7 +51,8 @@ bool MemoryDissector::Dissect(const int rowOffset)
 		int totalSteps = 0;
 		for (Byte* loop = buffer; loop < endAddr; loop += rowOffset, totalSteps += rowOffset)
 		{
-			this->mDissectionRows.Add(DissectionRowEntry(totalSteps, *(SIZE_T*)loop, rowOffset));
+			// The first dissection should have a default row size, or type guessing.
+			this->mDissectionRows.Add(DissectionRowEntry(totalSteps, ValueAsStringInternal(loop, CRYDATATYPE_4BYTES, 0), CRYDATATYPE_4BYTES, 0));
 		}
 		
 		result = true;
@@ -75,6 +77,7 @@ void MemoryDissector::DissectPartial(const Tuple2<int, int>& range)
 	}
 	
 	// Read calculated memory block into local buffer.
+	// sizeof(SIZE_T) bytes are added to avoid the user interface from flickering in the last three rows.
 	const DWORD endSz = size + sizeof(SIZE_T);
 	Byte* buffer = new Byte[endSz];
 	SIZE_T bytesRead;
@@ -86,8 +89,8 @@ void MemoryDissector::DissectPartial(const Tuple2<int, int>& range)
 		for (i = range.a; i <= range.b; ++i)
 		{
 			DissectionRowEntry* const row = &this->mDissectionRows[i];
-			row->RowValue = *(SIZE_T*)(buffer + size);
-			size += GetDataSizeFromValueType(row->RowType);
+			row->RowValue = ValueAsStringInternal(buffer + size, row->RowType, row->DataLength);
+			size += row->DataLength > 0 ? row->DataLength : GetDataSizeFromValueType(row->RowType);
 		}
 	}
 	
@@ -111,4 +114,18 @@ void MemoryDissector::SetBaseAddress(const SIZE_T addr)
 void MemoryDissector::SetRegionSize(const DWORD regionSize)
 {
 	this->mRegionSize = regionSize;
+}
+
+// Sets the same dissection type for every loaded dissection row entry.
+void MemoryDissector::SetGlobalDissectionType(const CCryDataType type)
+{
+	const int count = this->mDissectionRows.GetCount();
+	for (int i = 0; i < count; ++i)
+	{
+		DissectionRowEntry& entry = this->mDissectionRows[i];
+		entry.RowType = type;
+		
+		// We assume that this function is never called to change the global type to aob, string or wstring.
+		entry.DataLength = 0;
+	}
 }

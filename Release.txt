@@ -12,12 +12,14 @@ v1.13
 		- Basic dissection of memory blocks. Click Tools->Memory Dissection;
 		- Time-based updating of display-visible memory region. The interval is configurable;
 		- Right-click address table entry and create a dissection from it with a single click;
-		- 
+		- Typing of dissection entries where type and length are selectable per row.
 	- Improved performance of memory scan that was decreased by the relative addresses feature;
 	- Fixed bug in address table where relative address weren't resolved if process was loaded after address table file was loaded;
 	- Fixed bug in address table where saving address table entries that didn't correctly resolve on load as invalid relative address crashed CrySearch;
 	- Fixed bug in main window where 'Edit'->'Clear Address List' would crash CrySearch if process was closed before clearing;
 	- Fixed bug in main window where closing a process would not refresh address table correctly;
+	- Fixed bug in process environment block window where x64 PEB address was not displayed correctly;
+	- Added Anti-Anti-Debugging with NtGlobalFlags. Attempting to hide the debugger from PEB option utilizes this feature.
 v1.12
 	- Fixed bug in process selection window where search box may reveal duplicate processes in the list;
 	- Added possibility to disable a breakpoint before removing it from the list to allow the breakpoint data to be available when the breakpoint is inactive. Available from right-click in debugger window;

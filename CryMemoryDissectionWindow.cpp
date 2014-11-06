@@ -35,33 +35,43 @@ String GetDissectionForDropList(const int index)
 
 String GetDissectionAddress(const int index)
 {
-	const MemoryDissectionEntry* dissection = loadedTable.GetDissection(MemoryDissectionMasterIndex);
+	MemoryDissectionEntry* dissection = loadedTable.GetDissection(MemoryDissectionMasterIndex);
+	const DissectionRowEntry* entry = dissection->AssociatedDissector[index];
 	const SIZE_T addr = dissection->AssociatedDissector.GetBaseAddress();
 	
 	if (!DissectionAddressViewMode)
 	{
 #ifdef _WIN64
-	return Format("%llX", (LONG_PTR)addr + dissection->AssociatedDissector[index]->RowOffset);
+		return Format("%llX - (%s)", (LONG_PTR)addr + entry->RowOffset, GetCrySearchDataTypeRepresentation(entry->RowType));
 #else
-	return Format("%lX", (LONG_PTR)addr + dissection->AssociatedDissector[index]->RowOffset);
+		return Format("%lX - (%s)", (LONG_PTR)addr + entry->RowOffset, GetCrySearchDataTypeRepresentation(entry->RowType));
 #endif		
 	}
 	else
 	{
-	return Format("%lX", (LONG_PTR)dissection->AssociatedDissector[index]->RowOffset);	
+		return Format("%lX - (%s)", (LONG_PTR)entry->RowOffset, GetCrySearchDataTypeRepresentation(entry->RowType));	
 	}
 }
 
 String GetDissectionValue(const int index)
 {
 	// Need to check this! (Different row sizes will bring trouble)
-	if (SettingsFile::GetInstance()->GetDissectionHexadecimalView())
+	const bool hex = SettingsFile::GetInstance()->GetDissectionHexadecimalView();
+	const DissectionRowEntry* entry = loadedTable.GetDissection(MemoryDissectionMasterIndex)->AssociatedDissector[index];
+	if (entry->RowType != CRYDATATYPE_STRING && entry->RowType != CRYDATATYPE_AOB && entry->RowType != CRYDATATYPE_WSTRING)
 	{
-		return Format("%lX", (LONG_PTR)loadedTable.GetDissection(MemoryDissectionMasterIndex)->AssociatedDissector[index]->RowValue);
+		if (entry->RowType == CRYDATATYPE_8BYTES)
+		{
+			return hex ? Format("%llX", ScanInt64(entry->RowValue.ToString(), NULL, 10)) : entry->RowValue;	
+		}
+		else
+		{
+			return hex ? Format("%lX", ScanInt(entry->RowValue.ToString(), NULL, 10)) : entry->RowValue;		
+		}
 	}
 	else
 	{
-		return Format("%li", (LONG_PTR)loadedTable.GetDissection(MemoryDissectionMasterIndex)->AssociatedDissector[index]->RowValue);
+		return entry->RowValue;
 	}
 }
 
@@ -75,6 +85,9 @@ CryMemoryDissectionWindow::CryMemoryDissectionWindow(const AddressTableEntry* co
 	this->mMenuBar.Set(THISBACK(WindowMenuBar));
 	
 	*this << this->mDissection.MultiSelect().NoGrid().NoMovingHeader().SizePos();
+	
+	// Set properties of row-specific size input field.
+	this->mRowSizeControl.WhenValueSet = THISBACK(RowEntryChangeDataSize);
 	
 	this->mDissection.WhenBar = THISBACK(DissectionRightClick);
 	this->mDissection.AddRowNumColumn("Address").SetConvert(Single<IndexBasedValueConvert<GetDissectionAddress>>());
@@ -90,7 +103,8 @@ CryMemoryDissectionWindow::CryMemoryDissectionWindow(const AddressTableEntry* co
 	this->mAvailableDissections.SetCount(count);
 	if (count > 0)
 	{
-		this->mAvailableDissections.SetIndex(0);
+		this->mAvailableDissections.SetIndex(0)
+;
 		this->RefreshDissection();
 	}
 	
@@ -160,6 +174,8 @@ void CryMemoryDissectionWindow::SetOffsetsMenuOpened(Bar& pBar)
 	pBar.Add("2 Bytes", THISBACK(OffsetMenuTwoBytes));
 	pBar.Add("4 Bytes", THISBACK(OffsetMenuFourBytes));
 	pBar.Add("8 Bytes", THISBACK(OffsetMenuEightBytes));
+	pBar.Add("Float", THISBACK(OffsetMenuFloat));
+	pBar.Add("Double", THISBACK(OffsetMenuDouble));
 }
 
 void CryMemoryDissectionWindow::DissectionRightClick(Bar& pBar)
@@ -174,10 +190,28 @@ void CryMemoryDissectionWindow::DissectionRightClick(Bar& pBar)
 
 void CryMemoryDissectionWindow::ChangeRowOffsetMenu(Bar& pBar)
 {
-	pBar.Add("Byte", THISBACK(RowOffsetMenuByte));
-	pBar.Add("2 Bytes", THISBACK(RowOffsetMenuTwoBytes));
-	pBar.Add("4 Bytes", THISBACK(RowOffsetMenuFourBytes));
-	pBar.Add("8 Bytes", THISBACK(RowOffsetMenuEightBytes));
+	// Get selected dissection to find out which type is currently set.
+	const DissectionRowEntry* row = loadedTable.GetDissection(MemoryDissectionMasterIndex)->AssociatedDissector[this->mDissection.GetCursor()];
+	
+	// Add menu items with type check.
+	pBar.Add("Byte", THISBACK(RowOffsetMenuByte)).Check(row->RowType == CRYDATATYPE_BYTE);
+	pBar.Add("2 Bytes", THISBACK(RowOffsetMenuTwoBytes)).Check(row->RowType == CRYDATATYPE_2BYTES);
+	pBar.Add("4 Bytes", THISBACK(RowOffsetMenuFourBytes)).Check(row->RowType == CRYDATATYPE_4BYTES);
+	pBar.Add("8 Bytes", THISBACK(RowOffsetMenuEightBytes)).Check(row->RowType == CRYDATATYPE_8BYTES);
+	pBar.Add("Float", THISBACK(RowOffsetMenuFloat)).Check(row->RowType == CRYDATATYPE_FLOAT);
+	pBar.Add("Double", THISBACK(RowOffsetMenuDouble)).Check(row->RowType == CRYDATATYPE_DOUBLE);
+	pBar.Add("Array of Bytes", THISBACK(RowOffsetMenuAOB)).Check(row->RowType == CRYDATATYPE_AOB);
+	pBar.Add("String", THISBACK(RowOffsetMenuString)).Check(row->RowType == CRYDATATYPE_STRING);
+	pBar.Add("WString", THISBACK(RowOffsetMenuWString)).Check(row->RowType == CRYDATATYPE_WSTRING);
+	
+	// If the selected type is aob, string or wstring, the size should be editable.
+	if (row->RowType == CRYDATATYPE_AOB || row->RowType == CRYDATATYPE_STRING || row->RowType == CRYDATATYPE_WSTRING)
+	{
+		pBar.Separator();
+		pBar.Add("Set Length", this->mRowSizeControl.LeftPos(0, 130).TopPos(0));
+		pBar.Separator();
+		this->mRowSizeControl.SetValueInt(row->DataLength);
+	}
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -193,6 +227,7 @@ void CryMemoryDissectionWindow::IntervalUpdateDissection()
 		MemoryDissector* const md = &loadedTable.GetDissection(MemoryDissectionMasterIndex)->AssociatedDissector;
 		if (visibleMemory.a >= 0 && visibleMemory.b < md->GetDissectionRowCount())
 		{
+			// Dissect the region selected using the partial dissection function.
 			md->DissectPartial(visibleMemory);
 		}
 		
@@ -253,59 +288,160 @@ void CryMemoryDissectionWindow::AddressViewModeClicked()
 // Sets the memory dissection size to one byte.
 void CryMemoryDissectionWindow::OffsetMenuByte()
 {
-	MemoryDissectionEntry* entry = loadedTable.GetDissection(MemoryDissectionMasterIndex);
-	entry->AssociatedDissector.Dissect(sizeof(Byte));
-	this->mDissection.SetVirtualCount(entry->AssociatedDissector.GetDissectionRowCount());
+	loadedTable.GetDissection(MemoryDissectionMasterIndex)->AssociatedDissector.SetGlobalDissectionType(CRYDATATYPE_BYTE);
 }
 
 // Sets the memory dissection size to two bytes.
 void CryMemoryDissectionWindow::OffsetMenuTwoBytes()
 {
-	MemoryDissectionEntry* entry = loadedTable.GetDissection(MemoryDissectionMasterIndex);
-	entry->AssociatedDissector.Dissect(sizeof(short));
-	this->mDissection.SetVirtualCount(entry->AssociatedDissector.GetDissectionRowCount());
+	loadedTable.GetDissection(MemoryDissectionMasterIndex)->AssociatedDissector.SetGlobalDissectionType(CRYDATATYPE_2BYTES);
 }
 
 // Sets the memory dissection size to four bytes.
 void CryMemoryDissectionWindow::OffsetMenuFourBytes()
 {
-	MemoryDissectionEntry* entry = loadedTable.GetDissection(MemoryDissectionMasterIndex);
-	entry->AssociatedDissector.Dissect(sizeof(int));
-	this->mDissection.SetVirtualCount(entry->AssociatedDissector.GetDissectionRowCount());
+	loadedTable.GetDissection(MemoryDissectionMasterIndex)->AssociatedDissector.SetGlobalDissectionType(CRYDATATYPE_4BYTES);
 }
 
 // Sets the memory dissection size to eight bytes.
 void CryMemoryDissectionWindow::OffsetMenuEightBytes()
 {
-	MemoryDissectionEntry* entry = loadedTable.GetDissection(MemoryDissectionMasterIndex);
-	entry->AssociatedDissector.Dissect(sizeof(__int64));
-	this->mDissection.SetVirtualCount(entry->AssociatedDissector.GetDissectionRowCount());
+	loadedTable.GetDissection(MemoryDissectionMasterIndex)->AssociatedDissector.SetGlobalDissectionType(CRYDATATYPE_8BYTES);
+}
+
+// Sets the memory dissection type to float.
+void CryMemoryDissectionWindow::OffsetMenuFloat()
+{
+	loadedTable.GetDissection(MemoryDissectionMasterIndex)->AssociatedDissector.SetGlobalDissectionType(CRYDATATYPE_FLOAT);
+}
+
+// Sets the memory dissection type to double.
+void CryMemoryDissectionWindow::OffsetMenuDouble()
+{
+	loadedTable.GetDissection(MemoryDissectionMasterIndex)->AssociatedDissector.SetGlobalDissectionType(CRYDATATYPE_DOUBLE);
 }
 
 // ---------------------------------------------------------------------------------------------
 
+// Changes the size of a string, wstring or aob row data type. Only called in case of this data type.
+void CryMemoryDissectionWindow::RowEntryChangeDataSize(const int value)
+{
+	const int row = this->mDissection.GetCursor();
+	int* const lenPtr = &loadedTable.GetDissection(MemoryDissectionMasterIndex)->AssociatedDissector[row]->DataLength;
+	const int oldLen = *lenPtr;
+	*lenPtr = value;
+	this->AlterSuccessingRows(row, value - oldLen);
+}
+
+// When a row is altered, the successing rows must be altered as well.
+void CryMemoryDissectionWindow::AlterSuccessingRows(const int row, const int diff)
+{
+	const int count = loadedTable.GetDissection(MemoryDissectionMasterIndex)->AssociatedDissector.GetDissectionRowCount();
+	for (int i = max(row, 1); i < count; ++i)
+	{
+		// Increment every dissection entry by the specified difference.
+		loadedTable.GetDissection(MemoryDissectionMasterIndex)->AssociatedDissector[i]->RowOffset += diff;
+	}
+}
+
 // Sets the memory dissection size of the selected row to one byte.
 void CryMemoryDissectionWindow::RowOffsetMenuByte()
 {
-	
+	const int row = this->mDissection.GetCursor();
+	DissectionRowEntry* entry = loadedTable.GetDissection(MemoryDissectionMasterIndex)->AssociatedDissector[row];
+	const int oldSize = GetDataSizeFromValueType(entry->RowType);
+	entry->RowType = CRYDATATYPE_BYTE;
+	entry->DataLength = 0;
+	this->AlterSuccessingRows(row, GetDataSizeFromValueType(CRYDATATYPE_BYTE) - oldSize);
 }
 
 // Sets the memory dissection size of the selected row to two bytes.
 void CryMemoryDissectionWindow::RowOffsetMenuTwoBytes()
 {
-	
+	const int row = this->mDissection.GetCursor();
+	DissectionRowEntry* entry = loadedTable.GetDissection(MemoryDissectionMasterIndex)->AssociatedDissector[row];
+	const int oldSize = GetDataSizeFromValueType(entry->RowType);
+	entry->RowType = CRYDATATYPE_2BYTES;
+	entry->DataLength = 0;
+	this->AlterSuccessingRows(row, GetDataSizeFromValueType(CRYDATATYPE_2BYTES) - oldSize);
 }
 
 // Sets the memory dissection size of the selected row to four bytes.
 void CryMemoryDissectionWindow::RowOffsetMenuFourBytes()
 {
-	
+	const int row = this->mDissection.GetCursor();
+	DissectionRowEntry* entry = loadedTable.GetDissection(MemoryDissectionMasterIndex)->AssociatedDissector[row];
+	const int oldSize = GetDataSizeFromValueType(entry->RowType);
+	entry->RowType = CRYDATATYPE_4BYTES;
+	entry->DataLength = 0;
+	this->AlterSuccessingRows(row, GetDataSizeFromValueType(CRYDATATYPE_4BYTES) - oldSize);
 }
 
 // Sets the memory dissection size of the selected row to eight bytes.
 void CryMemoryDissectionWindow::RowOffsetMenuEightBytes()
 {
-	
+	const int row = this->mDissection.GetCursor();
+	DissectionRowEntry* entry = loadedTable.GetDissection(MemoryDissectionMasterIndex)->AssociatedDissector[row];
+	const int oldSize = GetDataSizeFromValueType(entry->RowType);
+	entry->RowType = CRYDATATYPE_8BYTES;
+	entry->DataLength = 0;
+	this->AlterSuccessingRows(row, GetDataSizeFromValueType(CRYDATATYPE_8BYTES) - oldSize);
+}
+
+// Sets the memory dissection type of the selected row to float.
+void CryMemoryDissectionWindow::RowOffsetMenuFloat()
+{
+	const int row = this->mDissection.GetCursor();
+	DissectionRowEntry* entry = loadedTable.GetDissection(MemoryDissectionMasterIndex)->AssociatedDissector[row];
+	const int oldSize = GetDataSizeFromValueType(entry->RowType);
+	entry->RowType = CRYDATATYPE_FLOAT;
+	entry->DataLength = 0;
+	this->AlterSuccessingRows(row, GetDataSizeFromValueType(CRYDATATYPE_FLOAT) - oldSize);
+}
+
+// Sets the memory dissection type of the selected row to double.
+void CryMemoryDissectionWindow::RowOffsetMenuDouble()
+{
+	const int row = this->mDissection.GetCursor();
+	DissectionRowEntry* entry = loadedTable.GetDissection(MemoryDissectionMasterIndex)->AssociatedDissector[row];
+	const int oldSize = GetDataSizeFromValueType(entry->RowType);
+	entry->RowType = CRYDATATYPE_DOUBLE;
+	entry->DataLength = 0;
+	this->AlterSuccessingRows(row, GetDataSizeFromValueType(CRYDATATYPE_DOUBLE) - oldSize);
+}
+
+// Sets the memory dissection type of the selected row to AOB.
+void CryMemoryDissectionWindow::RowOffsetMenuAOB()
+{
+	const int row = this->mDissection.GetCursor();
+
+	DissectionRowEntry* entry = loadedTable.GetDissection(MemoryDissectionMasterIndex)->AssociatedDissector[row];
+	const int oldSize = GetDataSizeFromValueType(entry->RowType);
+	entry->RowType = CRYDATATYPE_AOB;
+	entry->DataLength = GetDataSizeFromValueType(CRYDATATYPE_AOB);
+	this->AlterSuccessingRows(row, entry->DataLength - oldSize);
+}
+
+// Sets the memory dissection type of the selected row to string.
+void CryMemoryDissectionWindow::RowOffsetMenuString()
+{
+	const int row = this->mDissection.GetCursor();
+	DissectionRowEntry* entry = loadedTable.GetDissection(MemoryDissectionMasterIndex)->AssociatedDissector[row];
+	const int oldSize = GetDataSizeFromValueType(entry->RowType);
+	entry->RowType = CRYDATATYPE_STRING;
+	entry->DataLength = GetDataSizeFromValueType(CRYDATATYPE_STRING);
+	this->AlterSuccessingRows(row, entry->DataLength - oldSize);
+}
+
+// Sets the memory dissection type of the selected row to wstring.
+void CryMemoryDissectionWindow::RowOffsetMenuWString()
+{
+	const int row = this->mDissection.GetCursor();
+	DissectionRowEntry* entry = loadedTable.GetDissection(MemoryDissectionMasterIndex)->AssociatedDissector[row];
+	const int oldSize = GetDataSizeFromValueType(entry->RowType);
+	entry->RowType = CRYDATATYPE_WSTRING;
+	entry->DataLength = GetDataSizeFromValueType(CRYDATATYPE_STRING);
+	this->AlterSuccessingRows(row, entry->DataLength - oldSize);
 }
 
 // ---------------------------------------------------------------------------------------------

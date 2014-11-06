@@ -58,6 +58,8 @@ file
 	CryMemoryDissectionNewWindow.h,
 	CryMemoryDissectionWindow.cpp,
 	CryMemoryDissectionWindow.h,
+	DissectionRowSizeCtrl.cpp,
+	DissectionRowSizeCtrl.h,
 	CryCodeGenerationForm.cpp,
 	CryCodeGenerationForm.h,
 	CryAddHotkeyWindow.cpp,

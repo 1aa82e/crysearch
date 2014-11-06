@@ -4,6 +4,7 @@
 #include <CtrlLib/CtrlLib.h>
 
 #include "MemoryScanner.h"
+#include "CrySearchLibrary/SDK/CrySearch.h"
 
 using namespace Upp;
 
@@ -23,6 +24,9 @@ String GenerateRandomWindowTitle();
 
 // Generates a string-style signature of disassembly to be used in C or C++ code.
 String GenerateStringStyleSignature(const Vector<ArrayOfBytes*>& byteArrays, DWORD* outSigLength);
+
+// Parses the input data as string representation for the input value type.
+String ValueAsStringInternal(const Byte* data, const CCryDataType type, const int size);
 
 // Parameter definitions for the function below.
 #define ARRAYTYPE_CPP		0

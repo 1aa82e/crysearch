@@ -36,6 +36,42 @@
 #define EFLAGS_VIRTUAL_INTERRUPT_PENDING	0x00100000
 #define EFLAGS_CPUID_AVAILABLE				0x00200000
 
+// NtGlobalFlags constants in Process Environment Block.
+#define FLG_STOP_ON_EXCEPTION 0x00000001
+#define FLG_SHOW_LDR_SNAPS 0x00000002
+#define FLG_DEBUG_INITIAL_COMMAND 0x00000004
+#define FLG_STOP_ON_HUNG_GUI 0x00000008
+#define FLG_HEAP_ENABLE_TAIL_CHECK 0x00000010
+#define FLG_HEAP_ENABLE_FREE_CHECK 0x00000020
+#define FLG_HEAP_VALIDATE_PARAMETERS 0x00000040
+#define FLG_HEAP_VALIDATE_ALL 0x00000080
+#define FLG_POOL_ENABLE_TAIL_CHECK 0x00000100
+#define FLG_POOL_ENABLE_FREE_CHECK 0x00000200
+#define FLG_POOL_ENABLE_TAGGING 0x00000400
+#define FLG_HEAP_ENABLE_TAGGING 0x00000800
+#define FLG_USER_STACK_TRACE_DB 0x00001000
+#define FLG_KERNEL_STACK_TRACE_DB 0x00002000
+#define FLG_MAINTAIN_OBJECT_TYPELIST 0x00004000
+#define FLG_HEAP_ENABLE_TAG_BY_DLL 0x00008000
+#define FLG_IGNORE_DEBUG_PRIV 0x00010000
+#define FLG_ENABLE_CSRDEBUG 0x00020000
+#define FLG_ENABLE_KDEBUG_SYMBOL_LOAD 0x00040000
+#define FLG_DISABLE_PAGE_KERNEL_STACKS 0x00080000
+#define FLG_HEAP_ENABLE_CALL_TRACING 0x00100000
+#define FLG_HEAP_DISABLE_COALESCING 0x00200000
+#define FLG_VALID_BITS 0x003FFFFF
+#define FLG_ENABLE_CLOSE_EXCEPTION 0x00400000
+#define FLG_ENABLE_EXCEPTION_LOGGING 0x00800000
+#define FLG_ENABLE_HANDLE_TYPE_TAGGING 0x01000000
+#define FLG_HEAP_PAGE_ALLOCS 0x02000000
+#define FLG_DEBUG_WINLOGON 0x04000000
+#define FLG_ENABLE_DBGPRINT_BUFFERING 0x08000000
+#define FLG_EARLY_CRITICAL_SECTION_EVT 0x10000000
+#define FLG_DISABLE_DLL_VERIFICATION 0x80000000
+
+// Anti-debugging flag check.
+#define ANTI_DEBUG_PEB_FLAGS (FLG_HEAP_ENABLE_TAIL_CHECK | FLG_HEAP_ENABLE_FREE_CHECK | FLG_HEAP_VALIDATE_PARAMETERS)
+
 // Vector of visible (loaded in current page) lines of disassembly.
 extern Vector<DisasmLine> DisasmVisibleLines;
 
@@ -173,15 +209,6 @@ void CryDebugger::Stop()
 	this->dbgThread.Wait();
 
 	this->DebuggerEvent(DBG_EVENT_DETACH, NULL);
-}
-
-// Attempts hiding the debugger presence from the process. This way, IsDebuggerPresent would return FALSE.
-void CryDebugger::HideDebuggerFromPeb() const
-{
-	// Reset the debug flag.
-	// Poke the address of the flag with a 0 value.
-	BYTE pResetted = 0x0;
-	CrySearchRoutines.CryWriteMemoryRoutine(mMemoryScanner->GetHandle(), (char*)mPeInstance->GetPebAddress() + 0x2, &pResetted, sizeof(BYTE), NULL);
 }
 
 // Set a hardware breakpoint on a series of threads.
@@ -648,6 +675,28 @@ DisasmLine CryDebugger32::GetDisasmLine(const SIZE_T address, bool prev) const
 	return prev ? DisasmGetPreviousLine(address, ARCH_X86) : DisasmGetLine(address, ARCH_X86);
 }
 
+// Attempts hiding the debugger presence from the process. This way, IsDebuggerPresent would return FALSE.
+void CryDebugger32::HideDebuggerFromPeb() const
+{
+	// Get address of PEB in remote process.
+	PPEB32 remotePeb = (PPEB32)mPeInstance->GetPebAddress();
+
+	// Reset the debug flag.
+	// Poke the address of the flag with a 0 value.
+	BYTE pResetted = 0x0;
+	CrySearchRoutines.CryWriteMemoryRoutine(mMemoryScanner->GetHandle(), &remotePeb->BeingDebugged, &pResetted, sizeof(BYTE), NULL);
+	
+	// When a debugger is attached, the NtGlobalFlag field in PEB may contain 0x70 flags. These flags mean
+	// FLG_HEAP_ENABLE_TAIL_CHECK | FLG_HEAP_ENABLE_FREE_CHECK | FLG_HEAP_VALIDATE_PARAMETERS
+	// They are not always applied when a debugger is attached but to be sure, we should remove them.
+	ULONG pNtGlobalFlag;
+	CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), &remotePeb->NtGlobalFlag, &pNtGlobalFlag, sizeof(ULONG), NULL);
+	
+	// Remove the flags and write them back.
+	pNtGlobalFlag &= ~ANTI_DEBUG_PEB_FLAGS;
+	CrySearchRoutines.CryWriteMemoryRoutine(mMemoryScanner->GetHandle(), &remotePeb->NtGlobalFlag, &pNtGlobalFlag, sizeof(ULONG), NULL);
+}
+
 // Creates a snapshot of the stack pointed to by the second parameter: ESP.
 void CryDebugger32::CreateStackSnapshot(DbgBreakpoint* pBp, const SIZE_T pEsp)
 {
@@ -1074,6 +1123,28 @@ void CryDebugger32::HandleHardwareBreakpoint(const DWORD threadId, const SIZE_T 
 	{
 		return prev ? DisasmGetPreviousLine(address, ARCH_X64) : DisasmGetLine(address, ARCH_X64);
 	}	
+	
+	// Attempts hiding the debugger presence from the process. This way, IsDebuggerPresent would return FALSE.
+	void CryDebugger64::HideDebuggerFromPeb() const
+	{
+		// Get address of PEB in remote process.
+		PPEB remotePeb = (PPEB)mPeInstance->GetPebAddress();
+	
+		// Reset the debug flag.
+		// Poke the address of the flag with a 0 value.
+		BYTE pResetted = 0x0;
+		CrySearchRoutines.CryWriteMemoryRoutine(mMemoryScanner->GetHandle(), &remotePeb->BeingDebugged, &pResetted, sizeof(BYTE), NULL);
+		
+		// When a debugger is attached, the NtGlobalFlag field in PEB may contain 0x70 flags. These flags mean
+		// FLG_HEAP_ENABLE_TAIL_CHECK | FLG_HEAP_ENABLE_FREE_CHECK | FLG_HEAP_VALIDATE_PARAMETERS
+		// They are not always applied when a debugger is attached but to be sure, we should remove them.
+		ULONG pNtGlobalFlag;
+		CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), &remotePeb->NtGlobalFlag, &pNtGlobalFlag, sizeof(ULONG), NULL);
+		
+		// Remove the flags and write them back.
+		pNtGlobalFlag &= ~ANTI_DEBUG_PEB_FLAGS;
+		CrySearchRoutines.CryWriteMemoryRoutine(mMemoryScanner->GetHandle(), &remotePeb->NtGlobalFlag, &pNtGlobalFlag, sizeof(ULONG), NULL);
+	}
 	
 	// Creates a snapshot of the stack pointed to by the second parameter: ESP.
 	void CryDebugger64::CreateStackSnapshot(DbgBreakpoint* pBp, const SIZE_T pEsp)

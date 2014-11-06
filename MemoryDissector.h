@@ -11,15 +11,19 @@ using namespace Upp;
 struct DissectionRowEntry : Moveable<DissectionRowEntry>
 {
 	int RowOffset;
-	SIZE_T RowValue;
+	Value RowValue;
 	CCryDataType RowType;
 	
+	// The data length is only applicable for AOB, string or wstring types.
+	int DataLength;
+	
 	// Default constructor to add new entry straight to vector.
-	DissectionRowEntry(const int rowOffset, const SIZE_T val, const int rowType)
+	DissectionRowEntry(const int rowOffset, const char* val, const int rowType, const int length)
 	{
 		this->RowOffset = rowOffset;
 		this->RowValue = val;
 		this->RowType = rowType;
+		this->DataLength = length;
 	};
 };
 
@@ -47,8 +51,9 @@ public:
 	
 	void SetBaseAddress(const SIZE_T addr);
 	void SetRegionSize(const DWORD regionSize);
+	void SetGlobalDissectionType(const CCryDataType type);
 	
-	const DissectionRowEntry* operator[] (const int index) const
+	DissectionRowEntry* operator[] (const int index)
 	{
 		return &this->mDissectionRows[index];
 	};

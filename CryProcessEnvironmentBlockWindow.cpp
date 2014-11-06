@@ -195,7 +195,9 @@ void CryProcessEnvironmentBlockWindow::Initialize()
 			this->mPEBInfo.AddColumn("Property", 65);
 			this->mPEBInfo.AddColumn("Value", 35);
 			
-			this->mPEBInfo.Add("PEB Address", Format("%llX", tInfo.PebBaseAddress));
+			char buf[32];
+			sprintf_s(buf, 32, "%016llX", tInfo.PebBaseAddress);
+			this->mPEBInfo.Add("PEB Address", buf);
 			this->Initialize64(&peb);
 		}
 		else
