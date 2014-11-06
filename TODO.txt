@@ -1,5 +1,11 @@
 CrySearch application TODO list by evolution536
 
+------------------------------------------------------------------
+Package:
+- SDK headers;
+- CrySearchXX.lib file;
+------------------------------------------------------------------
+
 - Structure dissections
 	- settings window, default offset;
 	- Right-click row and select its type;
@@ -10,8 +16,6 @@ CrySearch application TODO list by evolution536
 
 - There is a bug in the process selection window when fooling around with non-responsive processes;
 - Also a bug in the main window complaining about GUI locking (hard to reproduce);
-
-- MASM SDK for plugins;
 
 - Identify static addresses:
 	- Code generation customized to use offsets;
@@ -26,6 +30,8 @@ CrySearch application TODO list by evolution536
 	- Memory usage can be way to high, I gotta fix it (90 seconds to load ARMA 2);
 
 - Plugin system:
+	- MASM SDK for plugins;	
+	- Events from CrySearch to plugin (process attached, detached)..
 	- auto deploy correct plugins to build dir?
 	- new threads for opening plugins?
 	- Plugin DLL to override process opening sequence; (maybe other templates)
