@@ -28,7 +28,8 @@ const int PluginSystem::GetPluginCount() const
 // Returns -1 if the plugin was not found.
 const int PluginSystem::FindPlugin(const char* const pName) const
 {
-	for (int i = 0; i < this->mLoadedPlugins.GetCount(); ++i)
+	const int count = this->mLoadedPlugins.GetCount();
+	for (int i = 0; i < count; ++i)
 	{
 		if (strcmp(this->mLoadedPlugins[i].PluginHeader->PluginName, pName) == 0)
 		{
@@ -58,12 +59,30 @@ const char* PluginSystem::IsPluginLoaded(HMODULE hModule) const
 // The list that is used as parameter is not cleared. Items are appended.
 void PluginSystem::GetPluginsByType(const DWORD type, Vector<CrySearchPlugin>& outPlugins) const
 {
-	for (int i = 0; i < this->mLoadedPlugins.GetCount(); ++i)
+	const int count = this->mLoadedPlugins.GetCount();
+	for (int i = 0; i < count; ++i)
 	{
 		const CrySearchPlugin& plugin = this->mLoadedPlugins[i];
 		if (plugin.PluginHeader->PluginType & type)
 		{
 			outPlugins.Add(plugin);
+		}
+	}
+}
+
+// Sends a plugin event to all loaded plugins. The type of event and parameter pointer is to be
+// specified through the parameters. The parameter pointer memory is not being managed!
+void PluginSystem::SendGlobalPluginEvent(CCryPluginEvent evt, void* const data)
+{
+	const int count = this->mLoadedPlugins.GetCount();
+	for (int i = 0; i < count; ++i)
+	{
+		// Retrieve a pointer to the event procedure of the current iterated plugin.
+		CryProcessPluginEventProc eventProc = (CryProcessPluginEventProc)GetProcAddress(this->mLoadedPlugins[i].BaseAddress, "CryProcessPluginEvent");
+		if (eventProc)
+		{
+			// Execute the procedure.
+			eventProc(evt, data);
 		}
 	}
 }

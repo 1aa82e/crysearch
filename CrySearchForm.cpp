@@ -1196,7 +1196,11 @@ void CrySearchForm::OpenProcessMenu()
 
 void CrySearchForm::CloseProcessMenu()
 {
-	this->CloseProcess();
+	if (this->CloseProcess())
+	{
+		// Tell the loaded plugins that the currently loaded process has closed.
+		mPluginSystem->SendGlobalPluginEvent(CRYPLUGINEVENT_PROCESS_CLOSED, NULL);
+	}
 }
 
 bool CrySearchForm::CloseProcess()
@@ -1489,6 +1493,7 @@ bool CrySearchForm::InitializeProcessUI()
 		mPeInstance = new PortableExecutable32();
 		mDebugger = new CryDebugger32();
 		this->mPEWindow.Initialize();
+		this->mImportsWindow.Initialize();
 		this->mDisasmWindow.Initialize();
 	}
 	else
@@ -1514,9 +1519,9 @@ bool CrySearchForm::InitializeProcessUI()
 	}
 	
 	this->mPEWindow.Initialize();
+	this->mImportsWindow.Initialize();
 	this->mDisasmWindow.Initialize();
 #endif
-	this->mImportsWindow.Initialize();
 	this->mDbgWindow.Initialize();
 	
 	// Still here so the process loaded succesfully. Update user interface and prepare tabs.
@@ -1636,6 +1641,9 @@ void CrySearchForm::WhenProcessOpened(Win32ProcessInformation* pProc)
 	
 	// Resolve relative addresses. An address table may be loaded before the process was loaded, hence the entries weren't yet resolved.
 	AddressTable::ResolveRelativeEntries(loadedTable);
+	
+	// Tell the loaded plugins that a process has loaded. The PID is passed into the plugin.
+	mPluginSystem->SendGlobalPluginEvent(CRYPLUGINEVENT_PROCESS_OPENED, (void*)pProc->ProcessId);
 }
 
 void CrySearchForm::ScannerScanStarted(int threadCount)

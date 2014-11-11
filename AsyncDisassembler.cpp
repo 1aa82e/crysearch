@@ -163,8 +163,9 @@ void AsyncDisassembler::Disassemble(const SIZE_T address, const SIZE_T size, con
 			
 			line.BytesStringRepresentation.Allocate(len);
 			memcpy(line.BytesStringRepresentation.Data, (Byte*)disasm.EIP, len);
-			
 			line.InstructionLine = disasm.CompleteInstr;
+
+			// Increment disasm structure counters.
 			disasm.EIP += len;
 			disasm.VirtualAddr += len;
 

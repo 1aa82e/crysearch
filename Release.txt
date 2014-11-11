@@ -3,7 +3,7 @@ CrySearch Memory Scanner
 evolution536, www.unknowncheats.me
 
 v1.14
-	- 
+	- Added event procedure to plugin system. CrySearch calls the event procedure for default in-app events like process open/close;
 v1.13
 	- Changed about dialog to show a list of loaded libraries including their runtime versions;
 	- Added thread context snapshot feature. Right-click thread in thread window to open the snapshot window;

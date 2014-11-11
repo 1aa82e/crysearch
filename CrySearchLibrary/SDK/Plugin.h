@@ -53,6 +53,18 @@ typedef struct tagCRYPLUGINHEADER
 	DWORD Flags;
 } CRYPLUGINHEADER, *PCRYPLUGINHEADER;
 
+// Defines the plugin event type identifier. When CrySearch needs a plugin to process an event, this type is passed
+// into the CryProcessPluginEvent function to identify the type of event.
+typedef DWORD CCryPluginEvent;
+
+// CrySearch builtin plugin event type definitions. You can define your own event type with a value higher than CRYPLUGINEVENT_USER.
+#define CRYPLUGINEVENT_PROCESS_OPENED		0x1
+#define CRYPLUGINEVENT_PROCESS_CLOSED		0x2
+#define CRYPLUGINEVENT_ERROR				0x3
+#define CRYPLUGINEVENT_DEBUGGER_ATTACHED	0x4
+#define CRYPLUGINEVENT_DEBUGGER_DETACHED	0x5
+#define CRYPLUGINEVENT_USER					0x100
+
 // Retrieves a pointer to the plugin header struct of the loaded plugin.
 // This pointer should be retrieved easily since the DLL is loaded and the structure should be in global memory.
 // Therefore the pointer returned should not be deleted.
@@ -71,6 +83,11 @@ typedef void (__stdcall* CryDestroyPluginProc)();
 // Writing an about string for a plugin requires some attention. Use '&' for newlines instead of '\r\n' for example.
 // For more information, and more detailed/better looking about messages, take a look at the QTF format on http://www.ultimatepp.org/
 typedef void (__stdcall* CryGetPluginAboutProc)(char** const pOutputString);
+
+// Processes an event sent from CrySearch. This function is called upon several events. A parameter may be sent but can also be NULL.
+// This function is needs to be implemented in a thread-safe way, implying that it may be called to dispatch multiple events at the
+// same time. Even when not used in a plugin, this function must still be implemented.
+typedef void (__stdcall* CryProcessPluginEventProc)(CCryPluginEvent event, void* const pParameter);
 
 // ------------------------------------------------------------------------------------------------------------------------------
 

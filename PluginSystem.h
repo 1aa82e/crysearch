@@ -48,6 +48,7 @@ public:
 	
 	void RetrieveAndLoadAllPlugins();
 	void UnloadAllPlugins();
+	void SendGlobalPluginEvent(CCryPluginEvent evt, void* const data);
 	
 	bool LoadPlugin(const char* pName);
 	bool UnloadPlugin(const char* pName);

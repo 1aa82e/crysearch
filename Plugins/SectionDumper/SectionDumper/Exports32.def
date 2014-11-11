@@ -6,4 +6,5 @@ EXPORTS
 	CryGetPluginAbout
 	CryInitializePlugin
 	CreateModuleDump32
+	CryProcessPluginEvent
 	CryDestroyPlugin

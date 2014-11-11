@@ -7,4 +7,5 @@ EXPORTS
 	CryInitializePlugin
 	CreateModuleDump32
 	CreateModuleDump64
+	CryProcessPluginEvent
 	CryDestroyPlugin

@@ -190,6 +190,19 @@ const BOOL __stdcall CreateModuleDump32(HANDLE hProcess, const void* moduleBase,
 	}
 #endif
 
+void __stdcall CryProcessPluginEvent(CCryPluginEvent event, void* const pParameter)
+{
+	switch (event)
+	{
+		case CRYPLUGINEVENT_PROCESS_OPENED:
+			break;
+		case CRYPLUGINEVENT_PROCESS_CLOSED:
+			break;
+		case CRYPLUGINEVENT_ERROR:
+			break;
+	}
+}
+
 void __stdcall CryDestroyPlugin()
 {
 
