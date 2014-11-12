@@ -10,7 +10,7 @@ CrySystemHandleAccessMaskWindow::CrySystemHandleAccessMaskWindow(const String& t
 		<< this->mClose.SetLabel("Close").RightPos(5, 60).BottomPos(5, 20)
 	;
 	
-	this->mAccessConstants.AddColumn("Constant");
+	this->mAccessConstants.CryAddColumn("Constant");
 	this->mClose <<= THISBACK(FormClose);
 	
 	// Load mask dissection and visualize it.

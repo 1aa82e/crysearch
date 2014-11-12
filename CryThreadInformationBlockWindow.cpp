@@ -20,8 +20,8 @@ CryThreadInformationBlockWindow::CryThreadInformationBlockWindow(const int threa
 	THREAD_BASIC_INFORMATION tInfo;
 	if (CrySearchRoutines.NtQueryInformationThread(hThread, ThreadBasicInformation, &tInfo, sizeof(THREAD_BASIC_INFORMATION), NULL) == STATUS_SUCCESS)
 	{
-		this->mThreadInfo.AddColumn("Property", 60);
-		this->mThreadInfo.AddColumn("Value", 40);
+		this->mThreadInfo.CryAddColumn("Property", 60);
+		this->mThreadInfo.CryAddColumn("Value", 40);
 		
 #ifdef _WIN64
 		if (mMemoryScanner->IsX86Process())
@@ -49,7 +49,7 @@ CryThreadInformationBlockWindow::CryThreadInformationBlockWindow(const int threa
 	}
 	else
 	{
-		this->mThreadInfo.AddColumn("Error");
+		this->mThreadInfo.CryAddColumn("Error");
 		this->mThreadInfo.Add("Failed to retrieve thread information");
 	}
 	

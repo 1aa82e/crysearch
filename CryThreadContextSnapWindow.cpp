@@ -15,8 +15,8 @@ CryThreadContextSnapWindow::CryThreadContextSnapWindow(const Image& icon, const 
 		<< this->mClose.SetLabel("Close").RightPos(5, 60).BottomPos(5, 25)
 	;
 	
-	this->mContextValues.AddColumn("Field");
-	this->mContextValues.AddColumn("Value");
+	this->mContextValues.CryAddColumn("Field");
+	this->mContextValues.CryAddColumn("Value");
 	
 	// Load snapshot into GUI controls.
 	this->RefreshSnapshot();

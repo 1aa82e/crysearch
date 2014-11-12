@@ -83,8 +83,8 @@ CrySearchAboutDialog::CrySearchAboutDialog() : CryDialogTemplate(CrySearchIml::A
 	;
 	
 	// Set up library runtime versions array control.
-	this->mLibraryVersions.AddColumn("Library");
-	this->mLibraryVersions.AddColumn("Version");
+	this->mLibraryVersions.CryAddColumn("Library");
+	this->mLibraryVersions.CryAddColumn("Version");
 
 	// Add BeaEngine library version to the versions control.
 	this->mLibraryVersions.Add("BeaEngine", Format("%s rev %s", BeaEngineVersion(), BeaEngineRevision()));

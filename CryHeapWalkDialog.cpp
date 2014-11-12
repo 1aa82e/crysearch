@@ -5,11 +5,11 @@ CryHeapWalkDialog::CryHeapWalkDialog(const Image& icon) : CryDialogTemplate(icon
 {
 	this->Title("Heap Walk").Sizeable().SetRect(0, 0, 550, 200);
 	
-	this->mHeapList.AddColumn("Virtual address", 28);
-	this->mHeapList.AddColumn("Committed size", 22);
-	this->mHeapList.AddColumn("Allocated size", 20);
-	this->mHeapList.AddColumn("Block count", 25);
-	this->mHeapList.AddColumn("Flags", 15);
+	this->mHeapList.CryAddColumn("Virtual address", 28);
+	this->mHeapList.CryAddColumn("Committed size", 22);
+	this->mHeapList.CryAddColumn("Allocated size", 20);
+	this->mHeapList.CryAddColumn("Block count", 25);
+	this->mHeapList.CryAddColumn("Flags", 15);
 	
 	this->mClose <<= THISBACK(CloseDialog);
 	

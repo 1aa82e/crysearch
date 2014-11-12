@@ -41,3 +41,19 @@ void CrySearchArrayCtrl::SetRowDisplay(int i, const Display& d)
 	
 	this->RefreshRow(i);
 }
+
+// Proxying method for adding a regular ArrayCtrl column. Sets a minimum width for a new column.
+ArrayCtrl::Column& CrySearchArrayCtrl::CryAddColumn(const char *text, int w)
+{
+	ArrayCtrl::Column& col = this->AddColumn(text, w);
+	col.HeaderTab().Min(25);
+	return col;
+}
+
+// Proxying method for adding a virtual data column. Sets a minimum width for a new column.
+ArrayCtrl::Column& CrySearchArrayCtrl::CryAddRowNumColumn(const char *text, int w)
+{
+	ArrayCtrl::Column& col = this->AddRowNumColumn(text, w);
+	col.HeaderTab().Min(25);
+	return col;
+}

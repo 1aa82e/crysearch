@@ -3,6 +3,7 @@
 
 #include "CryDialogTemplate.h"
 #include "NativeAPI.h"
+#include "CrySearchArrayCtrl.h"
 
 class CryProcessEnvironmentBlockWindow : public CryDialogTemplate
 {
@@ -10,7 +11,7 @@ private:
 	BYTE* pIsBeingDebuggedPtr;
 
 	Label mPEBWindowDescription;
-	ArrayCtrl mPEBInfo;
+	CrySearchArrayCtrl mPEBInfo;
 	Button mOk;
 	Button mResetDebugFlag;
 	

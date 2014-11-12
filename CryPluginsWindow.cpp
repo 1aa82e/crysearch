@@ -24,13 +24,13 @@ String GetPluginVersion(const int index)
 
 CryPluginsWindow::CryPluginsWindow() : CryDialogTemplate(CrySearchIml::PluginsMenuSmall())
 {
-	this->Title("Plugins").Sizeable().SetRect(0, 0, 400, 300);
+	this->Title("Plugins").Sizeable().SetRect(0, 0, 500, 300);
 	
 	this->mOK <<= THISBACK(CloseWindow);
 	
-	this->mPluginsList.AddRowNumColumn("Name", 45).SetConvert(Single<IndexBasedValueConvert<GetPluginName>>());
-	this->mPluginsList.AddRowNumColumn("Filename", 40).SetConvert(Single<IndexBasedValueConvert<GetPluginFilename>>());
-	this->mPluginsList.AddRowNumColumn("Version", 15).SetConvert(Single<IndexBasedValueConvert<GetPluginVersion>>());
+	this->mPluginsList.CryAddRowNumColumn("Name", 45).SetConvert(Single<IndexBasedValueConvert<GetPluginName>>());
+	this->mPluginsList.CryAddRowNumColumn("Filename", 40).SetConvert(Single<IndexBasedValueConvert<GetPluginFilename>>());
+	this->mPluginsList.CryAddRowNumColumn("Version", 15).SetConvert(Single<IndexBasedValueConvert<GetPluginVersion>>());
 	this->mPluginsList.WhenBar = THISBACK(PluginRightClick);
 	
 	*this

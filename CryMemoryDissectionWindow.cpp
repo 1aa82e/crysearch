@@ -90,8 +90,8 @@ CryMemoryDissectionWindow::CryMemoryDissectionWindow(const AddressTableEntry* co
 	this->mRowSizeControl.WhenValueSet = THISBACK(RowEntryChangeDataSize);
 	
 	this->mDissection.WhenBar = THISBACK(DissectionRightClick);
-	this->mDissection.AddRowNumColumn("Address").SetConvert(Single<IndexBasedValueConvert<GetDissectionAddress>>());
-	this->mDissection.AddRowNumColumn("Value").SetConvert(Single<IndexBasedValueConvert<GetDissectionValue>>());
+	this->mDissection.CryAddRowNumColumn("Address").SetConvert(Single<IndexBasedValueConvert<GetDissectionAddress>>());
+	this->mDissection.CryAddRowNumColumn("Value").SetConvert(Single<IndexBasedValueConvert<GetDissectionValue>>());
 	
 	// Add existing dissections to drop list.
 	this->mAvailableDissections.SetConvert(Single<IndexBasedValueConvert<GetDissectionForDropList>>());

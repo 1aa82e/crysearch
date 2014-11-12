@@ -3,12 +3,13 @@
 
 #include "CryDialogTemplate.h"
 #include "NativeAPI.h"
+#include "CrySearchArrayCtrl.h"
 
 class CryThreadInformationBlockWindow : public CryDialogTemplate
 {
 private:
 	Label mThreadWindowDescription;
-	ArrayCtrl mThreadInfo;
+	CrySearchArrayCtrl mThreadInfo;
 	Button mOk;
 	
 	void DialogClose();

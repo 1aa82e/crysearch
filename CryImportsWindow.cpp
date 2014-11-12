@@ -46,10 +46,10 @@ CryImportsWindow::CryImportsWindow()
 	this->AddFrame(mToolStrip);
 	this->mToolStrip.Set(THISBACK(ToolStrip));
 	
-	this->mModulesList.AddRowNumColumn("Module").SetConvert(Single<IndexBasedValueConvert<GetModule>>());
-	this->mFunctionsList.AddRowNumColumn("Function", 60).SetConvert(Single<IndexBasedValueConvert<GetFunction>>());
-	this->mFunctionsList.AddRowNumColumn("Hint", 15).SetConvert(Single<IndexBasedValueConvert<GetHint>>());
-	this->mFunctionsList.AddRowNumColumn("Virtual Address", 25).SetConvert(Single<IndexBasedValueConvert<GetVirtualAddress>>());
+	this->mModulesList.CryAddRowNumColumn("Module").SetConvert(Single<IndexBasedValueConvert<GetModule>>());
+	this->mFunctionsList.CryAddRowNumColumn("Function", 60).SetConvert(Single<IndexBasedValueConvert<GetFunction>>());
+	this->mFunctionsList.CryAddRowNumColumn("Hint", 15).SetConvert(Single<IndexBasedValueConvert<GetHint>>());
+	this->mFunctionsList.CryAddRowNumColumn("Virtual Address", 25).SetConvert(Single<IndexBasedValueConvert<GetVirtualAddress>>());
 	
 	this->mFunctionsList.WhenBar = THISBACK(FunctionListRightClick);
 	

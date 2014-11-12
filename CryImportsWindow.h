@@ -13,7 +13,7 @@ class CryImportsWindow : public ParentCtrl
 {
 private:
 	ToolBar mToolStrip;
-	ArrayCtrl mModulesList;
+	CrySearchArrayCtrl mModulesList;
 	CrySearchArrayCtrl mFunctionsList;
 	Splitter mControlSplitter;
 	Label mModulesDescriptorLabel;

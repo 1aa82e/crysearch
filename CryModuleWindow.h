@@ -6,12 +6,13 @@
 using namespace Upp;
 
 #include "GlobalDef.h"
+#include "CrySearchArrayCtrl.h"
 
 class CryModuleWindow : public ParentCtrl
 {
 private:
 	ToolBar tBar;
-	ArrayCtrl mModules;
+	CrySearchArrayCtrl mModules;
 	
 	void ToolBar(Bar& pBar);
 	void ModuleListRightClick(Bar& pBar);

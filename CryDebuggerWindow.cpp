@@ -79,14 +79,14 @@ CryDebuggerWindow::CryDebuggerWindow()
 			, this->mRightSplitter.Vert(this->mCallStackView.SizePos(), this->mStackView.SizePos()))
 	;
 	
-	this->mBreakpointsHitList.AddRowNumColumn("Address", 60).SetConvert(Single<IndexBasedValueConvert<GetBreakpointAddress>>());
-	this->mBreakpointsHitList.AddRowNumColumn("Count", 40).SetConvert(Single<IndexBasedValueConvert<GetBreakpointHitCount>>());
+	this->mBreakpointsHitList.CryAddRowNumColumn("Address", 60).SetConvert(Single<IndexBasedValueConvert<GetBreakpointAddress>>());
+	this->mBreakpointsHitList.CryAddRowNumColumn("Count", 40).SetConvert(Single<IndexBasedValueConvert<GetBreakpointHitCount>>());
 	this->mBreakpointsHitList.WhenBar = THISBACK(BreakpointListRightClick);
 	
-	this->mStackView.AddRowNumColumn("Address").SetConvert(Single<IndexBasedValueConvert<GetStackViewAddress>>());
-	this->mStackView.AddRowNumColumn("Value").SetConvert(Single<IndexBasedValueConvert<GetStackViewValue>>());
+	this->mStackView.CryAddRowNumColumn("Address").SetConvert(Single<IndexBasedValueConvert<GetStackViewAddress>>());
+	this->mStackView.CryAddRowNumColumn("Value").SetConvert(Single<IndexBasedValueConvert<GetStackViewValue>>());
 	
-	this->mCallStackView.AddRowNumColumn("Function Call").SetConvert(Single<IndexBasedValueConvert<GetCallStackFunctionCall>>());
+	this->mCallStackView.CryAddRowNumColumn("Function Call").SetConvert(Single<IndexBasedValueConvert<GetCallStackFunctionCall>>());
 	this->mCallStackView.WhenBar = THISBACK(CallStackListRightClick);
 	
 	this->mBreakpointsHitList.WhenSel = THISBACK(BreakpointSelectionChanged);
@@ -191,12 +191,19 @@ void CryDebuggerWindow::CryDebuggerEventOccuredThreadSafe(DebugEvent event, void
 {
 	switch (event)
 	{
+		case DBG_EVENT_ATTACH:
+			// Send debugger attached event to loaded plugins.
+			mPluginSystem->SendGlobalPluginEvent(CRYPLUGINEVENT_DEBUGGER_ATTACHED, NULL);			
+			break;
 		case DBG_EVENT_DETACH: // debugger was succesfully detached.
 			this->mBreakpointsHitList.SetVirtualCount(0);
 			this->mDebuggerHitView.ClearInstructionString();
 			this->mDebuggerHitView.SetRegisterCount(0);
 			this->mStackView.SetVirtualCount(0);
 			this->mCallStackView.SetVirtualCount(0);
+			
+			// Send debugger detached event to loaded plugins.
+			mPluginSystem->SendGlobalPluginEvent(CRYPLUGINEVENT_DEBUGGER_DETACHED, NULL);
 			break;
 		case DBG_EVENT_ATTACH_ERROR: // another debugger was probably already attached, error is thrown.
 			Prompt("Debug Error", CtrlImg::error(), "Failed to attach the debugger. Another debugger may already have been attached or it is attempting to attach the debugger to itself.", "OK");

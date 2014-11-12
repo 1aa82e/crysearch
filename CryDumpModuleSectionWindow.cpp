@@ -8,9 +8,9 @@ CryDumpModuleSectionWindow::CryDumpModuleSectionWindow(const int modListIndex, c
 	this->mDumpButton <<= THISBACK(DumpSelectedSection);
 	this->mCancelButton <<= THISBACK(CancelAndCloseDialog);
 	
-	this->mSectionsList.AddColumn("Name");
-	this->mSectionsList.AddColumn("Address");
-	this->mSectionsList.AddColumn("Size");
+	this->mSectionsList.CryAddColumn("Name");
+	this->mSectionsList.CryAddColumn("Address");
+	this->mSectionsList.CryAddColumn("Size");
 	
 	*this
 		<< this->mSectionsList.HSizePos(5, 5).VSizePos(5, 35)

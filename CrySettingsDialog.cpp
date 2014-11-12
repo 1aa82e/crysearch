@@ -39,9 +39,9 @@ CrySearchSettingsDialog::CrySearchSettingsDialog()
 	this->dbgInvadeProcess.WhenAction = THISBACK(InvadeProcessEnablerChanged);
 	this->mHotkeysList.WhenBar = THISBACK(WhenRightClickHotkeyList);
 	
-	this->mHotkeysList.AddRowNumColumn("Action", 75).SetConvert(Single<IndexBasedValueConvert<GetHotkeyAction>>());
-	this->mHotkeysList.AddRowNumColumn("Hotkey", 25).SetConvert(Single<IndexBasedValueConvert<GetHotkeyKey>>());
-	this->mSymbolPathsList.AddRowNumColumn("Path").SetConvert(Single<IndexBasedValueConvert<GetSymbolPathString>>());
+	this->mHotkeysList.CryAddRowNumColumn("Action", 75).SetConvert(Single<IndexBasedValueConvert<GetHotkeyAction>>());
+	this->mHotkeysList.CryAddRowNumColumn("Hotkey", 25).SetConvert(Single<IndexBasedValueConvert<GetHotkeyKey>>());
+	this->mSymbolPathsList.CryAddRowNumColumn("Path").SetConvert(Single<IndexBasedValueConvert<GetSymbolPathString>>());
 	
 	this->mScanningTab
 		<< this->fastScanByDefault.SetLabel("Use a fast scan by default").HSizePos(5, 5).TopPos(0, 20)

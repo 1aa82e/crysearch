@@ -38,11 +38,11 @@ CrySystemHandleInformationWindow::CrySystemHandleInformationWindow(const Image& 
 	
 	this->mOK <<= THISBACK(CloseButtonClicked);
 	
-	this->mOpenHandles.AddRowNumColumn("Handle", 10).SetConvert(Single<IndexBasedValueConvert<GetHandleValue>>());
-	this->mOpenHandles.AddRowNumColumn("Object", 30).SetConvert(Single<IndexBasedValueConvert<GetHandleObject>>());
-	this->mOpenHandles.AddRowNumColumn("References", 15).SetConvert(Single<IndexBasedValueConvert<GetHandleReferences>>());
-	this->mOpenHandles.AddRowNumColumn("Name", 40).SetConvert(Single<IndexBasedValueConvert<GetHandleName>>());
-	this->mOpenHandles.AddRowNumColumn("Access", 10).SetConvert(Single<IndexBasedValueConvert<GetHandleAccess>>());
+	this->mOpenHandles.CryAddRowNumColumn("Handle", 10).SetConvert(Single<IndexBasedValueConvert<GetHandleValue>>());
+	this->mOpenHandles.CryAddRowNumColumn("Object", 30).SetConvert(Single<IndexBasedValueConvert<GetHandleObject>>());
+	this->mOpenHandles.CryAddRowNumColumn("References", 15).SetConvert(Single<IndexBasedValueConvert<GetHandleReferences>>());
+	this->mOpenHandles.CryAddRowNumColumn("Name", 40).SetConvert(Single<IndexBasedValueConvert<GetHandleName>>());
+	this->mOpenHandles.CryAddRowNumColumn("Access", 10).SetConvert(Single<IndexBasedValueConvert<GetHandleAccess>>());
 	
 	this->mOpenHandles.WhenBar = THISBACK(HandlesListWhenBar);
 	

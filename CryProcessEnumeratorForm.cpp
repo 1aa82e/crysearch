@@ -71,9 +71,9 @@ CryProcessEnumeratorForm::CryProcessEnumeratorForm(const Image& icon) : CryDialo
 	
 	this->mSearchBox.WhenAction = THISBACK(SearchProcess);
 	
-	this->mProcessList.AddColumn("", 10).SetDisplay(ImageDisplay());
-	ArrayCtrl::Column& col0 = this->mProcessList.AddColumn("PID", 25);
-	ArrayCtrl::Column& col1 = this->mProcessList.AddColumn("Title", 65);
+	this->mProcessList.CryAddColumn("", 10).SetDisplay(ImageDisplay());
+	ArrayCtrl::Column& col0 = this->mProcessList.CryAddColumn("PID", 25);
+	ArrayCtrl::Column& col1 = this->mProcessList.CryAddColumn("Title", 65);
 	this->mProcessList.WhenLeftDouble = THISBACK(OkButtonClicked);
 	
 	col0.HeaderTab().WhenAction = THISBACK(IdColumnHeaderClicked);

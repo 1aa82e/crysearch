@@ -6,6 +6,7 @@
 #include <CtrlLib/CtrlLib.h>
 
 #include "GlobalDef.h"
+#include "CrySearchArrayCtrl.h"
 
 using namespace Upp;
 
@@ -65,14 +66,14 @@ private:
 	Option dbgAttemptHidePeb;
 	Option dbgInvadeProcess;
 	Label mSymbolPathsDescriptor;
-	ArrayCtrl mSymbolPathsList;
+	CrySearchArrayCtrl mSymbolPathsList;
 	Button mBrowseSymbolPath;
 	Option dbgCatchAllExceptions;
 	
 	// Hotkeys tab
 	Option mHotkeysOption;
 	Button mAddHotkey;
-	ArrayCtrl mHotkeysList;
+	CrySearchArrayCtrl mHotkeysList;
 	
 	void LoadSettings();
 	void SaveSettings();

@@ -33,9 +33,9 @@ CryModuleWindow::CryModuleWindow()
 	this->AddFrame(this->tBar);
 	this->tBar.Set(THISBACK(ToolBar));
 	
-	this->mModules.AddRowNumColumn("Name").SetConvert(Single<IndexBasedValueConvert<GetName>>());
-	this->mModules.AddRowNumColumn("Base Address").SetConvert(Single<IndexBasedValueConvert<GetBaseAddress>>());
-	this->mModules.AddRowNumColumn("Size").SetConvert(Single<IndexBasedValueConvert<GetLength>>());
+	this->mModules.CryAddRowNumColumn("Name").SetConvert(Single<IndexBasedValueConvert<GetName>>());
+	this->mModules.CryAddRowNumColumn("Base Address").SetConvert(Single<IndexBasedValueConvert<GetBaseAddress>>());
+	this->mModules.CryAddRowNumColumn("Size").SetConvert(Single<IndexBasedValueConvert<GetLength>>());
 	this->mModules.WhenBar = THISBACK(ModuleListRightClick);
 	
 	*this << this->mModules.SizePos();

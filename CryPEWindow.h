@@ -6,6 +6,7 @@
 using namespace Upp;
 
 #include "GlobalDef.h"
+#include "CrySearchArrayCtrl.h"
 
 #pragma warning(disable : 4005)
 
@@ -15,9 +16,9 @@ private:
 	ToolBar tBar;
 	Splitter mSplitter;
 	Splitter mRightPaneSplitter;
-	ArrayCtrl mPeInformationCtrl;
-	ArrayCtrl mSections;
-	ArrayCtrl mDotNetInformation;
+	CrySearchArrayCtrl mPeInformationCtrl;
+	CrySearchArrayCtrl mSections;
+	CrySearchArrayCtrl mDotNetInformation;
 	
 	void ToolBar(Bar& pBar);
 	void SectionsListRightClick(Bar& pBar);

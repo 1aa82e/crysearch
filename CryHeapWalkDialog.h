@@ -2,13 +2,14 @@
 #define _CrySearch_CryHeapWalkDialog_h_
 
 #include "CryDialogTemplate.h"
+#include "CrySearchArrayCtrl.h"
 
 // Heap dialog that displays the heaps in the opened process.
 class CryHeapWalkDialog : public CryDialogTemplate
 {
 private:
 	Button mClose;
-	ArrayCtrl mHeapList;
+	CrySearchArrayCtrl mHeapList;
 	Label mHeapCount;
 	
 	void CloseDialog();

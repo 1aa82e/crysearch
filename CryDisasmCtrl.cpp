@@ -80,9 +80,9 @@ CryDisasmCtrl::CryDisasmCtrl()
 		<< this->disasmDisplay.MultiSelect().NoGrid().NoMovingHeader().SizePos()
 	;
 	
-	this->disasmDisplay.AddRowNumColumn("Address", 20).SetConvert(Single<IndexBasedValueConvert<GetDisasmAddress>>());
-	this->disasmDisplay.AddRowNumColumn("Bytes", 30).SetConvert(Single<IndexBasedValueConvert<GetDisasmBytes>>());
-	this->disasmDisplay.AddRowNumColumn("Disassembly", 50).SetConvert(Single<IndexBasedValueConvert<GetDisasmInstructionLine>>());
+	this->disasmDisplay.CryAddRowNumColumn("Address", 20).SetConvert(Single<IndexBasedValueConvert<GetDisasmAddress>>());
+	this->disasmDisplay.CryAddRowNumColumn("Bytes", 30).SetConvert(Single<IndexBasedValueConvert<GetDisasmBytes>>());
+	this->disasmDisplay.CryAddRowNumColumn("Disassembly", 50).SetConvert(Single<IndexBasedValueConvert<GetDisasmInstructionLine>>());
 	
 	this->disasmDisplay.WhenBar = THISBACK(DisassemblyRightClick);
 	

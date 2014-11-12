@@ -55,17 +55,17 @@ CryPEWindow::CryPEWindow()
 	this->AddFrame(this->tBar);
 	this->tBar.Set(THISBACK(ToolBar));
 	
-	this->mPeInformationCtrl.AddRowNumColumn("Property").SetConvert(Single<IndexBasedValueConvert<GetPEFieldKey>>());
-	this->mPeInformationCtrl.AddRowNumColumn("Value").SetConvert(Single<IndexBasedValueConvert<GetPEFieldValue>>());
+	this->mPeInformationCtrl.CryAddRowNumColumn("Property").SetConvert(Single<IndexBasedValueConvert<GetPEFieldKey>>());
+	this->mPeInformationCtrl.CryAddRowNumColumn("Value").SetConvert(Single<IndexBasedValueConvert<GetPEFieldValue>>());
 	
-	this->mSections.AddRowNumColumn("Name").SetConvert(Single<IndexBasedValueConvert<GetSectionName>>());
-	this->mSections.AddRowNumColumn("Virtual Address").SetConvert(Single<IndexBasedValueConvert<GetSectionBaseAddress>>());
-	this->mSections.AddRowNumColumn("Virtual Size").SetConvert(Single<IndexBasedValueConvert<GetSectionVirtualSize>>());
+	this->mSections.CryAddRowNumColumn("Name").SetConvert(Single<IndexBasedValueConvert<GetSectionName>>());
+	this->mSections.CryAddRowNumColumn("Virtual Address").SetConvert(Single<IndexBasedValueConvert<GetSectionBaseAddress>>());
+	this->mSections.CryAddRowNumColumn("Virtual Size").SetConvert(Single<IndexBasedValueConvert<GetSectionVirtualSize>>());
 	this->mSections.WhenBar = THISBACK(SectionsListRightClick);
 	
-	this->mDotNetInformation.AddRowNumColumn("Name").SetConvert(Single<IndexBasedValueConvert<GetDotNetSectionName>>());
-	this->mDotNetInformation.AddRowNumColumn("Offset").SetConvert(Single<IndexBasedValueConvert<GetDotNetSectionOffset>>());
-	this->mDotNetInformation.AddRowNumColumn("Size").SetConvert(Single<IndexBasedValueConvert<GetDotNetSectionSize>>());
+	this->mDotNetInformation.CryAddRowNumColumn("Name").SetConvert(Single<IndexBasedValueConvert<GetDotNetSectionName>>());
+	this->mDotNetInformation.CryAddRowNumColumn("Offset").SetConvert(Single<IndexBasedValueConvert<GetDotNetSectionOffset>>());
+	this->mDotNetInformation.CryAddRowNumColumn("Size").SetConvert(Single<IndexBasedValueConvert<GetDotNetSectionSize>>());
 	this->mDotNetInformation.WhenBar = THISBACK(DotNetSectionsListRightClick);
 	
 	this->mSplitter.SetMinPixels(0, 200);

@@ -170,15 +170,15 @@ void CryProcessEnvironmentBlockWindow::Initialize()
 			
 			this->pIsBeingDebuggedPtr = ((BYTE*)PebBaseAddress) + 0x2;
 			
-			this->mPEBInfo.AddColumn("Property", 65);
-			this->mPEBInfo.AddColumn("Value", 35);
+			this->mPEBInfo.CryAddColumn("Property", 65);
+			this->mPEBInfo.CryAddColumn("Value", 35);
 				
 			this->mPEBInfo.Add("PEB Address", Format("%lX", (int)PebBaseAddress));
 			this->Initialize32(&peb);
 		}
 		else
 		{
-			this->mPEBInfo.AddColumn("Error");
+			this->mPEBInfo.CryAddColumn("Error");
 			this->mPEBInfo.Add("Failed to retrieve thread information");
 		}
 	}
@@ -192,8 +192,8 @@ void CryProcessEnvironmentBlockWindow::Initialize()
 			
 			this->pIsBeingDebuggedPtr = ((BYTE*)tInfo.PebBaseAddress) + 0x2;
 			
-			this->mPEBInfo.AddColumn("Property", 65);
-			this->mPEBInfo.AddColumn("Value", 35);
+			this->mPEBInfo.CryAddColumn("Property", 65);
+			this->mPEBInfo.CryAddColumn("Value", 35);
 			
 			char buf[32];
 			sprintf_s(buf, 32, "%016llX", tInfo.PebBaseAddress);
@@ -202,7 +202,7 @@ void CryProcessEnvironmentBlockWindow::Initialize()
 		}
 		else
 		{
-			this->mPEBInfo.AddColumn("Error");
+			this->mPEBInfo.CryAddColumn("Error");
 			this->mPEBInfo.Add("Failed to retrieve thread information");
 		}
 	}
@@ -215,15 +215,15 @@ void CryProcessEnvironmentBlockWindow::Initialize()
 		
 		this->pIsBeingDebuggedPtr = ((BYTE*)tInfo.PebBaseAddress) + 0x2;
 		
-		this->mPEBInfo.AddColumn("Property", 65);
-		this->mPEBInfo.AddColumn("Value", 35);
+		this->mPEBInfo.CryAddColumn("Property", 65);
+		this->mPEBInfo.CryAddColumn("Value", 35);
 		
 		this->mPEBInfo.Add("PEB Address", Format("%lX", (int)tInfo.PebBaseAddress));
 		this->Initialize32(&peb);
 	}
 	else
 	{
-		this->mPEBInfo.AddColumn("Error");
+		this->mPEBInfo.CryAddColumn("Error");
 		this->mPEBInfo.Add("Failed to retrieve process environment block");
 	}
 #endif

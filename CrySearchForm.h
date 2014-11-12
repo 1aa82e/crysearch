@@ -31,6 +31,7 @@ private:
 	Label mOpenedProcess;
 	CrySearchArrayCtrl mScanResults;
 	Splitter mMainSplitter;
+	ParentCtrl mUserAddressPanel;
 	CrySearchArrayCtrl mUserAddressList;
 	Splitter mInputScanSplitter;
 	ParentCtrl mSearchResultsPanel;

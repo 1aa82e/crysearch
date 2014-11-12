@@ -5,6 +5,7 @@
 
 #include "ProcessUtil.h"
 #include "CryDialogTemplate.h"
+#include "CrySearchArrayCtrl.h"
 
 // Represents a small area that can be clicked to begin a mouse dragging sequence.
 class ProcessSelectionDragArea : public ParentCtrl
@@ -44,7 +45,7 @@ private:
 	EditField mSearchBox;
 	Option mHideWindowLessProcesses;
 	ProcessSelectionDragArea mDragArea;
-	ArrayCtrl mProcessList;
+	CrySearchArrayCtrl mProcessList;
 	
 	Button mOk;
 	Button mCancel;

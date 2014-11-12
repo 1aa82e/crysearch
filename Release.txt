@@ -4,6 +4,10 @@ evolution536, www.unknowncheats.me
 
 v1.14
 	- Added event procedure to plugin system. CrySearch calls the event procedure for default in-app events like process open/close;
+	- Small user interface detail modifications and improvements:
+		- Changed width of the plugin window. Users may make plugins that require longer names or descriptions;
+		- Changed padding of address table control in the main window to fit the wireframe of the main window better;
+		- Changed array display controls to have a minimum column width. This prevents columns to be dragged out of range;
 v1.13
 	- Changed about dialog to show a list of loaded libraries including their runtime versions;
 	- Added thread context snapshot feature. Right-click thread in thread window to open the snapshot window;

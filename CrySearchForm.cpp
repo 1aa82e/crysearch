@@ -338,15 +338,15 @@ CrySearchForm::CrySearchForm(const char* fn)
 	this->AddFrame(mToolStrip);
 	this->mToolStrip.Set(THISBACK(ToolStrip));
 	
-	this->mScanResults.AddRowNumColumn("Address").SetConvert(Single<IndexBasedValueConvert<GetAddress>>());
-	this->mScanResults.AddRowNumColumn("Value").SetConvert(Single<IndexBasedValueConvert<GetValue>>());
+	this->mScanResults.CryAddRowNumColumn("Address").SetConvert(Single<IndexBasedValueConvert<GetAddress>>());
+	this->mScanResults.CryAddRowNumColumn("Value").SetConvert(Single<IndexBasedValueConvert<GetValue>>());
 	this->mScanResults.WhenLeftDouble = THISBACK(SearchResultDoubleClicked);
 	this->mScanResults.WhenBar = THISBACK(SearchResultWhenBar);
 	
-	this->mUserAddressList.AddRowNumColumn("Description").SetConvert(Single<IndexBasedValueConvert<GetAddressTableDescription>>());
-	this->mUserAddressList.AddRowNumColumn("Address").SetConvert(Single<IndexBasedValueConvert<GetAddressTableAddress>>());
-	this->mUserAddressList.AddRowNumColumn("Value").SetConvert(Single<IndexBasedValueConvert<GetAddressTableValue>>());
-	this->mUserAddressList.AddRowNumColumn("Type").SetConvert(Single<IndexBasedValueConvert<GetAddressTableValueType>>());
+	this->mUserAddressList.CryAddRowNumColumn("Description").SetConvert(Single<IndexBasedValueConvert<GetAddressTableDescription>>());
+	this->mUserAddressList.CryAddRowNumColumn("Address").SetConvert(Single<IndexBasedValueConvert<GetAddressTableAddress>>());
+	this->mUserAddressList.CryAddRowNumColumn("Value").SetConvert(Single<IndexBasedValueConvert<GetAddressTableValue>>());
+	this->mUserAddressList.CryAddRowNumColumn("Type").SetConvert(Single<IndexBasedValueConvert<GetAddressTableValueType>>());
 	this->mUserAddressList.WhenBar = THISBACK(UserDefinedEntryWhenBar);
 	this->mUserAddressList.WhenLeftDouble = THISBACK(UserDefinedEntryWhenDoubleClicked);
 
@@ -356,12 +356,13 @@ CrySearchForm::CrySearchForm(const char* fn)
 		<< this->mScanResults.MultiSelect(false).HSizePosZ(5, 5).VSizePosZ(30, 0)
 	;
 	
+	this->mUserAddressPanel << this->mUserAddressList.HSizePos(5, 5).VSizePos(5);
+	
 	this->mScanningProgress.Hide();
 	this->mTabbedDataWindows.WhenSet = THISBACK(ActiveTabWindowChanged);
 	
-	
 	*this
-		<< this->mMainSplitter.Vert(this->mInputScanSplitter.Horz(this->mSearchResultsPanel, this->mUserAddressList.SizePos())
+		<< this->mMainSplitter.Vert(this->mInputScanSplitter.Horz(this->mSearchResultsPanel, this->mUserAddressPanel)
 			, this->mTabbedDataWindows.SizePos())
 	;
 	

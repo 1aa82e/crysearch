@@ -106,8 +106,8 @@ CryDebuggerHitView::CryDebuggerHitView()
 	
 	this->mAccessedAddress.WhenLeftUp = THISBACK(HitInstructionClicked);
 	
-	this->mRegisterView.AddRowNumColumn("Register", 40).SetConvert(Single<IndexBasedValueConvert<GetRegisterName>>());
-	this->mRegisterView.AddRowNumColumn("Value", 60).SetConvert(Single<IndexBasedValueConvert<GetRegisterValue>>());
+	this->mRegisterView.CryAddRowNumColumn("Register", 40).SetConvert(Single<IndexBasedValueConvert<GetRegisterName>>());
+	this->mRegisterView.CryAddRowNumColumn("Value", 60).SetConvert(Single<IndexBasedValueConvert<GetRegisterValue>>());
 	
 	this->disasmAddress = 0;
 }

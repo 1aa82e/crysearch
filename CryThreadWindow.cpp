@@ -50,10 +50,10 @@ CryThreadWindow::CryThreadWindow()
 	this->AddFrame(this->tBar);
 	this->tBar.Set(THISBACK(ToolBar));
 	
-	this->mThreads.AddRowNumColumn("ID (Decimal)").SetConvert(Single<IndexBasedValueConvert<GetDecimalThreadId>>());
-	this->mThreads.AddRowNumColumn("ID (Hex)").SetConvert(Single<IndexBasedValueConvert<GetHexadecimalThreadId>>());
-	this->mThreads.AddRowNumColumn("Priority").SetConvert(Single<IndexBasedValueConvert<GetThreadPriority>>());
-	this->mThreads.AddRowNumColumn("Start Address").SetConvert(Single<IndexBasedValueConvert<GetThreadStartAddress>>());
+	this->mThreads.CryAddRowNumColumn("ID (Decimal)").SetConvert(Single<IndexBasedValueConvert<GetDecimalThreadId>>());
+	this->mThreads.CryAddRowNumColumn("ID (Hex)").SetConvert(Single<IndexBasedValueConvert<GetHexadecimalThreadId>>());
+	this->mThreads.CryAddRowNumColumn("Priority").SetConvert(Single<IndexBasedValueConvert<GetThreadPriority>>());
+	this->mThreads.CryAddRowNumColumn("Start Address").SetConvert(Single<IndexBasedValueConvert<GetThreadStartAddress>>());
 	this->mThreads.WhenBar = THISBACK(ThreadListRightClick);
 	
 	*this << this->mThreads.SizePos();

@@ -3,6 +3,7 @@
 
 #include "PortableExecutable.h"
 #include "CryDialogTemplate.h"
+#include "CrySearchArrayCtrl.h"
 
 // Represents the window that allows users to dump specific sections of a loaded module.
 class CryDumpModuleSectionWindow : public CryDialogTemplate
@@ -12,7 +13,7 @@ private:
 	Vector<Win32PESectionInformation> imageSections;
 	
 	Label mSectionCount;
-	ArrayCtrl mSectionsList;
+	CrySearchArrayCtrl mSectionsList;
 	Button mDumpButton;
 	Button mCancelButton;
 

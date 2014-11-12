@@ -2,11 +2,12 @@
 #define _CrySearch_CrySystemHandleAccessMaskWindow_h_
 
 #include "CryDialogTemplate.h"
+#include "CrySearchArrayCtrl.h"
 
 class CrySystemHandleAccessMaskWindow : public CryDialogTemplate
 {
 private:
-	ArrayCtrl mAccessConstants;
+	CrySearchArrayCtrl mAccessConstants;
 	Button mClose;
 	
 	void FormClose();
