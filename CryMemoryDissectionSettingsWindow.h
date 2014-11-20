@@ -5,7 +5,7 @@
 
 using namespace Upp;
 
-#include "GlobalDef.h"
+#include "SettingsFile.h"
 
 // Represents the settings window specific to the memory dissection options.
 class CryMemoryDissectionSettingsWindow : public TopWindow

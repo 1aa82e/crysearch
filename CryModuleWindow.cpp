@@ -1,6 +1,7 @@
 #include "CryModuleWindow.h"
 #include "CryDumpModuleSectionWindow.h"
 #include "ImlProvider.h"
+#include "BackendGlobalDef.h"
 
 #include <Psapi.h>
 #include <Shlwapi.h>

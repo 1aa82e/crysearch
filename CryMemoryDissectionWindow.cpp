@@ -3,7 +3,7 @@
 #include "CryMemoryDissectionNewWindow.h"
 #include "CryMemoryDissectionSettingsWindow.h"
 #include "ImlProvider.h"
-#include "GlobalDef.h"
+#include "BackendGlobalDef.h"
 
 // ---------------------------------------------------------------------------------------------
 

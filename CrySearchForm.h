@@ -1,24 +1,16 @@
 #ifndef _CrySearch_CrySearchForm_h_
 #define _CrySearch_CrySearchForm_h_
 
-#pragma warning(disable : 4005)
-
 #include "CryChangeRecordDialog.h"
 #include "CrySearchArrayCtrl.h"
 #include "AddressTable.h"
-#include "CryThreadWindow.h"
-#include "CryModuleWindow.h"
-#include "CryPEWindow.h"
-#include "CryImportsWindow.h"
-#include "CryDebuggerWindow.h"
-#include "CryDisasmCtrl.h"
+#include "CrySearchWindowManager.h"
 
 #include <CtrlLib/CtrlLib.h>
 
-#define STRING_EMPTY ""
-
 using namespace Upp;
 
+// Represents the CrySearch main application window. Everything is initialized and operated from this.
 class CrySearchForm : public TopWindow
 {
 private:
@@ -39,13 +31,8 @@ private:
 	ProgressIndicator mScanningProgress;
 	TabCtrl mTabbedDataWindows;
 	
-	// Tab page controls
-	CryThreadWindow mThreadList;
-	CryModuleWindow mModuleList;
-	CryPEWindow mPEWindow;
-	CryImportsWindow mImportsWindow;
-	CryDisasmCtrl mDisasmWindow;
-	CryDebuggerWindow mDbgWindow;
+	// CrySearch window manager will proxy operations and data between the main window and backend.
+	CrySearchWindowManager mWindowManager;
 
 	void MainMenu(Bar& pBar);
 	void ToolStrip(Bar& pBar);
@@ -108,7 +95,6 @@ private:
 	void LinkHotkeysToActions();
 	void RemoveBreakpointMenu();
 	void PluginsMenuClicked();
-	//void DependencyCheckerButtonClicked();
 	
 	bool InitializeProcessUI();
 	void WhenProcessOpened(Win32ProcessInformation* pProc);
@@ -130,8 +116,9 @@ public:
 	CrySearchForm(const char* fn);
 	~CrySearchForm();
 	
+	CrySearchWindowManager* GetWindowManager();
 	CrySearchArrayCtrl* GetSearchResultCtrl();
-	CryDisasmCtrl* GetDisasmWindow();
+	
 	bool SetActiveTabWindow(const String& wndText);
 };
 

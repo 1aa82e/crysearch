@@ -1,5 +1,5 @@
 #include "ModuleManager.h"
-#include "GlobalDef.h"
+#include "BackendGlobalDef.h"
 
 #include <Psapi.h>
 

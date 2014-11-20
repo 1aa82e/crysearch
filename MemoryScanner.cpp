@@ -1,5 +1,5 @@
 #include "MemoryScanner.h"
-#include "GlobalDef.h"
+#include "BackendGlobalDef.h"
 #include "UIUtilities.h"
 
 #include <Psapi.h>
@@ -116,6 +116,7 @@ MemoryScanner::MemoryScanner()
 	this->mLoadedProcessId = 0;
 	this->mScanResultCount = 0;
 	this->threadCount = CPU_Cores();
+	this->mProcessSuspended = false;
 	
 	// Adjust CrySearch process token for it to be able to debug protected processes and load drivers.
 	HANDLE hToken = NULL;
@@ -239,24 +240,45 @@ bool MemoryScanner::InitializeExistingProcess(const int processId, const String&
 
 // Create a new process using CreateProcess, putting the process ID of the created process in the 2nd parameter.
 // Returns true if the process succesfully created and opened and false if it did not.
-bool MemoryScanner::InitializeNewProcess(const char* exetitle, int* const pProcessId)
+bool MemoryScanner::InitializeNewProcess(const char* exetitle, const DWORD flags, const char* args, int* const pProcessId)
 {
+	// Prepare input parameters.
 	STARTUPINFO info = { sizeof(info) };
 	PROCESS_INFORMATION processInfo;
+	String cmdArgs = GetFileName(exetitle);
+	cmdArgs += 0x20;
+	cmdArgs +=args;
 	
-	bool b = CreateProcess(exetitle, NULL, NULL, NULL, TRUE, 0, NULL, NULL, &info, &processInfo);
+	// Create process with specified flags and command line arguments.
+	bool b = !!CreateProcess(exetitle, strlen(args) > 0 ? const_cast<char*>(cmdArgs.Begin()) : NULL, NULL, NULL, FALSE, flags, NULL, NULL, &info, &processInfo);
 	if (b)
 	{
+		// Save operative information for the memoryscanner.
 		this->mOpenedProcessHandle = processInfo.hProcess;
 		*pProcessId = processInfo.dwProcessId;
 		this->mLoadedProcessId = processInfo.dwProcessId;
 		CloseHandle(processInfo.hThread);
 	}
 	
+	// Set additional internal process indication fields.
+	this->mProcessSuspended = (flags & CREATE_SUSPENDED) ? true : false;
 	this->isX86Process = IsI386Process(this->mOpenedProcessHandle);
 	this->mProcessName = GetFileName(exetitle);
 	
 	return b;
+}
+
+// Sets the internal process suspended state indicator.
+void MemoryScanner::ResetSuspendedState()
+{
+	this->mProcessSuspended = false;
+}
+
+// Gets whether the opened process is suspended or not. The suspended flag is reset upon close
+// and after a created process has left suspended state by CrySearch operations.
+const bool MemoryScanner::IsProcessSuspended() const
+{
+	return this->mProcessSuspended;
 }
 
 // Returns the name of the opened process.

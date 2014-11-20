@@ -1,5 +1,5 @@
 #include "CryCreateExternalThreadWindow.h"
-#include "GlobalDef.h"
+#include "BackendGlobalDef.h"
 
 #pragma warning(disable : 4244)
 

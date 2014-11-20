@@ -177,6 +177,7 @@ private:
 
 	void ExceptionWatch();
 	void DbgThread();
+	void ProcessCreationReturnValue(bool b, bool* const val);
 	
 	const int FindBreakpointByPreviousInstruction(const SIZE_T address);
 	

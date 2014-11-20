@@ -1,8 +1,10 @@
+#include "CrySearchWindowManager.h"
 #include "CryDebuggerWindow.h"
 #include "ImlProvider.h"
-#include "GlobalDef.h"
+#include "FrontendGlobalDef.h"
+#include "BackendGlobalDef.h"
+#include "UIUtilities.h"
 #include "CrashHandler.h"
-#include "CrySearchForm.h"
 
 // Master index indicates which hit breakpoint is currently selected.
 int BreakpointMasterIndex = 0;
@@ -147,10 +149,9 @@ void CryDebuggerWindow::CallStackListRightClick(Bar& pBar)
 
 void CryDebuggerWindow::FollowStackTraceInDisassembler()
 {
-	extern CrySearchForm* frm;
 	const Win32StackTraceEntry& entry = (*mDebugger)[BreakpointMasterIndex].BreakpointSnapshot.CallStackView[this->mCallStackView.GetCursor()];
-	frm->GetDisasmWindow()->MoveToAddress(entry.Address);
-	frm->SetActiveTabWindow("Disassembly");
+	mCrySearchWindowManager->GetDisasmWindow()->MoveToAddress(entry.Address);
+	mCrySearchWindowManager->GetParentWindow()->SetActiveTabWindow("Disassembly");
 }
 
 void CryDebuggerWindow::DisableBreakpointButtonClicked()

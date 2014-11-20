@@ -1,5 +1,5 @@
 #include "CryThreadChangePriorityWindow.h"
-#include "GlobalDef.h"
+#include "BackendGlobalDef.h"
 
 CryThreadChangePriorityWindow::CryThreadChangePriorityWindow(const int threadId, const int current, const Image& icon) : CryDialogTemplate(icon)
 {

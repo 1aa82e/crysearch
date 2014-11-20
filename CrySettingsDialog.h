@@ -5,7 +5,7 @@
 
 #include <CtrlLib/CtrlLib.h>
 
-#include "GlobalDef.h"
+#include "BackendGlobalDef.h"
 #include "CrySearchArrayCtrl.h"
 
 using namespace Upp;

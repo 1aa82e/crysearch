@@ -1,5 +1,5 @@
 #include "CryThreadContextSnapWindow.h"
-#include "GlobalDef.h"
+#include "BackendGlobalDef.h"
 
 CryThreadContextSnapWindow::CryThreadContextSnapWindow(const Image& icon, const int threadId) : CryDialogTemplate(icon)
 {

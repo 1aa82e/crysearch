@@ -22,6 +22,10 @@ struct Win32ProcessInformation : Moveable<Win32ProcessInformation>
 {
 	int ProcessId;
 	String ExeTitle;
+	String ProcessArguments;
+
+	// The flags are WinAPI process creation flags. This allows direct pass-through of flags into CreateProcess.
+	DWORD UserInterfaceFlags;	
 };
 
 // Represents a numeric thread identification value.

@@ -5,10 +5,10 @@
 
 using namespace Upp;
 
-#include "GlobalDef.h"
 #include "CrySearchArrayCtrl.h"
 #include "VirtualDropList.h"
 
+// Represents the IAT tab page window.
 class CryImportsWindow : public ParentCtrl
 {
 private:
@@ -37,6 +37,7 @@ public:
 	~CryImportsWindow();
 	
 	void Initialize();
+	void ClearList();
 	void ModuleRedraw();
 };
 

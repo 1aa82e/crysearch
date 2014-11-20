@@ -2,12 +2,14 @@
 #define _CrySearch_CryPlaceIATHookWindow_h_
 
 #include "CryDialogTemplate.h"
+#include "ProcessUtil.h"
 
 class CryPlaceIATHookWindow : public CryDialogTemplate
 {
 private:
 	char* mFunction;
 	bool mOrdinal;
+	const Win32ModuleInformation* mMod;
 	
 	Label mAddressDescription;
 	EditField mAddressInput;
@@ -19,7 +21,7 @@ private:
 	
 	typedef CryPlaceIATHookWindow CLASSNAME;
 public:
-	CryPlaceIATHookWindow(const char* funcIdentifier, bool IsOrdinal, const Image& icon);
+	CryPlaceIATHookWindow(const Win32ModuleInformation* pMod, const char* funcIdentifier, bool IsOrdinal, const Image& icon);
 	~CryPlaceIATHookWindow();	
 };
 

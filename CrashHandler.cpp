@@ -1,5 +1,5 @@
 #include "CrashHandler.h"
-#include "GlobalDef.h"
+#include "BackendGlobalDef.h"
 
 #include <VerRsrc.h>
 #include <DbgHelp.h>

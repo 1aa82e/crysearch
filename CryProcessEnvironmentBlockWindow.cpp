@@ -1,5 +1,5 @@
 #include "CryProcessEnvironmentBlockWindow.h"
-#include "GlobalDef.h"
+#include "BackendGlobalDef.h"
 
 CryProcessEnvironmentBlockWindow::CryProcessEnvironmentBlockWindow(const Image& icon) : CryDialogTemplate(icon)
 {

@@ -1,10 +1,11 @@
 #include "CryDisasmCtrl.h"
 #include "CrySignatureGenerationWindow.h"
 #include "CryByteArrayGenerationWindow.h"
-#include "ImlProvider.h"
+#include "CryDisasmGoToAddressDialog.h"
 #include "UIUtilities.h"
 #include "CryHeapWalkDialog.h"
-#include "GlobalDef.h"
+#include "BackendGlobalDef.h"
+#include "ImlProvider.h"
 
 // Extern declarations are needed here to prevent errors.
 extern Vector<DisasmLine> DisasmVisibleLines;

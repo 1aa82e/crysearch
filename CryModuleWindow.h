@@ -5,7 +5,6 @@
 
 using namespace Upp;
 
-#include "GlobalDef.h"
 #include "CrySearchArrayCtrl.h"
 
 class CryModuleWindow : public ParentCtrl

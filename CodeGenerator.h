@@ -5,7 +5,7 @@
 
 using namespace Upp;
 
-#include "GlobalDef.h"
+#include "BackendGlobalDef.h"
 
 // The codegenerator class. Construct using Factory function and destroy using CodeGenerator::Release.
 class CodeGenerator

@@ -1,6 +1,7 @@
 #include "CryPEWindow.h"
 #include "ImlProvider.h"
-#include "ProcessUtil.h"
+#include "FrontendGlobalDef.h"
+#include "BackendGlobalDef.h"
 
 String GetPEFieldKey(const int index)
 {
@@ -52,8 +53,7 @@ String GetDotNetSectionSize(const int index)
 
 CryPEWindow::CryPEWindow()
 {
-	this->AddFrame(this->tBar);
-	this->tBar.Set(THISBACK(ToolBar));
+	this->AddFrame(this->mToolStrip);
 	
 	this->mPeInformationCtrl.CryAddRowNumColumn("Property").SetConvert(Single<IndexBasedValueConvert<GetPEFieldKey>>());
 	this->mPeInformationCtrl.CryAddRowNumColumn("Value").SetConvert(Single<IndexBasedValueConvert<GetPEFieldValue>>());
@@ -82,7 +82,15 @@ CryPEWindow::~CryPEWindow()
 
 void CryPEWindow::ToolBar(Bar& pBar)
 {
+	pBar.Add("Refresh", CrySearchIml::RefreshButtonSmall(), THISBACK(RefreshPEWindow));
 	
+	// If a suspended process was created, a button to resume the process should be visible to the user
+	// straight away. Using the Threads window is not straight forward.
+	if (mMemoryScanner && mMemoryScanner->IsProcessSuspended())
+	{
+		pBar.ToolGapRight();
+		pBar.Add("Resume Process", CrySearchIml::ResumeAllThreadsSmall(), THISBACK(ResumeSuspendedProcess));
+	}
 }
 
 void CryPEWindow::SectionsListRightClick(Bar& pBar)
@@ -101,8 +109,41 @@ void CryPEWindow::DotNetSectionsListRightClick(Bar& pBar)
 	}
 }
 
+void CryPEWindow::RefreshPEWindow()
+{
+	this->Initialize();
+}
+
+void CryPEWindow::ResumeSuspendedProcess()
+{
+	// Resume suspended process by iterating all suspended threads and resuming them.
+	const int tCount = mThreadsList.GetCount();
+	for (int i = 0; i < tCount; ++i)
+	{
+		CryResumeThread(mThreadsList[i].ThreadIdentifier);
+	}
+	
+	// Sleep for a short unnoticable time to let the process build up.
+	Sleep(100);
+	
+	// Reload the toolbar to remove the gap and button.
+	mMemoryScanner->ResetSuspendedState();
+	this->mToolStrip.Set(THISBACK(ToolBar));
+	
+	// Reload tab window contents.
+	mCrySearchWindowManager->ClearWindows();
+	mCrySearchWindowManager->GetModuleWindow()->Initialize();
+	mCrySearchWindowManager->GetThreadWindow()->Initialize();
+	mCrySearchWindowManager->GetImportsWindow()->Initialize();
+	mCrySearchWindowManager->GetDisasmWindow()->Initialize();
+	mCrySearchWindowManager->GetPEWindow()->Initialize();	
+}
+
 void CryPEWindow::Initialize()
 {
+	// On window initialization, reset toolbar.
+	this->mToolStrip.Set(THISBACK(ToolBar));
+	
 	// Get executable file PE information.
 	if (mModuleManager->GetModuleCount() > 0)
 	{
@@ -123,8 +164,6 @@ void CryPEWindow::Initialize()
 void CryPEWindow::ClearList()
 {
 	LoadedProcessPEInformation.Reset();
-	LoadedProcessPEInformation.ClearImportTable();
-
 	this->mPeInformationCtrl.SetVirtualCount(0);
 	this->mSections.SetVirtualCount(0);
 	this->mDotNetInformation.SetVirtualCount(0);

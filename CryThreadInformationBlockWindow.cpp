@@ -1,6 +1,6 @@
 #include "CryThreadInformationBlockWindow.h"
 #include "ImlProvider.h"
-#include "GlobalDef.h"
+#include "BackendGlobalDef.h"
 
 CryThreadInformationBlockWindow::CryThreadInformationBlockWindow(const int threadId) : CryDialogTemplate(CrySearchIml::AboutButton())
 {

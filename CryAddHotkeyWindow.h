@@ -1,7 +1,7 @@
 #ifndef _CrySearch_CryAddHotkeyWindow_h_
 #define _CrySearch_CryAddHotkeyWindow_h_
 
-#include "GlobalDef.h"
+#include "SettingsFile.h"
 #include "CryDialogTemplate.h"
 
 // Represents the structure for the lookup table from keycode to string representation.

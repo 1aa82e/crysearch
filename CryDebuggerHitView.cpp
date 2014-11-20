@@ -1,6 +1,7 @@
 #include "CryDebuggerHitView.h"
-#include "CrySearchForm.h"
-#include "GlobalDef.h"
+#include "CrySearchWindowManager.h"
+#include "FrontendGlobalDef.h"
+#include "BackendGlobalDef.h"
 
 // The breakpoint master index is needed in both classes so externally declared here.
 extern int BreakpointMasterIndex;
@@ -165,8 +166,7 @@ void CryDebuggerHitView::HitInstructionClicked()
 {
 	if (this->disasmAddress)
 	{
-		extern CrySearchForm* frm;
-		frm->GetDisasmWindow()->MoveToAddress(this->disasmAddress);
-		frm->SetActiveTabWindow("Disassembly");
+		mCrySearchWindowManager->GetDisasmWindow()->MoveToAddress(this->disasmAddress);
+		mCrySearchWindowManager->GetParentWindow()->SetActiveTabWindow("Disassembly");
 	}
 }

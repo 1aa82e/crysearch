@@ -3,7 +3,6 @@
 
 #pragma warning(disable : 4005)
 
-#include "GlobalDef.h"
 #include "AddressTable.h"
 #include "UIUtilities.h"
 #include "CryDialogTemplate.h"

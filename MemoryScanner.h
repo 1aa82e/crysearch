@@ -257,6 +257,7 @@ private:
 	int mLoadedProcessId;
 	String mProcessName;
 	bool isX86Process;
+	bool mProcessSuspended;
 	bool ScanRunning;
 	SettingsFile* mSettingsInstance;
 	CompareFunction* mCompareValues;
@@ -296,7 +297,7 @@ public:
 	}
 
 	bool InitializeExistingProcess(const int processId, const String& exeTitle);
-	bool InitializeNewProcess(const char* exetitle, int* const pProcessId);
+	bool InitializeNewProcess(const char* exetitle, const DWORD flags, const char* args, int* const pProcessId);
 	
 	void CloseProcess();
 	void ClearSearchResults();
@@ -313,6 +314,9 @@ public:
 	// Size parameter is optional. If AOB or String types are used, parameter is used, otherwise ignored.
 	template <class T>
 	bool Peek(const SIZE_T address, const unsigned int size, T* outBuffer) const;
+	
+	const bool IsProcessSuspended() const;
+	void ResetSuspendedState();
 	
 	const String& GetProcessName() const;
 	const bool IsX86Process() const;

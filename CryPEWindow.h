@@ -5,7 +5,6 @@
 
 using namespace Upp;
 
-#include "GlobalDef.h"
 #include "CrySearchArrayCtrl.h"
 
 #pragma warning(disable : 4005)
@@ -13,7 +12,7 @@ using namespace Upp;
 class CryPEWindow : public ParentCtrl
 {
 private:
-	ToolBar tBar;
+	ToolBar mToolStrip;
 	Splitter mSplitter;
 	Splitter mRightPaneSplitter;
 	CrySearchArrayCtrl mPeInformationCtrl;
@@ -23,7 +22,9 @@ private:
 	void ToolBar(Bar& pBar);
 	void SectionsListRightClick(Bar& pBar);
 	void DotNetSectionsListRightClick(Bar& pBar);
-
+	
+	void RefreshPEWindow();
+	void ResumeSuspendedProcess();
 	void DumpSection();
 	void DumpDotNetSection();
 	

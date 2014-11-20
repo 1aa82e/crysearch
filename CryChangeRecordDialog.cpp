@@ -1,5 +1,6 @@
 #include "CryChangeRecordDialog.h"
 #include "ImlProvider.h"
+#include "BackendGlobalDef.h"
 
 CryChangeRecordDialog::CryChangeRecordDialog(AddressTable& addrTable, const int row, ChangeRecordDialogMode mode) : CryDialogTemplate(CrySearchIml::ChangeRecordIcon())
 {

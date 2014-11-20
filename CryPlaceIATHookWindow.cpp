@@ -1,10 +1,11 @@
 #include "CryPlaceIATHookWindow.h"
-#include "GlobalDef.h"
+#include "BackendGlobalDef.h"
 
-CryPlaceIATHookWindow::CryPlaceIATHookWindow(const char* funcIdentifier, bool IsOrdinal, const Image& icon) : CryDialogTemplate(icon)
+CryPlaceIATHookWindow::CryPlaceIATHookWindow(const Win32ModuleInformation* pMod, const char* funcIdentifier, bool IsOrdinal, const Image& icon) : CryDialogTemplate(icon)
 {
 	this->mFunction = (char*)funcIdentifier;
 	this->mOrdinal = IsOrdinal;
+	this->mMod = pMod;
 	
 	this->Title("Set IAT Hook").SetRect(0, 0, 300, 75);
 	
@@ -31,9 +32,9 @@ void CryPlaceIATHookWindow::DialogOkay()
 	if (!text.IsEmpty() || (text.GetLength() > 0 && text.GetLength() <= 16))
 	{
 #ifdef _WIN64
-		mPeInstance->PlaceIATHook(this->mFunction, ScanInt64(text, NULL, 16), this->mOrdinal);
+		mPeInstance->PlaceIATHook(this->mMod, this->mFunction, ScanInt64(text, NULL, 16), this->mOrdinal);
 #else
-		mPeInstance->PlaceIATHook(this->mFunction, ScanInt(text, NULL, 16), this->mOrdinal);
+		mPeInstance->PlaceIATHook(this->mMod, this->mFunction, ScanInt(text, NULL, 16), this->mOrdinal);
 #endif
 	}
 	else

@@ -3,8 +3,8 @@
 
 #pragma warning(disable : 4005)
 
-#include "GlobalDef.h"
 #include "CryDialogTemplate.h"
+#include "MemoryScanner.h"
 
 class CryNewScanForm : public CryDialogTemplate
 {

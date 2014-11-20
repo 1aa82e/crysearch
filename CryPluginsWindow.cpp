@@ -1,5 +1,5 @@
 #include "CryPluginsWindow.h"
-#include "GlobalDef.h"
+#include "BackendGlobalDef.h"
 #include "ImlProvider.h"
 #include "UIUtilities.h"
 

@@ -1,5 +1,5 @@
 #include "CryDumpModuleSectionWindow.h"
-#include "GlobalDef.h"
+#include "BackendGlobalDef.h"
 
 CryDumpModuleSectionWindow::CryDumpModuleSectionWindow(const int modListIndex, const Image& icon) : CryDialogTemplate(icon)
 {

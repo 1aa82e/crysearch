@@ -1,5 +1,5 @@
 #include "CrySystemHandleAccessMaskWindow.h"
-#include "GlobalDef.h"
+#include "CrySearchLibrary/SDK/CrySearch.h"
 
 CrySystemHandleAccessMaskWindow::CrySystemHandleAccessMaskWindow(const String& type, const DWORD mask, const Image& icon) : CryDialogTemplate(icon)
 {

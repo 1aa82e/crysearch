@@ -13,7 +13,6 @@
 #include "CrashHandler.h"
 #include "ImlProvider.h"
 #include "UIUtilities.h"
-//#include "DependencyChecker.h"
 
 // Global source IML file declaration. Imaging in the GUI depends on this.
 #define IMAGECLASS CrySearchIml
@@ -47,7 +46,7 @@ Win32PEInformation LoadedProcessPEInformation;
 // ---------------------------------------------------------------------------------------------
 
 // Subwindows or controls that are managed by the main window class may be needed outside. A globally defined pointer is necessary.
-CrySearchForm* frm;
+CrySearchWindowManager* mCrySearchWindowManager;
 
 // ---------------------------------------------------------------------------------------------
 
@@ -284,8 +283,74 @@ void CrySearchForm::AddressValuesUpdater()
 		}
 	}
 	
-	// Refresh ArrayCtrl to display results right away.
+	// Refresh the address table ArrayCtrl to display results right away.
 	this->mUserAddressList.SetVirtualCount(loadedTable.GetCount());
+	
+	// Get the range of visible search results and update them.
+	Tuple2<int, int> searchResultsRange = this->mScanResults.GetVisibleRange();
+	if (searchResultsRange.a >= 0 && searchResultsRange.b < mMemoryScanner->GetScanResultCount())
+	{
+		for (int start = searchResultsRange.a; start <= searchResultsRange.b; ++start)
+		{
+			if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_BYTE)
+			{
+				Byte value;
+				CachedValues[start] = mMemoryScanner->Peek<Byte>(CachedAddresses[start].Address, 0, &value) ? IntStr(value) : "???";
+			}
+			else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_2BYTE)
+			{
+				short value;
+				CachedValues[start] = mMemoryScanner->Peek<short>(CachedAddresses[start].Address, 0, &value) ? IntStr(value) : "???";
+			}
+			else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_4BYTE)
+			{
+				int value;
+				CachedValues[start] = mMemoryScanner->Peek<int>(CachedAddresses[start].Address, 0, &value) ? IntStr(value) : "???";
+			}
+			else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_8BYTE)
+			{
+				__int64 value;
+				CachedValues[start] = mMemoryScanner->Peek<__int64>(CachedAddresses[start].Address, 0, &value) ? IntStr64(value) : "???";
+			}
+			else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_FLOAT)
+			{
+				float value;
+				if (mMemoryScanner->Peek<float>(CachedAddresses[start].Address, 0, &value))
+				{
+					char str[DBL_MAX_10_EXP + 2];
+					sprintf_s(str, DBL_MAX_10_EXP + 2, "%f", value);
+					CachedValues[start] = str;
+				}
+				else
+				{
+					CachedValues[start] = "???";
+				}
+			}
+			else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_DOUBLE)
+			{
+				double value;
+				CachedValues[start] = mMemoryScanner->Peek<double>(CachedAddresses[start].Address, 0, &value) ? DblStr(value) : "???";
+			}
+			else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_AOB)
+			{
+				ArrayOfBytes value = StringToBytes(CachedValues[start]);
+				CachedValues[start] = mMemoryScanner->Peek<ArrayOfBytes>(CachedAddresses[start].Address, value.Size, &value) ? BytesToString(value.Data, value.Size) : "???";
+			}
+			else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_STRING)
+			{
+				String value = CachedValues[start];
+				CachedValues[start] = mMemoryScanner->Peek<String>(CachedAddresses[start].Address, value.GetLength(), &value) ? value : "???";
+			}
+			else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_WSTRING)
+			{
+				WString value = CachedValues[start];
+				CachedValues[start] = mMemoryScanner->Peek<WString>(CachedAddresses[start].Address, value.GetLength(), &value) ? value.ToString() : "???";
+			}
+		}
+	}
+	
+	// Refresh the address table ArrayCtrl to display results right away.
+	this->mScanResults.SetVirtualCount(mMemoryScanner->GetScanResultCount() > MEMORYSCANNER_CACHE_LIMIT ? MEMORYSCANNER_CACHE_LIMIT : mMemoryScanner->GetScanResultCount());
 	
 	// Reinstate timer queue callback to ensure timer keeps running.
 	SetTimeCallback(SettingsFile::GetInstance()->GetAddressTableUpdateInterval(), THISBACK(AddressValuesUpdater), 10);
@@ -328,6 +393,7 @@ CrySearchForm::CrySearchForm(const char* fn)
 {
 	this->processLoaded = false;
 	this->wndTitleRandomized = false;
+	this->mWindowManager.SetParentWindow(this);
 	
 	this->Title("CrySearch Memory Scanner").Icon(CrySearchIml::CrySearch()).Sizeable().Zoomable().SetRect(0, 0, 800, 600);
 	this->SetMinSize(Size(640, 480));
@@ -406,7 +472,7 @@ CrySearchForm::CrySearchForm(const char* fn)
 	this->LinkHotkeysToActions();
 	
 	// Wind up UI debugger error event. When attaching fails, the debug window must be closed at once.
-	this->mDbgWindow.DebugErrorOccured = THISBACK(DebugWindowErrorOccured);
+	this->mWindowManager.GetDebuggerWindow()->DebugErrorOccured = THISBACK(DebugWindowErrorOccured);
 	
 	// If an address table file was opened using file association, load it and display it.
 	if (fn)
@@ -497,9 +563,6 @@ void CrySearchForm::ToolsMenu(Bar& pBar)
 	}
 	
 	pBar.Add("Plugins", CrySearchIml::PluginsMenuSmall(), THISBACK(PluginsMenuClicked));
-	
-	// Dependency checker is for non-opened processes.
-	//pBar.Add("Dependency Checker", CrySearchIml::DependencyCheckerSmall(), THISBACK(DependencyCheckerButtonClicked));
 }
 
 void CrySearchForm::DebuggerMenu(Bar& pBar)
@@ -603,7 +666,7 @@ void CrySearchForm::ActiveTabWindowChanged()
 	const int index = ~this->mTabbedDataWindows;
 	if (index >= 0 && this->mTabbedDataWindows.GetItem(index).GetText() == "Imports")
 	{
-		this->mImportsWindow.ModuleRedraw();
+		this->mWindowManager.GetImportsWindow()->ModuleRedraw();
 	}
 }
 
@@ -694,34 +757,6 @@ void CrySearchForm::PluginsMenuClicked()
 	cpw->Execute();
 	delete cpw;
 }
-
-/*void CrySearchForm::DependencyCheckerButtonClicked()
-{
-	// First attempt to open a file, if there was no file selected the dependency checker doesn't need to run.
-	FileSel* fs = new FileSel();
-	fs->Types("Executable files\t*.exe\nDynamic Link Libraries\t*.dll\nWindows Drivers\t*.sys");
-	if (fs->ExecuteOpen("Open file..."))
-	{
-		// Initialize depcheck result structure for safe use with the dependency checker.
-		DEPCHECKRESULT result;
-		InitializeDepCheckResult(&result);
-		
-		// Run dependency check on the specified file.
-		if (DependencyCheck(fs->Get(), &result))
-		{
-			
-		}
-		else
-		{
-			// Dependency check did not run succesfully.
-		}
-		
-		// Free depcheck result structure.
-		FreeDepCheckResult(&result);
-	}
-	
-	delete fs;
-}*/
 
 void CrySearchForm::OpenFileMenu()
 {
@@ -895,17 +930,18 @@ void CrySearchForm::ShowHideDisasmWindow()
 {
 	// Attempt to close the tab if it is opened in the TabCtrl.
 	const int i = IsTabPageOpened(this->mTabbedDataWindows, "Disassembly");
+	CryDisasmCtrl* mDisasmCtrl = this->mWindowManager.GetDisasmWindow();
 	if (i >= 0)
 	{
-		this->mDisasmWindow.ClearList();
+		mDisasmCtrl->ClearList();
 		this->mTabbedDataWindows.Remove(i);
 		return;
 	}
 	
 	// The tab is not opened, so open it.
-	this->mDisasmWindow.Initialize();
-	this->mTabbedDataWindows.Add(this->mDisasmWindow.SizePos(), "Disassembly");
-	this->mTabbedDataWindows.Set(this->mDisasmWindow);
+	mDisasmCtrl->Initialize();
+	this->mTabbedDataWindows.Add(mDisasmCtrl->SizePos(), "Disassembly");
+	this->mTabbedDataWindows.Set(*mDisasmCtrl);
 }
 
 void CrySearchForm::DeleteUserDefinedAddress()
@@ -1004,7 +1040,7 @@ void CrySearchForm::SearchResultDoubleClicked()
 	
 	// Add the entry to the address table.
 	const SearchResultCacheEntry& selEntry = CachedAddresses[cursor];
-	const AddressTableEntry* newEntry = loadedTable.Add(STRING_EMPTY, selEntry.Address, selEntry.StaticAddress, toAddToAddressList);
+	const AddressTableEntry* newEntry = loadedTable.Add("", selEntry.Address, selEntry.StaticAddress, toAddToAddressList);
 	
 	// Special behavior for specific types of search results.
 	if (toAddToAddressList == CRYDATATYPE_AOB)
@@ -1255,11 +1291,7 @@ bool CrySearchForm::CloseProcess()
 	this->mToolStrip.Set(THISBACK(ToolStrip));
 	
 	// Free process-bound resources.
-	this->mPEWindow.ClearList();
-	this->mThreadList.ClearList();
-	this->mModuleList.ClearList();
-	this->mDisasmWindow.ClearList();
-	this->mDbgWindow.Cleanup();
+	this->mWindowManager.ClearWindows();
 	
 	this->mTabbedDataWindows.Reset();
 	
@@ -1381,6 +1413,7 @@ void CrySearchForm::ViewThreadsButtonClicked()
 {
 	// Attempt to close the tab if it is opened in the TabCtrl.
 	const int i = IsTabPageOpened(this->mTabbedDataWindows, "Threads");
+	CryThreadWindow* threadWindow = this->mWindowManager.GetThreadWindow();
 	if (i >= 0)
 	{
 		this->mTabbedDataWindows.Remove(i);
@@ -1388,15 +1421,16 @@ void CrySearchForm::ViewThreadsButtonClicked()
 	}
 	
 	// The tab is not opened, so open it.
-	this->mThreadList.Initialize();
-	this->mTabbedDataWindows.Add(this->mThreadList.SizePos(), "Threads");
-	this->mTabbedDataWindows.Set(this->mThreadList);
+	threadWindow->Initialize();
+	this->mTabbedDataWindows.Add(threadWindow->SizePos(), "Threads");
+	this->mTabbedDataWindows.Set(*threadWindow);
 }
 
 void CrySearchForm::ViewModulesButtonClicked()
 {
 	// Attempt to close the tab if it is opened in the TabCtrl.
 	const int i = IsTabPageOpened(this->mTabbedDataWindows, "Modules");
+	CryModuleWindow* moduleWindow = this->mWindowManager.GetModuleWindow();
 	if (i >= 0)
 	{
 		this->mTabbedDataWindows.Remove(i);
@@ -1404,15 +1438,16 @@ void CrySearchForm::ViewModulesButtonClicked()
 	}
 	
 	// The tab is not opened, so open it.
-	this->mModuleList.Initialize();
-	this->mTabbedDataWindows.Add(this->mModuleList.SizePos(), "Modules");
-	this->mTabbedDataWindows.Set(this->mModuleList);
+	moduleWindow->Initialize();
+	this->mTabbedDataWindows.Add(moduleWindow->SizePos(), "Modules");
+	this->mTabbedDataWindows.Set(*moduleWindow);
 }
 
 void CrySearchForm::ViewGeneralButtonClicked()
 {
 	// Attempt to close the tab if it is opened in the TabCtrl.
 	const int i = IsTabPageOpened(this->mTabbedDataWindows, "General");
+	CryPEWindow* peWindow = this->mWindowManager.GetPEWindow();
 	if (i >= 0)
 	{
 		this->mTabbedDataWindows.Remove(i);
@@ -1420,15 +1455,16 @@ void CrySearchForm::ViewGeneralButtonClicked()
 	}
 	
 	// The tab is not opened, so open it.
-	this->mPEWindow.Initialize();
-	this->mTabbedDataWindows.Add(this->mPEWindow.SizePos(), "General");
-	this->mTabbedDataWindows.Set(this->mPEWindow);
+	peWindow->Initialize();
+	this->mTabbedDataWindows.Add(peWindow->SizePos(), "General");
+	this->mTabbedDataWindows.Set(*peWindow);
 }
 
 void CrySearchForm::ViewImportsButtonClicked()
 {
 	// Attempt to close the tab if it is opened in the TabCtrl.
 	const int i = IsTabPageOpened(this->mTabbedDataWindows, "Imports");
+	CryImportsWindow* importsWindow = this->mWindowManager.GetImportsWindow();
 	if (i >= 0)
 	{
 		LoadedProcessPEInformation.ClearImportTable();
@@ -1437,15 +1473,16 @@ void CrySearchForm::ViewImportsButtonClicked()
 	}
 	
 	// The tab is not opened, so open it.
-	this->mImportsWindow.Initialize();
-	this->mTabbedDataWindows.Add(this->mImportsWindow.SizePos(), "Imports");
-	this->mTabbedDataWindows.Set(this->mImportsWindow);
+	importsWindow->Initialize();
+	this->mTabbedDataWindows.Add(importsWindow->SizePos(), "Imports");
+	this->mTabbedDataWindows.Set(*importsWindow);
 }
 
 void CrySearchForm::ToggleDebuggerWindow()
 {
 	// Attempt to close the tab if it is opened in the TabCtrl.
 	const int i = IsTabPageOpened(this->mTabbedDataWindows, "Debugger");
+	CryDebuggerWindow* debuggerWindow = this->mWindowManager.GetDebuggerWindow();
 	if (i >= 0)
 	{
 		this->mTabbedDataWindows.Remove(i);
@@ -1453,8 +1490,8 @@ void CrySearchForm::ToggleDebuggerWindow()
 	}
 	
 	// The tab is not opened, so open it.
-	this->mTabbedDataWindows.Add(this->mDbgWindow.SizePos(), "Debugger");
-	this->mTabbedDataWindows.Set(this->mDbgWindow);
+	this->mTabbedDataWindows.Add(debuggerWindow->SizePos(), "Debugger");
+	this->mTabbedDataWindows.Set(*debuggerWindow);
 }
 
 void CrySearchForm::AboutCrySearch()
@@ -1484,8 +1521,8 @@ void CrySearchForm::ClearScanResultsWithoutWarning()
 bool CrySearchForm::InitializeProcessUI()
 {
 #ifndef _WIN64
-	this->mModuleList.Initialize();
-	this->mThreadList.Initialize();
+	this->mWindowManager.GetModuleWindow()->Initialize();
+	this->mWindowManager.GetThreadWindow()->Initialize();
 
 	// Check the architecture of the loaded process. Under x64, processes can cause trouble.
 	if (mMemoryScanner->IsX86Process())
@@ -1493,9 +1530,9 @@ bool CrySearchForm::InitializeProcessUI()
 		// Instantiate new PE class.
 		mPeInstance = new PortableExecutable32();
 		mDebugger = new CryDebugger32();
-		this->mPEWindow.Initialize();
-		this->mImportsWindow.Initialize();
-		this->mDisasmWindow.Initialize();
+		this->mWindowManager.GetPEWindow()->Initialize();
+		this->mWindowManager.GetImportsWindow()->Initialize();
+		this->mWindowManager.GetDisasmWindow()->Initialize();
 	}
 	else
 	{
@@ -1505,8 +1542,8 @@ bool CrySearchForm::InitializeProcessUI()
 		return false;
 	}
 #else
-	this->mModuleList.Initialize();
-	this->mThreadList.Initialize();
+	this->mWindowManager.GetModuleWindow()->Initialize();
+	this->mWindowManager.GetThreadWindow()->Initialize();
 	
 	if (mMemoryScanner->IsX86Process())
 	{
@@ -1519,15 +1556,15 @@ bool CrySearchForm::InitializeProcessUI()
 		mDebugger = new CryDebugger64();
 	}
 	
-	this->mPEWindow.Initialize();
-	this->mImportsWindow.Initialize();
-	this->mDisasmWindow.Initialize();
+	this->mWindowManager.GetPEWindow()->Initialize();
+	this->mWindowManager.GetImportsWindow()->Initialize();
+	this->mWindowManager.GetDisasmWindow()->Initialize();
 #endif
-	this->mDbgWindow.Initialize();
+	this->mWindowManager.GetDebuggerWindow()->Initialize();
 	
 	// Still here so the process loaded succesfully. Update user interface and prepare tabs.
 	this->processLoaded = true;
-	this->mToolStrip.Set(THISBACK(ToolStrip));	
+	this->mToolStrip.Set(THISBACK(ToolStrip));
 
 	// Set timer callback that runs the address list update sequence.
 	SetTimeCallback(SettingsFile::GetInstance()->GetAddressTableUpdateInterval(), THISBACK(AddressValuesUpdater), 10);
@@ -1551,7 +1588,8 @@ void CrySearchForm::WhenProcessOpened(Win32ProcessInformation* pProc)
 	// Process ID is -1, create process using ExeTitle.
 	if (pProc->ProcessId == -1)
 	{
-		if (mMemoryScanner->InitializeNewProcess(pProc->ExeTitle, &pProc->ProcessId))
+		// Create process with memory scanner class.
+		if (mMemoryScanner->InitializeNewProcess(pProc->ExeTitle, pProc->UserInterfaceFlags, pProc->ProcessArguments, &pProc->ProcessId))
 		{
 			// Wait for the process to be fully started, otherwise initialization steps will fail.
 			Sleep(250);
@@ -1576,11 +1614,11 @@ void CrySearchForm::WhenProcessOpened(Win32ProcessInformation* pProc)
 				
 				this->mMenuStrip.Set(THISBACK(MainMenu));
 					
-				this->mTabbedDataWindows.Add(this->mPEWindow.SizePos(), "General");
-				this->mTabbedDataWindows.Add(this->mDisasmWindow.SizePos(), "Disassembly");
-				this->mTabbedDataWindows.Add(this->mImportsWindow.SizePos(), "Imports");
-				this->mTabbedDataWindows.Add(this->mThreadList.SizePos(), "Threads");
-				this->mTabbedDataWindows.Add(this->mModuleList.SizePos(), "Modules");
+				this->mTabbedDataWindows.Add(this->mWindowManager.GetPEWindow()->SizePos(), "General");
+				this->mTabbedDataWindows.Add(this->mWindowManager.GetDisasmWindow()->SizePos(), "Disassembly");
+				this->mTabbedDataWindows.Add(this->mWindowManager.GetImportsWindow()->SizePos(), "Imports");
+				this->mTabbedDataWindows.Add(this->mWindowManager.GetThreadWindow()->SizePos(), "Threads");
+				this->mTabbedDataWindows.Add(this->mWindowManager.GetModuleWindow()->SizePos(), "Modules");
 				
 				this->ProcessTerminated = false;
 				SetTimeCallback(250, THISBACK(CheckProcessTermination), 30);
@@ -1626,11 +1664,11 @@ void CrySearchForm::WhenProcessOpened(Win32ProcessInformation* pProc)
 			this->mMenuStrip.Set(THISBACK(MainMenu));
 			
 			// Add tabs to the tabcontrol.
-			this->mTabbedDataWindows.Add(this->mPEWindow.SizePos(), "General");
-			this->mTabbedDataWindows.Add(this->mDisasmWindow.SizePos(), "Disassembly");
-			this->mTabbedDataWindows.Add(this->mImportsWindow.SizePos(), "Imports");
-			this->mTabbedDataWindows.Add(this->mThreadList.SizePos(), "Threads");
-			this->mTabbedDataWindows.Add(this->mModuleList.SizePos(), "Modules");
+			this->mTabbedDataWindows.Add(this->mWindowManager.GetPEWindow()->SizePos(), "General");
+			this->mTabbedDataWindows.Add(this->mWindowManager.GetDisasmWindow()->SizePos(), "Disassembly");
+			this->mTabbedDataWindows.Add(this->mWindowManager.GetImportsWindow()->SizePos(), "Imports");
+			this->mTabbedDataWindows.Add(this->mWindowManager.GetThreadWindow()->SizePos(), "Threads");
+			this->mTabbedDataWindows.Add(this->mWindowManager.GetModuleWindow()->SizePos(), "Modules");
 			
 			this->ProcessTerminated = false;
 			SetTimeCallback(250, THISBACK(CheckProcessTermination), 30);
@@ -1724,7 +1762,7 @@ void CrySearchForm::ScannerCompletedThreadSafe()
 	}
 	
 	// Create distinction between relative and dynamic addresses.
-	CrySearchArrayCtrl* const ctrl = frm->GetSearchResultCtrl();
+	CrySearchArrayCtrl* const ctrl = this->GetSearchResultCtrl();
 	const int aCount = CachedAddresses.GetCount();
 	for (int a = 0; a < aCount; ++a)
 	{
@@ -1744,16 +1782,16 @@ void CrySearchForm::ScannerCompletedThreadSafe()
 
 // ---------------------------------------------------------------------------------------------
 
+// Returns a pointer to the window manager associated to CrySearchForm.
+CrySearchWindowManager* CrySearchForm::GetWindowManager()
+{
+	return &this->mWindowManager;
+}
+
 // Returns a pointer to the search result control. Friend methods may need to set the display property.
 CrySearchArrayCtrl* CrySearchForm::GetSearchResultCtrl()
 {
 	return &this->mScanResults;
-}
-
-// Returns a pointer to the disassembly window.
-CryDisasmCtrl* CrySearchForm::GetDisasmWindow()
-{
-	return &this->mDisasmWindow;
 }
 
 // Sets the currently active (on top) tab window.
@@ -1774,6 +1812,8 @@ bool CrySearchForm::SetActiveTabWindow(const String& wndText)
 
 GUI_APP_MAIN
 {
+	CrySearchForm* frm;
+	
 	// Wire up the crash handler.
 	SetUnhandledExceptionFilter(CrashHandler);
 	
@@ -1792,6 +1832,7 @@ GUI_APP_MAIN
 	DeleteTemporaryFiles();
 	
 	// Run main window.
+	mCrySearchWindowManager = frm->GetWindowManager();
 	frm->Run();
 	delete frm;
 

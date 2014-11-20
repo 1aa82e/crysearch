@@ -1,5 +1,5 @@
 #include "AsyncDisassembler.h"
-#include "GlobalDef.h"
+#include "BackendGlobalDef.h"
 
 // Container of all currently UI visible lines of disassembly.
 Vector<DisasmLine> DisasmVisibleLines;

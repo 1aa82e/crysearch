@@ -1,6 +1,6 @@
 #include "CrySystemHandleInformationWindow.h"
 #include "CrySystemHandleAccessMaskWindow.h"
-#include "GlobalDef.h"
+#include "BackendGlobalDef.h"
 #include "UIUtilities.h"
 #include "ImlProvider.h"
 

@@ -1,5 +1,5 @@
 #include "AddressTable.h"
-#include "GlobalDef.h"
+#include "BackendGlobalDef.h"
 
 // Address table XML serialization logic.
 void AddressTable::Xmlize(XmlIO& s)

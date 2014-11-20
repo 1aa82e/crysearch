@@ -5,7 +5,7 @@
 #include <VerRsrc.h>
 #include <DbgHelp.h>
 
-#include "GlobalDef.h"
+#include "BackendGlobalDef.h"
 
 // Enumerates every process currently running.
 void EnumerateProcesses(Vector<Win32ProcessInformation>& outList)

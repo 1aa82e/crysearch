@@ -99,7 +99,7 @@ struct Win32PEInformation
 	
 	void Reset()
 	{
-		//this->PEFields.Clear(); The map doesn't have to be cleared because the keys will always be the same.
+		this->PEFields.Clear();
 		this->ImageSections.Clear();
 		this->DotNetInformation.DotNetSections.Clear();
 	};
@@ -148,14 +148,14 @@ protected:
 public:
 	virtual void GetExecutablePeInformation() const = 0;
 	virtual void GetImportAddressTable() const = 0;
-	virtual void PlaceIATHook(const char* NameOrdinal, const SIZE_T newAddress, bool IsOrdinal) const = 0;
+	virtual void PlaceIATHook(const Win32ModuleInformation* modBase, const char* NameOrdinal, const SIZE_T newAddress, bool IsOrdinal) const = 0;
 	virtual bool RestorePEHeaderFromFile(const String& fileName, const Win32ModuleInformation& module) const = 0;	
 	virtual bool HideModuleFromProcess(const Win32ModuleInformation& module) const = 0;
 	virtual bool DumpProcessSection(const String& fileName, const SIZE_T address, const SIZE_T size) const = 0;
 	virtual bool LoadLibraryExternal(const String& library) const = 0;
 	virtual bool LoadLibraryExternalHijack(const String& library) const = 0;
 	virtual void UnloadLibraryExternal(const SIZE_T module) const = 0;
-	virtual void RestoreExportTableAddressImport(const SIZE_T baseAddress, const char* NameOrdinal, bool IsOrdinal) const = 0;
+	virtual void RestoreExportTableAddressImport(const Win32ModuleInformation* modBase, const SIZE_T baseAddress, const char* NameOrdinal, bool IsOrdinal) const = 0;
 	virtual SIZE_T GetAddressFromExportTable(const AddrStruct* addr, const char* NameOrdinal, bool IsOrdinal) const = 0;
 	
 	wchar* ResolveApiSetSchemaMapping(const wchar* ApiSetSchemaDll, const DWORD Length) const;
@@ -185,14 +185,14 @@ protected:
 public:
 	virtual void GetExecutablePeInformation() const;
 	virtual void GetImportAddressTable() const;
-	virtual void PlaceIATHook(const char* NameOrdinal, const SIZE_T newAddress, bool IsOrdinal) const;
+	virtual void PlaceIATHook(const Win32ModuleInformation* modBase, const char* NameOrdinal, const SIZE_T newAddress, bool IsOrdinal) const;
 	virtual bool RestorePEHeaderFromFile(const String& fileName, const Win32ModuleInformation& module) const;
 	virtual bool HideModuleFromProcess(const Win32ModuleInformation& module) const;
 	virtual bool DumpProcessSection(const String& fileName, const SIZE_T address, const SIZE_T size) const;
 	virtual bool LoadLibraryExternal(const String& library) const;
 	virtual bool LoadLibraryExternalHijack(const String& library) const;
 	virtual void UnloadLibraryExternal(const SIZE_T module) const;
-	virtual void RestoreExportTableAddressImport(const SIZE_T baseAddress, const char* NameOrdinal, bool IsOrdinal) const;
+	virtual void RestoreExportTableAddressImport(const Win32ModuleInformation* modBase, const SIZE_T baseAddress, const char* NameOrdinal, bool IsOrdinal) const;
 	virtual SIZE_T GetAddressFromExportTable(const AddrStruct* addr, const char* NameOrdinal, bool IsOrdinal) const;
 	
 	PortableExecutable32() : PortableExecutable() { }
@@ -208,14 +208,14 @@ public:
 	public:
 		virtual void GetExecutablePeInformation() const;
 		virtual void GetImportAddressTable() const;
-		virtual void PlaceIATHook(const char* NameOrdinal, const SIZE_T newAddress, bool IsOrdinal) const;
+		virtual void PlaceIATHook(const Win32ModuleInformation* modBase, const char* NameOrdinal, const SIZE_T newAddress, bool IsOrdinal) const;
 		virtual bool RestorePEHeaderFromFile(const String& fileName, const Win32ModuleInformation& module) const;
 		virtual bool HideModuleFromProcess(const Win32ModuleInformation& module) const;
 		virtual bool DumpProcessSection(const String& fileName, const SIZE_T address, const SIZE_T size) const;
 		virtual bool LoadLibraryExternal(const String& library) const;
 		virtual bool LoadLibraryExternalHijack(const String& library) const;
 		virtual void UnloadLibraryExternal(const SIZE_T module) const;
-		virtual void RestoreExportTableAddressImport(const SIZE_T baseAddress, const char* NameOrdinal, bool IsOrdinal) const;
+		virtual void RestoreExportTableAddressImport(const Win32ModuleInformation* modBase, const SIZE_T baseAddress, const char* NameOrdinal, bool IsOrdinal) const;
 		virtual SIZE_T GetAddressFromExportTable(const AddrStruct* addr, const char* NameOrdinal, bool IsOrdinal) const;
 		
 		PortableExecutable64() : PortableExecutable() { }

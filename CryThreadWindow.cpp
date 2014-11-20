@@ -1,7 +1,6 @@
 #include "CryThreadWindow.h"
 #include "ImlProvider.h"
-#include "GlobalDef.h"
-#include "ProcessUtil.h"
+#include "BackendGlobalDef.h"
 #include "CryThreadChangePriorityWindow.h"
 #include "CryCreateExternalThreadWindow.h"
 #include "CryThreadInformationBlockWindow.h"

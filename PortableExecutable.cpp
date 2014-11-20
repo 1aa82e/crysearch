@@ -1,5 +1,5 @@
 #include "PortableExecutable.h"
-#include "GlobalDef.h"
+#include "BackendGlobalDef.h"
 
 // Defines seperately because the Windows SDK 7.1 headers do not yet include these two.
 #define _WIN32_WINNT_WIN8                   0x0602
@@ -749,35 +749,58 @@ void PortableExecutable32::GetImportAddressTable() const
 
 // Places a hook in the IAT, replacing the function address with another one.
 // First parameter is either a pointer to a buffer containing the function name or an ordinal value.
-void PortableExecutable32::PlaceIATHook(const char* NameOrdinal, const SIZE_T newAddress, bool IsOrdinal) const
+void PortableExecutable32::PlaceIATHook(const Win32ModuleInformation* modBase, const char* NameOrdinal, const SIZE_T newAddress, bool IsOrdinal) const
 {
-	Byte* const moduleBuffer = new Byte[(*mModuleManager)[0].Length];
-	CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)this->mBaseAddress, moduleBuffer, (*mModuleManager)[0].Length, NULL);
+	Byte* const moduleBuffer = new Byte[modBase->Length];
+	CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)this->mBaseAddress, moduleBuffer, modBase->Length, NULL);
 	
 	const IMAGE_NT_HEADERS32* const pNTHeader =(IMAGE_NT_HEADERS32*)(moduleBuffer + ((IMAGE_DOS_HEADER*)moduleBuffer)->e_lfanew);
 	const IMAGE_OPTIONAL_HEADER32* const pOptionalHeader = (IMAGE_OPTIONAL_HEADER32*)&pNTHeader->OptionalHeader;
 	
 	const IMAGE_IMPORT_DESCRIPTOR* pDesc = (IMAGE_IMPORT_DESCRIPTOR*)(moduleBuffer + pOptionalHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress);
-
-	while (pDesc->FirstThunk)
+	
+	// Additional sanity checking, to avoid pDesc to be located outside of the allocated buffer.
+	if ((Byte*)pDesc > moduleBuffer && (Byte*)pDesc < moduleBuffer + modBase->Length)
 	{
-		const char* dllName = (char*)(moduleBuffer + pDesc->Name);
-		
-		IMAGE_THUNK_DATA32* thunk;
-        unsigned int count = 0;
-
-		do
+		while (pDesc->FirstThunk)
 		{
-			thunk = (IMAGE_THUNK_DATA32*)(moduleBuffer + pDesc->OriginalFirstThunk + count * sizeof(DWORD));
+			const char* dllName = (char*)(moduleBuffer + pDesc->Name);
 			
-			void* const AddressAddr = (void*)(this->mBaseAddress + pDesc->FirstThunk + count++ * sizeof(DWORD));
-
-			if (IsOrdinal)
+			IMAGE_THUNK_DATA32* thunk;
+	        unsigned int count = 0;
+	
+			do
 			{
-				if (thunk->u1.Ordinal & IMAGE_ORDINAL_FLAG32)
+				thunk = (IMAGE_THUNK_DATA32*)(moduleBuffer + pDesc->OriginalFirstThunk + count * sizeof(DWORD));	
+				void* const AddressAddr = (void*)(this->mBaseAddress + pDesc->FirstThunk + count++ * sizeof(DWORD));
+	
+				if (IsOrdinal)
 				{
-					// Ordinal import detected, check whether ordinal matches input value.
-					if (IMAGE_ORDINAL32(thunk->u1.Ordinal) == (DWORD)NameOrdinal)
+					if (thunk->u1.Ordinal & IMAGE_ORDINAL_FLAG32)
+					{
+						// Ordinal import detected, check whether ordinal matches input value.
+						if (IMAGE_ORDINAL32(thunk->u1.Ordinal) == (DWORD)NameOrdinal)
+						{
+							DWORD dwOldProtect;
+							CrySearchRoutines.CryProtectMemoryRoutine(this->mProcessHandle, AddressAddr, sizeof(DWORD), PAGE_READWRITE, &dwOldProtect);
+							CrySearchRoutines.CryWriteMemoryRoutine(this->mProcessHandle, AddressAddr, &newAddress, sizeof(DWORD), NULL);
+							CrySearchRoutines.CryProtectMemoryRoutine(this->mProcessHandle, AddressAddr, sizeof(DWORD), dwOldProtect, &dwOldProtect);
+							break;
+						}
+					}
+				}
+				else
+				{
+					// Check if function is ordinal, because if it is, skip this one.
+					if (thunk->u1.Ordinal & IMAGE_ORDINAL_FLAG32)
+					{
+						continue;
+					}
+					
+					const char* funcName = (char*)(moduleBuffer + thunk->u1.AddressOfData + sizeof(WORD));
+					
+					// Named import detected, check whether import matches input name.
+					if (strcmp(funcName, NameOrdinal) == 0)
 					{
 						DWORD dwOldProtect;
 						CrySearchRoutines.CryProtectMemoryRoutine(this->mProcessHandle, AddressAddr, sizeof(DWORD), PAGE_READWRITE, &dwOldProtect);
@@ -787,30 +810,10 @@ void PortableExecutable32::PlaceIATHook(const char* NameOrdinal, const SIZE_T ne
 					}
 				}
 			}
-			else
-			{
-				// Check if function is ordinal, because if it is, skip this one.
-				if (thunk->u1.Ordinal & IMAGE_ORDINAL_FLAG32)
-				{
-					continue;
-				}
-				
-				const char* funcName = (char*)(moduleBuffer + thunk->u1.AddressOfData + sizeof(WORD));
-				
-				// Named import detected, check whether import matches input name.
-				if (strcmp(funcName, NameOrdinal) == 0)
-				{
-					DWORD dwOldProtect;
-					CrySearchRoutines.CryProtectMemoryRoutine(this->mProcessHandle, AddressAddr, sizeof(DWORD), PAGE_READWRITE, &dwOldProtect);
-					CrySearchRoutines.CryWriteMemoryRoutine(this->mProcessHandle, AddressAddr, &newAddress, sizeof(DWORD), NULL);
-					CrySearchRoutines.CryProtectMemoryRoutine(this->mProcessHandle, AddressAddr, sizeof(DWORD), dwOldProtect, &dwOldProtect);
-					break;
-				}
-			}
-		}
-		while (thunk->u1.AddressOfData);
-		
-		++pDesc;
+			while (thunk->u1.AddressOfData);
+			
+			++pDesc;
+		}		
 	}
 	
 	// Success, free used buffers and return.
@@ -1098,7 +1101,7 @@ void PortableExecutable32::UnloadLibraryExternal(const SIZE_T module) const
 }
 
 // Restores the original address of an imported function from the export table.
-void PortableExecutable32::RestoreExportTableAddressImport(const SIZE_T baseAddress, const char* NameOrdinal, bool IsOrdinal) const
+void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInformation* modBase, const SIZE_T baseAddress, const char* NameOrdinal, bool IsOrdinal) const
 {
 	Byte* const dllBuffer = new Byte[0x400];
     CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)baseAddress, dllBuffer, 0x400, NULL);
@@ -1115,7 +1118,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const SIZE_T baseAddr
 	AddrStruct addrStruct((Byte*)baseAddress, (exportDirectoryBuffer - dataDir.VirtualAddress), bufBase + dataDir.VirtualAddress + dataDir.Size
 		, &dataDir, (IMAGE_EXPORT_DIRECTORY*)exportDirectoryBuffer);
     
-	this->PlaceIATHook(NameOrdinal, this->GetAddressFromExportTable(&addrStruct, NameOrdinal, IsOrdinal), IsOrdinal);
+	this->PlaceIATHook(modBase, NameOrdinal, this->GetAddressFromExportTable(&addrStruct, NameOrdinal, IsOrdinal), IsOrdinal);
 	
 	delete[] exportDirectoryBuffer;
 }
@@ -1493,37 +1496,61 @@ void PortableExecutable32::RestoreExportTableAddressImport(const SIZE_T baseAddr
 	
 	// Places a hook in the IAT, replacing the function address with another one.
 	// First parameter is either a pointer to a buffer containing the function name or an ordinal value.
-	void PortableExecutable64::PlaceIATHook(const char* NameOrdinal, const SIZE_T newAddress, bool IsOrdinal) const
+	void PortableExecutable64::PlaceIATHook(const Win32ModuleInformation* modBase, const char* NameOrdinal, const SIZE_T newAddress, bool IsOrdinal) const
 	{
-		Byte* const moduleBuffer = new Byte[(*mModuleManager)[0].Length];
-		CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)this->mBaseAddress, moduleBuffer, (*mModuleManager)[0].Length, NULL);
+		Byte* const moduleBuffer = new Byte[modBase->Length];
+		CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)this->mBaseAddress, moduleBuffer, modBase->Length, NULL);
 		
 		const IMAGE_NT_HEADERS* const pNTHeader =(IMAGE_NT_HEADERS*)(moduleBuffer + ((IMAGE_DOS_HEADER*)moduleBuffer)->e_lfanew);
 		const IMAGE_IMPORT_DESCRIPTOR* pDesc = (IMAGE_IMPORT_DESCRIPTOR*)(moduleBuffer + ((IMAGE_OPTIONAL_HEADER*)&pNTHeader->OptionalHeader)->DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress);
-	
-		while (pDesc->FirstThunk)
+		
+		// Additional sanity checking, to avoid pDesc to be located outside of the allocated buffer.
+		if ((Byte*)pDesc > moduleBuffer && (Byte*)pDesc < moduleBuffer + modBase->Length)
 		{
-			// Read DLL name from import descriptor entry.
-			const char* const dllName = (char*)(moduleBuffer + pDesc->Name);
-	
-			IMAGE_THUNK_DATA* thunk;
-	        unsigned int count = 0;
-	        
-			do
+			while (pDesc->FirstThunk)
 			{
-				IMAGE_THUNK_DATA* const curAddress = (IMAGE_THUNK_DATA*)(moduleBuffer + pDesc->OriginalFirstThunk + count * sizeof(IMAGE_THUNK_DATA));
-				
-				// Read current thunk into local memory.
-				thunk = curAddress;
-				
-				void* const AddressAddr = (void*)(this->mBaseAddress + pDesc->FirstThunk + count++ * sizeof(IMAGE_THUNK_DATA));
-				
-				if (IsOrdinal)
+				// Read DLL name from import descriptor entry.
+				const char* const dllName = (char*)(moduleBuffer + pDesc->Name);
+		
+				IMAGE_THUNK_DATA* thunk;
+		        unsigned int count = 0;
+		        
+				do
 				{
-					if (thunk->u1.Ordinal & IMAGE_ORDINAL_FLAG64)
+					IMAGE_THUNK_DATA* const curAddress = (IMAGE_THUNK_DATA*)(moduleBuffer + pDesc->OriginalFirstThunk + count * sizeof(IMAGE_THUNK_DATA));
+					
+					// Read current thunk into local memory.
+					thunk = curAddress;
+					void* const AddressAddr = (void*)(this->mBaseAddress + pDesc->FirstThunk + count++ * sizeof(IMAGE_THUNK_DATA));
+					
+					if (IsOrdinal)
 					{
-						// Ordinal import detected, check whether ordinal matches input value.
-						if (IMAGE_ORDINAL64(thunk->u1.Ordinal) == (SIZE_T)NameOrdinal)
+						if (thunk->u1.Ordinal & IMAGE_ORDINAL_FLAG64)
+						{
+							// Ordinal import detected, check whether ordinal matches input value.
+							if (IMAGE_ORDINAL64(thunk->u1.Ordinal) == (SIZE_T)NameOrdinal)
+							{
+								DWORD dwOldProtect;
+								CrySearchRoutines.CryProtectMemoryRoutine(this->mProcessHandle, AddressAddr, sizeof(IMAGE_THUNK_DATA), PAGE_READWRITE, &dwOldProtect);
+								CrySearchRoutines.CryWriteMemoryRoutine(this->mProcessHandle, AddressAddr, &newAddress, sizeof(IMAGE_THUNK_DATA), NULL);
+								CrySearchRoutines.CryProtectMemoryRoutine(this->mProcessHandle, AddressAddr, sizeof(IMAGE_THUNK_DATA), dwOldProtect, &dwOldProtect);
+								break;
+							}
+						}
+					}	
+					else
+					{
+						// If the current import is not a named one, move over to the next.
+						if (thunk->u1.Ordinal & IMAGE_ORDINAL_FLAG64)
+						{
+							continue;
+						}
+	
+						// Read function name from thunk data.
+						const char* const funcName = (char*)(moduleBuffer + thunk->u1.AddressOfData + sizeof(WORD));
+						
+						// Named import detected, check whether import matches input name.
+						if (strcmp(funcName, NameOrdinal) == 0)
 						{
 							DWORD dwOldProtect;
 							CrySearchRoutines.CryProtectMemoryRoutine(this->mProcessHandle, AddressAddr, sizeof(IMAGE_THUNK_DATA), PAGE_READWRITE, &dwOldProtect);
@@ -1532,32 +1559,11 @@ void PortableExecutable32::RestoreExportTableAddressImport(const SIZE_T baseAddr
 							break;
 						}
 					}
-				}	
-				else
-				{
-					// If the current import is not a named one, move over to the next.
-					if (thunk->u1.Ordinal & IMAGE_ORDINAL_FLAG64)
-					{
-						continue;
-					}
-
-					// Read function name from thunk data.
-					const char* const funcName = (char*)(moduleBuffer + thunk->u1.AddressOfData + sizeof(WORD));
-					
-					// Named import detected, check whether import matches input name.
-					if (strcmp(funcName, NameOrdinal) == 0)
-					{
-						DWORD dwOldProtect;
-						CrySearchRoutines.CryProtectMemoryRoutine(this->mProcessHandle, AddressAddr, sizeof(IMAGE_THUNK_DATA), PAGE_READWRITE, &dwOldProtect);
-						CrySearchRoutines.CryWriteMemoryRoutine(this->mProcessHandle, AddressAddr, &newAddress, sizeof(IMAGE_THUNK_DATA), NULL);
-						CrySearchRoutines.CryProtectMemoryRoutine(this->mProcessHandle, AddressAddr, sizeof(IMAGE_THUNK_DATA), dwOldProtect, &dwOldProtect);
-						break;
-					}
 				}
+				while (thunk->u1.AddressOfData);
+				
+				++pDesc;
 			}
-			while (thunk->u1.AddressOfData);
-			
-			++pDesc;
 		}
 		
 		// Success, free used buffers and return.
@@ -1801,7 +1807,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const SIZE_T baseAddr
 	}
 	
 	// Restores the original address of an imported function from the export table.
-	void PortableExecutable64::RestoreExportTableAddressImport(const SIZE_T baseAddress, const char* NameOrdinal, bool IsOrdinal) const
+	void PortableExecutable64::RestoreExportTableAddressImport(const Win32ModuleInformation* modBase, const SIZE_T baseAddress, const char* NameOrdinal, bool IsOrdinal) const
 	{
 		Byte* const dllBuffer = new Byte[0x400];
 	    CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)baseAddress, dllBuffer, 0x400, NULL);
@@ -1818,7 +1824,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const SIZE_T baseAddr
 		AddrStruct addrStruct((Byte*)baseAddress, (exportDirectoryBuffer - dataDir.VirtualAddress), bufBase + dataDir.VirtualAddress + dataDir.Size
 			, &dataDir, (IMAGE_EXPORT_DIRECTORY*)exportDirectoryBuffer);
 	    
-		this->PlaceIATHook(NameOrdinal, this->GetAddressFromExportTable(&addrStruct, NameOrdinal, IsOrdinal), IsOrdinal);
+		this->PlaceIATHook(modBase, NameOrdinal, this->GetAddressFromExportTable(&addrStruct, NameOrdinal, IsOrdinal), IsOrdinal);
 		
 		delete[] exportDirectoryBuffer;
 	}

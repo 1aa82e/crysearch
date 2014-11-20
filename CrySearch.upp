@@ -1,4 +1,4 @@
-description "Memory scanning, filtering and debugging application\377";
+description "Memory scanning, filtering, disassembling and debugging application\377";
 
 uses
 	CtrlLib,
@@ -14,8 +14,11 @@ file
 	CrySearchArrayCtrl.cpp,
 	CrySearchArrayCtrl.h,
 	"User Interface" readonly separator,
+	FrontendGlobalDef.h,
 	CrySearchForm.cpp,
 	CrySearchForm.h,
+	CrySearchWindowManager.cpp,
+	CrySearchWindowManager.h,
 	CryPluginsWindow.cpp,
 	CryPluginsWindow.h,
 	CrySettingsDialog.cpp,
@@ -24,6 +27,8 @@ file
 	CryChangeRecordDialog.h,
 	CrySearchAboutDialog.cpp,
 	CrySearchAboutDialog.h,
+	CryCreateProcessWindow.cpp,
+	CryCreateProcessWindow.h,
 	CryProcessEnumeratorForm.cpp,
 	CryProcessEnumeratorForm.h,
 	CryNewScanForm.cpp,
@@ -76,6 +81,8 @@ file
 	CryByteArrayGenerationWindow.h,
 	CrySignatureGenerationWindow.cpp,
 	CrySignatureGenerationWindow.h,
+	CryDisasmGoToAddressDialog.cpp,
+	CryDisasmGoToAddressDialog.h,
 	CryDisasmCtrl.cpp,
 	CryDisasmCtrl.h,
 	CryDebuggerHitView.cpp,
@@ -92,7 +99,7 @@ file
 	Resource.rc,
 	CrySearch.ico,
 	Core readonly separator,
-	GlobalDef.h,
+	BackendGlobalDef.h,
 	ModuleManager.cpp,
 	ModuleManager.h,
 	CrashHandler.cpp,

@@ -1,5 +1,5 @@
 #include "CryImportsWindow.h"
-#include "ProcessUtil.h"
+#include "BackendGlobalDef.h"
 #include "CryPlaceIATHookWindow.h"
 #include "ImlProvider.h"
 #include "UIUtilities.h"
@@ -120,6 +120,7 @@ void CryImportsWindow::FunctionListRightClick(Bar& pBar)
 void CryImportsWindow::RestoreIATFunction()
 {
 	const ImportTableDescriptor& key = LoadedProcessPEInformation.ImportAddressTable.GetKey(MasterIndex);
+	const Win32ModuleInformation* const masterMod = &(*mModuleManager)[this->mModulesDropList.GetIndex()];
 	const ImportAddressTableEntry& entry = LoadedProcessPEInformation.ImportAddressTable.Get(key)[this->mFunctionsList.GetCursor()];
 
 	// Set the base address to the correct module.
@@ -127,11 +128,11 @@ void CryImportsWindow::RestoreIATFunction()
 	
 	if (key.LogicalBaseAddress)
 	{
-		mPeInstance->RestoreExportTableAddressImport(key.LogicalBaseAddress, entry.Ordinal ? (char*)entry.Ordinal : entry.FunctionName, entry.Ordinal);
+		mPeInstance->RestoreExportTableAddressImport(masterMod, key.LogicalBaseAddress, entry.Ordinal ? (char*)entry.Ordinal : entry.FunctionName, entry.Ordinal);
 	}
 	else
 	{
-		mPeInstance->RestoreExportTableAddressImport(mModuleManager->FindModule(LoadedProcessPEInformation.ImportAddressTable.GetKey(this->mModulesList.GetCursor()).ModuleName)->BaseAddress, entry.Ordinal ? (char*)entry.Ordinal : entry.FunctionName, entry.Ordinal);
+		mPeInstance->RestoreExportTableAddressImport(masterMod, mModuleManager->FindModule(LoadedProcessPEInformation.ImportAddressTable.GetKey(this->mModulesList.GetCursor()).ModuleName)->BaseAddress, entry.Ordinal ? (char*)entry.Ordinal : entry.FunctionName, entry.Ordinal);
 	}
 	
 	this->RefreshImports();
@@ -139,7 +140,9 @@ void CryImportsWindow::RestoreIATFunction()
 
 void CryImportsWindow::PlaceHookOnIATFunction()
 {
-	const ImportAddressTableEntry& entry = LoadedProcessPEInformation.ImportAddressTable.Get(LoadedProcessPEInformation.ImportAddressTable.GetKey(MasterIndex)).At(this->mFunctionsList.GetCursor());
+	const ImportTableDescriptor& masterKey = LoadedProcessPEInformation.ImportAddressTable.GetKey(MasterIndex);
+	const Win32ModuleInformation* const masterMod = &(*mModuleManager)[this->mModulesDropList.GetIndex()];
+	const ImportAddressTableEntry& entry = LoadedProcessPEInformation.ImportAddressTable.Get(masterKey).At(this->mFunctionsList.GetCursor());
 	const char* param = NULL;
 	CryPlaceIATHookWindow* cpthw = NULL;
 	
@@ -152,18 +155,18 @@ void CryImportsWindow::PlaceHookOnIATFunction()
 	}
 	
 	// Set the base address to the correct module.
-	mPeInstance->SetBaseAddress((*mModuleManager)[this->mModulesDropList.GetIndex()].BaseAddress);
+	mPeInstance->SetBaseAddress(masterMod->BaseAddress);
 
 	// Ordinal import or named import? Differentiate here, the backend will take care of the rest.
 	if (entry.Ordinal == 0)
 	{
 		param = entry.FunctionName;
-		cpthw = new CryPlaceIATHookWindow(param, false, CrySearchIml::PlaceHookSmall());
+		cpthw = new CryPlaceIATHookWindow(masterMod, param, false, CrySearchIml::PlaceHookSmall());
 	}
 	else
 	{
 		param = (char*)entry.Ordinal;
-		cpthw = new CryPlaceIATHookWindow(param, true, CrySearchIml::PlaceHookSmall());
+		cpthw = new CryPlaceIATHookWindow(masterMod, param, true, CrySearchIml::PlaceHookSmall());
 	}
 	
 	cpthw->Execute();
@@ -262,4 +265,13 @@ void CryImportsWindow::Initialize()
 		// Trigger the event to load the functions inside an imported module.
 		this->ModuleChanged();
 	}
+}
+
+// Just in case, a function that clears everything in this window to avoid problems.
+void CryImportsWindow::ClearList()
+{
+	this->mModulesList.SetVirtualCount(0);
+	this->mFunctionsList.SetVirtualCount(0);
+	this->mModulesDropList.SetCount(0);
+	LoadedProcessPEInformation.ClearImportTable();
 }

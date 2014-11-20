@@ -1,5 +1,5 @@
 #include "CryDebugger.h"
-#include "GlobalDef.h"
+#include "BackendGlobalDef.h"
 
 #include "BeaEngine/include/BeaEngine.h"
 
@@ -164,19 +164,20 @@ const int CryDebugger::GetBreakpointCount() const
 	return this->mBreakpoints.GetCount();
 }
 
-// The debugger's thread that runs until it is detached.
+// The debugger's thread that runs until it is detached. This function is also called to
+// create new processes. If this is not the case, the parameters are ignored.
 void CryDebugger::DbgThread()
 {
 	// Attempt to attach the newly created thread as debugger to the process.
-	this->mAttached = DebugActiveProcess(mMemoryScanner->GetProcessId());
-	
+	this->mAttached = !!DebugActiveProcess(mMemoryScanner->GetProcessId());
+		
 	if (!this->mAttached)
 	{
 		// The debugger could not be attached, throw error.
 		this->DebuggerEvent(DBG_EVENT_ATTACH_ERROR, NULL);
 		return;
 	}
-	
+		
 	// Debugger was succesfully attached.
 	this->DebuggerEvent(DBG_EVENT_ATTACH, NULL);
 	
@@ -195,6 +196,8 @@ void CryDebugger::Start()
 {
 	this->isDetaching = false;
 	this->shouldBreakLoop = false;
+	
+	// The compiler complains about the type casts. I don't know why but with casting it works.
 	this->dbgThread.Run(THISBACK(DbgThread));
 }
 

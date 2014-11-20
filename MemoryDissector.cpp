@@ -1,6 +1,6 @@
 #include "MemoryDissector.h"
 #include "UIUtilities.h"
-#include "GlobalDef.h"
+#include "BackendGlobalDef.h"
 
 // Default constructor of the MemoryDissector class.
 MemoryDissector::MemoryDissector()

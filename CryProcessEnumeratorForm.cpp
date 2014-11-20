@@ -1,7 +1,8 @@
 #include "CryProcessEnumeratorForm.h"
+#include "CryCreateProcessWindow.h"
 #include "ImlProvider.h"
 #include "HIconToImage.h"
-#include "GlobalDef.h"
+#include "BackendGlobalDef.h"
 
 // Global variable indicates whether the process window was closed or not.
 bool ProcWndClosed;
@@ -95,6 +96,7 @@ CryProcessEnumeratorForm::CryProcessEnumeratorForm(const Image& icon) : CryDialo
 	;
 	
 	ProcWndClosed = false;
+	this->tmpProc.UserInterfaceFlags = 0;
 	this->tmpProc.ProcessId = 0;
 	this->mCompletionCounter = 0;
 	this->mThreadCount = 0;
@@ -128,22 +130,12 @@ void CryProcessEnumeratorForm::DragFromCtrlCompleted(HWND hwnd)
 
 void CryProcessEnumeratorForm::CreateProcessButtonClicked()
 {
-	FileSel* fs = new FileSel();
-	fs->Types("Executable files\t*.exe");
-	
-	if (fs->ExecuteOpen("Select executable file..."))
+	CryCreateProcessWindow* ccpw = new CryCreateProcessWindow(&this->tmpProc);
+	if (ccpw->Execute() == 10)
 	{
-		// Set process identifier to -1 to indicate that the process ID should not be used.
-		tmpProc.ProcessId = -1;
-		tmpProc.ExeTitle = fs->Get();
-		
-		delete fs;
 		this->AcceptBreak(10);
 	}
-	else
-	{
-		delete fs;
-	}
+	delete ccpw;
 }
 
 void CryProcessEnumeratorForm::SearchProcess()

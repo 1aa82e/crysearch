@@ -1,5 +1,5 @@
 #include "Disassembler.h"
-#include "GlobalDef.h"
+#include "BackendGlobalDef.h"
 
 // Stub functions are needed to avoid linker errors from multiple usage of the Disasm functions.
 int __stdcall CryDisasm(LPDISASM lpDisasm)
