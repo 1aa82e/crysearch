@@ -67,6 +67,7 @@ struct ImportAddressTableEntry : Moveable<ImportAddressTableEntry>
 struct ImportTableDescriptor : Moveable<ImportTableDescriptor>
 {
 	String ModuleName;
+	Vector<ImportAddressTableEntry> FunctionList;
 	
 	// Logical base address of a possibly virtualized API. If the module is not virtualized, this field is 0.
 	SIZE_T LogicalBaseAddress;
@@ -95,7 +96,7 @@ struct Win32PEInformation
 	VectorMap<String, Value> PEFields;
 	Win32DotNetInformation DotNetInformation;
 	Vector<Win32PESectionInformation> ImageSections;
-	VectorMap<ImportTableDescriptor, Vector<ImportAddressTableEntry>> ImportAddressTable;
+	Vector<ImportTableDescriptor> ImportAddressTable;
 	
 	void Reset()
 	{
@@ -153,7 +154,7 @@ public:
 	virtual bool HideModuleFromProcess(const Win32ModuleInformation& module) const = 0;
 	virtual bool DumpProcessSection(const String& fileName, const SIZE_T address, const SIZE_T size) const = 0;
 	virtual bool LoadLibraryExternal(const String& library) const = 0;
-	virtual bool LoadLibraryExternalHijack(const String& library) const = 0;
+	virtual bool LoadLibraryExternalHijack(const String& library, const DWORD threadId) const = 0;
 	virtual void UnloadLibraryExternal(const SIZE_T module) const = 0;
 	virtual void RestoreExportTableAddressImport(const Win32ModuleInformation* modBase, const SIZE_T baseAddress, const char* NameOrdinal, bool IsOrdinal) const = 0;
 	virtual SIZE_T GetAddressFromExportTable(const AddrStruct* addr, const char* NameOrdinal, bool IsOrdinal) const = 0;
@@ -190,7 +191,7 @@ public:
 	virtual bool HideModuleFromProcess(const Win32ModuleInformation& module) const;
 	virtual bool DumpProcessSection(const String& fileName, const SIZE_T address, const SIZE_T size) const;
 	virtual bool LoadLibraryExternal(const String& library) const;
-	virtual bool LoadLibraryExternalHijack(const String& library) const;
+	virtual bool LoadLibraryExternalHijack(const String& library, const DWORD threadId) const;
 	virtual void UnloadLibraryExternal(const SIZE_T module) const;
 	virtual void RestoreExportTableAddressImport(const Win32ModuleInformation* modBase, const SIZE_T baseAddress, const char* NameOrdinal, bool IsOrdinal) const;
 	virtual SIZE_T GetAddressFromExportTable(const AddrStruct* addr, const char* NameOrdinal, bool IsOrdinal) const;
@@ -213,7 +214,7 @@ public:
 		virtual bool HideModuleFromProcess(const Win32ModuleInformation& module) const;
 		virtual bool DumpProcessSection(const String& fileName, const SIZE_T address, const SIZE_T size) const;
 		virtual bool LoadLibraryExternal(const String& library) const;
-		virtual bool LoadLibraryExternalHijack(const String& library) const;
+		virtual bool LoadLibraryExternalHijack(const String& library, const DWORD threadId) const;
 		virtual void UnloadLibraryExternal(const SIZE_T module) const;
 		virtual void RestoreExportTableAddressImport(const Win32ModuleInformation* modBase, const SIZE_T baseAddress, const char* NameOrdinal, bool IsOrdinal) const;
 		virtual SIZE_T GetAddressFromExportTable(const AddrStruct* addr, const char* NameOrdinal, bool IsOrdinal) const;

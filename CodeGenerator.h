@@ -11,8 +11,6 @@ using namespace Upp;
 class CodeGenerator
 {
 private:
-	friend void CreateCodeGenerator(const AddressTable*, CodeGenerator**);
-	
 	struct __CodeUnits
 	{
 		DWORD Credits[40];
@@ -29,17 +27,13 @@ private:
 	String GenerateExternalEntry(const AddressTableEntry* entry, const int number);
 	
 	void CreateConstants();
-	
-	CodeGenerator(const AddressTable* pTable);
 public:
+	CodeGenerator(const AddressTable* pTable);
 	~CodeGenerator();
 	
 	void SetExternal(bool external = true)	{ this->external = external; };
 	
 	void Generate(String& codenz);
-	void Release() { delete this; };
 };
-
-void CreateCodeGenerator(const AddressTable* pTable, CodeGenerator** ppCodeGen);
 
 #endif

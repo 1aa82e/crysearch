@@ -9,26 +9,26 @@ int MasterIndex;
 
 String GetModule(const int index)
 {
-	return LoadedProcessPEInformation.ImportAddressTable.GetKey(index).ModuleName;
+	return LoadedProcessPEInformation.ImportAddressTable[index].ModuleName;
 }
 
 String GetFunction(const int index)
 {
-	return (LoadedProcessPEInformation.ImportAddressTable.Get(LoadedProcessPEInformation.ImportAddressTable.GetKey(MasterIndex))[index]).FunctionName;
+	return LoadedProcessPEInformation.ImportAddressTable[MasterIndex].FunctionList[index].FunctionName;
 }
 
 String GetHint(const int index)
 {
-	const ImportAddressTableEntry& current = LoadedProcessPEInformation.ImportAddressTable.Get(LoadedProcessPEInformation.ImportAddressTable.GetKey(MasterIndex))[index];
+	const ImportAddressTableEntry& current = LoadedProcessPEInformation.ImportAddressTable[MasterIndex].FunctionList[index];
 	return current.Hint ? Format("%X", current.Hint) : Format("Ord (%i)", (int)current.Ordinal);
 }
 
 String GetVirtualAddress(const int index)
 {
 #ifdef _WIN64
-	return Format("%llX", (__int64)LoadedProcessPEInformation.ImportAddressTable.Get(LoadedProcessPEInformation.ImportAddressTable.GetKey(MasterIndex))[index].VirtualAddress);
+	return Format("%llX", (__int64)LoadedProcessPEInformation.ImportAddressTable[MasterIndex].FunctionList[index].VirtualAddress);
 #else
-	return Format("%lX", (int)LoadedProcessPEInformation.ImportAddressTable.Get(LoadedProcessPEInformation.ImportAddressTable.GetKey(MasterIndex))[index].VirtualAddress);
+	return Format("%lX", (int)LoadedProcessPEInformation.ImportAddressTable[MasterIndex].FunctionList[index].VirtualAddress);
 #endif
 }
 
@@ -106,7 +106,7 @@ void CryImportsWindow::FunctionListRightClick(Bar& pBar)
 {
 	if (this->mFunctionsList.GetCount() > 0 && this->mFunctionsList.GetCursor() >= 0)
 	{
-		if (LoadedProcessPEInformation.ImportAddressTable.Get(LoadedProcessPEInformation.ImportAddressTable.GetKey(MasterIndex)).At(this->mFunctionsList.GetCursor()).Flag == IAT_FLAG_HOOKED)
+		if (LoadedProcessPEInformation.ImportAddressTable[MasterIndex].FunctionList[this->mFunctionsList.GetCursor()].Flag == IAT_FLAG_HOOKED)
 		{
 			pBar.Add("Restore Address", THISBACK(RestoreIATFunction));
 		}
@@ -119,9 +119,9 @@ void CryImportsWindow::FunctionListRightClick(Bar& pBar)
 
 void CryImportsWindow::RestoreIATFunction()
 {
-	const ImportTableDescriptor& key = LoadedProcessPEInformation.ImportAddressTable.GetKey(MasterIndex);
+	const ImportTableDescriptor& key = LoadedProcessPEInformation.ImportAddressTable[MasterIndex];
 	const Win32ModuleInformation* const masterMod = &(*mModuleManager)[this->mModulesDropList.GetIndex()];
-	const ImportAddressTableEntry& entry = LoadedProcessPEInformation.ImportAddressTable.Get(key)[this->mFunctionsList.GetCursor()];
+	const ImportAddressTableEntry& entry = key.FunctionList[this->mFunctionsList.GetCursor()];
 
 	// Set the base address to the correct module.
 	mPeInstance->SetBaseAddress((*mModuleManager)[this->mModulesDropList.GetIndex()].BaseAddress);
@@ -132,7 +132,7 @@ void CryImportsWindow::RestoreIATFunction()
 	}
 	else
 	{
-		mPeInstance->RestoreExportTableAddressImport(masterMod, mModuleManager->FindModule(LoadedProcessPEInformation.ImportAddressTable.GetKey(this->mModulesList.GetCursor()).ModuleName)->BaseAddress, entry.Ordinal ? (char*)entry.Ordinal : entry.FunctionName, entry.Ordinal);
+		mPeInstance->RestoreExportTableAddressImport(masterMod, mModuleManager->FindModule(LoadedProcessPEInformation.ImportAddressTable[this->mModulesList.GetCursor()].ModuleName)->BaseAddress, entry.Ordinal ? (char*)entry.Ordinal : entry.FunctionName, entry.Ordinal);
 	}
 	
 	this->RefreshImports();
@@ -140,9 +140,9 @@ void CryImportsWindow::RestoreIATFunction()
 
 void CryImportsWindow::PlaceHookOnIATFunction()
 {
-	const ImportTableDescriptor& masterKey = LoadedProcessPEInformation.ImportAddressTable.GetKey(MasterIndex);
+	const ImportTableDescriptor& masterKey = LoadedProcessPEInformation.ImportAddressTable[MasterIndex];
 	const Win32ModuleInformation* const masterMod = &(*mModuleManager)[this->mModulesDropList.GetIndex()];
-	const ImportAddressTableEntry& entry = LoadedProcessPEInformation.ImportAddressTable.Get(masterKey).At(this->mFunctionsList.GetCursor());
+	const ImportAddressTableEntry& entry = masterKey.FunctionList[this->mFunctionsList.GetCursor()];
 	const char* param = NULL;
 	CryPlaceIATHookWindow* cpthw = NULL;
 	
@@ -196,14 +196,14 @@ void CryImportsWindow::ModuleRedraw()
 void CryImportsWindow::ModuleChanged()
 {
 	MasterIndex = this->mModulesList.GetCursor();
-	const int virtualcount = MasterIndex >= 0 && LoadedProcessPEInformation.ImportAddressTable.GetCount() > 0 ? LoadedProcessPEInformation.ImportAddressTable.Get(LoadedProcessPEInformation.ImportAddressTable.GetKey(MasterIndex)).GetCount() : 0;
+	const int virtualcount = MasterIndex >= 0 && LoadedProcessPEInformation.ImportAddressTable.GetCount() > 0 ? LoadedProcessPEInformation.ImportAddressTable[MasterIndex].FunctionList.GetCount() : 0;
 	this->mFunctionsList.SetVirtualCount(virtualcount);
 	
 	// The import table should contain something.
 	if (virtualcount)
 	{
 		// Iterate imported functions for the currently selected module and draw hooked functions in red.
-		const Vector<ImportAddressTableEntry>& list = LoadedProcessPEInformation.ImportAddressTable.Get(LoadedProcessPEInformation.ImportAddressTable.GetKey(MasterIndex));
+		const Vector<ImportAddressTableEntry>& list = LoadedProcessPEInformation.ImportAddressTable[MasterIndex].FunctionList;
 		for (int i = 0; i < list.GetCount(); i++)
 		{
 			if (list[i].Flag == IAT_FLAG_HOOKED)

@@ -5,8 +5,6 @@
 
 using namespace Upp;
 
-#pragma warning(disable : 4005)
-
 #include "CrySearchArrayCtrl.h"
 
 class CryThreadWindow : public ParentCtrl

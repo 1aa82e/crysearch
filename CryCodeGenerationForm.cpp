@@ -22,12 +22,12 @@ CryCodeGenerationForm::CryCodeGenerationForm()
 	this->mLanguageSelector.SetIndex(0);
 	
 	// Create code generator
-	CreateCodeGenerator(&loadedTable, &this->mCodeGen);
+	this->mCodeGen = new CodeGenerator(&loadedTable);
 }
 
 CryCodeGenerationForm::~CryCodeGenerationForm()
 {
-	this->mCodeGen->Release();
+	delete this->mCodeGen;
 }
 
 /*void CryCodeGenerationForm::ExternalCheckChanged()

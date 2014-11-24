@@ -7,8 +7,7 @@ v1.14
 	- Small user interface detail modifications and improvements:
 		- Changed width of the plugin window. Users may make plugins that require longer names or descriptions;
 		- Changed padding of address table control in the main window to fit the wireframe of the main window better;
-		- Changed array display controls to have a minimum column width. This prevents columns to be dragged out of range;
-		- 
+		- Changed array display controls to have a minimum column width. This prevents columns to be dragged out of range.
 	- Added user interface value updating for the search results. The update interval is the same as the address table update interval;
 	- Improved process creation from process selection window. You can now input arguments and start a process in suspended state;
 	- Fixed bug in imports window where setting a hook on some functions would crash the application;

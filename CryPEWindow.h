@@ -7,8 +7,6 @@ using namespace Upp;
 
 #include "CrySearchArrayCtrl.h"
 
-#pragma warning(disable : 4005)
-
 class CryPEWindow : public ParentCtrl
 {
 private:

@@ -1,8 +1,6 @@
 #ifndef _CrySearch_CryProcessEnumeratorForm_h_
 #define _CrySearch_CryProcessEnumeratorForm_h_
 
-#pragma warning(disable : 4005)
-
 #include "ProcessUtil.h"
 #include "CryDialogTemplate.h"
 #include "CrySearchArrayCtrl.h"

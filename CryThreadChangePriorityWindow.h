@@ -3,6 +3,7 @@
 
 #include "CryDialogTemplate.h"
 
+// Represents the dialog that opens from the threads window to change the priority of a thread.
 class CryThreadChangePriorityWindow : public CryDialogTemplate
 {
 private:

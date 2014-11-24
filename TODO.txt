@@ -7,13 +7,14 @@ Package:
 - Update wiki with changes for the release;
 ------------------------------------------------------------------
 
+- Manually hijacking thread (Thread context):
+	- What if thread suspend/context functions fail? Different thread? ProbeThreadFunction in CrySearchLibrary?
+	- x64;
 - IAT window isn't that perfect in UI stuff;
 - Return value for IAT hooking functions?
-- Some more sanity checking inside PE classes? I think its really necessary;
 - Find import function in window (button on top)?
 - Splitter offset on the right size, I think the border is 3D!
 - I think the way imports are saved needs some optimization!!!
-- Implement process polling by name, open when it polls succesfully;
 
 - Structure dissections
 	- settings window, default offset;
@@ -56,14 +57,13 @@ Package:
 - Cancel IO on application shutdown when huge scan is still running (XP support blocks me here);
 - Detect handles that are 'malicious'?
 - Optimize file writing in memory scanner and savior of data by memory scanner in memory;
-- Brute-force PID's to find out about hidden processes (process hacker);
+- Brute-force PID's to find out about hidden processes (detect hidden processes);
 - Allow entering string as argument for create thread (let's make a custom data type of it);
 - Indicate architecture in process list;
 
 - Debugger:
 	- Far Cry doesn't want to listen to meh;
 	- manipulation lock, fix setting breakpoints and removing them pause the exception loop.
-	- Single step (step over); (THE ICONS ARE IMPLEMENTED, BUT NOT YET USED!)
 	- VEH debugger
 	- 0x70 Anti-debugging only applies for newly started processes?
 
@@ -91,7 +91,6 @@ Package:
 - Module window:
 	- Manual mapping as injection method.
 	- QueueUserAPC
-	- Manually hijacking thread (Thread context)
 	- ntdll.dll proces injection (LdrLoadDll,LdrpLoadDll)
 
 - Code generation:
@@ -159,10 +158,6 @@ Add this to the CoWork class:
 Add this line to the TabCtrl::Item class:
 
 	const String&  GetText() const 					{ return text; }
-
-Add this function to the AMap class:
-	
-	K& 		 AddReturnKey(const K& k, const T& x)	{ value.Add(x); return key.Add(k); }
 
 ------------------------------------------------------------------------------------------------
 

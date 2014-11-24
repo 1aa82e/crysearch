@@ -1,8 +1,6 @@
 #ifndef _CrySearch_AboutCrySearchDialog_h_
 #define _CrySearch_AboutCrySearchDialog_h_
 
-#pragma warning(disable : 4005)
-
 #include "CryDialogTemplate.h"
 #include "CryClickLabel.h"
 #include "CrySearchArrayCtrl.h"

@@ -5,13 +5,6 @@
 #define GENERATED_VOIDMAIN		"void main()\r\n{\r\n\t"
 #define GENERATED_ENDVOIDMAIN	"}"
 
-// Factory model here, easy way to keep the memory management nicely.
-// The created class instance is put at the 2nd parameter pointer location.
-void CreateCodeGenerator(const AddressTable* pTable, CodeGenerator** ppCodeGen)
-{
-	*ppCodeGen = new CodeGenerator(pTable);
-}
-
 // CodeGenerator class default constructor, which takes an address table to generate code from.
 CodeGenerator::CodeGenerator(const AddressTable* pTable)
 {

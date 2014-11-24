@@ -108,8 +108,6 @@ file
 	SettingsFile.h,
 	ShellExtension.c,
 	CrySearchRoutines.cpp,
-	DependencyChecker.h,
-	DependencyChecker.c,
 	PluginSystem.cpp,
 	PluginSystem.h,
 	"Memory Scanner" readonly separator,

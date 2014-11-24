@@ -1,8 +1,6 @@
 #ifndef _CrySearch_CryChangeRecordDialog_h_
 #define _CrySearch_CryChangeRecordDialog_h_
 
-#pragma warning(disable : 4005)
-
 #include "AddressTable.h"
 #include "UIUtilities.h"
 #include "CryDialogTemplate.h"

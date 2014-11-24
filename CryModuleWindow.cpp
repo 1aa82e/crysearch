@@ -194,8 +194,19 @@ void CryModuleWindow::LoadLibraryThread(String pLibrary)
 			result = mPeInstance->LoadLibraryExternal(pLibrary);
 			break;
 		case INJECTION_METHOD_HIJACKTHREAD:
-			// inject by hijacking an existing thread, random or selectable?
-			result = mPeInstance->LoadLibraryExternalHijack(pLibrary);
+			{
+				// Randomly select thread in target process to hijack.
+				const int threadcount = mThreadsList.GetCount();
+				const int tIndex = Random(threadcount);
+				if (tIndex < threadcount)
+				{
+					result = mPeInstance->LoadLibraryExternalHijack(pLibrary, mThreadsList[tIndex].ThreadIdentifier);
+				}
+				else
+				{
+					result = FALSE;
+				}
+			}
 			break;
 		default:
 			result = FALSE;

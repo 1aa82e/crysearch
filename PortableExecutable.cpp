@@ -610,9 +610,9 @@ void PortableExecutable32::GetImportAddressTable() const
 		char dllName[48];
 		CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(pDesc.Name + this->mBaseAddress), dllName, 48, NULL);
         
-        ImportTableDescriptor descAdd;
-		descAdd.ModuleName = dllName;
-        ImportTableDescriptor& impDesc = LoadedProcessPEInformation.ImportAddressTable.AddReturnKey(descAdd, Vector<ImportAddressTableEntry>());
+        // Add new import descriptor to the table.
+        ImportTableDescriptor& impDesc = LoadedProcessPEInformation.ImportAddressTable.Add();
+        impDesc.ModuleName = dllName;
         
         // Get base address and length of desired DLL, and look up the function foreign name in the export table of that DLL.
         const Win32ModuleInformation* modBaseAddr = NULL;
@@ -732,8 +732,9 @@ void PortableExecutable32::GetImportAddressTable() const
 				{
 					funcEntry.Flag = IAT_FLAG_HOOKED;
 				}
-	
-				LoadedProcessPEInformation.ImportAddressTable.Get(impDesc).Add(funcEntry);
+				
+				// Add function to import descriptor.
+				impDesc.FunctionList.Add(funcEntry);
 			}
 			while (thunk.u1.AddressOfData);
 			
@@ -1022,12 +1023,10 @@ bool PortableExecutable32::LoadLibraryExternal(const String& library) const
 {
 	// Allocate memory space for the library path.
 	void* const lpRemoteAddress = VirtualAllocEx(this->mProcessHandle, NULL, library.GetLength(), MEM_COMMIT, PAGE_READWRITE);
-	
 	SIZE_T bytesWritten;
 	
 	// Write path to library into the newly allocated memory.
 	CrySearchRoutines.CryWriteMemoryRoutine(this->mProcessHandle, lpRemoteAddress, library, library.GetLength(), &bytesWritten);
-	
 	if (bytesWritten != library.GetLength())
 	{
 		VirtualFreeEx(this->mProcessHandle, lpRemoteAddress, 0, MEM_RELEASE);
@@ -1061,14 +1060,121 @@ bool PortableExecutable32::LoadLibraryExternal(const String& library) const
 	
 	VirtualFreeEx(this->mProcessHandle, lpRemoteAddress, 0, MEM_RELEASE);
 	
-	return hThread;
+	return !!hThread;
 }
 
 // Attempts to load a dynamic link library into the target process.
 // Returns true if the operation succeeded, and false if it did not succeed.
-bool PortableExecutable32::LoadLibraryExternalHijack(const String& library) const
+bool PortableExecutable32::LoadLibraryExternalHijack(const String& library, const DWORD threadId) const
 {
-	return true;
+	// Allocate memory space for the library path.
+	void* const lpRemoteAddress = VirtualAllocEx(this->mProcessHandle, NULL, library.GetLength(), MEM_COMMIT, PAGE_READWRITE);
+	SIZE_T bytesWritten;
+
+	// Write path to library into the newly allocated memory.
+	CrySearchRoutines.CryWriteMemoryRoutine(this->mProcessHandle, lpRemoteAddress, library, library.GetLength(), &bytesWritten);
+	if (bytesWritten != library.GetLength())
+	{
+		VirtualFreeEx(this->mProcessHandle, lpRemoteAddress, 0, MEM_RELEASE);
+		return false;
+	}
+	
+	// The shellcode that is written and executed inside the target program:
+	// push 0xCCCCCCCC
+	// pushad
+	// pushfd
+	// mov ebx, 0xCCCCCCCC
+	// push 0xCCCCCCCC
+	// call ebx
+	// popfd
+	// popad
+	// mov dword ptr [0xCCCCCCCC], 0x1337
+	// ret
+	Byte shellCode[] = { 0x68, 0xCC, 0xCC, 0xCC, 0xCC, 0x60, 0x9C, 0xBB, 0xCC, 0xCC, 0xCC, 0xCC, 0x68, 0xCC, 0xCC, 0xCC, 0xCC, 0xFF, 0xD3, 0x9D, 0x61, 0xC7, 0x05, 0xCC, 0xCC, 0xCC, 0xCC, 0x37, 0x13, 0x00, 0x00, 0xC3 };
+	
+	// Allocate executable block of memory for the shellcode.
+	void* const lpShellCode = VirtualAllocEx(this->mProcessHandle, NULL, 1024, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+	const DWORD flagAddress = (DWORD)lpShellCode + 0x100;
+	
+	// Open the thread and back the existing context up.
+	HANDLE hThread = OpenThread(THREAD_GET_CONTEXT | THREAD_SET_CONTEXT | THREAD_SUSPEND_RESUME, FALSE, threadId);
+	if (!hThread || hThread == INVALID_HANDLE_VALUE)
+	{
+		VirtualFreeEx(this->mProcessHandle, lpRemoteAddress, 0, MEM_RELEASE);
+		return false;
+	}
+	
+	SuspendThread(hThread);
+#ifdef _WIN64
+	WOW64_CONTEXT ctx;
+	ctx.ContextFlags = WOW64_CONTEXT_FULL;
+	Wow64GetThreadContext(hThread, &ctx);
+#else
+	CONTEXT ctx;
+	ctx.ContextFlags = CONTEXT_FULL;
+	GetThreadContext(hThread, &ctx);
+#endif
+	
+	// Replace addresses with correct ones at runtime.
+	*(DWORD*)&shellCode[1] = ctx.Eip;
+#ifdef _WIN64
+	const Win32ModuleInformation* krnl32mod = mModuleManager->FindModule("kernel32.dll");
+	if (!krnl32mod)
+	{
+		VirtualFreeEx(this->mProcessHandle, lpRemoteAddress, 0, MEM_RELEASE);
+		CloseHandle(hThread);
+		return false;
+	}
+	
+	*(DWORD*)&shellCode[8] = Wow64GetProcAddress(this->mProcessHandle, (DWORD)krnl32mod->BaseAddress, "LoadLibraryA");
+#else
+	*(DWORD*)&shellCode[8] = (DWORD)LoadLibraryA;
+#endif
+	*(DWORD*)&shellCode[13] = (DWORD)lpRemoteAddress;
+	*(DWORD*)&shellCode[23] = flagAddress;
+	
+	// Write the shellcode to the remotely allocated buffer.
+	CrySearchRoutines.CryWriteMemoryRoutine(this->mProcessHandle, lpShellCode, shellCode, sizeof(shellCode), &bytesWritten);
+	if (bytesWritten != sizeof(shellCode))
+	{
+		VirtualFreeEx(this->mProcessHandle, lpShellCode, 0, MEM_RELEASE);
+		VirtualFreeEx(this->mProcessHandle, lpRemoteAddress, 0, MEM_RELEASE);
+		return false;
+	}
+	
+	// Change EIP to resume execution at the shellcode.
+	ctx.Eip = (DWORD)lpShellCode;
+	
+	// Place the new context inside the thread.
+#ifdef _WIN64
+	Wow64SetThreadContext(hThread, &ctx);
+#else
+	SetThreadContext(hThread, &ctx);
+#endif
+	
+	// Flush the instruction cache to avoid problems with cached instructions.
+	FlushInstructionCache(this->mProcessHandle, lpShellCode, sizeof(shellCode));
+	
+	// Resume the thread to let the DLL load and close thread handle.
+	ResumeThread(hThread);
+	
+	// Sample the completion flag to contain the magic number 0x1337. Block the thread until the sampling is succesful.
+	DWORD magic = 0;
+	do
+	{
+		CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)flagAddress, &magic, sizeof(DWORD), &bytesWritten);
+		
+		// Prevent CrySearch to start eating CPU time while still trying to have an accurate sample.
+		Sleep(100);
+	}
+	while (magic != 0x1337);
+	
+	// The loop finished, free memory pages and close thread handle.
+	VirtualFreeEx(this->mProcessHandle, lpShellCode, 0, MEM_RELEASE);
+	VirtualFreeEx(this->mProcessHandle, lpRemoteAddress, 0, MEM_RELEASE);
+	CloseHandle(hThread);
+	
+	return !!hThread;
 }
 
 // Attempts to unload a loaded module from the target process.
@@ -1359,9 +1465,9 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 			char dllName[48];
 			CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(pDesc.Name + this->mBaseAddress), dllName, 48, NULL);
 	        
-			ImportTableDescriptor descAdd;
-			descAdd.ModuleName = dllName;
-	        ImportTableDescriptor& impDesc = LoadedProcessPEInformation.ImportAddressTable.AddReturnKey(descAdd, Vector<ImportAddressTableEntry>());
+	        // Add new import descriptor to the table.
+	        ImportTableDescriptor& impDesc = LoadedProcessPEInformation.ImportAddressTable.Add();
+	        impDesc.ModuleName = dllName;
 	        
 	        // Get base address and length of desired DLL, and look up the function foreign name in the export table of that DLL.
 			const Win32ModuleInformation* modBaseAddr = NULL;
@@ -1480,7 +1586,8 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 						funcEntry.Flag = IAT_FLAG_HOOKED;
 					}
 			
-					LoadedProcessPEInformation.ImportAddressTable.Get(impDesc).Add(funcEntry);
+					// Add function to import descriptor.
+					impDesc.FunctionList.Add(funcEntry);
 				}
 				while (thunk.u1.AddressOfData);
 			
@@ -1758,12 +1865,10 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 	{
 		// Allocate memory space for the library path.
 		void* const lpRemoteAddress = VirtualAllocEx(this->mProcessHandle, NULL, library.GetLength(), MEM_COMMIT, PAGE_READWRITE);
-		
 		SIZE_T bytesWritten;
 		
 		// Write path to library into the newly allocated memory.
-		CrySearchRoutines.CryWriteMemoryRoutine(this->mProcessHandle, lpRemoteAddress, library, library.GetLength(), &bytesWritten);
-		
+		CrySearchRoutines.CryWriteMemoryRoutine(this->mProcessHandle, lpRemoteAddress, library, library.GetLength(), &bytesWritten);	
 		if (bytesWritten != library.GetLength())
 		{
 			VirtualFreeEx(this->mProcessHandle, lpRemoteAddress, 0, MEM_RELEASE);
@@ -1782,14 +1887,93 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 		
 		VirtualFreeEx(this->mProcessHandle, lpRemoteAddress, 0, MEM_RELEASE);
 		
-		return hThread;
+		return !!hThread;
 	}
 	
 	// Attempts to load a dynamic link library into the target process.
 	// Returns true if the operation succeeded, and false if it did not succeed.
-	bool PortableExecutable64::LoadLibraryExternalHijack(const String& library) const
+	bool PortableExecutable64::LoadLibraryExternalHijack(const String& library, const DWORD threadId) const
 	{
-		return true;
+		// Allocate memory space for the library path.
+		void* const lpRemoteAddress = VirtualAllocEx(this->mProcessHandle, NULL, library.GetLength(), MEM_COMMIT, PAGE_READWRITE);
+		SIZE_T bytesWritten;
+	
+		// Write path to library into the newly allocated memory.
+		CrySearchRoutines.CryWriteMemoryRoutine(this->mProcessHandle, lpRemoteAddress, library, library.GetLength(), &bytesWritten);
+		if (bytesWritten != library.GetLength())
+		{
+			VirtualFreeEx(this->mProcessHandle, lpRemoteAddress, 0, MEM_RELEASE);
+			return false;
+		}
+		
+		// The shellcode that is written and executed inside the target program:
+		// push 0xCCCCCCCC
+		// pushad
+		// pushfd
+		// mov ebx, 0xCCCCCCCC
+		// push 0xCCCCCCCC
+		// call ebx
+		// popfd
+		// popad
+		// mov dword ptr [0xCCCCCCCC], 0x1337
+		// ret
+		Byte shellCode[] = { 0x68, 0xCC, 0xCC, 0xCC, 0xCC, 0x60, 0x9C, 0xBB, 0xCC, 0xCC, 0xCC, 0xCC, 0x68, 0xCC, 0xCC, 0xCC, 0xCC, 0xFF, 0xD3, 0x9D, 0x61, 0xC7, 0x05, 0xCC, 0xCC, 0xCC, 0xCC, 0x37, 0x13, 0x00, 0x00, 0xC3 };
+		
+		// Allocate executable block of memory for the shellcode.
+		void* const lpShellCode = VirtualAllocEx(this->mProcessHandle, NULL, 1024, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+		const SIZE_T flagAddress = (SIZE_T)lpShellCode + 0x100;
+		
+		// Open the thread and back the existing context up.
+		HANDLE hThread = OpenThread(THREAD_GET_CONTEXT | THREAD_SET_CONTEXT | THREAD_SUSPEND_RESUME, FALSE, threadId);
+		if (!hThread || hThread == INVALID_HANDLE_VALUE)
+		{
+			VirtualFreeEx(this->mProcessHandle, lpRemoteAddress, 0, MEM_RELEASE);
+			return false;
+		}
+		
+		SuspendThread(hThread);
+		
+		// Create context, aligned to 64-bits boundary for x64.
+		void* const ctxBase = VirtualAlloc(NULL, sizeof(CONTEXT) + 8, MEM_COMMIT, PAGE_READWRITE);
+		PCONTEXT const ctx = (PCONTEXT)ctxBase;
+		AlignPointer((DWORD_PTR*)&ctx, 8);
+		memset(ctx, 0, sizeof(CONTEXT));
+		ctx->ContextFlags = CONTEXT_FULL;
+		GetThreadContext(hThread, ctx);
+		
+		// Fix up dynamic addresses inside shellcode.
+		*(SIZE_T*)&shellCode[1] = ctx->Rip;
+		*(SIZE_T*)&shellCode[8] = (SIZE_T)LoadLibraryA;
+		*(SIZE_T*)&shellCode[13] = (SIZE_T)lpRemoteAddress;
+		*(SIZE_T*)&shellCode[23] = flagAddress;
+		
+		// Place the new context inside the thread.
+		SetThreadContext(hThread, ctx);
+		
+		// Flush the instruction cache to avoid problems with cached instructions.
+		FlushInstructionCache(this->mProcessHandle, lpShellCode, sizeof(shellCode));
+		
+		// Resume the thread to let the DLL load and close thread handle.
+		ResumeThread(hThread);
+		
+		// Sample the completion flag to contain the magic number 0x1337. Block the thread until the sampling is succesful.
+		DWORD magic = 0;
+		do
+		{
+			CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)flagAddress, &magic, sizeof(DWORD), &bytesWritten);
+			
+			// Prevent CrySearch to start eating CPU time while still trying to have an accurate sample.
+			Sleep(100);
+		}
+		while (magic != 0x1337);
+		
+		// The loop finished, free memory pages and close thread handle.
+		VirtualFreeEx(this->mProcessHandle, lpShellCode, 0, MEM_RELEASE);
+		VirtualFreeEx(this->mProcessHandle, lpRemoteAddress, 0, MEM_RELEASE);
+		CloseHandle(hThread);
+		VirtualFree(ctxBase, 0, MEM_RELEASE);
+		
+		return !!hThread;
 	}
 	
 	// Attempts to unload a loaded module from the target process.

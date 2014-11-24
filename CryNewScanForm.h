@@ -1,8 +1,6 @@
 #ifndef _CrySearch_CryNewScanForm_h_
 #define _CrySearch_CryNewScanForm_h_
 
-#pragma warning(disable : 4005)
-
 #include "CryDialogTemplate.h"
 #include "MemoryScanner.h"
 
