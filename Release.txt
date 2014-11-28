@@ -11,6 +11,7 @@ v1.14
 	- Added user interface value updating for the search results. The update interval is the same as the address table update interval;
 	- Improved process creation from process selection window. You can now input arguments and start a process in suspended state;
 	- Fixed bug in imports window where setting a hook on some functions would crash the application;
+	- Added thread hijacking injection method for DLL files. Works for both x86 and x64 and the injection method is selectable from the Settings dialog;
 	- 
 v1.13
 	- Changed about dialog to show a list of loaded libraries including their runtime versions;

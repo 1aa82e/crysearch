@@ -185,33 +185,28 @@ void CryModuleWindow::LoadLibraryButtonClicked()
 
 void CryModuleWindow::LoadLibraryThread(String pLibrary)
 {
-	BOOL result;
+	BOOL result = FALSE;
 	
 	// Check which injection method is selected. Call the correct one accordingly.
-	switch (SettingsFile::GetInstance()->GetLibraryInjectionMethod())
+	const int method = SettingsFile::GetInstance()->GetLibraryInjectionMethod();
+	if (method == INJECTION_METHOD_CRT)
 	{
-		case INJECTION_METHOD_CRT:
-			result = mPeInstance->LoadLibraryExternal(pLibrary);
-			break;
-		case INJECTION_METHOD_HIJACKTHREAD:
-			{
-				// Randomly select thread in target process to hijack.
-				const int threadcount = mThreadsList.GetCount();
-				const int tIndex = Random(threadcount);
-				if (tIndex < threadcount)
-				{
-					result = mPeInstance->LoadLibraryExternalHijack(pLibrary, mThreadsList[tIndex].ThreadIdentifier);
-				}
-				else
-				{
-					result = FALSE;
-				}
-			}
-			break;
-		default:
-			result = FALSE;
+		result = mPeInstance->LoadLibraryExternal(pLibrary);
 	}
-	
+	else if (method == INJECTION_METHOD_HIJACKTHREAD)
+	{
+		// Randomly select thread in target process to hijack.
+		const int threadcount = mThreadsList.GetCount();
+		HANDLE hThread = NULL;
+		for (int i = 0; i < threadcount || hThread == NULL; ++i)
+		{
+			hThread = OpenThread(THREAD_GET_CONTEXT | THREAD_SET_CONTEXT | THREAD_SUSPEND_RESUME, FALSE, mThreadsList[i].ThreadIdentifier);
+		}
+		
+		// Start the injection process. The handle will be closed by the injection function.
+		result = mPeInstance->LoadLibraryExternalHijack(pLibrary, hThread);
+	}
+		
 	// The result can be passed into the asynchronous completion callback.
 	this->InjectionDone(result);
 }

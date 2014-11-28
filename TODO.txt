@@ -7,9 +7,6 @@ Package:
 - Update wiki with changes for the release;
 ------------------------------------------------------------------
 
-- Manually hijacking thread (Thread context):
-	- What if thread suspend/context functions fail? Different thread? ProbeThreadFunction in CrySearchLibrary?
-	- x64;
 - IAT window isn't that perfect in UI stuff;
 - Return value for IAT hooking functions?
 - Find import function in window (button on top)?
@@ -35,6 +32,7 @@ Package:
 - Opening PDB files to navigate through disassembly with symbols, or just view symbols?
 - scan for value in between;
 - Ability to import cheat tables; (skipend, parse variabletype correctly and parse relative addresses!!!!)
+- Manual mapper for x86 and x64;
 
 - Disassembler:
 	- Resolve function calls in disasm to IAT functions;

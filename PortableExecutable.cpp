@@ -1065,8 +1065,14 @@ bool PortableExecutable32::LoadLibraryExternal(const String& library) const
 
 // Attempts to load a dynamic link library into the target process.
 // Returns true if the operation succeeded, and false if it did not succeed.
-bool PortableExecutable32::LoadLibraryExternalHijack(const String& library, const DWORD threadId) const
+bool PortableExecutable32::LoadLibraryExternalHijack(const String& library, HANDLE hThread) const
 {
+	// If the thread wasn't opened succesfully, the function can return inmediately.
+	if (!hThread || hThread == INVALID_HANDLE_VALUE)
+	{
+		return false;
+	}
+		
 	// Allocate memory space for the library path.
 	void* const lpRemoteAddress = VirtualAllocEx(this->mProcessHandle, NULL, library.GetLength(), MEM_COMMIT, PAGE_READWRITE);
 	SIZE_T bytesWritten;
@@ -1096,14 +1102,7 @@ bool PortableExecutable32::LoadLibraryExternalHijack(const String& library, cons
 	void* const lpShellCode = VirtualAllocEx(this->mProcessHandle, NULL, 1024, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
 	const DWORD flagAddress = (DWORD)lpShellCode + 0x100;
 	
-	// Open the thread and back the existing context up.
-	HANDLE hThread = OpenThread(THREAD_GET_CONTEXT | THREAD_SET_CONTEXT | THREAD_SUSPEND_RESUME, FALSE, threadId);
-	if (!hThread || hThread == INVALID_HANDLE_VALUE)
-	{
-		VirtualFreeEx(this->mProcessHandle, lpRemoteAddress, 0, MEM_RELEASE);
-		return false;
-	}
-	
+	// Suspend the thread and back up the context.
 	SuspendThread(hThread);
 #ifdef _WIN64
 	WOW64_CONTEXT ctx;
@@ -1165,7 +1164,7 @@ bool PortableExecutable32::LoadLibraryExternalHijack(const String& library, cons
 		CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)flagAddress, &magic, sizeof(DWORD), &bytesWritten);
 		
 		// Prevent CrySearch to start eating CPU time while still trying to have an accurate sample.
-		Sleep(100);
+		Sleep(75);
 	}
 	while (magic != 0x1337);
 	
@@ -1892,8 +1891,14 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 	
 	// Attempts to load a dynamic link library into the target process.
 	// Returns true if the operation succeeded, and false if it did not succeed.
-	bool PortableExecutable64::LoadLibraryExternalHijack(const String& library, const DWORD threadId) const
+	bool PortableExecutable64::LoadLibraryExternalHijack(const String& library, HANDLE hThread) const
 	{
+		// If the thread wasn't opened, the function returns.
+		if (!hThread || hThread == INVALID_HANDLE_VALUE)
+		{
+			return false;
+		}
+		
 		// Allocate memory space for the library path.
 		void* const lpRemoteAddress = VirtualAllocEx(this->mProcessHandle, NULL, library.GetLength(), MEM_COMMIT, PAGE_READWRITE);
 		SIZE_T bytesWritten;
@@ -1907,30 +1912,59 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 		}
 		
 		// The shellcode that is written and executed inside the target program:
-		// push 0xCCCCCCCC
-		// pushad
-		// pushfd
-		// mov ebx, 0xCCCCCCCC
-		// push 0xCCCCCCCC
-		// call ebx
-		// popfd
-		// popad
-		// mov dword ptr [0xCCCCCCCC], 0x1337
+		// sub rsp, 8
+		// mov dword ptr [rsp], 0xCCCCCCCC
+		// mov dword ptr [rsp+4], 0xCCCCCCCC
+		// push rax
+		// push rbx
+		// push rcx
+		// push rdx
+		// push rdi
+		// push rsi
+		// push rsp
+		// push rbp
+		// push r8
+		// push r9
+		// push r10
+		// push r11
+		// push r12
+		// push r13
+		// push r14
+		// push r15
+		// movabs rbx, 0xCCCCCCCCCCCCCCCC
+		// movabs rcx, 0xCCCCCCCCCCCCCCCC
+		// call rbx
+		// pop r15
+		// pop r14
+		// pop r13
+		// pop r12
+		// pop r11
+		// pop r10
+		// pop r9
+		// pop r8
+		// pop rbp
+		// pop rsp
+		// pop rsi
+		// pop rdi
+		// pop rdx
+		// pop rcx
+		// pop rbx
+		// movabs rax, 0xCCCCCCCCCCCCCCCC
+		// mov dword ptr [rax], 0x1337
+		// pop rax
 		// ret
-		Byte shellCode[] = { 0x68, 0xCC, 0xCC, 0xCC, 0xCC, 0x60, 0x9C, 0xBB, 0xCC, 0xCC, 0xCC, 0xCC, 0x68, 0xCC, 0xCC, 0xCC, 0xCC, 0xFF, 0xD3, 0x9D, 0x61, 0xC7, 0x05, 0xCC, 0xCC, 0xCC, 0xCC, 0x37, 0x13, 0x00, 0x00, 0xC3 };
+		Byte shellCode[] = { 0x48, 0x83, 0xEC, 0x08, 0xC7, 0x04, 0x24, 0xCC, 0xCC, 0xCC, 0xCC, 0xC7, 0x44, 0x24, 0x04, 0xCC, 0xCC, 0xCC,
+							 0xCC, 0x50, 0x53, 0x51, 0x52, 0x57, 0x56, 0x54, 0x55, 0x41, 0x50, 0x41, 0x51, 0x41, 0x52, 0x41, 0x53, 0x41,
+							 0x54, 0x41, 0x55, 0x41, 0x56, 0x41, 0x57, 0x48, 0xBB, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0x48,
+							 0xB9, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xFF, 0xD3, 0x41, 0x5F, 0x41, 0x5E, 0x41, 0x5D, 0x41,
+							 0x5C, 0x41, 0x5B, 0x41, 0x5A, 0x41, 0x59, 0x41, 0x58, 0x5D, 0x5C, 0x5E, 0x5F, 0x5A, 0x59, 0x5B, 0x48, 0xB8,
+							 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xC7, 0x00, 0x37, 0x13, 0x00, 0x00, 0x58, 0xC3 };
 		
 		// Allocate executable block of memory for the shellcode.
 		void* const lpShellCode = VirtualAllocEx(this->mProcessHandle, NULL, 1024, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
 		const SIZE_T flagAddress = (SIZE_T)lpShellCode + 0x100;
 		
-		// Open the thread and back the existing context up.
-		HANDLE hThread = OpenThread(THREAD_GET_CONTEXT | THREAD_SET_CONTEXT | THREAD_SUSPEND_RESUME, FALSE, threadId);
-		if (!hThread || hThread == INVALID_HANDLE_VALUE)
-		{
-			VirtualFreeEx(this->mProcessHandle, lpRemoteAddress, 0, MEM_RELEASE);
-			return false;
-		}
-		
+		// Suspend the opened thread.
 		SuspendThread(hThread);
 		
 		// Create context, aligned to 64-bits boundary for x64.
@@ -1940,13 +1974,27 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 		memset(ctx, 0, sizeof(CONTEXT));
 		ctx->ContextFlags = CONTEXT_FULL;
 		GetThreadContext(hThread, ctx);
+		PLARGE_INTEGER rip64large = (PLARGE_INTEGER)&ctx->Rip;
 		
 		// Fix up dynamic addresses inside shellcode.
-		*(SIZE_T*)&shellCode[1] = ctx->Rip;
-		*(SIZE_T*)&shellCode[8] = (SIZE_T)LoadLibraryA;
-		*(SIZE_T*)&shellCode[13] = (SIZE_T)lpRemoteAddress;
-		*(SIZE_T*)&shellCode[23] = flagAddress;
+		*(DWORD*)&shellCode[7] = rip64large->LowPart;
+		*(DWORD*)&shellCode[15] = rip64large->HighPart;
+		*(SIZE_T*)&shellCode[45] = (SIZE_T)LoadLibraryA;
+		*(SIZE_T*)&shellCode[55] = (SIZE_T)lpRemoteAddress;
+		*(SIZE_T*)&shellCode[90] = flagAddress;
 		
+		// Write the shellcode to the remotely allocated buffer.
+		CrySearchRoutines.CryWriteMemoryRoutine(this->mProcessHandle, lpShellCode, shellCode, sizeof(shellCode), &bytesWritten);
+		if (bytesWritten != sizeof(shellCode))
+		{
+			VirtualFreeEx(this->mProcessHandle, lpShellCode, 0, MEM_RELEASE);
+			VirtualFreeEx(this->mProcessHandle, lpRemoteAddress, 0, MEM_RELEASE);
+			return false;
+		}
+		
+		// Change RIP to resume execution at the shellcode.
+		ctx->Rip = (SIZE_T)lpShellCode;
+
 		// Place the new context inside the thread.
 		SetThreadContext(hThread, ctx);
 		
@@ -1963,7 +2011,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 			CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)flagAddress, &magic, sizeof(DWORD), &bytesWritten);
 			
 			// Prevent CrySearch to start eating CPU time while still trying to have an accurate sample.
-			Sleep(100);
+			Sleep(75);
 		}
 		while (magic != 0x1337);
 		
