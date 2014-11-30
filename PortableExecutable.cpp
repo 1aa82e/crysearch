@@ -1103,12 +1103,13 @@ bool PortableExecutable32::LoadLibraryExternalHijack(const String& library, HAND
 	const DWORD flagAddress = (DWORD)lpShellCode + 0x100;
 	
 	// Suspend the thread and back up the context.
-	SuspendThread(hThread);
 #ifdef _WIN64
+	Wow64SuspendThread(hThread);
 	WOW64_CONTEXT ctx;
 	ctx.ContextFlags = WOW64_CONTEXT_FULL;
 	Wow64GetThreadContext(hThread, &ctx);
 #else
+	SuspendThread(hThread);
 	CONTEXT ctx;
 	ctx.ContextFlags = CONTEXT_FULL;
 	GetThreadContext(hThread, &ctx);
