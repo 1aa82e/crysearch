@@ -4,13 +4,12 @@
 #include "CryDialogTemplate.h"
 #include "ProcessUtil.h"
 
+// Represents the dialog that handles setting a hook in the import table of a process.
 class CryPlaceIATHookWindow : public CryDialogTemplate
 {
 private:
-	char* mFunction;
-	bool mOrdinal;
-	const Win32ModuleInformation* mMod;
-	
+	SIZE_T* mAddress;
+
 	Label mAddressDescription;
 	EditField mAddressInput;
 	Button mOk;
@@ -21,7 +20,7 @@ private:
 	
 	typedef CryPlaceIATHookWindow CLASSNAME;
 public:
-	CryPlaceIATHookWindow(const Win32ModuleInformation* pMod, const char* funcIdentifier, bool IsOrdinal, const Image& icon);
+	CryPlaceIATHookWindow(SIZE_T* const pAddress, const Image& icon);
 	~CryPlaceIATHookWindow();	
 };
 

@@ -12,6 +12,7 @@ v1.14
 	- Improved process creation from process selection window. You can now input arguments and start a process in suspended state;
 	- Fixed bug in imports window where setting a hook on some functions would crash the application;
 	- Added thread hijacking injection method for DLL files. Works for both x86 and x64 and the injection method is selectable from the Settings dialog;
+	- Cleared up the progress of setting a hook in the import table. When the function fails, it will display an error now;
 	- 
 v1.13
 	- Changed about dialog to show a list of loaded libraries including their runtime versions;

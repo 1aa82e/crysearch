@@ -1,8 +1,6 @@
 #ifndef _CrySearch_AddressTable_h_
 #define _CrySearch_AddressTable_h_
 
-#pragma warning(disable : 4005)
-
 #include <Core/Core.h>
 
 using namespace Upp;

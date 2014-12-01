@@ -1,8 +1,6 @@
 #ifndef _CrySearch_CrySearchArrayCtrl_h_
 #define _CrySearch_CrySearchArrayCtrl_h_
 
-#pragma warning(disable : 4005)
-
 #include <CtrlLib/CtrlLib.h>
 
 using namespace Upp;

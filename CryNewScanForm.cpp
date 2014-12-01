@@ -1,9 +1,6 @@
 #include "CryNewScanForm.h"
 #include "UIUtilities.h"
 
-// Disable warning for conversion from double to float.
-#pragma warning(disable : 4244)
-
 // Describes a memory scanner scan type, bound to a string representation.
 struct ScanTypeDescriptor
 {
@@ -256,7 +253,7 @@ void CryNewScanForm::OkButtonClicked()
 			break;
 		case 4: // float
 			GlobalScanParameter = new ScanParameters<float>();
-			((ScanParameters<float>*)GlobalScanParameter)->ScanValue = StrDbl(this->mValueToSearchFor.GetText().ToString());
+			((ScanParameters<float>*)GlobalScanParameter)->ScanValue = (float)StrDbl(this->mValueToSearchFor.GetText().ToString());
 			GlobalScanParameter->GlobalScanValueType = VALUETYPE_FLOAT;
 			break;
 		case 5: // double

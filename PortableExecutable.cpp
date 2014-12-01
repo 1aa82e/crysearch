@@ -750,8 +750,9 @@ void PortableExecutable32::GetImportAddressTable() const
 
 // Places a hook in the IAT, replacing the function address with another one.
 // First parameter is either a pointer to a buffer containing the function name or an ordinal value.
-void PortableExecutable32::PlaceIATHook(const Win32ModuleInformation* modBase, const char* NameOrdinal, const SIZE_T newAddress, bool IsOrdinal) const
+bool PortableExecutable32::PlaceIATHook(const Win32ModuleInformation* modBase, const char* NameOrdinal, const SIZE_T newAddress, bool IsOrdinal) const
 {
+	bool result = false;
 	Byte* const moduleBuffer = new Byte[modBase->Length];
 	CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)this->mBaseAddress, moduleBuffer, modBase->Length, NULL);
 	
@@ -786,6 +787,7 @@ void PortableExecutable32::PlaceIATHook(const Win32ModuleInformation* modBase, c
 							CrySearchRoutines.CryProtectMemoryRoutine(this->mProcessHandle, AddressAddr, sizeof(DWORD), PAGE_READWRITE, &dwOldProtect);
 							CrySearchRoutines.CryWriteMemoryRoutine(this->mProcessHandle, AddressAddr, &newAddress, sizeof(DWORD), NULL);
 							CrySearchRoutines.CryProtectMemoryRoutine(this->mProcessHandle, AddressAddr, sizeof(DWORD), dwOldProtect, &dwOldProtect);
+							result = true;
 							break;
 						}
 					}
@@ -807,6 +809,7 @@ void PortableExecutable32::PlaceIATHook(const Win32ModuleInformation* modBase, c
 						CrySearchRoutines.CryProtectMemoryRoutine(this->mProcessHandle, AddressAddr, sizeof(DWORD), PAGE_READWRITE, &dwOldProtect);
 						CrySearchRoutines.CryWriteMemoryRoutine(this->mProcessHandle, AddressAddr, &newAddress, sizeof(DWORD), NULL);
 						CrySearchRoutines.CryProtectMemoryRoutine(this->mProcessHandle, AddressAddr, sizeof(DWORD), dwOldProtect, &dwOldProtect);
+						result = true;
 						break;
 					}
 				}
@@ -819,6 +822,7 @@ void PortableExecutable32::PlaceIATHook(const Win32ModuleInformation* modBase, c
 	
 	// Success, free used buffers and return.
 	delete[] moduleBuffer;
+	return result;
 }
 
 // Attempts to restore the PE headers from a file on the harddisk to a module loaded in memory.
@@ -1603,8 +1607,9 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 	
 	// Places a hook in the IAT, replacing the function address with another one.
 	// First parameter is either a pointer to a buffer containing the function name or an ordinal value.
-	void PortableExecutable64::PlaceIATHook(const Win32ModuleInformation* modBase, const char* NameOrdinal, const SIZE_T newAddress, bool IsOrdinal) const
+	bool PortableExecutable64::PlaceIATHook(const Win32ModuleInformation* modBase, const char* NameOrdinal, const SIZE_T newAddress, bool IsOrdinal) const
 	{
+		bool result = false;
 		Byte* const moduleBuffer = new Byte[modBase->Length];
 		CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)this->mBaseAddress, moduleBuffer, modBase->Length, NULL);
 		
@@ -1641,6 +1646,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 								CrySearchRoutines.CryProtectMemoryRoutine(this->mProcessHandle, AddressAddr, sizeof(IMAGE_THUNK_DATA), PAGE_READWRITE, &dwOldProtect);
 								CrySearchRoutines.CryWriteMemoryRoutine(this->mProcessHandle, AddressAddr, &newAddress, sizeof(IMAGE_THUNK_DATA), NULL);
 								CrySearchRoutines.CryProtectMemoryRoutine(this->mProcessHandle, AddressAddr, sizeof(IMAGE_THUNK_DATA), dwOldProtect, &dwOldProtect);
+								result = true;
 								break;
 							}
 						}
@@ -1663,6 +1669,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 							CrySearchRoutines.CryProtectMemoryRoutine(this->mProcessHandle, AddressAddr, sizeof(IMAGE_THUNK_DATA), PAGE_READWRITE, &dwOldProtect);
 							CrySearchRoutines.CryWriteMemoryRoutine(this->mProcessHandle, AddressAddr, &newAddress, sizeof(IMAGE_THUNK_DATA), NULL);
 							CrySearchRoutines.CryProtectMemoryRoutine(this->mProcessHandle, AddressAddr, sizeof(IMAGE_THUNK_DATA), dwOldProtect, &dwOldProtect);
+							result = true;
 							break;
 						}
 					}
@@ -1675,6 +1682,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 		
 		// Success, free used buffers and return.
 		delete[] moduleBuffer;
+		return result;
 	}
 	
 	// Attempts to restore the PE headers from a file on the harddisk to a module loaded in memory.
@@ -1920,33 +1928,19 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 		// push rbx
 		// push rcx
 		// push rdx
-		// push rdi
-		// push rsi
-		// push rsp
-		// push rbp
 		// push r8
 		// push r9
 		// push r10
 		// push r11
-		// push r12
-		// push r13
-		// push r14
-		// push r15
 		// movabs rbx, 0xCCCCCCCCCCCCCCCC
 		// movabs rcx, 0xCCCCCCCCCCCCCCCC
+		// sub rsp, 32
 		// call rbx
-		// pop r15
-		// pop r14
-		// pop r13
-		// pop r12
+		// add rsp, 32
 		// pop r11
 		// pop r10
 		// pop r9
 		// pop r8
-		// pop rbp
-		// pop rsp
-		// pop rsi
-		// pop rdi
 		// pop rdx
 		// pop rcx
 		// pop rbx
@@ -1955,11 +1949,10 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 		// pop rax
 		// ret
 		Byte shellCode[] = { 0x48, 0x83, 0xEC, 0x08, 0xC7, 0x04, 0x24, 0xCC, 0xCC, 0xCC, 0xCC, 0xC7, 0x44, 0x24, 0x04, 0xCC, 0xCC, 0xCC,
-							 0xCC, 0x50, 0x53, 0x51, 0x52, 0x57, 0x56, 0x54, 0x55, 0x41, 0x50, 0x41, 0x51, 0x41, 0x52, 0x41, 0x53, 0x41,
-							 0x54, 0x41, 0x55, 0x41, 0x56, 0x41, 0x57, 0x48, 0xBB, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0x48,
-							 0xB9, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xFF, 0xD3, 0x41, 0x5F, 0x41, 0x5E, 0x41, 0x5D, 0x41,
-							 0x5C, 0x41, 0x5B, 0x41, 0x5A, 0x41, 0x59, 0x41, 0x58, 0x5D, 0x5C, 0x5E, 0x5F, 0x5A, 0x59, 0x5B, 0x48, 0xB8,
-							 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xC7, 0x00, 0x37, 0x13, 0x00, 0x00, 0x58, 0xC3 };
+							 0xCC, 0x50, 0x53, 0x51, 0x52, 0x41, 0x50, 0x41, 0x51, 0x41, 0x52, 0x41, 0x53, 0x48, 0xBB, 0xCC, 0xCC, 0xCC,
+							 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0x48, 0xB9, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0x48, 0x83, 0xEC,
+							 0x20, 0xFF, 0xD3, 0x48, 0x83, 0xC4, 0x20, 0x41, 0x5B, 0x41, 0x5A, 0x41, 0x59, 0x41, 0x58, 0x5A, 0x59, 0x5B,
+							 0x48, 0xB8, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xC7, 0x00, 0x37, 0x13, 0x00, 0x00, 0x58, 0xC3 };
 		
 		// Allocate executable block of memory for the shellcode.
 		void* const lpShellCode = VirtualAllocEx(this->mProcessHandle, NULL, 1024, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
@@ -1980,9 +1973,9 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 		// Fix up dynamic addresses inside shellcode.
 		*(DWORD*)&shellCode[7] = rip64large->LowPart;
 		*(DWORD*)&shellCode[15] = rip64large->HighPart;
-		*(SIZE_T*)&shellCode[45] = (SIZE_T)LoadLibraryA;
-		*(SIZE_T*)&shellCode[55] = (SIZE_T)lpRemoteAddress;
-		*(SIZE_T*)&shellCode[90] = flagAddress;
+		*(SIZE_T*)&shellCode[33] = (SIZE_T)LoadLibraryA;
+		*(SIZE_T*)&shellCode[43] = (SIZE_T)lpRemoteAddress;
+		*(SIZE_T*)&shellCode[74] = flagAddress;
 		
 		// Write the shellcode to the remotely allocated buffer.
 		CrySearchRoutines.CryWriteMemoryRoutine(this->mProcessHandle, lpShellCode, shellCode, sizeof(shellCode), &bytesWritten);

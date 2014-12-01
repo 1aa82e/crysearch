@@ -7,11 +7,12 @@ Package:
 - Update wiki with changes for the release;
 ------------------------------------------------------------------
 
+- Make it possible to find out whether a thread is hidden from the debugger;
 - IAT window isn't that perfect in UI stuff;
-- Return value for IAT hooking functions?
 - Find import function in window (button on top)?
 - Splitter offset on the right size, I think the border is 3D!
 - I think the way imports are saved needs some optimization!!!
+- Threads saving needs some more optimization / not the vector in global space;
 
 - Structure dissections
 	- settings window, default offset;
@@ -27,12 +28,13 @@ Package:
 - Identify static addresses:
 	- Code generation customized to use offsets;
 	- Pointers as addresses (using offsets);
+	- Generate C++ Fields / Struct / Union;
+	- Expand to be used with pointers, maybe structs;
 
 - Change crash report method;
 - Opening PDB files to navigate through disassembly with symbols, or just view symbols?
 - scan for value in between;
 - Ability to import cheat tables; (skipend, parse variabletype correctly and parse relative addresses!!!!)
-- Manual mapper for x86 and x64;
 
 - Disassembler:
 	- Resolve function calls in disasm to IAT functions;
@@ -49,7 +51,6 @@ Package:
 
 - VTable finder / dissection (learn_more, maybe a plugin);
 - Find class instances based on a vtable;
-- Finish depcheck implementation;
 - Callstack tree, 'Code Map' as in Visual Studio;
 - Dump .NET modules?
 - Cancel IO on application shutdown when huge scan is still running (XP support blocks me here);
@@ -87,21 +88,17 @@ Package:
 - Pointer scan;
 
 - Module window:
-	- Manual mapping as injection method.
-	- QueueUserAPC
-	- ntdll.dll proces injection (LdrLoadDll,LdrpLoadDll)
+	- Manual mapper for x86 and x64;	
+	- QueueUserAPC;
+	- ntdll.dll proces injection (LdrLoadDll,LdrpLoadDll).
 
 - Code generation:
-	- Change C++ to C and implement TCC?
 	- Configure Microsoft Visual C++ compiler to compile generated code?
 
 - Scan for hooked functions inside a process based on:
 	- Detours;
 	- IAT.
 	
-- Add function: "Generate C++"->Fields / Struct / Union:
-	- Expand to be used with pointers, maybe structs;
-- VirtualProtectEx for addresses/blocks;
 - Code caves scanning;
 - Write x86 driver using WinDDK (.sys) and create UI module to load it:
 	- OpenProcess driver level equivalent;

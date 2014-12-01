@@ -145,7 +145,9 @@ void CryImportsWindow::PlaceHookOnIATFunction()
 	const ImportAddressTableEntry& entry = masterKey.FunctionList[this->mFunctionsList.GetCursor()];
 	const char* param = NULL;
 	CryPlaceIATHookWindow* cpthw = NULL;
-	
+	SIZE_T newAddress;
+	const bool wasOrdinal = (entry.Ordinal != 0);	
+
 	// Check for the EAT address associated to the function. If the EAT address is not found, the address cannot be restored later.
 	if (entry.Flag == IAT_FLAG_NOT_FOUND && !Prompt("I need your confirmation", CtrlImg::exclamation(),
 		"The address of this function could not be found in the export table of the module. Therefore the address cannot be restored. Are you sure you want to place a hook on this function?"
@@ -158,18 +160,30 @@ void CryImportsWindow::PlaceHookOnIATFunction()
 	mPeInstance->SetBaseAddress(masterMod->BaseAddress);
 
 	// Ordinal import or named import? Differentiate here, the backend will take care of the rest.
-	if (entry.Ordinal == 0)
+	if (wasOrdinal)
 	{
-		param = entry.FunctionName;
-		cpthw = new CryPlaceIATHookWindow(masterMod, param, false, CrySearchIml::PlaceHookSmall());
+		param = (char*)entry.Ordinal;
+		cpthw = new CryPlaceIATHookWindow(&newAddress, CrySearchIml::PlaceHookSmall());
 	}
 	else
 	{
-		param = (char*)entry.Ordinal;
-		cpthw = new CryPlaceIATHookWindow(masterMod, param, true, CrySearchIml::PlaceHookSmall());
+		param = entry.FunctionName;
+		cpthw = new CryPlaceIATHookWindow(&newAddress, CrySearchIml::PlaceHookSmall());
 	}
 	
-	cpthw->Execute();
+	// Execute the hook dialog and catch return value.
+	if (cpthw->Execute() == 10)
+	{
+#ifdef _WIN64
+		if (!mPeInstance->PlaceIATHook(masterMod, param, newAddress, wasOrdinal))
+#else
+		if (!mPeInstance->PlaceIATHook(masterMod, param, newAddress, wasOrdinal))
+#endif
+		{
+			Prompt("Fatal Error", CtrlImg::error(), "The hook could not be set. The corresponding function was not found in the import table.", "OK");
+		}
+	}
+	
 	delete cpthw;
 	
 	// Reload imports to view the hooked import.

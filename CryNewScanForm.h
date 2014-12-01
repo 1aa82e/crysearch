@@ -4,6 +4,7 @@
 #include "CryDialogTemplate.h"
 #include "MemoryScanner.h"
 
+// Represents the dialog that handles a memory scan on a process.
 class CryNewScanForm : public CryDialogTemplate
 {
 private:

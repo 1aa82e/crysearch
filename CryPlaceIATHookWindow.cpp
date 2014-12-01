@@ -1,12 +1,9 @@
 #include "CryPlaceIATHookWindow.h"
 #include "BackendGlobalDef.h"
 
-CryPlaceIATHookWindow::CryPlaceIATHookWindow(const Win32ModuleInformation* pMod, const char* funcIdentifier, bool IsOrdinal, const Image& icon) : CryDialogTemplate(icon)
+CryPlaceIATHookWindow::CryPlaceIATHookWindow(SIZE_T* const pAddress, const Image& icon) : CryDialogTemplate(icon)
 {
-	this->mFunction = (char*)funcIdentifier;
-	this->mOrdinal = IsOrdinal;
-	this->mMod = pMod;
-	
+	this->mAddress = pAddress;
 	this->Title("Set IAT Hook").SetRect(0, 0, 300, 75);
 	
 	this->mOk <<= THISBACK(DialogOkay);
@@ -32,9 +29,9 @@ void CryPlaceIATHookWindow::DialogOkay()
 	if (!text.IsEmpty() || (text.GetLength() > 0 && text.GetLength() <= 16))
 	{
 #ifdef _WIN64
-		mPeInstance->PlaceIATHook(this->mMod, this->mFunction, ScanInt64(text, NULL, 16), this->mOrdinal);
+		*this->mAddress = ScanInt64(text, NULL, 16);
 #else
-		mPeInstance->PlaceIATHook(this->mMod, this->mFunction, ScanInt(text, NULL, 16), this->mOrdinal);
+		*this->mAddress = ScanInt(text, NULL, 16);
 #endif
 	}
 	else
@@ -43,7 +40,7 @@ void CryPlaceIATHookWindow::DialogOkay()
 		return;
 	}
 	
-	this->Close();
+	this->AcceptBreak(10);
 }
 
 void CryPlaceIATHookWindow::DialogCancel()
