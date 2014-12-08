@@ -9,6 +9,7 @@
 CodeGenerator::CodeGenerator(const AddressTable* pTable)
 {
 	this->mTable = pTable;
+	this->external = false;
 	this->CreateConstants();
 }
 

@@ -85,14 +85,14 @@ String GetRegisterValue(const int index)
 #ifdef _WIN64
 	if (mMemoryScanner->IsX86Process())
 	{
-		return Format("%lX", *(LONG*)((BYTE*)(&((CryThreadContext<WOW64_CONTEXT>*)(*mDebugger)[BreakpointMasterIndex].BreakpointSnapshot.ThreadContextContainer)->ThreadContext) + RegisterMapping32LookupTable[index].Offset));
+		return Format("%lX", *(LONG*)((BYTE*)(&(*mDebugger)[BreakpointMasterIndex].BreakpointSnapshot.Wow64Context) + RegisterMapping32LookupTable[index].Offset));
 	}
 	else
 	{
-		return Format("%llX", *(__int64*)((BYTE*)(&((CryThreadContext<CONTEXT>*)(*mDebugger)[BreakpointMasterIndex].BreakpointSnapshot.ThreadContextContainer)->ThreadContext) + RegisterMapping64LookupTable[index].Offset));
+		return Format("%llX", *(__int64*)((BYTE*)(&(*mDebugger)[BreakpointMasterIndex].BreakpointSnapshot.Context64) + RegisterMapping64LookupTable[index].Offset));
 	}
 #else
-	return Format("%lX", *(LONG*)((BYTE*)(&((CryThreadContext<CONTEXT>*)(*mDebugger)[BreakpointMasterIndex].BreakpointSnapshot.ThreadContextContainer)->ThreadContext) + RegisterMapping32LookupTable[index].Offset));
+	return Format("%lX", *(LONG*)((BYTE*)(&(*mDebugger)[BreakpointMasterIndex].BreakpointSnapshot.Context86) + RegisterMapping32LookupTable[index].Offset));
 #endif
 }
 
@@ -158,7 +158,14 @@ void CryDebuggerHitView::SetTooltip(const char* tt)
 // Proxy function to pass the count through to the custom control.
 void CryDebuggerHitView::SetRegisterCount(const int count)
 {
-	this->mRegisterView.SetVirtualCount(count);
+	if (!count)
+	{
+		this->mRegisterView.Clear();
+	}
+	else
+	{
+		this->mRegisterView.SetVirtualCount(count);
+	}
 }
 
 // Function is executed when the instruction label is clicked. Should link to the disassemly window.

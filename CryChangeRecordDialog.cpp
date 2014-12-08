@@ -233,7 +233,6 @@ void CryChangeRecordDialog::CancelDialog()
 void CryChangeRecordDialog::DialogOkay()
 {
 	// Temporarely save the edited values locally to avoid race conditions.
-	LONG_PTR tempAddress;
 	CCryDataType tempType;
 	int optionalSize = this->mLoadedEntry ? this->mLoadedEntry->Size : 0;
 	
@@ -243,6 +242,7 @@ void CryChangeRecordDialog::DialogOkay()
 	// Apply appropriate change to addresstable instance.
 	if (this->mMode == CRDM_MANUALNEW)
 	{
+		LONG_PTR tempAddress;
 		bool relative = false;
 		
 		// Check for empty input value.

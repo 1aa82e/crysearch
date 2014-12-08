@@ -66,7 +66,15 @@ struct DbgBreakpoint : Moveable<DbgBreakpoint>
 		DisasmLine DisassemblyAccessLine;
 
 		// Contains the snapshot of the processor registers.
-		CryThreadContextBase* ThreadContextContainer;
+		union
+		{
+#ifdef _WIN64
+			WOW64_CONTEXT Wow64Context;
+			CONTEXT Context64;
+#else
+			CONTEXT Context86;
+#endif	
+		};
 		
 		// Contains the stack view dissection at the moment of breakpoint hit.
 		Vector<StackViewData> StackView;
@@ -75,14 +83,9 @@ struct DbgBreakpoint : Moveable<DbgBreakpoint>
 		Vector<Win32StackTraceEntry> CallStackView;
 		
 		// Releases memory used by the thread context.
-		inline void Release()
+		void Reset()
 		{
-			if (this->ThreadContextContainer)
-			{
-				this->RegisterFieldCount = 0;
-				delete this->ThreadContextContainer;
-				this->ThreadContextContainer = NULL;
-			}
+			this->RegisterFieldCount = 0;
 		};
 		
 	} BreakpointSnapshot;
@@ -91,7 +94,6 @@ struct DbgBreakpoint : Moveable<DbgBreakpoint>
 	DbgBreakpoint()
 	{
 		this->BreakpointSnapshot.RegisterFieldCount = 0;
-		this->BreakpointSnapshot.ThreadContextContainer = NULL;
 	};
 };
 
@@ -126,7 +128,8 @@ struct HardwareBreakpoint : public DbgBreakpoint
 	// Finds out whether a hardware breakpoint was already set at a specific thread.
 	const bool IsSet(const DWORD threadId) const
 	{
-		for (int i = 0; i < this->ThreadId.GetCount(); i++)
+		const int threadCount = this->ThreadId.GetCount();
+		for (int i = 0; i < threadCount; i++)
 		{
 			if (this->ThreadId[i] == threadId)
 			{
@@ -182,8 +185,8 @@ private:
 	const int FindBreakpointByPreviousInstruction(const SIZE_T address);
 	
 	virtual void HideDebuggerFromPeb() const = 0;
-	virtual void HandleSoftwareBreakpoint(const DWORD threadId, const SIZE_T addr) = 0;
-	virtual void HandleHardwareBreakpoint(const DWORD threadId, const SIZE_T addr) = 0;
+	virtual void HandleSoftwareBreakpoint(const DWORD threadId, const int bpIndex) = 0;
+	virtual void HandleHardwareBreakpoint(const DWORD threadId, const int bpIndex) = 0;
 	virtual void RemoveSingleStepFromBreakpoint(const DWORD threadId) = 0;
 	virtual bool BreakpointRoutine(HardwareBreakpoint* pHwbp) const = 0;
 	virtual const int CheckHardwareBreakpointRegisters(const DWORD threadId) const = 0;
@@ -238,8 +241,8 @@ class CryDebugger32 : public CryDebugger
 private:
 	virtual void HideDebuggerFromPeb() const;
 	virtual bool BreakpointRoutine(HardwareBreakpoint* pHwbp) const;
-	virtual void HandleSoftwareBreakpoint(const DWORD threadId, const SIZE_T addr);
-	virtual void HandleHardwareBreakpoint(const DWORD threadId, const SIZE_T addr);
+	virtual void HandleSoftwareBreakpoint(const DWORD threadId, const int bpIndex);
+	virtual void HandleHardwareBreakpoint(const DWORD threadId, const int bpIndex);
 	virtual void RemoveSingleStepFromBreakpoint(const DWORD threadId);
 	virtual const int CheckHardwareBreakpointRegisters(const DWORD threadId) const;
 	virtual DisasmLine GetDisasmLine(const SIZE_T address, bool prev) const;
@@ -261,8 +264,8 @@ public:
 		virtual void HideDebuggerFromPeb() const;
 		virtual bool BreakpointRoutine(HardwareBreakpoint* pHwbp) const;
 		virtual void RemoveSingleStepFromBreakpoint(const DWORD threadId);
-		virtual void HandleSoftwareBreakpoint(const DWORD threadId, const SIZE_T addr);
-		virtual void HandleHardwareBreakpoint(const DWORD threadId, const SIZE_T addr);
+		virtual void HandleSoftwareBreakpoint(const DWORD threadId, const int bpIndex);
+		virtual void HandleHardwareBreakpoint(const DWORD threadId, const int bpIndex);
 		virtual const int CheckHardwareBreakpointRegisters(const DWORD threadId) const;
 		virtual DisasmLine GetDisasmLine(const SIZE_T address, bool prev) const;
 		

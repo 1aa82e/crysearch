@@ -7,12 +7,24 @@ Package:
 - Update wiki with changes for the release;
 ------------------------------------------------------------------
 
-- Make it possible to find out whether a thread is hidden from the debugger;
+- Stack trace addresses (dbg/crashhandler) can be resolved to exported functions?
+- Crash handler mustn't be started from exception handler itself!
+- Resolve thread start addresses to functions/relative addresses?
 - IAT window isn't that perfect in UI stuff;
 - Find import function in window (button on top)?
 - Splitter offset on the right size, I think the border is 3D!
 - I think the way imports are saved needs some optimization!!!
 - Threads saving needs some more optimization / not the vector in global space;
+- Debugger window (stack / registers) resolve addresses to relative/apis;
+- Float seems to have serious alignment issues!
+
+- Debugger:
+	- Data breakpoint still not 100% set back, how?
+	- Fast breakpoint hitting in massive amounts may crash CrySearch;
+	- Far Cry doesn't want to listen to meh;
+	- manipulation lock, fix setting breakpoints and removing them pause the exception loop.
+	- VEH debugger
+	- 0x70 Anti-debugging only applies for newly started processes?
 
 - Structure dissections
 	- settings window, default offset;
@@ -59,12 +71,6 @@ Package:
 - Brute-force PID's to find out about hidden processes (detect hidden processes);
 - Allow entering string as argument for create thread (let's make a custom data type of it);
 - Indicate architecture in process list;
-
-- Debugger:
-	- Far Cry doesn't want to listen to meh;
-	- manipulation lock, fix setting breakpoints and removing them pause the exception loop.
-	- VEH debugger
-	- 0x70 Anti-debugging only applies for newly started processes?
 
 - Heartbeat system for evading AC;
 - Main window:

@@ -85,6 +85,7 @@ struct AddressTableEntry : Moveable<AddressTableEntry>
 		this->Size = 0;
 		this->Frozen = false;
 		this->Address = 0;
+		this->IsRelative = FALSE;
 	};
 	
 	// Default copy constructor. Needed for vector containment.

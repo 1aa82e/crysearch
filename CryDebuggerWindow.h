@@ -33,6 +33,8 @@ private:
 	
 	void CryDebuggerEventOccured(DebugEvent event, void* param);
 	void CryDebuggerEventOccuredThreadSafe(DebugEvent event, void* param);
+	void HandleBreakpointChanged(const int bpIndex);
+	void HandleUnhandledException(UnhandledExceptionData* param);
 	
 	typedef CryDebuggerWindow CLASSNAME;
 public:

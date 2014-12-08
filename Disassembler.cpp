@@ -52,84 +52,73 @@ DisasmLine DisasmGetLine(const SIZE_T address, ArchitectureDefinitions architect
 }
 
 // Retrieves the previous line of disassembly reflected against the specified address. The address inputted must
-// be the address of a valid instruction line.
+// be the address of a valid instruction line. The instruction size parameter specifies how big the desired
+// instruction must be to have a match. This greatly decreases the chance of a mismatch.
 DisasmLine DisasmGetPreviousLine(const SIZE_T address, ArchitectureDefinitions architecture)
 {
+	// Query the memory page this breakpoint occured in, so we can guarantee accurate instruction parsing.
+	MEMORY_BASIC_INFORMATION block;
 	DisasmLine outputVal;
-	const DWORD bufferLength = architecture == ARCH_X64 ? 20 : 16;
-	SIZE_T newAddr = address - bufferLength;
+	if (VirtualQueryEx(mMemoryScanner->GetHandle(), (void*)address, &block, sizeof(block)))
+	{
+		DISASM disasm;
+		memset(&disasm, 0, sizeof(DISASM));
+		
+		Byte* buffer = new Byte[block.RegionSize];
+		CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), (void*)block.BaseAddress, buffer, block.RegionSize, NULL);
+		
+		// Set EIP, correct architecture and security block to prevent access violations.
+		disasm.EIP = (UIntPtr)buffer;
+		disasm.Archi = architecture;
+		disasm.VirtualAddr = (UInt64)block.BaseAddress;
 	
-	DISASM disasm;
-	memset(&disasm, 0, sizeof(DISASM));
-	
-	// Query virtual pages inside target process.
-    Byte* buffer = new Byte[bufferLength];
-	const Byte* const staticBufferPtr = buffer;
-    CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), (void*)newAddr, buffer, bufferLength, NULL);
-    
-    // Set EIP, correct architecture and security block to prevent access violations.
-	disasm.EIP = (UIntPtr)buffer;
-	disasm.Archi = architecture;
-	disasm.VirtualAddr = (UInt64)newAddr;
-
-	UInt64 codePageEnd = ((UInt64)buffer + bufferLength);
-	
+		UInt64 codePageEnd = ((UInt64)buffer + block.RegionSize);
+		
 #ifdef _WIN64
-	disasm.SecurityBlock = (UInt32)(codePageEnd - disasm.EIP);
+		disasm.SecurityBlock = (UInt32)(codePageEnd - disasm.EIP);
 #else
-	disasm.SecurityBlock = (UIntPtr)(codePageEnd - disasm.EIP);
+		disasm.SecurityBlock = (UIntPtr)(codePageEnd - disasm.EIP);
 #endif
 
-	while (disasm.VirtualAddr < address)
-	{
-		const int len = CryDisasm(&disasm);
-		if (len == OUT_OF_BLOCK)
+		while (disasm.VirtualAddr < address)
 		{
-			break;
-		}
-		else if (len == UNKNOWN_OPCODE)
-		{
-			++disasm.EIP;
-			++disasm.VirtualAddr;
-		}
-		else
-		{
-			if ((disasm.VirtualAddr + len) != address)
+			const int len = CryDisasm(&disasm);
+			if (len == OUT_OF_BLOCK)
 			{
-				// This is not the previous instruction, add the length to EIP and proceed.
-				disasm.EIP += len;
-				disasm.VirtualAddr += len;
+				break;
+			}
+			else if (len == UNKNOWN_OPCODE)
+			{
+				++disasm.EIP;
+				++disasm.VirtualAddr;
 			}
 			else
 			{
-				// This is the previous instruction.
+				if ((disasm.VirtualAddr + len) == address)
+				{
+					// This is the previous instruction, break the loop.
 #ifdef _WIN64
-				outputVal.VirtualAddress = disasm.VirtualAddr;
+					outputVal.VirtualAddress = disasm.VirtualAddr;
 #else
-				outputVal.VirtualAddress = (int)disasm.VirtualAddr;
+					outputVal.VirtualAddress = (int)disasm.VirtualAddr;
 #endif
-			
-				outputVal.BytesStringRepresentation.Allocate(len);
-				memcpy(outputVal.BytesStringRepresentation.Data, (Byte*)disasm.EIP, len);
-				outputVal.InstructionLine = disasm.CompleteInstr;
-				break;
+					outputVal.BytesStringRepresentation.Allocate(len);
+					memcpy(outputVal.BytesStringRepresentation.Data, (Byte*)disasm.EIP, len);
+					outputVal.InstructionLine = disasm.CompleteInstr;		
+					break;
+				}
+				else
+				{
+					// Not yet the previous instruction.
+					disasm.EIP += len;
+					disasm.VirtualAddr += len;
+				}
 			}
 		}
-
-		// No suitable instruction was found. This means obfuscated code may have been found. Retry the lookup with other indexes.
-		if (disasm.VirtualAddr >= address && !outputVal.VirtualAddress)
-		{
-			disasm.VirtualAddr = (UInt64)++newAddr;
-			disasm.EIP = (UIntPtr)++buffer;
-#ifdef _WIN64
-			disasm.SecurityBlock = (UInt32)(--codePageEnd - disasm.EIP);
-#else
-			disasm.SecurityBlock = (UIntPtr)(--codePageEnd - disasm.EIP);
-#endif
-		}
+		
+		delete[] buffer;	
 	}
 	
-	delete[] staticBufferPtr;
 	return outputVal;
 }
 

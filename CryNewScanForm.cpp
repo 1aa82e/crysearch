@@ -233,32 +233,32 @@ void CryNewScanForm::OkButtonClicked()
 	{
 		case 0: // byte
 			GlobalScanParameter = new ScanParameters<Byte>();
-			((ScanParameters<Byte>*)GlobalScanParameter)->ScanValue = StrInt(this->mValueToSearchFor.GetText().ToString());
+			(reinterpret_cast<ScanParameters<Byte>*>(GlobalScanParameter))->ScanValue = StrInt(this->mValueToSearchFor.GetText().ToString());
 			GlobalScanParameter->GlobalScanValueType = VALUETYPE_BYTE;
 			break;
 		case 1: // 2 bytes
 			GlobalScanParameter = new ScanParameters<short>();
-			((ScanParameters<short>*)GlobalScanParameter)->ScanValue = StrInt(this->mValueToSearchFor.GetText().ToString());
+			(reinterpret_cast<ScanParameters<short>*>(GlobalScanParameter))->ScanValue = StrInt(this->mValueToSearchFor.GetText().ToString());
 			GlobalScanParameter->GlobalScanValueType = VALUETYPE_2BYTE;
 			break;
 		case 2: // 4 bytes
 			GlobalScanParameter = new ScanParameters<int>();
-			((ScanParameters<int>*)GlobalScanParameter)->ScanValue = StrInt(this->mValueToSearchFor.GetText().ToString());
+			(reinterpret_cast<ScanParameters<int>*>(GlobalScanParameter))->ScanValue = StrInt(this->mValueToSearchFor.GetText().ToString());
 			GlobalScanParameter->GlobalScanValueType = VALUETYPE_4BYTE;
 			break;
 		case 3: // 8 bytes
 			GlobalScanParameter = new ScanParameters<__int64>();
-			((ScanParameters<__int64>*)GlobalScanParameter)->ScanValue = atol(this->mValueToSearchFor.GetText().ToString());
+			(reinterpret_cast<ScanParameters<__int64>*>(GlobalScanParameter))->ScanValue = atol(this->mValueToSearchFor.GetText().ToString());
 			GlobalScanParameter->GlobalScanValueType = VALUETYPE_8BYTE;
 			break;
 		case 4: // float
 			GlobalScanParameter = new ScanParameters<float>();
-			((ScanParameters<float>*)GlobalScanParameter)->ScanValue = (float)StrDbl(this->mValueToSearchFor.GetText().ToString());
+			(reinterpret_cast<ScanParameters<float>*>(GlobalScanParameter))->ScanValue = (float)StrDbl(this->mValueToSearchFor.GetText().ToString());
 			GlobalScanParameter->GlobalScanValueType = VALUETYPE_FLOAT;
 			break;
 		case 5: // double
 			GlobalScanParameter = new ScanParameters<double>();
-			((ScanParameters<double>*)GlobalScanParameter)->ScanValue = StrDbl(this->mValueToSearchFor.GetText().ToString());
+			(reinterpret_cast<ScanParameters<double>*>(GlobalScanParameter))->ScanValue = StrDbl(this->mValueToSearchFor.GetText().ToString());
 			GlobalScanParameter->GlobalScanValueType = VALUETYPE_DOUBLE;
 			break;
 		case 6: // aob
@@ -272,7 +272,7 @@ void CryNewScanForm::OkButtonClicked()
 					GlobalScanParameter->ValueSize = aob.Size;
 				}
 				
-				((ScanParameters<ArrayOfBytes>*)GlobalScanParameter)->ScanValue = aob;		
+				(reinterpret_cast<ScanParameters<ArrayOfBytes>*>(GlobalScanParameter))->ScanValue = aob;		
 				GlobalScanParameter->GlobalScanValueType = VALUETYPE_AOB;
 			}
 			break;
@@ -281,7 +281,7 @@ void CryNewScanForm::OkButtonClicked()
 			{
 				// Unicode string
 				GlobalScanParameter = new ScanParameters<WString>();
-				((ScanParameters<WString>*)GlobalScanParameter)->ScanValue = this->mValueToSearchFor.GetText();
+				(reinterpret_cast<ScanParameters<WString>*>(GlobalScanParameter))->ScanValue = this->mValueToSearchFor.GetText();
 				GlobalScanParameter->GlobalScanValueType = VALUETYPE_WSTRING;
 				
 				if (!this->mNextScan)				
@@ -293,7 +293,7 @@ void CryNewScanForm::OkButtonClicked()
 			{
 				// C string
 				GlobalScanParameter = new ScanParameters<String>();
-				((ScanParameters<String>*)GlobalScanParameter)->ScanValue = this->mValueToSearchFor.GetText().ToString();
+				(reinterpret_cast<ScanParameters<String>*>(GlobalScanParameter))->ScanValue = this->mValueToSearchFor.GetText().ToString();
 				GlobalScanParameter->GlobalScanValueType = VALUETYPE_STRING;
 				
 				if (!this->mNextScan)

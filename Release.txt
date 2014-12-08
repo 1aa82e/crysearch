@@ -13,7 +13,11 @@ v1.14
 	- Fixed bug in imports window where setting a hook on some functions would crash the application;
 	- Added thread hijacking injection method for DLL files. Works for both x86 and x64 and the injection method is selectable from the Settings dialog;
 	- Cleared up the progress of setting a hook in the import table. When the function fails, it will display an error now;
-	- 
+	- Greatly improved debugger and fixed bugs:
+		- Fixed bug in stack view where selecting a stack size higher than 1024 would cause undefined behavior;
+		- Fixed major bug in breakpoint set by the debugger not being reset after being hit;
+		- Fixed disabled breakpoints views (red colors) not being properly cleared after the breakpoint list goes empty;
+		- 
 v1.13
 	- Changed about dialog to show a list of loaded libraries including their runtime versions;
 	- Added thread context snapshot feature. Right-click thread in thread window to open the snapshot window;

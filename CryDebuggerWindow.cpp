@@ -213,75 +213,20 @@ void CryDebuggerWindow::CryDebuggerEventOccuredThreadSafe(DebugEvent event, void
 		case DBG_EVENT_DETACH_ERROR: // the debugger was not succesfully detached. This is a rare matter but I still catch it.
 			Prompt("Debug Error", CtrlImg::error(), "The debugger could not be succesfully detached!", "OK");
 			break;
-		case DBG_EVENT_BREAKPOINTS_CHANGED: // Something changed in the breakpoint list, causing the user interface to need a refresh.
-			// Define an anonymous scope to avoid case skipping errors.
-			{
-				const int bpCount = mDebugger->GetBreakpointCount();
-				
-				if (bpCount > 0)
-				{
-					BreakpointMasterIndex = 0;
-					const DbgBreakpoint& bp = (*mDebugger)[(int)param];
-					
-					// Update the snapshot lists.
-					this->mDebuggerHitView.SetInstructionString(bp.BreakpointSnapshot.DisassemblyAccessLine);
-					this->mDebuggerHitView.SetRegisterCount(bp.BreakpointSnapshot.RegisterFieldCount);
-					this->mStackView.SetVirtualCount(bp.BreakpointSnapshot.StackView.GetCount());
-					this->mCallStackView.SetVirtualCount(bp.BreakpointSnapshot.CallStackView.GetCount());
-				}
-				else
-				{
-					// If the last breakpoint was removed, clear every list in the window.
-					this->mDebuggerHitView.ClearInstructionString();
-					this->mDebuggerHitView.SetRegisterCount(0);
-					this->mStackView.SetVirtualCount(0);
-					this->mCallStackView.SetVirtualCount(0);					
-				}
-				
-				// Recheck all breakpoints and reset display colors. This is the most stable way.
-				for (int i = 0; i < bpCount; ++i)
-				{
-					this->mBreakpointsHitList.SetRowDisplay(i, (*mDebugger)[i].Disabled ? RedDisplayDrawInstance : StdDisplay());
-				}
-				
-				// Set breakpoint count and redraw user interface.
-				this->mBreakpointsHitList.SetVirtualCount(bpCount);
-			}
+		case DBG_EVENT_BREAKPOINTS_CHANGED:
+				// Something changed in the breakpoint list, causing the user interface to need a refresh.
+				this->HandleBreakpointChanged((int)param);
 			break;
-		case DBG_EVENT_UNCAUGHT_EXCEPTION: // the debugger caught an exception in the opened process that cannot be handled.
-			// Define an anonymous scope to avoid case skipping errors.
-			{
-				// Retrieve the pointer to the exception data.
-				UnhandledExceptionData* excData = (UnhandledExceptionData*)param;
-				
-				int result = Prompt("Unhandled Exception", CtrlImg::exclamation(), Format("An unhandled exception occured in the opened process:&&Exception: %s&Address: %llX", ParseExceptionCode(excData->ExceptionCode), (LONG_PTR)excData->ExceptionAddress), "Ignore", "Abort");
-				if (result == 1)
-				{
-					// The ignore button was clicked. Let the exception slip through and continue debugging.
-					excData->UserResponse = EXCEPTION_RESPONSE_CONTINUE;
-				}
-				else if (result == 0)
-				{
-					// The abort button was clicked. Exit the debugger and let the exception drop into its own exception handlers.
-					excData->UserResponse = EXCEPTION_RESPONSE_ABORT;
-					
-					// If the debugger didn't already clean up the application because of the crash, do it anyway.
-					if (mDebugger)
-					{
-						mDebugger->Stop();
-					}
-
-					// Throw error occured event, to close debugger window.
-					this->DebugErrorOccured();
-				}
+		case DBG_EVENT_UNCAUGHT_EXCEPTION:
+				// the debugger caught an exception in the opened process that cannot be handled.
+				this->HandleUnhandledException(reinterpret_cast<UnhandledExceptionData*>(param));
 				
 				// Free the memory pointed to by the parameter pointer.
 				delete param;
-			}
 			break;
 		case DBG_EVENT_BREAKPOINT_HIT:
 			// Update the snapshot lists if the current breakpoint is selected. Prevents crashing with master index mismatch.
-			if ((int)param == BreakpointMasterIndex)
+			if ((int)param == BreakpointMasterIndex && (int)param < mDebugger->GetBreakpointCount())
 			{
 				const DbgBreakpoint& bp = (*mDebugger)[(int)param];
 				this->mDebuggerHitView.SetInstructionString(bp.BreakpointSnapshot.DisassemblyAccessLine);
@@ -297,6 +242,72 @@ void CryDebuggerWindow::CryDebuggerEventOccuredThreadSafe(DebugEvent event, void
 	
 	// Refresh the toolstrip.
 	this->mToolStrip.Set(THISBACK(ToolStrip));
+}
+
+// Handles the user interface refreshing for changed breakpoint status.
+void CryDebuggerWindow::HandleBreakpointChanged(const int bpIndex)
+{
+	const int bpCount = mDebugger->GetBreakpointCount();
+	if (bpCount > 0)
+	{
+		BreakpointMasterIndex = 0;
+		const DbgBreakpoint& bp = (*mDebugger)[bpIndex];
+		
+		// Update the snapshot lists.
+		this->mDebuggerHitView.SetInstructionString(bp.BreakpointSnapshot.DisassemblyAccessLine);
+		this->mDebuggerHitView.SetRegisterCount(bp.BreakpointSnapshot.RegisterFieldCount);
+		this->mStackView.SetVirtualCount(bp.BreakpointSnapshot.StackView.GetCount());
+		this->mCallStackView.SetVirtualCount(bp.BreakpointSnapshot.CallStackView.GetCount());
+	}
+	else
+	{
+		// If the last breakpoint was removed, clear every list in the window.
+		this->mDebuggerHitView.ClearInstructionString();
+		this->mDebuggerHitView.SetRegisterCount(0);
+		this->mStackView.Clear();
+		this->mCallStackView.Clear();				
+	}
+	
+	// Recheck all breakpoints and reset display colors. This is the most stable way.
+	for (int i = 0; i < bpCount; ++i)
+	{
+		this->mBreakpointsHitList.SetRowDisplay(i, (*mDebugger)[i].Disabled ? RedDisplayDrawInstance : StdDisplay());
+	}
+	
+	// Set breakpoint count and redraw user interface. It seems that empty an data set keeps the UI from redrawing.
+	if (!bpCount)
+	{
+		this->mBreakpointsHitList.Clear();
+	}
+	else
+	{
+		this->mBreakpointsHitList.SetVirtualCount(bpCount);
+	}
+}
+
+// Handles an unhandled exception in the opened process.
+void CryDebuggerWindow::HandleUnhandledException(UnhandledExceptionData* param)
+{
+	int result = Prompt("Unhandled Exception", CtrlImg::exclamation(), Format("An unhandled exception occured in the opened process:&&Exception: %s&Address: %llX", ParseExceptionCode(param->ExceptionCode), (LONG_PTR)param->ExceptionAddress), "Ignore", "Abort");
+	if (result == 1)
+	{
+		// The ignore button was clicked. Let the exception slip through and continue debugging.
+		param->UserResponse = EXCEPTION_RESPONSE_CONTINUE;
+	}
+	else if (result == 0)
+	{
+		// The abort button was clicked. Exit the debugger and let the exception drop into its own exception handlers.
+		param->UserResponse = EXCEPTION_RESPONSE_ABORT;
+		
+		// If the debugger didn't already clean up the application because of the crash, do it anyway.
+		if (mDebugger)
+		{
+			mDebugger->Stop();
+		}
+
+		// Throw error occured event, to close debugger window.
+		this->DebugErrorOccured();
+	}
 }
 
 // Clears all breakpoints in the list.

@@ -163,15 +163,9 @@ void CrySearchForm::CheckKeyPresses()
 
 void CrySearchForm::AddressValuesUpdater()
 {
-	// If the address list is empty, don't execute this function at all. Just reset the callback.
-	if (this->mUserAddressList.GetCount() <= 0)
-	{
-		SetTimeCallback(SettingsFile::GetInstance()->GetAddressTableUpdateInterval(), THISBACK(AddressValuesUpdater), 10);
-		return;
-	}
-	
 	// Handle frozen addresses
-	for (int i = 0; i < loadedTable.GetCount(); ++i)
+	const int addrTableCount = loadedTable.GetCount();
+	for (int i = 0; i < addrTableCount; ++i)
 	{
 		const AddressTableEntry* curEntry = loadedTable[i];
 		if (curEntry->Frozen)
@@ -248,9 +242,7 @@ void CrySearchForm::AddressValuesUpdater()
 				float value;
 				if (mMemoryScanner->Peek<float>(loadedTable[start]->Address, 0, &value))
 				{
-					char str[DBL_MAX_10_EXP + 2];
-					sprintf_s(str, DBL_MAX_10_EXP + 2, "%f", value);
-					loadedTable[start]->Value = str;
+					loadedTable[start]->Value = DblStr(value);
 				}
 				else
 				{
@@ -317,9 +309,7 @@ void CrySearchForm::AddressValuesUpdater()
 				float value;
 				if (mMemoryScanner->Peek<float>(CachedAddresses[start].Address, 0, &value))
 				{
-					char str[DBL_MAX_10_EXP + 2];
-					sprintf_s(str, DBL_MAX_10_EXP + 2, "%f", value);
-					CachedValues[start] = str;
+					CachedValues[start] = value;
 				}
 				else
 				{
@@ -992,7 +982,6 @@ void CrySearchForm::SearchResultDoubleClicked()
 	}
 
 	// Retrieve values from virtual columns of the ArrayCtrl.
-	const String& addr = GetAddress(cursor);
 	const String& value = GetValue(cursor);
 	
 	// The first value of the scan type is unknown, so + 1 should be the correct value.

@@ -57,7 +57,7 @@ void CryCreateExternalThreadWindow::OkButton()
 #ifdef _WIN64
 		if (mMemoryScanner->IsX86Process())
 		{
-			this->outStructDataPtr->StartAddress = Wow64GetProcAddress(mMemoryScanner->GetHandle(), dll->BaseAddress, addrField);
+			this->outStructDataPtr->StartAddress = Wow64GetProcAddress(mMemoryScanner->GetHandle(), (DWORD)dll->BaseAddress, addrField);
 		}
 		else
 		{

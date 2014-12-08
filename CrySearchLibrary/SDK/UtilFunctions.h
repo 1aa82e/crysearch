@@ -41,6 +41,7 @@ extern "C"
 	const int GetDataSizeFromValueType(CCryDataType type);
 	void AlignPointer(DWORD_PTR* Address, const DWORD Boundary);
 	const char* GetCrySearchDataTypeRepresentation(const CCryDataType type);
+	void GetOSVersionString(char* const pOutString, const DWORD maxLength);
 
 	// Retrieves information about the processor in the current system.
 	// Returns a string of supported extensions into the first parameter.

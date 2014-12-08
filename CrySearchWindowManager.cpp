@@ -2,7 +2,7 @@
 
 CrySearchWindowManager::CrySearchWindowManager()
 {
-	
+	this->mParentWindow = NULL;
 }
 
 CrySearchWindowManager::~CrySearchWindowManager()

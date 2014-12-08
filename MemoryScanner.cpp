@@ -445,7 +445,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 			{
 				const double* tempStore = (double*)&(buffer[i]);
 				
-				if ((*(ValueComparator<double>*)this->mCompareValues)(*tempStore, value))
+				if ((*reinterpret_cast<ValueComparator<double>*>(this->mCompareValues))(*tempStore, value))
 				{
 					if (!localAddresses || !localValues)
 					{
@@ -893,7 +893,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 			{
 				const T* tempStore = (T*)&(buffer[i]);
 
-				if ((*(ValueComparator<T>*)this->mCompareValues)(*tempStore, value))
+				if ((*reinterpret_cast<ValueComparator<T>*>(this->mCompareValues))(*tempStore, value))
 				{
 					if (!localAddresses || !localValues)
 					{
@@ -1082,7 +1082,7 @@ void MemoryScanner::FirstScan()
 		regionData.Length = workerListLength;
 		regionData.WorkerIdentifier = i + 1;
 		
-		threadPool & THISBACK2(FirstScanWorker<T>, this->mWorkerFileOrder.Add(regionData), ((T)((ScanParameters<T>*)GlobalScanParameter)->ScanValue));	
+		threadPool & THISBACK2(FirstScanWorker<T>, this->mWorkerFileOrder.Add(regionData), ((T)(reinterpret_cast<ScanParameters<T>*>(GlobalScanParameter))->ScanValue));	
 	}
 }
 
@@ -1539,15 +1539,15 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 					bool compareSucceeded = false;
 					if (GlobalScanParameter->GlobalScanType == SCANTYPE_CHANGED)
 					{
-						compareSucceeded = !(*(ValueComparator<T>*)this->mCompareValues)(*currentDataPtr, valuesFileBuffer[arrayIndex]);
+						compareSucceeded = !(*reinterpret_cast<ValueComparator<T>*>(this->mCompareValues))(*currentDataPtr, valuesFileBuffer[arrayIndex]);
 					}
 					else if (GlobalScanParameter->GlobalScanType >= (int)SCANTYPE_UNCHANGED)
 					{
-						compareSucceeded = (*(ValueComparator<T>*)this->mCompareValues)(*currentDataPtr, valuesFileBuffer[arrayIndex]);
+						compareSucceeded = (*reinterpret_cast<ValueComparator<T>*>(this->mCompareValues))(*currentDataPtr, valuesFileBuffer[arrayIndex]);
 					}
 					else
 					{
-						compareSucceeded = (*(ValueComparator<T>*)this->mCompareValues)(*currentDataPtr, value);
+						compareSucceeded = (*reinterpret_cast<ValueComparator<T>*>(this->mCompareValues))(*currentDataPtr, value);
 					}
 
 					if (compareSucceeded)
@@ -1693,7 +1693,7 @@ void MemoryScanner::NextScan()
 	// Start worker threads accordingly to previous scan.
 	for (int i = 0; i < this->mWorkerFileOrder.GetCount(); i++)
 	{
-		threadPool & THISBACK2(NextScanWorker<T>, this->mWorkerFileOrder[i], ((T)((ScanParameters<T>*)GlobalScanParameter)->ScanValue));
+		threadPool & THISBACK2(NextScanWorker<T>, this->mWorkerFileOrder[i], ((T)(reinterpret_cast<ScanParameters<T>*>(GlobalScanParameter))->ScanValue));
 	}
 }
 

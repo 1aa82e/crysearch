@@ -342,7 +342,7 @@ bool CryDebugger::DisableBreakpoint(const SIZE_T address)
 		
 		for (int i = 0; i < hwbp->ThreadId.GetCount(); ++i)
 		{
-			if (!BreakpointRoutine(hwbp))
+			if (!this->BreakpointRoutine(hwbp))
 			{
 				error = true;
 			}
@@ -393,7 +393,7 @@ bool CryDebugger::RemoveBreakpoint(const SIZE_T address)
 		
 		for (int i = 0; i < hwbp->ThreadId.GetCount(); ++i)
 		{
-			if (!BreakpointRoutine(hwbp))
+			if (!this->BreakpointRoutine(hwbp))
 			{
 				error = true;
 			}
@@ -412,7 +412,7 @@ bool CryDebugger::RemoveBreakpoint(const SIZE_T address)
 	}
 	
 	// Free context memory if set.
-	bp->BreakpointSnapshot.Release();
+	bp->BreakpointSnapshot.Reset();
 
 	// Remove the breakpoint from the list.
 	this->mBreakpoints.Remove(pos);
@@ -529,10 +529,14 @@ void CryDebugger::ExceptionWatch()
 			{
 				if (this->mBreakpoints.GetCount() > 0)
 				{
-					this->HandleSoftwareBreakpoint(DebugEv.dwThreadId, excAddress);
+					const int bpIndex = this->FindBreakpoint(excAddress);
+					this->HandleSoftwareBreakpoint(DebugEv.dwThreadId, bpIndex);
 					
 					// Set the line of disassembly that triggered the breakpoint.
-					this->mBreakpoints[this->FindBreakpoint(excAddress)].BreakpointSnapshot.DisassemblyAccessLine = this->GetDisasmLine(excAddress, false);
+					if (bpIndex != -1)
+					{
+						this->mBreakpoints[bpIndex].BreakpointSnapshot.DisassemblyAccessLine = this->GetDisasmLine(excAddress, false);
+					}
 				}
 			}
 			else if (DebugEv.u.Exception.ExceptionRecord.ExceptionCode == EXCEPTION_SINGLE_STEP
@@ -545,11 +549,11 @@ void CryDebugger::ExceptionWatch()
 				if (bpCount > 0)
 				{
 					DisasmLine excPrevLine = this->GetDisasmLine(excAddress, true);
-					DisasmLine excLine = this->GetDisasmLine(excAddress, false);
 					
 					// Get breakpoint at the previous instruction reflected against the current exception address.
 					int bp = this->FindBreakpoint(excPrevLine.VirtualAddress);
 					
+					DisasmLine excLine = this->GetDisasmLine(excAddress, false);
 					if (bp == -1 || bp > bpCount)
 					{
 						// If a breakpoint was not found on the previous instruction, try to find it on the current (HWBP).
@@ -602,7 +606,7 @@ void CryDebugger::ExceptionWatch()
 							{
 								// Hardware breakpoint is hit, take care of it.
 								pHwbp->PreviousInstructionAddress = excAddress;
-								this->HandleHardwareBreakpoint(DebugEv.dwThreadId, pHwbp->Address);
+								this->HandleHardwareBreakpoint(DebugEv.dwThreadId, bp);
 							}
 						}
 						else
@@ -704,18 +708,21 @@ void CryDebugger32::HideDebuggerFromPeb() const
 void CryDebugger32::CreateStackSnapshot(DbgBreakpoint* pBp, const SIZE_T pEsp)
 {
 	pBp->BreakpointSnapshot.StackView.Clear();
+	const int stackLength = this->mSettingsInstance->GetStackSnapshotLimit();
 	
-	Byte stack[1024];
-	CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), (void*)pEsp, stack, 1024, NULL);
+	Byte* stack = new Byte[stackLength];
+	CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), (void*)pEsp, stack, stackLength, NULL);
 	DWORD stackPtr = (DWORD)stack;
-	const DWORD endAddress = (DWORD)pEsp + this->mSettingsInstance->GetStackSnapshotLimit();
+	const DWORD endAddress = (DWORD)pEsp + stackLength;
 	
 	for (DWORD addr = (DWORD)pEsp; addr < endAddress; addr += sizeof(DWORD), stackPtr += sizeof(DWORD))
 	{
 		StackViewData& newEntry = pBp->BreakpointSnapshot.StackView.Add();
 		newEntry.StackAddress = addr;
 		newEntry.StackValue = *(SIZE_T*)stackPtr;
-	}	
+	}
+	
+	delete[] stack;
 }
 
 // Retrieves hardware breakpoint from instruction that accessed data that the breakpoint was set on.
@@ -968,16 +975,15 @@ void CryDebugger32::RemoveSingleStepFromBreakpoint(const DWORD threadId)
 }
 
 // Takes care of a software breakpoint the moment it is hit.
-void CryDebugger32::HandleSoftwareBreakpoint(const DWORD threadId, const SIZE_T addr)
+void CryDebugger32::HandleSoftwareBreakpoint(const DWORD threadId, const int bpIndex)
 {
-	const int bpIndex = this->FindBreakpoint(addr);
 	if (bpIndex == -1)
 	{
 		return;
 	}
-
-	DbgBreakpoint& bp = this->mBreakpoints[bpIndex];
-	++bp.HitCount;
+	
+	DbgBreakpoint& pBreakpoint = this->mBreakpoints[bpIndex];
+	++pBreakpoint.HitCount;
 	
 	// Create snapshot of registers to pass to the user interface.
 #ifdef _WIN64
@@ -1001,7 +1007,7 @@ void CryDebugger32::HandleSoftwareBreakpoint(const DWORD threadId, const SIZE_T 
 	
 	// Rewind EIP and restore original instruction.
 	SIZE_T bpAddr = --ctx.Eip;
-	CrySearchRoutines.CryWriteMemoryRoutine(mMemoryScanner->GetHandle(), (void*)bpAddr, &bp.OldInstruction, sizeof(Byte), NULL);
+	CrySearchRoutines.CryWriteMemoryRoutine(mMemoryScanner->GetHandle(), (void*)bpAddr, &pBreakpoint.OldInstruction, sizeof(Byte), NULL);
 	
 	// Flush instruction cache to effectively apply original instruction again.
 	FlushInstructionCache(mMemoryScanner->GetHandle(), (void*)bpAddr, sizeof(Byte));
@@ -1010,33 +1016,30 @@ void CryDebugger32::HandleSoftwareBreakpoint(const DWORD threadId, const SIZE_T 
 	ctx.EFlags |= EFLAGS_TRAP;
 	
 	// Free context memory if set.
-	bp.BreakpointSnapshot.Release();
+	pBreakpoint.BreakpointSnapshot.Reset();
 
 #ifdef _WIN64
 	Wow64SetThreadContext(hThread, &ctx);	
-	bp.BreakpointSnapshot.ThreadContextContainer = new CryThreadContext<WOW64_CONTEXT>();
-	memcpy(&((CryThreadContext<WOW64_CONTEXT>*)bp.BreakpointSnapshot.ThreadContextContainer)->ThreadContext, &ctx, sizeof(WOW64_CONTEXT));
+	memcpy(&pBreakpoint.BreakpointSnapshot.Wow64Context, &ctx, sizeof(WOW64_CONTEXT));
 #else
 	SetThreadContext(hThread, &ctx);
-	bp.BreakpointSnapshot.ThreadContextContainer = new CryThreadContext<CONTEXT>();
-	memcpy(&((CryThreadContext<CONTEXT>*)bp.BreakpointSnapshot.ThreadContextContainer)->ThreadContext, &ctx, sizeof(CONTEXT));
+	memcpy(&pBreakpoint.BreakpointSnapshot.Context86, &ctx, sizeof(CONTEXT));
 #endif
 	
 	CloseHandle(hThread);
 	
 	// Set hit associated data for the breakpoint.
-	this->CreateStackSnapshot(&bp, ctx.Esp);
-	this->ObtainCallStackTrace(&bp, &ctx);
-	bp.BreakpointSnapshot.RegisterFieldCount = REGISTERCOUNT_86;
+	this->CreateStackSnapshot(&pBreakpoint, ctx.Esp);
+	this->ObtainCallStackTrace(&pBreakpoint, &ctx);
+	pBreakpoint.BreakpointSnapshot.RegisterFieldCount = REGISTERCOUNT_86;
 	
 	// Send trigger to user interface.
 	this->DebuggerEvent(DBG_EVENT_BREAKPOINT_HIT, (void*)bpIndex);
 }
 
 // Takes care of a hardware breakpoint the moment it is hit.
-void CryDebugger32::HandleHardwareBreakpoint(const DWORD threadId, const SIZE_T addr)
+void CryDebugger32::HandleHardwareBreakpoint(const DWORD threadId, const int bpIndex)
 {
-	const int bpIndex = this->FindBreakpoint(addr);
 	HardwareBreakpoint& hwbp = (HardwareBreakpoint&)this->mBreakpoints[bpIndex];
 	++hwbp.HitCount;
 	
@@ -1076,20 +1079,18 @@ void CryDebugger32::HandleHardwareBreakpoint(const DWORD threadId, const SIZE_T 
 	}
 	
 	// Free context memory if set.
-	hwbp.BreakpointSnapshot.Release();
+	hwbp.BreakpointSnapshot.Reset();
 	
 #ifdef _WIN64
 	CrySetBits((DWORD_PTR*)&ctx.Dr7, hwbp.DebugRegister * 2, 1, 0);
 	ctx.ContextFlags = WOW64_CONTEXT_CONTROL | WOW64_CONTEXT_DEBUG_REGISTERS;
 	Wow64SetThreadContext(hThread, &ctx);
-	hwbp.BreakpointSnapshot.ThreadContextContainer = new CryThreadContext<WOW64_CONTEXT>();
-	memcpy(&((CryThreadContext<WOW64_CONTEXT>*)hwbp.BreakpointSnapshot.ThreadContextContainer)->ThreadContext, &ctx, sizeof(WOW64_CONTEXT));	
+	memcpy(&hwbp.BreakpointSnapshot.Wow64Context, &ctx, sizeof(WOW64_CONTEXT));	
 #else
 	CrySetBits(&ctx.Dr7, hwbp.DebugRegister * 2, 1, 0);
 	ctx.ContextFlags = CONTEXT_CONTROL | CONTEXT_DEBUG_REGISTERS;
 	SetThreadContext(hThread, &ctx);
-	hwbp.BreakpointSnapshot.ThreadContextContainer = new CryThreadContext<CONTEXT>();
-	memcpy(&((CryThreadContext<CONTEXT>*)hwbp.BreakpointSnapshot.ThreadContextContainer)->ThreadContext, &ctx, sizeof(CONTEXT));
+	memcpy(&hwbp.BreakpointSnapshot.Context86, &ctx, sizeof(CONTEXT));
 #endif
 	
 	// Set the old instruction field to 0xFF in order to indicate that this hwbp's next hit is a single step trap.
@@ -1153,18 +1154,21 @@ void CryDebugger32::HandleHardwareBreakpoint(const DWORD threadId, const SIZE_T 
 	void CryDebugger64::CreateStackSnapshot(DbgBreakpoint* pBp, const SIZE_T pEsp)
 	{
 		pBp->BreakpointSnapshot.StackView.Clear();
+		const int stackLength = this->mSettingsInstance->GetStackSnapshotLimit();
 		
-		Byte stack[1024];
-		CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), (void*)pEsp, stack, 1024, NULL);
+		Byte* stack = new Byte[stackLength];
+		CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), (void*)pEsp, stack, stackLength, NULL);
 		SIZE_T stackPtr = (SIZE_T)stack;
-		const SIZE_T endAddress = (SIZE_T)pEsp + this->mSettingsInstance->GetStackSnapshotLimit();
+		const SIZE_T endAddress = (SIZE_T)pEsp + stackLength;
 		
 		for (SIZE_T addr = (SIZE_T)pEsp; addr < endAddress; addr += sizeof(SIZE_T), stackPtr += sizeof(SIZE_T))
 		{
 			StackViewData& newEntry = pBp->BreakpointSnapshot.StackView.Add();
 			newEntry.StackAddress = addr;
 			newEntry.StackValue = *(SIZE_T*)stackPtr;
-		}	
+		}
+		
+		delete[] stack;
 	}
 	
 	// Retrieves hardware breakpoint from instruction that accessed data that the breakpoint was set on.
@@ -1227,9 +1231,8 @@ void CryDebugger32::HandleHardwareBreakpoint(const DWORD threadId, const SIZE_T 
 	}
 	
 	// Takes care of a software breakpoint the moment it is hit.
-	void CryDebugger64::HandleSoftwareBreakpoint(const DWORD threadId, const SIZE_T addr)
+	void CryDebugger64::HandleSoftwareBreakpoint(const DWORD threadId, const int bpIndex)
 	{
-		const int bpIndex = this->FindBreakpoint(addr);
 		if (bpIndex == -1)
 		{
 			return;
@@ -1265,13 +1268,12 @@ void CryDebugger32::HandleHardwareBreakpoint(const DWORD threadId, const SIZE_T 
 		CloseHandle(hThread);
 
 		// Free context memory if set.
-		bp.BreakpointSnapshot.Release();
+		bp.BreakpointSnapshot.Reset();
 
 		// Set hit associated data for the breakpoint.
 		this->CreateStackSnapshot(&bp, ctx->Rsp);
 		this->ObtainCallStackTrace(&bp, ctx);
-		bp.BreakpointSnapshot.ThreadContextContainer = new CryThreadContext<CONTEXT>();
-		memcpy(&((CryThreadContext<CONTEXT>*)bp.BreakpointSnapshot.ThreadContextContainer)->ThreadContext, ctx, sizeof(CONTEXT));
+		memcpy(&bp.BreakpointSnapshot.Context64, ctx, sizeof(CONTEXT));
 		bp.BreakpointSnapshot.RegisterFieldCount = REGISTERCOUNT_64;
 		
 		VirtualFree(ctxBase, 0, MEM_RELEASE);
@@ -1281,9 +1283,8 @@ void CryDebugger32::HandleHardwareBreakpoint(const DWORD threadId, const SIZE_T 
 	}
 	
 	// Takes care of a hardware breakpoint the moment it is hit.
-	void CryDebugger64::HandleHardwareBreakpoint(const DWORD threadId, const SIZE_T addr)
+	void CryDebugger64::HandleHardwareBreakpoint(const DWORD threadId, const int bpIndex)
 	{
-		const int bpIndex = this->FindBreakpoint(addr);
 		HardwareBreakpoint& hwbp = (HardwareBreakpoint&)this->mBreakpoints[bpIndex];
 		++hwbp.HitCount;
 		
@@ -1326,13 +1327,12 @@ void CryDebugger32::HandleHardwareBreakpoint(const DWORD threadId, const SIZE_T 
 		hwbp.ProcessorTrapFlag = 0xFF;
 		
 		// Free context memory if set.
-		hwbp.BreakpointSnapshot.Release();
+		hwbp.BreakpointSnapshot.Reset();
 		
 		// Set hit associated data for the breakpoint.
 		this->CreateStackSnapshot(&hwbp, ctx->Rsp);
 		this->ObtainCallStackTrace(&hwbp, ctx);
-		hwbp.BreakpointSnapshot.ThreadContextContainer = new CryThreadContext<CONTEXT>();
-		memcpy(&((CryThreadContext<CONTEXT>*)hwbp.BreakpointSnapshot.ThreadContextContainer)->ThreadContext, ctx, sizeof(CONTEXT));
+		memcpy(&hwbp.BreakpointSnapshot.Context64, ctx, sizeof(CONTEXT));
 		hwbp.BreakpointSnapshot.RegisterFieldCount = REGISTERCOUNT_64;
 		
 		// Free used resources.
@@ -1433,7 +1433,7 @@ void CryDebugger32::HandleHardwareBreakpoint(const DWORD threadId, const SIZE_T 
 			
 			CrySetBits((DWORD_PTR*)&ctx->Dr7, pHwbp->DebugRegister * 2, 1, 0);
 			pHwbp->DebugRegister = 0;
-		}	    
+		}
 		
 		ctx->Dr6 = 0;
 		

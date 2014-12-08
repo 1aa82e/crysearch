@@ -73,7 +73,7 @@ void CryMemoryDissectionNewWindow::OkButtonClicked()
 	const SIZE_T newptr = (SIZE_T)ScanInt(addrField, NULL, 16);
 #endif
 	
-	const DWORD sizeParam = (DWORD)StrInt(sizeField);
+	const int sizeParam = StrInt(sizeField);
 	
 	// If a bogus address was entered, the creation should be cancelled.
 	if (newptr == 0x80000000)

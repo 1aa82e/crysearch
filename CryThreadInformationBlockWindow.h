@@ -10,6 +10,7 @@ class CryThreadInformationBlockWindow : public CryDialogTemplate
 private:
 	Label mThreadWindowDescription;
 	CrySearchArrayCtrl mThreadInfo;
+	Label mThreadIsHiddenFromDebugger;
 	Button mOk;
 	
 	void DialogClose();

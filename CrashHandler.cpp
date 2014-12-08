@@ -1,4 +1,5 @@
 #include "CrashHandler.h"
+#include "FrontendGlobalDef.h"
 #include "BackendGlobalDef.h"
 
 #include <VerRsrc.h>
@@ -12,7 +13,7 @@ CryCrashHandlerWindow::CryCrashHandlerWindow(const String& excMsg)
 	
 	*this
 		<< this->mErrorImage.SetImage(CtrlImg::error()).LeftPos(10, 50).TopPos(10, 50)
-		<< this->mDescriptionLabel.SetLabel("An error has occured inside CrySearch. The information\r\nin this crash report can be used to inform the developer\r\nabout a bug or malfunction.").HSizePos(60, 5).TopPos(10, 60)
+		<< this->mDescriptionLabel.SetLabel("An error has occured inside CrySearch. The information\r\nin this crash report can be used to inform the developer\r\nabout a bug or malfunction.").HSizePos(70, 5).TopPos(10, 60)
 		<< this->mCrashReport.SetEditable(false).HSizePos(5, 5).VSizePos(70, 35)
 		<< this->mOk.Ok().SetLabel("OK").RightPos(5, 60).BottomPos(5, 25)
 		<< this->mCopyToClipboard.SetLabel("Copy to Clipboard").RightPos(70, 125).BottomPos(5, 25)
@@ -45,108 +46,6 @@ void CryCrashHandlerWindow::CloseWindow()
 
 // ---------------------------------------------------------------------------------------------
 
-// Retrieves information about the operating system for a crash report.
-String GetOSVersionString()
-{
-	// Retrieve OS information.
-	OSVERSIONINFOEX osv;
-	osv.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
-	GetVersionEx((OSVERSIONINFO*)&osv);
-	
-	String verReturn = "System Information:\r\n\r\nOS Version:\t\t\t";
-	
-	// Parse version numbers into a version string for the crash report.
-	if (osv.dwMajorVersion == 6)
-	{
-		if (osv.dwMinorVersion == 3)
-		{
-			if (osv.wProductType == VER_NT_WORKSTATION)
-			{
-				verReturn += "Windows 8.1";
-			}
-			else
-			{
-				verReturn += "Windows Server 2012 R2";
-			}
-		}
-		else if (osv.dwMinorVersion == 2)
-		{
-			if (osv.wProductType == VER_NT_WORKSTATION)
-			{
-				verReturn += "Windows 8";
-			}
-			else
-			{
-				verReturn += "Windows Server 2012";
-			}
-		}
-		else if (osv.dwMinorVersion == 1)
-		{
-			if (osv.wProductType == VER_NT_WORKSTATION)
-			{
-				verReturn += "Windows 7";
-			}
-			else
-			{
-				verReturn += "Windows Server 2008 R2";
-			}			
-		}
-		else if (osv.dwMinorVersion == 0)
-		{
-			if (osv.wProductType == VER_NT_WORKSTATION)
-			{
-				verReturn += "Windows Vista";
-			}
-			else
-			{
-				verReturn += "Windows Server 2008";
-			}			
-		}
-	}
-	else if (osv.dwMajorVersion == 5)
-	{
-		if (osv.dwMinorVersion == 2)
-		{
-			if (GetSystemMetrics(SM_SERVERR2) == 0)
-			{
-				verReturn += "Windows Server 2003";
-			}
-			else
-			{
-				verReturn += "Windows Server 2003 R2";
-			}
-		}
-		else if (osv.dwMinorVersion == 1)
-		{
-			verReturn += "Windows XP";
-		}
-	}
-	
-	// Add the OS architecture to the crash report.
-	SYSTEM_INFO sysInfo;
-	GetNativeSystemInfo(&sysInfo);
-	verReturn += "\r\nArchitecture:\t\t";
-	verReturn += sysInfo.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_INTEL ? "x86" : "x64";
-	
-	// Add CrySearch architecture definition.
-#ifdef _WIN64
-	verReturn += "\r\nCrySearch:\t\t\t";
-	if (IsI386Process(GetCurrentProcess()))
-	{
-		verReturn += "x86";
-	}
-	else
-	{
-		verReturn += "x64";
-	}
-#else
-	verReturn += "\r\nCrySearch:\t\t\tx86";
-#endif
-	
-	verReturn += "\r\n";
-	return verReturn;
-}
-
 // Handles exceptions that are not caught just before the application crashes.
 LONG __stdcall CrashHandler(PEXCEPTION_POINTERS ExceptionInfo)
 {
@@ -156,7 +55,9 @@ LONG __stdcall CrashHandler(PEXCEPTION_POINTERS ExceptionInfo)
 	const LONG_PTR addr = exc->ExceptionInformation[1];
 	
 	// Start off with the crash report string.
-	String excMsg = GetOSVersionString();
+	char versionString[256];
+	GetOSVersionString(versionString, 256);
+	String excMsg(versionString);
 	excMsg += "\r\n\r\nException Information:\r\n\r\n";
 	
 	// Access violations are the most common and should be handled as detailedly as possible.

@@ -42,8 +42,6 @@ enum ArchitectureDefinitions
 	ARCH_X64 = 64
 };
 
-__declspec(noinline) String BytesToString(const Byte* const buffer, const unsigned int length);
-
 // Represents a line of disassembly in CrySearch, containing the following data:
 // VirtualAddress:				The virtual address of the instruction set on the line;
 // LengthInBytes:				The amount of bytes the instruction line contains;

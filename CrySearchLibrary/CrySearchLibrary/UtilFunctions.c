@@ -161,3 +161,101 @@ const char* GetCrySearchDataTypeRepresentation(const CCryDataType type)
 	// The data type could not be resolved.
 	return NULL;
 }
+
+// Retrieves information about the operating system for a crash report.
+void GetOSVersionString(char* const pOutString, const DWORD maxLength)
+{
+	// Retrieve OS information.
+	OSVERSIONINFOEX osv;
+	SYSTEM_INFO sysInfo;
+	const WORD lastPart = 0x0A0D;
+
+	// Copy the first part of the string into the output buffer.
+	strcpy_s(pOutString, maxLength, "System Information:\r\n\r\nOS Version:\t\t\t");
+
+	// Retrieve version of Windows.
+	osv.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
+	GetVersionEx((OSVERSIONINFO*)&osv);
+
+	// Parse version numbers into a version string for the crash report.
+	if (osv.dwMajorVersion == 6)
+	{
+		if (osv.dwMinorVersion == 3)
+		{
+			if (osv.wProductType == VER_NT_WORKSTATION)
+			{
+				strcat_s(pOutString, maxLength, "Windows 8.1");
+			}
+			else
+			{
+				strcat_s(pOutString, maxLength, "Windows Server 2012 R2");
+			}
+		}
+		else if (osv.dwMinorVersion == 2)
+		{
+			if (osv.wProductType == VER_NT_WORKSTATION)
+			{
+				strcat_s(pOutString, maxLength, "Windows 8");
+			}
+			else
+			{
+				strcat_s(pOutString, maxLength, "Windows Server 2012");
+			}
+		}
+		else if (osv.dwMinorVersion == 1)
+		{
+			if (osv.wProductType == VER_NT_WORKSTATION)
+			{
+				strcat_s(pOutString, maxLength, "Windows 7");
+			}
+			else
+			{
+				strcat_s(pOutString, maxLength, "Windows Server 2008 R2");
+			}
+		}
+		else if (osv.dwMinorVersion == 0)
+		{
+			if (osv.wProductType == VER_NT_WORKSTATION)
+			{
+				strcat_s(pOutString, maxLength, "Windows Vista");
+			}
+			else
+			{
+				strcat_s(pOutString, maxLength, "Windows Server 2008");
+			}
+		}
+	}
+	else if (osv.dwMajorVersion == 5)
+	{
+		if (osv.dwMinorVersion == 2)
+		{
+			if (GetSystemMetrics(SM_SERVERR2) == 0)
+			{
+				strcat_s(pOutString, maxLength, "Windows Server 2003");
+			}
+			else
+			{
+				strcat_s(pOutString, maxLength, "Windows Server 2003 R2");
+			}
+		}
+		else if (osv.dwMinorVersion == 1)
+		{
+			strcat_s(pOutString, maxLength, "Windows XP");
+		}
+	}
+
+	// Add the OS architecture to the crash report.
+	GetNativeSystemInfo(&sysInfo);
+	strcat_s(pOutString, maxLength, "\r\nArchitecture:\t\t");
+	strcat_s(pOutString, maxLength, sysInfo.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_INTEL ? "x86" : "x64");
+
+	// Add CrySearch architecture definition.
+	strcat_s(pOutString, maxLength, "\r\nCrySearch:\t\t\t");
+#ifdef _WIN64
+	strcat_s(pOutString, maxLength, "x64");
+#else
+	strcat_s(pOutString, maxLength, "x86");
+#endif
+	
+	strcat_s(pOutString, maxLength, (char*)&lastPart);
+}
