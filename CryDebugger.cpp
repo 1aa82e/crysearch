@@ -77,9 +77,19 @@ extern Vector<DisasmLine> DisasmVisibleLines;
 
 // ---------------------------------------------------------------------------------------------
 
+enum CryDebuggerEventProcessingState
+{
+	NO_EVENT,
+	WAITING_FOR_EVENT,
+	PROCESSING_COMPLETED
+};
+
+// ---------------------------------------------------------------------------------------------
+
 // Debugger default constructor.
 CryDebugger::CryDebugger()
 {
+	this->mDebuggerEventLockVariable = NO_EVENT;
 	this->mSettingsInstance = SettingsFile::GetInstance();
 	HANDLE loc = mMemoryScanner->GetHandle();
 	
@@ -164,22 +174,28 @@ const int CryDebugger::GetBreakpointCount() const
 	return this->mBreakpoints.GetCount();
 }
 
+// Returns a reference to the internal debugger lock for breakpoint events.
+void CryDebugger::SetDebuggerEventLockProcessed()
+{
+	_InterlockedCompareExchange(&this->mDebuggerEventLockVariable, PROCESSING_COMPLETED, WAITING_FOR_EVENT);
+}
+
 // The debugger's thread that runs until it is detached. This function is also called to
 // create new processes. If this is not the case, the parameters are ignored.
 void CryDebugger::DbgThread()
 {
 	// Attempt to attach the newly created thread as debugger to the process.
 	this->mAttached = !!DebugActiveProcess(mMemoryScanner->GetProcessId());
-		
+	
 	if (!this->mAttached)
 	{
 		// The debugger could not be attached, throw error.
-		this->DebuggerEvent(DBG_EVENT_ATTACH_ERROR, NULL);
+		this->DebuggerEventOccured(DBG_EVENT_ATTACH_ERROR, NULL);
 		return;
 	}
 		
 	// Debugger was succesfully attached.
-	this->DebuggerEvent(DBG_EVENT_ATTACH, NULL);
+	this->DebuggerEventOccured(DBG_EVENT_ATTACH, NULL);
 	
 	// If the hide setting is enabled, execute PEB writing to hide debugger from process.
 	if (this->mSettingsInstance->GetAttemptHideDebuggerFromPeb())
@@ -191,101 +207,84 @@ void CryDebugger::DbgThread()
 	this->ExceptionWatch();
 }
 
-// Starts the debugger on a seperate thread at the specified process handle and process ID.
-void CryDebugger::Start()
+// Processes internal action requests, executes appropriate function.
+void CryDebugger::DispatchAction(const CryDebuggerAction action, const void* params)
 {
-	this->isDetaching = false;
-	this->shouldBreakLoop = false;
+	switch (action)
+	{
+		case ACTION_SET_BREAKPOINT:
+			this->SetBreakpointInternal(*(SIZE_T*)params);
+			break;
+		case ACTION_SET_HARDWARE_BREAKPOINT:
+			this->SetHardwareBreakpointInternal((HardwareBreakpointParameters*)params);
+			break;
+		case ACTION_DISABLE_BREAKPOINT:
+			this->DisableBreakpointInternal(*(SIZE_T*)params);
+			break;
+		case ACTION_REMOVE_BREAKPOINT:
+			this->RemoveBreakpointInternal(*(SIZE_T*)params);
+			break;
+	}
 	
-	// The compiler complains about the type casts. I don't know why but with casting it works.
-	this->dbgThread.Run(THISBACK(DbgThread));
+	// Delete the parameter data, if any.
+	if (params)
+	{
+		delete params;
+	}
 }
 
-// Stops the debugger at the specified handle and process ID, clearing all breakpoints.
-void CryDebugger::Stop()
-{
-	// remove all breakpoints before detaching from the process.
-	this->ClearBreakpoints();
-	this->shouldBreakLoop = true;
-	
-	// The finalization sequence of the debugger must wait for the debugger loop to close.
-	this->dbgThread.Wait();
-
-	this->DebuggerEvent(DBG_EVENT_DETACH, NULL);
-}
-
-// Set a hardware breakpoint on a series of threads.
-// Returns true if hardware breakpoint was succesfully set or already set and false if invalid input was detected.
-bool CryDebugger::SetHardwareBreakpoint(const Vector<Win32ThreadInformation>& threads, const SIZE_T address, const HWBP_SIZE size, const HWBP_TYPE type)
+// Internally processes set hardware breakpoint request.
+bool CryDebugger::SetHardwareBreakpointInternal(const HardwareBreakpointParameters* pParams)
 {
 	// Inmediately return if no threads are specified or the address is invalid.
-	if (!threads.GetCount() || !address)
+	if (!pParams->BpThreads.GetCount() || !pParams->Address)
 	{
 		return false;
 	}
 	
 	bool error = false;
-	const int count = threads.GetCount();
+	
+	// If a breakpoint already exists on this address, return true.
+	if (this->FindBreakpoint(pParams->Address) >= 0)
+	{
+		return true;
+	}
+	
+	// Create breakpoint in local collection for administration.
+	HardwareBreakpoint& hwbp = (HardwareBreakpoint&)this->mBreakpoints.Add(new HardwareBreakpoint());
+	hwbp.BpType = BPTYPE_HARDWARE;
+	hwbp.HitCount = 0;
+	hwbp.Address = pParams->Address;
+	hwbp.Size = pParams->Size;
+	hwbp.Type = pParams->Type;
+	hwbp.MustSet = true;
+	hwbp.PreviousInstructionAddress = 0;
+	hwbp.Disabled = FALSE;
+	
+	// Set old instruction to 0 to indicate that it is a hardware breakpoint.
+	hwbp.OldInstruction = 0;
+	
+	const int count = pParams->BpThreads.GetCount();
 	for (int i = 0; i < count; ++i)
 	{
-		const int threadId = threads[i].ThreadIdentifier;
-		
-		// If the hardware breakpoint was already set on this thread, return true.
-		const int bpIndex = this->FindBreakpoint(address);
-		if (bpIndex >= 0)
-		{
-			DbgBreakpoint* const hwbp = &this->mBreakpoints[bpIndex];
-			if (hwbp->BpType == BPTYPE_HARDWARE)
-			{
-				HardwareBreakpoint* const castedHwbp = static_cast<HardwareBreakpoint*>(hwbp);
-				if (castedHwbp->IsSet(threadId))
-				{
-					// The breakpoint was already set on this thread.
-					continue;
-				}
-				else
-				{
-					// Add this thread to the list associated to the breakpoint.
-					castedHwbp->ThreadId.Add(threadId);
-					if (!BreakpointRoutine(castedHwbp))
-					{
-						error = true;
-					}
-					
-					this->DebuggerEvent(DBG_EVENT_BREAKPOINTS_CHANGED, NULL);
-					continue;
-				}
-			}
-		}
-	
-		// Create breakpoint in local collection for administration.
-		HardwareBreakpoint& hwbp = (HardwareBreakpoint&)this->mBreakpoints.Add(new HardwareBreakpoint());
-		hwbp.BpType = BPTYPE_HARDWARE;
+		const int threadId = pParams->BpThreads[i].ThreadIdentifier;
 		hwbp.ThreadId.Add(threadId);
-		hwbp.HitCount = 0;
-		hwbp.Address = address;
-		hwbp.Size = size;
-		hwbp.Type = type;
-		hwbp.MustSet = true;
-		hwbp.PreviousInstructionAddress = 0;
-		hwbp.Disabled = FALSE;
-		
-		// Set old instruction to 0 to indicate that it is a hardware breakpoint.
-		hwbp.OldInstruction = 0;
 		
 		// Set breakpoint into thread.
-		if (!BreakpointRoutine(&hwbp))
+		if (!this->BreakpointRoutine(&hwbp, threadId))
 		{
 			error = true;
 		}
 	}
 	
-	this->DebuggerEvent(DBG_EVENT_BREAKPOINTS_CHANGED, NULL);
+	// Send event to user interface about the breakpoints being changed and flag debugger loop for continuation.
+	this->DebuggerEventOccured(DBG_EVENT_BREAKPOINTS_CHANGED, NULL);
+	
 	return !error;
 }
 
-// Set a regular software breakpoint on an address containing executable code.
-bool CryDebugger::SetBreakpoint(const SIZE_T address)
+// Internally processes set breakpoint request.
+bool CryDebugger::SetBreakpointInternal(const SIZE_T address)
 {
 	// Check whether there already is a breakpoint set on this address.
 	if (this->FindBreakpoint(address) >= 0)
@@ -315,14 +314,14 @@ bool CryDebugger::SetBreakpoint(const SIZE_T address)
 	// Flush instruction cache to apply instruction to executable code.
 	FlushInstructionCache(mMemoryScanner->GetHandle(), (void*)address, sizeof(Byte));
 	
-	// Add breakpoint to local breakpoint list and signal user interface.
-	this->DebuggerEvent(DBG_EVENT_BREAKPOINTS_CHANGED, NULL);
+	// Send event to user interface about the breakpoints being changed and flag debugger loop for continuation.
+	this->DebuggerEventOccured(DBG_EVENT_BREAKPOINTS_CHANGED, NULL);
 	
 	return true;
 }
 
-// Disable a breakpoint set in the process.
-bool CryDebugger::DisableBreakpoint(const SIZE_T address)
+// Internally processes disable breakpoint request.
+bool CryDebugger::DisableBreakpointInternal(const SIZE_T address)
 {
 	bool error = false;
 	
@@ -340,9 +339,10 @@ bool CryDebugger::DisableBreakpoint(const SIZE_T address)
 		HardwareBreakpoint* const hwbp = static_cast<HardwareBreakpoint*>(bp);
 		hwbp->MustSet = false;
 		
-		for (int i = 0; i < hwbp->ThreadId.GetCount(); ++i)
+		const int tCount = hwbp->ThreadId.GetCount();
+		for (int i = 0; i < tCount; ++i)
 		{
-			if (!this->BreakpointRoutine(hwbp))
+			if (!this->BreakpointRoutine(hwbp, hwbp->ThreadId[i]))
 			{
 				error = true;
 			}
@@ -366,14 +366,14 @@ bool CryDebugger::DisableBreakpoint(const SIZE_T address)
 	// Only trigger the UI events in case the removal is just a single breakpoint. If the debugger is cleaning up before detaching, nothing has to be done.
 	if (!isDetaching)
 	{
-		this->DebuggerEvent(DBG_EVENT_BREAKPOINTS_CHANGED, NULL);
+		this->DebuggerEventOccured(DBG_EVENT_BREAKPOINTS_CHANGED, NULL);
 	}
 
 	return !error;
 }
 
-// Remove a breakpoint from the process.
-bool CryDebugger::RemoveBreakpoint(const SIZE_T address)
+// Internally processes remove breakpoint request.
+bool CryDebugger::RemoveBreakpointInternal(const SIZE_T address)
 {
 	bool error = false;
 	
@@ -391,9 +391,10 @@ bool CryDebugger::RemoveBreakpoint(const SIZE_T address)
 		HardwareBreakpoint* const hwbp = static_cast<HardwareBreakpoint*>(bp);
 		hwbp->MustSet = false;
 		
-		for (int i = 0; i < hwbp->ThreadId.GetCount(); ++i)
+		const int tCount = hwbp->ThreadId.GetCount();
+		for (int i = 0; i < tCount; ++i)
 		{
-			if (!this->BreakpointRoutine(hwbp))
+			if (!this->BreakpointRoutine(hwbp, hwbp->ThreadId[i]))
 			{
 				error = true;
 			}
@@ -410,9 +411,6 @@ bool CryDebugger::RemoveBreakpoint(const SIZE_T address)
 		// Flush instruction cache to apply instruction to executable code.
 		FlushInstructionCache(mMemoryScanner->GetHandle(), (void*)address, sizeof(Byte));
 	}
-	
-	// Free context memory if set.
-	bp->BreakpointSnapshot.Reset();
 
 	// Remove the breakpoint from the list.
 	this->mBreakpoints.Remove(pos);
@@ -420,10 +418,88 @@ bool CryDebugger::RemoveBreakpoint(const SIZE_T address)
 	// Only trigger the UI events in case the removal is just a single breakpoint. If the debugger is cleaning up before detaching, nothing has to be done.
 	if (!isDetaching)
 	{
-		this->DebuggerEvent(DBG_EVENT_BREAKPOINTS_CHANGED, NULL);
+		this->DebuggerEventOccured(DBG_EVENT_BREAKPOINTS_CHANGED, NULL);
 	}
+	
+	return !error;	
+}
 
-	return !error;
+// Starts the debugger on a seperate thread at the specified process handle and process ID.
+void CryDebugger::Start()
+{
+	this->isDetaching = false;
+	this->shouldBreakLoop = false;
+	this->mDebuggerEventLockVariable = NO_EVENT;
+	
+	// The compiler complains about the type casts. I don't know why but with casting it works.
+	this->dbgThread.Run(THISBACK(DbgThread));
+}
+
+// Stops the debugger at the specified handle and process ID, clearing all breakpoints.
+void CryDebugger::Stop()
+{
+	// remove all breakpoints before detaching from the process.
+	this->ClearBreakpoints();
+	this->shouldBreakLoop = true;
+	
+	// The finalization sequence of the debugger must wait for the debugger loop to close.
+	this->dbgThread.Wait();
+	
+	// Alert the user interface that the debugger has detached.
+	this->DebuggerEventOccured(DBG_EVENT_DETACH, NULL);
+}
+
+// Set a hardware breakpoint on a series of threads.
+void CryDebugger::SetHardwareBreakpoint(const Vector<Win32ThreadInformation>& threads, const SIZE_T address, const HWBP_SIZE size, const HWBP_TYPE type)
+{
+	// Create parameters for a new hardware breakpoint.
+	HardwareBreakpointParameters* hwbpParams = new HardwareBreakpointParameters;
+	hwbpParams->Address = address;
+	hwbpParams->BpThreads.Append(threads);
+	hwbpParams->Size = size;
+	hwbpParams->Type = type;
+	
+	// Queue the action with the hardware breakpoint parameters to be set and wait for it to be executed.
+	CryDebuggerInternalRequestData data;
+	data.Action = ACTION_SET_HARDWARE_BREAKPOINT;
+	data.ParameterData = hwbpParams;
+	this->mDebuggerActionQueue.AddTail(data);
+}
+
+// Set a regular software breakpoint on an address containing executable code.
+void CryDebugger::SetBreakpoint(const SIZE_T address)
+{	
+	// Queue the action with the breakpoint address to be set and wait for it to be executed.
+	CryDebuggerInternalRequestData data;
+	data.Action = ACTION_SET_BREAKPOINT;
+	SIZE_T* pAddr = new SIZE_T;
+	*pAddr = address;
+	data.ParameterData = pAddr;
+	this->mDebuggerActionQueue.AddTail(data);	
+}
+
+// Disable a breakpoint set in the process.
+void CryDebugger::DisableBreakpoint(const SIZE_T address)
+{
+	// Queue the action with the breakpoint to be disabled and wait for it to be executed.
+	CryDebuggerInternalRequestData data;
+	data.Action = ACTION_DISABLE_BREAKPOINT;
+	SIZE_T* pAddr = new SIZE_T;
+	*pAddr = address;
+	data.ParameterData = pAddr;
+	this->mDebuggerActionQueue.AddTail(data);	
+}
+
+// Remove a breakpoint from the process.
+void CryDebugger::RemoveBreakpoint(const SIZE_T address)
+{
+	// Queue the action with the breakpoint to be removed and wait for it to be executed.
+	CryDebuggerInternalRequestData data;
+	data.Action = ACTION_REMOVE_BREAKPOINT;
+	SIZE_T* pAddr = new SIZE_T;
+	*pAddr = address;
+	data.ParameterData = pAddr;
+	this->mDebuggerActionQueue.AddTail(data);
 }
 
 // Checks whether a software breakpoint already exists. Hardware breakpoints are different, because they can be on the same address but for multiple threads.
@@ -482,7 +558,7 @@ void CryDebugger::HandleMiscellaneousExceptions(const SIZE_T address, const LONG
 	param->ExceptionCode = excCode;
 	
 	// Execute debugger event in user interface.
-	this->DebuggerEvent(DBG_EVENT_UNCAUGHT_EXCEPTION, param);
+	this->DebuggerEventOccured(DBG_EVENT_UNCAUGHT_EXCEPTION, param);
 	
 	// Wait for the user to response to the exception message.
 	param->UserResponse = EXCEPTION_RESPONSE_NONE;
@@ -512,8 +588,25 @@ void CryDebugger::ExceptionWatch()
 	
 	while (1)
 	{
-		// Check for a debug event. 250 ms because I need to be able to close the loop.
-		WaitForDebugEvent(&DebugEv, 250);
+		// Check if the previously dispatched output debugger event has finished processing.
+		while (_InterlockedCompareExchange(&this->mDebuggerEventLockVariable, NO_EVENT, PROCESSING_COMPLETED) == WAITING_FOR_EVENT)
+		{
+			Sleep(10);
+		}
+		
+		// Check whether there are actions to be executed before continueing the loop.
+		while (this->mDebuggerActionQueue.GetCount() > 0)
+		{
+			// Execute the requested operation.
+			const CryDebuggerInternalRequestData& req = this->mDebuggerActionQueue.Head();
+			this->DispatchAction(req.Action, req.ParameterData);
+
+			// Remove the request from the queue.
+			this->mDebuggerActionQueue.DropHead();
+		}
+		
+		// Check for a debug event. 100 ms because I need to be able to close the loop.
+		WaitForDebugEvent(&DebugEv, 100);
 		
 		// Debug event occured, see which one and act appropriately.
 		if (DebugEv.dwDebugEventCode == EXCEPTION_DEBUG_EVENT)
@@ -566,7 +659,7 @@ void CryDebugger::ExceptionWatch()
 							this->mBreakpoints[bp].BreakpointSnapshot.DisassemblyAccessLine = excLine;	
 						}
 					}
-
+					
 					if (bp == -1 || bp > bpCount)
 					{
 						// Breakpoint was not found on current address as HWBP, so it may be a data breakpoint.
@@ -593,12 +686,11 @@ void CryDebugger::ExceptionWatch()
 						if (this->mBreakpoints[bp].BpType == BPTYPE_HARDWARE)
 						{
 							HardwareBreakpoint* const pHwbp = static_cast<HardwareBreakpoint*>(&this->mBreakpoints[bp]);
-
 							if (this->mBreakpoints[bp].ProcessorTrapFlag == 0xFF)
 							{
 								// Reset trap flag and reinstate breakpoint to resume execution safely.
 								this->RemoveSingleStepFromBreakpoint(DebugEv.dwThreadId);
-								this->BreakpointRoutine(pHwbp);
+								this->BreakpointRoutine(pHwbp, DebugEv.dwThreadId);
 								pHwbp->ProcessorTrapFlag = 0;
 								pHwbp->PreviousInstructionAddress = 0;
 							}
@@ -648,13 +740,14 @@ void CryDebugger::ExceptionWatch()
 		// If the loop should break, quit it.
 		if (this->shouldBreakLoop)
 		{
+			// Attempt detaching of the debugger with the designated api call.
 			if (this->mAttached = !DebugActiveProcessStop(mMemoryScanner->GetProcessId()))
 			{
-				this->DebuggerEvent(DBG_EVENT_DETACH_ERROR, NULL);
+				this->DebuggerEventOccured(DBG_EVENT_DETACH_ERROR, NULL);
 			}
 			else
 			{
-				this->DebuggerEvent(DBG_EVENT_DETACH, NULL);
+				this->DebuggerEventOccured(DBG_EVENT_DETACH, NULL);
 			}
 			
 			break;
@@ -779,9 +872,9 @@ void CryDebugger32::ObtainCallStackTrace(DbgBreakpoint* pBp, void* const ctx)
 }
 
 // Hardware breakpoint routine
-bool CryDebugger32::BreakpointRoutine(HardwareBreakpoint* pHwbp) const
+bool CryDebugger32::BreakpointRoutine(HardwareBreakpoint* pHwbp, const DWORD threadId) const
 {
-	HANDLE hThread = OpenThread(THREAD_GET_CONTEXT | THREAD_SET_CONTEXT | THREAD_SUSPEND_RESUME, FALSE, pHwbp->ThreadId[pHwbp->ThreadId.GetCount() - 1]);
+	HANDLE hThread = OpenThread(THREAD_GET_CONTEXT | THREAD_SET_CONTEXT | THREAD_SUSPEND_RESUME, FALSE, threadId);
 	
 #ifdef _WIN64
 	// Suspend thread in which to set breakpoint.
@@ -1033,8 +1126,9 @@ void CryDebugger32::HandleSoftwareBreakpoint(const DWORD threadId, const int bpI
 	this->ObtainCallStackTrace(&pBreakpoint, &ctx);
 	pBreakpoint.BreakpointSnapshot.RegisterFieldCount = REGISTERCOUNT_86;
 	
-	// Send trigger to user interface.
-	this->DebuggerEvent(DBG_EVENT_BREAKPOINT_HIT, (void*)bpIndex);
+	// Send trigger to user interface and wait for the event to complete.
+	this->DebuggerEventOccured(DBG_EVENT_BREAKPOINT_HIT, (void*)bpIndex);
+	_InterlockedCompareExchange(&this->mDebuggerEventLockVariable, WAITING_FOR_EVENT, NO_EVENT);
 }
 
 // Takes care of a hardware breakpoint the moment it is hit.
@@ -1103,8 +1197,9 @@ void CryDebugger32::HandleHardwareBreakpoint(const DWORD threadId, const int bpI
 	this->ObtainCallStackTrace(&hwbp, &ctx);
 	hwbp.BreakpointSnapshot.RegisterFieldCount = REGISTERCOUNT_86;
 	
-	// Send trigger to user interface.
-	this->DebuggerEvent(DBG_EVENT_BREAKPOINT_HIT, (void*)bpIndex);
+	// Send trigger to user interface and wait for the event to complete.
+	this->DebuggerEventOccured(DBG_EVENT_BREAKPOINT_HIT, (void*)bpIndex);
+	_InterlockedCompareExchange(&this->mDebuggerEventLockVariable, WAITING_FOR_EVENT, NO_EVENT);
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -1278,8 +1373,9 @@ void CryDebugger32::HandleHardwareBreakpoint(const DWORD threadId, const int bpI
 		
 		VirtualFree(ctxBase, 0, MEM_RELEASE);
 			
-		// Send trigger to user interface.
-		this->DebuggerEvent(DBG_EVENT_BREAKPOINT_HIT, (void*)bpIndex);
+		// Send trigger to user interface and wait for the event to complete.
+		this->DebuggerEventOccured(DBG_EVENT_BREAKPOINT_HIT, (void*)bpIndex);
+		_InterlockedCompareExchange(&this->mDebuggerEventLockVariable, WAITING_FOR_EVENT, NO_EVENT);
 	}
 	
 	// Takes care of a hardware breakpoint the moment it is hit.
@@ -1339,14 +1435,15 @@ void CryDebugger32::HandleHardwareBreakpoint(const DWORD threadId, const int bpI
 		CloseHandle(hThread);
 		VirtualFree(ctxBase, 0, MEM_RELEASE);
 		
-		// Send trigger to user interface.
-		this->DebuggerEvent(DBG_EVENT_BREAKPOINT_HIT, (void*)bpIndex);
+		// Send trigger to user interface and wait for the event to complete.
+		this->DebuggerEventOccured(DBG_EVENT_BREAKPOINT_HIT, (void*)bpIndex);
+		_InterlockedCompareExchange(&this->mDebuggerEventLockVariable, WAITING_FOR_EVENT, NO_EVENT);
 	}
 	
 	// Hardware breakpoint routine
-	bool CryDebugger64::BreakpointRoutine(HardwareBreakpoint* pHwbp) const
+	bool CryDebugger64::BreakpointRoutine(HardwareBreakpoint* pHwbp, const DWORD threadId) const
 	{
-		HANDLE hThread = OpenThread(THREAD_GET_CONTEXT | THREAD_SET_CONTEXT | THREAD_SUSPEND_RESUME, FALSE, pHwbp->ThreadId[pHwbp->ThreadId.GetCount() - 1]);
+		HANDLE hThread = OpenThread(THREAD_GET_CONTEXT | THREAD_SET_CONTEXT | THREAD_SUSPEND_RESUME, FALSE, threadId);
 		
 		// Prepare thread context struct and retrieve thread context into it.
 		if (!pHwbp->ProcessorTrapFlag && SuspendThread(hThread) == (DWORD)-1)

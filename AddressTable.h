@@ -203,7 +203,6 @@ public:
 	
 	static void ResolveRelativeEntries(AddressTable& at);
 	static void CreateAddressTableFromFile(AddressTable& at, const String& filename);
-	//static bool CreateAddressTableFromCheatEngineFile(AddressTable& at, const String& filename);
 	static void SaveAddressTableToFile(AddressTable& pTable, const String& filename);
 };
 

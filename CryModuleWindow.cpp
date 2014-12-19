@@ -236,6 +236,7 @@ void CryModuleWindow::DumpAllModulesButton()
 	if (fs->ExecuteSelectDir("Select directory"))
 	{
 		bool error = false;
+		bool nodumper = false;
 		String dir = fs->Get();
 		
 #ifdef _WIN64
@@ -243,6 +244,10 @@ void CryModuleWindow::DumpAllModulesButton()
 		if (mMemoryScanner->IsX86Process())
 		{
 			CreateModuleDumpProc32 pCMDP = (CreateModuleDumpProc32)GetProcAddress(mPluginSystem->GetDefaultDumperEnginePlugin(), "CreateModuleDump32");
+			if (!pCMDP)
+			{
+				nodumper = true;
+			}
 			
 			// Dump all loaded modules.
 			for (int i = 0; i < modCount; ++i)
@@ -257,6 +262,10 @@ void CryModuleWindow::DumpAllModulesButton()
 		else
 		{
 			CreateModuleDumpProc64 pCMDP = (CreateModuleDumpProc64)GetProcAddress(mPluginSystem->GetDefaultDumperEnginePlugin(), "CreateModuleDump64");
+			if (!pCMDP)
+			{
+				nodumper = true;
+			}
 			
 			// Dump all loaded modules.
 			for (int i = 0; i < modCount; ++i)
@@ -270,6 +279,10 @@ void CryModuleWindow::DumpAllModulesButton()
 		}
 #else
 		CreateModuleDumpProc32 pCMDP = (CreateModuleDumpProc32)GetProcAddress(mPluginSystem->GetDefaultDumperEnginePlugin(), "CreateModuleDump32");
+		if (!pCMDP)
+		{
+			nodumper = true;
+		}
 		
 		// Dump all loaded modules.
 		const int modCount = mModuleManager->GetModuleCount();
@@ -286,7 +299,14 @@ void CryModuleWindow::DumpAllModulesButton()
 		// If an error occured, display message box once at the end of the function.
 		if (error)
 		{
-			Prompt("Dumping Error", CtrlImg::error(), "One or more modules failed to dump. Check the contents of the selected directory to see which.", "OK");
+			if (nodumper)
+			{
+				Prompt("Dumping Error", CtrlImg::error(), "The dumping failed because there is no dumper available.", "OK");
+			}
+			else
+			{
+				Prompt("Dumping Error", CtrlImg::error(), "One or more modules failed to dump. Check the contents of the selected directory to see which.", "OK");
+			}
 		}
 		else
 		{

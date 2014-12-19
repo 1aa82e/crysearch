@@ -60,7 +60,7 @@ CrySearchSettingsDialog::CrySearchSettingsDialog()
 			.Add("Highest").HSizePos(210, 10).TopPos(200, 20)
 	;
 	
-	this->mGeneralTab
+	this->mInternalsTab
 		<< this->mAddressTableUpdaterIntervalBox.SetLabel("Address table updater").HSizePos(5, 5).TopPos(0, 45)
 		<< this->mAddressTableUpdaterIntervalDescription.SetLabel("Update Interval:").HSizePos(10, 120).TopPos(18, 20)
 		<< this->mAddressTableUpdaterIntervalEditField.HSizePos(150, 10).TopPos(18, 20)
@@ -103,7 +103,7 @@ CrySearchSettingsDialog::CrySearchSettingsDialog()
 	;
 	
 	this->mainTabCtrl.Add(this->mScanningTab.SizePos(), "Scanning");
-	this->mainTabCtrl.Add(this->mGeneralTab.SizePos(), "General");
+	this->mainTabCtrl.Add(this->mInternalsTab.SizePos(), "Internals");
 	this->mainTabCtrl.Add(this->mDebuggerTab.SizePos(), "Debugger");
 	this->mainTabCtrl.Add(this->mHotkeysTab.SizePos(), "Hotkeys");
 	this->mainTabCtrl.SetRect(0, 0, 400, 275);

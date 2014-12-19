@@ -17,7 +17,7 @@ private:
 	// Dialog main Ctrls
 	TabCtrl mainTabCtrl;
 	ParentCtrl mScanningTab;
-	ParentCtrl mGeneralTab;
+	ParentCtrl mInternalsTab;
 	ParentCtrl mDebuggerTab;
 	ParentCtrl mHotkeysTab;
 	Button mOk;
@@ -40,7 +40,7 @@ private:
 	Label scanningThreadPriorityLabel;
 	DropList scanningThreadPriority;
 	
-	// General tab
+	// Internals tab
 	LabelBox mAddressTableUpdaterIntervalBox;
 	Label mAddressTableUpdaterIntervalDescription;
 	EditField mAddressTableUpdaterIntervalEditField;

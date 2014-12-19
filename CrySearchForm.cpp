@@ -161,6 +161,79 @@ void CrySearchForm::CheckKeyPresses()
 
 // ---------------------------------------------------------------------------------------------
 
+void CrySearchForm::SearchResultListUpdater()
+{
+	// Get the range of visible search results and update them.
+	if (!mMemoryScanner->IsScanRunning() && CachedAddresses.GetCount() > 0 && CachedValues.GetCount() > 0)
+	{
+		Tuple2<int, int> searchResultsRange = this->mScanResults.GetVisibleRange();
+		if (searchResultsRange.a >= 0 && searchResultsRange.b < mMemoryScanner->GetScanResultCount())
+		{
+			for (int start = searchResultsRange.a; start <= searchResultsRange.b; ++start)
+			{
+				if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_BYTE)
+				{
+					Byte value;
+					CachedValues[start] = mMemoryScanner->Peek<Byte>(CachedAddresses[start].Address, 0, &value) ? IntStr(value) : "???";
+				}
+				else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_2BYTE)
+				{
+					short value;
+					CachedValues[start] = mMemoryScanner->Peek<short>(CachedAddresses[start].Address, 0, &value) ? IntStr(value) : "???";
+				}
+				else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_4BYTE)
+				{
+					int value;
+					CachedValues[start] = mMemoryScanner->Peek<int>(CachedAddresses[start].Address, 0, &value) ? IntStr(value) : "???";
+				}
+				else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_8BYTE)
+				{
+					__int64 value;
+					CachedValues[start] = mMemoryScanner->Peek<__int64>(CachedAddresses[start].Address, 0, &value) ? IntStr64(value) : "???";
+				}
+				else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_FLOAT)
+				{
+					float value;
+					if (mMemoryScanner->Peek<float>(CachedAddresses[start].Address, 0, &value))
+					{
+						CachedValues[start] = DblStr(value);
+					}
+					else
+					{
+						CachedValues[start] = "???";
+					}
+				}
+				else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_DOUBLE)
+				{
+					double value;
+					CachedValues[start] = mMemoryScanner->Peek<double>(CachedAddresses[start].Address, 0, &value) ? DblStr(value) : "???";
+				}
+				else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_AOB)
+				{
+					ArrayOfBytes value = StringToBytes(CachedValues[start]);
+					CachedValues[start] = mMemoryScanner->Peek<ArrayOfBytes>(CachedAddresses[start].Address, value.Size, &value) ? BytesToString(value.Data, value.Size) : "???";
+				}
+				else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_STRING)
+				{
+					String value = CachedValues[start];
+					CachedValues[start] = mMemoryScanner->Peek<String>(CachedAddresses[start].Address, value.GetLength(), &value) ? value : "???";
+				}
+				else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_WSTRING)
+				{
+					WString value = CachedValues[start];
+					CachedValues[start] = mMemoryScanner->Peek<WString>(CachedAddresses[start].Address, value.GetLength(), &value) ? value.ToString() : "???";
+				}
+			}
+		}
+	}
+	
+	// Refresh the address table ArrayCtrl to display results right away.
+	this->mScanResults.SetVirtualCount(mMemoryScanner->GetScanResultCount() > MEMORYSCANNER_CACHE_LIMIT ? MEMORYSCANNER_CACHE_LIMIT : mMemoryScanner->GetScanResultCount());
+	
+	// Reinstate the callback for the next iteration.
+	SetTimeCallback(1000, THISBACK(SearchResultListUpdater), 21);
+}
+
 void CrySearchForm::AddressValuesUpdater()
 {
 	// Handle frozen addresses
@@ -278,70 +351,6 @@ void CrySearchForm::AddressValuesUpdater()
 	// Refresh the address table ArrayCtrl to display results right away.
 	this->mUserAddressList.SetVirtualCount(loadedTable.GetCount());
 	
-	// Get the range of visible search results and update them.
-	Tuple2<int, int> searchResultsRange = this->mScanResults.GetVisibleRange();
-	if (searchResultsRange.a >= 0 && searchResultsRange.b < mMemoryScanner->GetScanResultCount())
-	{
-		for (int start = searchResultsRange.a; start <= searchResultsRange.b; ++start)
-		{
-			if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_BYTE)
-			{
-				Byte value;
-				CachedValues[start] = mMemoryScanner->Peek<Byte>(CachedAddresses[start].Address, 0, &value) ? IntStr(value) : "???";
-			}
-			else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_2BYTE)
-			{
-				short value;
-				CachedValues[start] = mMemoryScanner->Peek<short>(CachedAddresses[start].Address, 0, &value) ? IntStr(value) : "???";
-			}
-			else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_4BYTE)
-			{
-				int value;
-				CachedValues[start] = mMemoryScanner->Peek<int>(CachedAddresses[start].Address, 0, &value) ? IntStr(value) : "???";
-			}
-			else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_8BYTE)
-			{
-				__int64 value;
-				CachedValues[start] = mMemoryScanner->Peek<__int64>(CachedAddresses[start].Address, 0, &value) ? IntStr64(value) : "???";
-			}
-			else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_FLOAT)
-			{
-				float value;
-				if (mMemoryScanner->Peek<float>(CachedAddresses[start].Address, 0, &value))
-				{
-					CachedValues[start] = value;
-				}
-				else
-				{
-					CachedValues[start] = "???";
-				}
-			}
-			else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_DOUBLE)
-			{
-				double value;
-				CachedValues[start] = mMemoryScanner->Peek<double>(CachedAddresses[start].Address, 0, &value) ? DblStr(value) : "???";
-			}
-			else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_AOB)
-			{
-				ArrayOfBytes value = StringToBytes(CachedValues[start]);
-				CachedValues[start] = mMemoryScanner->Peek<ArrayOfBytes>(CachedAddresses[start].Address, value.Size, &value) ? BytesToString(value.Data, value.Size) : "???";
-			}
-			else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_STRING)
-			{
-				String value = CachedValues[start];
-				CachedValues[start] = mMemoryScanner->Peek<String>(CachedAddresses[start].Address, value.GetLength(), &value) ? value : "???";
-			}
-			else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_WSTRING)
-			{
-				WString value = CachedValues[start];
-				CachedValues[start] = mMemoryScanner->Peek<WString>(CachedAddresses[start].Address, value.GetLength(), &value) ? value.ToString() : "???";
-			}
-		}
-	}
-	
-	// Refresh the address table ArrayCtrl to display results right away.
-	this->mScanResults.SetVirtualCount(mMemoryScanner->GetScanResultCount() > MEMORYSCANNER_CACHE_LIMIT ? MEMORYSCANNER_CACHE_LIMIT : mMemoryScanner->GetScanResultCount());
-	
 	// Reinstate timer queue callback to ensure timer keeps running.
 	SetTimeCallback(SettingsFile::GetInstance()->GetAddressTableUpdateInterval(), THISBACK(AddressValuesUpdater), 10);
 }
@@ -385,7 +394,8 @@ CrySearchForm::CrySearchForm(const char* fn)
 	this->wndTitleRandomized = false;
 	this->mWindowManager.SetParentWindow(this);
 	
-	this->Title("CrySearch Memory Scanner").Icon(CrySearchIml::CrySearch()).Sizeable().Zoomable().SetRect(0, 0, 800, 600);
+	DWORD wndTitle[] = {0x53797243, 0x63726165, 0x654d2068, 0x79726f6d, 0x61635320, 0x72656e6e, 0x0}; //"CrySearch Memory Scanner"
+	this->Title((char*)wndTitle).Icon(CrySearchIml::CrySearch()).Sizeable().Zoomable().SetRect(0, 0, 800, 600);
 	this->SetMinSize(Size(640, 480));
 	
 	this->AddFrame(mMenuStrip);
@@ -457,6 +467,9 @@ CrySearchForm::CrySearchForm(const char* fn)
 
 	// Set timer callback that runs the address list update sequence.
 	SetTimeCallback(SettingsFile::GetInstance()->GetAddressTableUpdateInterval(), THISBACK(AddressValuesUpdater), 10);
+	
+	// Set timer callback that runs the search results update sequence.
+	SetTimeCallback(1000, THISBACK(SearchResultListUpdater), 21);
 	
 	// Assign proper callback functions to configured hotkeys.
 	this->LinkHotkeysToActions();
@@ -665,7 +678,8 @@ void CrySearchForm::RandomizeWindowTitle()
 {
 	if (this->wndTitleRandomized)
 	{
-		this->Title(this->processLoaded ? Format("CrySearch Memory Scanner - (%i) %s", mMemoryScanner->GetProcessId(), mMemoryScanner->GetProcessName()) : "CrySearch Memory Scanner");
+		DWORD wndTitle[] = {0x53797243, 0x63726165, 0x654d2068, 0x79726f6d, 0x61635320, 0x72656e6e, 0x0}; //"CrySearch Memory Scanner"
+		this->Title(this->processLoaded ? Format("%s - (%i) %s", (char*)wndTitle, mMemoryScanner->GetProcessId(), mMemoryScanner->GetProcessName()) : (char*)wndTitle);
 		this->mOpenedProcess.SetLabel("");
 	}
 	else
@@ -717,6 +731,10 @@ void CrySearchForm::SetBreakpointMenuFunction(const HWBP_TYPE type)
 			break;
 	}
 	
+	// Let's refresh the threads list once more to be sure we have every thread currently active.
+	mCrySearchWindowManager->GetThreadWindow()->ClearList();
+	mCrySearchWindowManager->GetThreadWindow()->Initialize();
+	
 	// Set breakpoint on data in each thread in the process.
 	mDebugger->SetHardwareBreakpoint(mThreadsList, loadedTable[cursor]->Address, size, type);
 }
@@ -738,6 +756,7 @@ void CrySearchForm::SetDataBreakpointOnExecute()
 
 void CrySearchForm::RemoveBreakpointMenu()
 {
+	this->mWindowManager.GetDebuggerWindow()->Cleanup();
 	mDebugger->RemoveBreakpoint(loadedTable[this->mUserAddressList.GetCursor()]->Address);
 }
 
@@ -750,8 +769,11 @@ void CrySearchForm::PluginsMenuClicked()
 
 void CrySearchForm::OpenFileMenu()
 {
+	const DWORD appname[] = {0x53797243, 0x63726165, 0x68}; //"CrySearch"
 	FileSel* fs = new FileSel();
-	fs->Types("CrySearch Address Tables\t*.csat\nCheatengine Cheat Tables\t*.ct");
+	String filter = (char*)appname;
+	filter += " Address Tables\t*.csat";
+	fs->Types(filter);
 	if (fs->ExecuteOpen("Open file..."))
 	{
 		if (loadedTable.GetCount() > 0 && !Prompt("I need your confirmation", CtrlImg::exclamation()
@@ -764,27 +786,8 @@ void CrySearchForm::OpenFileMenu()
 		String filename = fs->Get();
 		if (!filename.IsEmpty())
 		{
-			if (ToLower(filename).EndsWith(".ct"))
-			{
-				// Cheat table selected, use custom import function to convert to address table.
-				/*if (!AddressTable::CreateAddressTableFromCheatEngineFile(loadedTable, filename))
-				{
-					Prompt("Fatal Error", CtrlImg::error(), "The selected file does not appear to be a valid cheat table!", "OK");
-				}
-				else
-				{
-					// The cheat table was succesfully imported. Set the user interface to display it.
-					this->mUserAddressList.SetVirtualCount(loadedTable.GetCount());
-				}*/
-				
-				// Not yet implemented.
-				Prompt("Fatal Error", CtrlImg::error(), "Cheat-Engine table import is not yet implemented.", "OK");
-			}
-			else
-			{
-				AddressTable::CreateAddressTableFromFile(loadedTable, filename);	
-				this->mUserAddressList.SetVirtualCount(loadedTable.GetCount());
-			}
+			AddressTable::CreateAddressTableFromFile(loadedTable, filename);	
+			this->mUserAddressList.SetVirtualCount(loadedTable.GetCount());
 		}
 	}
 	
@@ -903,7 +906,8 @@ void CrySearchForm::SaveFileMenu()
 void CrySearchForm::SaveFileAsMenu()
 {
 	FileSel* fs = new FileSel();
-	fs->Types("CrySearch Address Tables\t*.csat");
+	const DWORD appname[] = {0x53797243, 0x63726165, 0x68}; //"CrySearch"
+	fs->Types(Format("%s Address Tables\t*.csat", (char*)appname));
 	if (fs->ExecuteSaveAs("Save file..."))
 	{
 		String filename = fs->Get();
@@ -1239,7 +1243,8 @@ bool CrySearchForm::CloseProcess()
 
 	if (!this->wndTitleRandomized)
 	{
-		this->Title("CrySearch Memory Scanner");
+		DWORD wndTitle[] = {0x53797243, 0x63726165, 0x654d2068, 0x79726f6d, 0x61635320, 0x72656e6e, 0x0}; //"CrySearch Memory Scanner"
+		this->Title((char*)wndTitle);
 	}
 	
 	this->mOpenedProcess.SetLabel("");
@@ -1479,6 +1484,7 @@ void CrySearchForm::ToggleDebuggerWindow()
 	}
 	
 	// The tab is not opened, so open it.
+	debuggerWindow->Initialize();
 	this->mTabbedDataWindows.Add(debuggerWindow->SizePos(), "Debugger");
 	this->mTabbedDataWindows.Set(*debuggerWindow);
 }
@@ -1525,7 +1531,8 @@ bool CrySearchForm::InitializeProcessUI()
 	}
 	else
 	{
-		Prompt("Load Error", CtrlImg::error(), "Failed to open the selected process because it is 64-bit. Use CrySearch x64 to open it instead.", "OK");
+		const DWORD appname[] = {0x53797243, 0x63726165, 0x68}; //"CrySearch"
+		Prompt("Load Error", CtrlImg::error(), Format("Failed to open the selected process because it is 64-bit. Use %s x64 to open it instead.", (char*)appname), "OK");
 		mMemoryScanner->CloseProcess();
 		PostCallback(THISBACK(OpenProcessMenu));
 		return false;
@@ -1597,7 +1604,8 @@ void CrySearchForm::WhenProcessOpened(Win32ProcessInformation* pProc)
 				}
 				else
 				{
-					this->Title(Format("CrySearch Memory Scanner - (%i) %s", pProc->ProcessId, mMemoryScanner->GetProcessName()));
+					DWORD wndTitle[] = {0x53797243, 0x63726165, 0x654d2068, 0x79726f6d, 0x61635320, 0x72656e6e, 0x0}; //"CrySearch Memory Scanner"
+					this->Title(Format("%s - (%i) %s", (char*)wndTitle, pProc->ProcessId, mMemoryScanner->GetProcessName()));
 					this->mOpenedProcess.SetLabel("");
 				}
 				
@@ -1646,7 +1654,8 @@ void CrySearchForm::WhenProcessOpened(Win32ProcessInformation* pProc)
 			}
 			else
 			{
-				this->Title(Format("CrySearch Memory Scanner - (%i) %s", pProc->ProcessId, mMemoryScanner->GetProcessName()));
+				DWORD wndTitle[] = {0x53797243, 0x63726165, 0x654d2068, 0x79726f6d, 0x61635320, 0x72656e6e, 0x0}; //"CrySearch Memory Scanner"
+				this->Title(Format("%s - (%i) %s", (char*)wndTitle, pProc->ProcessId, mMemoryScanner->GetProcessName()));
 				this->mOpenedProcess.SetLabel("");
 			}
 			
@@ -1703,14 +1712,15 @@ void CrySearchForm::ScannerErrorOccured(MemoryScannerError error)
 
 void CrySearchForm::ScannerErrorOccuredThreadSafe(MemoryScannerError error)
 {
+	const DWORD appname[] = {0x53797243, 0x63726165, 0x68}; //"CrySearch"
 	switch (error)
 	{
 		case OPENPROCESSFAILED:
 			// Kill timer callback, otherwise two error messages will pop up.
 			KillTimeCallback(30);
 			
-			Prompt("Process Error", CtrlImg::error(), "Could not open the selected process. The process is either protected or 64-bit."\
-				" To open a protected process, try running CrySearch as Administrator.", "OK");
+			Prompt("Process Error", CtrlImg::error(), Format("Could not open the selected process. The process is either protected or 64-bit."\
+				" To open a protected process, try running %s as Administrator.", (char*)appname), "OK");
 			PostCallback(THISBACK(OpenProcessMenu));
 			break;
 		case PROCESSWASTERMINATED:

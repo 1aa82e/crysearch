@@ -16,7 +16,8 @@ extern "C"
 // About dialog constructor.
 CrySearchAboutDialog::CrySearchAboutDialog() : CryDialogTemplate(CrySearchIml::AboutButton())
 {
-	this->Title("About CrySearch").SetRect(0, 0, 445, 250);
+	const DWORD appname[] = {0x53797243, 0x63726165, 0x68}; //"CrySearch"
+	this->Title(Format("About %s", (char*)appname)).SetRect(0, 0, 445, 250);
 	this->mOk <<= THISBACK(CloseAboutWindow);
 	
 	const DWORD hyperLink[] = { 0x372B5B01, 0x5E5B2030, 0x2E777777, 0x6E6B6E75, 0x636E776F, 0x74616568, 0x656D2E73, 0x6E55205E, 0x576F6E4B, 0x6568436E, 0x2E735461, 0x5D5D656D, 0x00000000 };

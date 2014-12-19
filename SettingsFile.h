@@ -53,6 +53,7 @@ class SettingsFile
 {
 private:
 	int mLanguage;
+	DWORD obfuscation[4];
 	
 	bool mFastScanByDefault;
 	int mScanningThreadPriority;
@@ -174,6 +175,7 @@ public:
 	void Xmlize(XmlIO& pXml);
 	
 	void DefaultSettings();
+	const char* const GetSettingsFilename() const				{ return (char*)this->obfuscation; }
 };
 
 #endif

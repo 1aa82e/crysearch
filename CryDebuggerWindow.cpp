@@ -106,10 +106,15 @@ void CryDebuggerWindow::ToolStrip(Bar& pBar)
 	pBar.Add(elegible, "Clear Breakpoints", CrySearchIml::ClearBreakpointsSmall(), THISBACK(DebuggerClearBreakpoints));
 }
 
+void CryDebuggerWindow::Initialize()
+{
+	mDebugger->DebuggerEventOccured = THISBACK(DebuggerEventOccured);
+}
+
 void CryDebuggerWindow::BreakpointSelectionChanged()
 {
 	BreakpointMasterIndex = this->mBreakpointsHitList.GetCursor();
-	if (BreakpointMasterIndex >= 0)
+	if (BreakpointMasterIndex >= 0 && BreakpointMasterIndex < mDebugger->GetBreakpointCount())
 	{
 		const DbgBreakpoint& bp = (*mDebugger)[(int)BreakpointMasterIndex];
 		this->mDebuggerHitView.SetInstructionString(bp.BreakpointSnapshot.DisassemblyAccessLine);
@@ -119,7 +124,7 @@ void CryDebuggerWindow::BreakpointSelectionChanged()
 	}
 	
 	// Refresh the toolstrip.
-	this->mToolStrip.Set(THISBACK(ToolStrip));	
+	this->mToolStrip.Set(THISBACK(ToolStrip));
 }
 
 void CryDebuggerWindow::BreakpointListRightClick(Bar& pBar)
@@ -158,20 +163,13 @@ void CryDebuggerWindow::DisableBreakpointButtonClicked()
 {
 	const int cursor = this->mBreakpointsHitList.GetCursor();
 	mDebugger->DisableBreakpoint((*mDebugger)[cursor].Address);
-	this->mBreakpointsHitList.SetRowDisplay(cursor, RedDisplayDrawInstance);
-	this->mBreakpointsHitList.SetVirtualCount(mDebugger->GetBreakpointCount());
 }
 
 void CryDebuggerWindow::RemoveBreakpointButtonClicked()
 {
 	const int cursor = this->mBreakpointsHitList.GetCursor();
+	this->Cleanup();
 	mDebugger->RemoveBreakpoint((*mDebugger)[cursor].Address);
-	this->mBreakpointsHitList.SetVirtualCount(mDebugger->GetBreakpointCount());
-}
-
-void CryDebuggerWindow::Initialize()
-{
-	mDebugger->DebuggerEvent = THISBACK(CryDebuggerEventOccured);
 }
 
 void CryDebuggerWindow::Cleanup()
@@ -182,13 +180,12 @@ void CryDebuggerWindow::Cleanup()
 	this->mCallStackView.SetVirtualCount(0);
 }
 
-void CryDebuggerWindow::CryDebuggerEventOccured(DebugEvent event, void* param)
+void CryDebuggerWindow::DebuggerEventOccured(DebugEvent event, void* param)
 {
-	PostCallback(THISBACK2(CryDebuggerEventOccuredThreadSafe, event, param));
+	PostCallback(THISBACK2(DebuggerEventOccuredThreadsafe, event, param));
 }
 
-// Beware: the parameter: 'param' may not be NULL if the 'event' parameter is DBG_EVENT_UNCAUGHT_EXCEPTION!
-void CryDebuggerWindow::CryDebuggerEventOccuredThreadSafe(DebugEvent event, void* param)
+void CryDebuggerWindow::DebuggerEventOccuredThreadsafe(DebugEvent event, void* param)
 {
 	switch (event)
 	{
@@ -197,11 +194,11 @@ void CryDebuggerWindow::CryDebuggerEventOccuredThreadSafe(DebugEvent event, void
 			mPluginSystem->SendGlobalPluginEvent(CRYPLUGINEVENT_DEBUGGER_ATTACHED, NULL);			
 			break;
 		case DBG_EVENT_DETACH: // debugger was succesfully detached.
-			this->mBreakpointsHitList.SetVirtualCount(0);
+			this->mBreakpointsHitList.Clear();
 			this->mDebuggerHitView.ClearInstructionString();
 			this->mDebuggerHitView.SetRegisterCount(0);
-			this->mStackView.SetVirtualCount(0);
-			this->mCallStackView.SetVirtualCount(0);
+			this->mStackView.Clear();
+			this->mCallStackView.Clear();
 			
 			// Send debugger detached event to loaded plugins.
 			mPluginSystem->SendGlobalPluginEvent(CRYPLUGINEVENT_DEBUGGER_DETACHED, NULL);
@@ -237,6 +234,7 @@ void CryDebuggerWindow::CryDebuggerEventOccuredThreadSafe(DebugEvent event, void
 			
 			// Hit count of breakpoint should have changed, so refresh the breakpoint list too.
 			this->mBreakpointsHitList.SetVirtualCount(mDebugger->GetBreakpointCount());
+			mDebugger->SetDebuggerEventLockProcessed();
 			break;
 	}
 	
@@ -248,9 +246,9 @@ void CryDebuggerWindow::CryDebuggerEventOccuredThreadSafe(DebugEvent event, void
 void CryDebuggerWindow::HandleBreakpointChanged(const int bpIndex)
 {
 	const int bpCount = mDebugger->GetBreakpointCount();
-	if (bpCount > 0)
+	if (bpCount > 0 && bpIndex < bpCount)
 	{
-		BreakpointMasterIndex = 0;
+		BreakpointMasterIndex = bpIndex;
 		const DbgBreakpoint& bp = (*mDebugger)[bpIndex];
 		
 		// Update the snapshot lists.
@@ -258,6 +256,15 @@ void CryDebuggerWindow::HandleBreakpointChanged(const int bpIndex)
 		this->mDebuggerHitView.SetRegisterCount(bp.BreakpointSnapshot.RegisterFieldCount);
 		this->mStackView.SetVirtualCount(bp.BreakpointSnapshot.StackView.GetCount());
 		this->mCallStackView.SetVirtualCount(bp.BreakpointSnapshot.CallStackView.GetCount());
+		
+		// Recheck all breakpoints and reset display colors. This is the most stable way.
+		for (int i = 0; i < bpCount; ++i)
+		{
+			this->mBreakpointsHitList.SetRowDisplay(i, (*mDebugger)[i].Disabled ? RedDisplayDrawInstance : StdDisplay());
+		}
+		
+		// Set breakpoint count and redraw user interface. It seems that empty an data set keeps the UI from redrawing.
+		this->mBreakpointsHitList.SetVirtualCount(bpCount);
 	}
 	else
 	{
@@ -265,23 +272,8 @@ void CryDebuggerWindow::HandleBreakpointChanged(const int bpIndex)
 		this->mDebuggerHitView.ClearInstructionString();
 		this->mDebuggerHitView.SetRegisterCount(0);
 		this->mStackView.Clear();
-		this->mCallStackView.Clear();				
-	}
-	
-	// Recheck all breakpoints and reset display colors. This is the most stable way.
-	for (int i = 0; i < bpCount; ++i)
-	{
-		this->mBreakpointsHitList.SetRowDisplay(i, (*mDebugger)[i].Disabled ? RedDisplayDrawInstance : StdDisplay());
-	}
-	
-	// Set breakpoint count and redraw user interface. It seems that empty an data set keeps the UI from redrawing.
-	if (!bpCount)
-	{
+		this->mCallStackView.Clear();
 		this->mBreakpointsHitList.Clear();
-	}
-	else
-	{
-		this->mBreakpointsHitList.SetVirtualCount(bpCount);
 	}
 }
 
@@ -316,6 +308,6 @@ void CryDebuggerWindow::DebuggerClearBreakpoints()
 	if (Prompt("Are you sure?", CtrlImg::exclamation(), "Are you sure you want to remove all breakpoints?", "Yes", "No"))
 	{
 		mDebugger->ClearBreakpoints();
-		this->CryDebuggerEventOccuredThreadSafe(DBG_EVENT_BREAKPOINTS_CHANGED, NULL);
+		this->HandleBreakpointChanged(0);
 	}
 }

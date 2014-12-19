@@ -1,9 +1,8 @@
 #include <Windows.h>
 #include <Shlwapi.h>
 
-const char* fileDesc = "CrySearch Address Table";
 const char* extension = ".csat";
-const char* action = "Open with CrySearch";
+char action[20] = "Open with ";
 
 // Creates the registry key for extension association registration.
 void CreatePathCommand(const char* const extension, const char* const action, char* outString)
@@ -45,11 +44,15 @@ const BOOL RegisterAddressTableExtension()
 	// Create a registry key for the address table file extension.
 	if (RegCreateKeyEx(HKEY_CLASSES_ROOT, extension, 0, NULL, 0, KEY_ALL_ACCESS, NULL, &key, NULL) == ERROR_SUCCESS)
 	{
+		const DWORD appname[] = {0x53797243, 0x63726165, 0x68}; //"CrySearch"
+		const DWORD fileDesc[] = {0x53797243, 0x63726165, 0x654d2068, 0x79726f6d, 0x61635320, 0x72656e6e, 0x0}; //"CrySearch Memory Scanner"
+		
 		// Create the command string for the second registry key action.
 		char pathCommand[MAX_PATH];
+		strcat_s(action, 20, (char*)appname);
 		CreatePathCommand(extension, action, pathCommand);	
 		
-		RegSetValueEx(key, NULL, 0, REG_SZ, fileDesc, (DWORD)strlen(fileDesc));
+		RegSetValueEx(key, NULL, 0, REG_SZ, (char*)fileDesc, (DWORD)strlen((char*)fileDesc));
 		RegCloseKey(key);
 		
 		// Create a registry key to save the path to the executable that opens address tables.

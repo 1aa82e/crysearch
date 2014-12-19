@@ -4,6 +4,7 @@
 #include "CryDisasmGoToAddressDialog.h"
 #include "UIUtilities.h"
 #include "CryHeapWalkDialog.h"
+#include "FrontendGlobalDef.h"
 #include "BackendGlobalDef.h"
 #include "ImlProvider.h"
 
@@ -203,6 +204,7 @@ void CryDisasmCtrl::HeapWalkMenuClicked()
 
 void CryDisasmCtrl::RemoveBreakpointButtonClicked()
 {
+	mCrySearchWindowManager->GetDebuggerWindow()->Cleanup();
 	mDebugger->RemoveBreakpoint(DisasmVisibleLines[this->disasmDisplay.GetCursor()].VirtualAddress);
 }
 
@@ -218,10 +220,7 @@ void CryDisasmCtrl::SetSoftwareBreakpoint()
 	const int cursor = this->disasmDisplay.GetCursor();
 	if (cursor >= 0 && DisasmVisibleLines.GetCount() > 0)
 	{
-		if (!mDebugger->SetBreakpoint(DisasmVisibleLines[cursor].VirtualAddress))
-		{
-			Prompt("Debugger Error", CtrlImg::error(), "The breakpoint could not be set!", "OK");
-		}
+		mDebugger->SetBreakpoint(DisasmVisibleLines[cursor].VirtualAddress);
 	}
 }
 

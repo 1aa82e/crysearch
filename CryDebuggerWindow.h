@@ -21,6 +21,9 @@ private:
 	CrySearchArrayCtrl mStackView;
 	CrySearchArrayCtrl mCallStackView;
 	
+	// For the thread safety of the debugger's operations, we need two semaphores.
+	Semaphore mDebuggerEventLock;	
+	
 	void ToolStrip(Bar& pBar);
 	void BreakpointListRightClick(Bar& pBar);
 	void CallStackListRightClick(Bar& pBar);
@@ -30,10 +33,9 @@ private:
 	void RemoveBreakpointButtonClicked();
 	void BreakpointSelectionChanged();
 	void DebuggerClearBreakpoints();
-	
-	void CryDebuggerEventOccured(DebugEvent event, void* param);
-	void CryDebuggerEventOccuredThreadSafe(DebugEvent event, void* param);
 	void HandleBreakpointChanged(const int bpIndex);
+	void DebuggerEventOccured(DebugEvent event, void* param);
+	void DebuggerEventOccuredThreadsafe(DebugEvent event, void* param);
 	void HandleUnhandledException(UnhandledExceptionData* param);
 	
 	typedef CryDebuggerWindow CLASSNAME;

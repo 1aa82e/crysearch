@@ -89,6 +89,7 @@ private:
 	void AddressListChangeProperty(ChangeRecordDialogMode mode);
 	void UserDefinedEntryWhenDoubleClicked();
 	void UpdateVisibleAddresses();
+	void SearchResultListUpdater();
 	void AddressValuesUpdater();
 	void CheckKeyPresses();
 	void CheckProcessTermination();

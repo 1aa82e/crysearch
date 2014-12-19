@@ -172,35 +172,70 @@ enum ExceptionUserResponse
 	EXCEPTION_RESPONSE_ABORT
 };
 
+// Represents an action that may be requested at the debugger.
+enum CryDebuggerAction
+{
+	ACTION_SET_HARDWARE_BREAKPOINT,
+	ACTION_SET_BREAKPOINT,
+	ACTION_DISABLE_BREAKPOINT,
+	ACTION_REMOVE_BREAKPOINT
+};
+
+// Represents internally used request dispatch parameters.
+struct HardwareBreakpointParameters
+{
+	Vector<Win32ThreadInformation> BpThreads;
+	SIZE_T Address;
+	HWBP_SIZE Size;
+	HWBP_TYPE Type;
+};
+
+// Represents debugger internal request data.
+struct CryDebuggerInternalRequestData : public Moveable<CryDebuggerInternalRequestData>
+{
+	CryDebuggerAction Action;
+	void* ParameterData;
+};
+
 // The debugger class CrySearch uses to achieve several debugging actions.
 class CryDebugger
 {
 private:
 	Thread dbgThread;
-
+	BiVector<CryDebuggerInternalRequestData> mDebuggerActionQueue;
+	bool isDetaching;
+	volatile bool mAttached;
+	volatile bool shouldBreakLoop;
+	
 	void ExceptionWatch();
 	void DbgThread();
 	void ProcessCreationReturnValue(bool b, bool* const val);
+	void DispatchAction(const CryDebuggerAction action, const void* params);
 	
+	bool SetBreakpointInternal(const SIZE_T address);
+	bool SetHardwareBreakpointInternal(const HardwareBreakpointParameters* pParams);
+	bool DisableBreakpointInternal(const SIZE_T address);
+	bool RemoveBreakpointInternal(const SIZE_T address);
+		
 	const int FindBreakpointByPreviousInstruction(const SIZE_T address);
 	
 	virtual void HideDebuggerFromPeb() const = 0;
 	virtual void HandleSoftwareBreakpoint(const DWORD threadId, const int bpIndex) = 0;
 	virtual void HandleHardwareBreakpoint(const DWORD threadId, const int bpIndex) = 0;
 	virtual void RemoveSingleStepFromBreakpoint(const DWORD threadId) = 0;
-	virtual bool BreakpointRoutine(HardwareBreakpoint* pHwbp) const = 0;
+	virtual bool BreakpointRoutine(HardwareBreakpoint* pHwbp, const DWORD threadId) const = 0;
 	virtual const int CheckHardwareBreakpointRegisters(const DWORD threadId) const = 0;
 	virtual DisasmLine GetDisasmLine(const SIZE_T address, bool prev) const = 0;
 	
 	typedef CryDebugger CLASSNAME;
 protected:
-	volatile bool mAttached;
-	volatile bool shouldBreakLoop;
-	bool isDetaching;
 	const SettingsFile* mSettingsInstance;
 	
 	// Linked list with ownership property to take care of polymorphic breakpoint data structures.
 	Array<DbgBreakpoint> mBreakpoints;
+	
+	// Internal lock that can be used by event-processing elements to lock the debugger until the event has been processed.
+	volatile LONG mDebuggerEventLockVariable;
 	
 	void HandleMiscellaneousExceptions(const SIZE_T address, const LONG excCode, DWORD* dwContinueStatus);
 	
@@ -213,26 +248,25 @@ public:
 	void Start();
 	void Stop();
 	
-	bool SetHardwareBreakpoint(const Vector<Win32ThreadInformation>& threads, const SIZE_T address, const HWBP_SIZE size, const HWBP_TYPE type);
-	bool SetBreakpoint(const SIZE_T address);
+	void SetHardwareBreakpoint(const Vector<Win32ThreadInformation>& threads, const SIZE_T address, const HWBP_SIZE size, const HWBP_TYPE type);
+	void SetBreakpoint(const SIZE_T address);
 	
-	bool DisableBreakpoint(const SIZE_T address);
-	bool RemoveBreakpoint(const SIZE_T address);
+	void DisableBreakpoint(const SIZE_T address);
+	void RemoveBreakpoint(const SIZE_T address);
 	
 	void ClearBreakpoints();
 	int FindBreakpoint(const SIZE_T address) const;
 	
 	bool IsDebuggerAttached() const;
 	const int GetBreakpointCount() const;
+	void SetDebuggerEventLockProcessed();
 	
 	const DbgBreakpoint& operator [] (const int x)
 	{
 		return this->mBreakpoints[x];
 	}
 	
-	// If a breakpoint hit occured, the second parameter contains the index of the breakpoint in the array.
-	// If an unhandled exception occured, the second parameter contains a pointer to the exception data.
-	Callback2<DebugEvent, void*> DebuggerEvent;
+	Callback2<DebugEvent, void*> DebuggerEventOccured;
 };
 
 // x86 specific debugger implementations.
@@ -240,7 +274,7 @@ class CryDebugger32 : public CryDebugger
 {
 private:
 	virtual void HideDebuggerFromPeb() const;
-	virtual bool BreakpointRoutine(HardwareBreakpoint* pHwbp) const;
+	virtual bool BreakpointRoutine(HardwareBreakpoint* pHwbp, const DWORD threadId) const;
 	virtual void HandleSoftwareBreakpoint(const DWORD threadId, const int bpIndex);
 	virtual void HandleHardwareBreakpoint(const DWORD threadId, const int bpIndex);
 	virtual void RemoveSingleStepFromBreakpoint(const DWORD threadId);
@@ -262,7 +296,7 @@ public:
 	{
 	private:
 		virtual void HideDebuggerFromPeb() const;
-		virtual bool BreakpointRoutine(HardwareBreakpoint* pHwbp) const;
+		virtual bool BreakpointRoutine(HardwareBreakpoint* pHwbp, const DWORD threadId) const;
 		virtual void RemoveSingleStepFromBreakpoint(const DWORD threadId);
 		virtual void HandleSoftwareBreakpoint(const DWORD threadId, const int bpIndex);
 		virtual void HandleHardwareBreakpoint(const DWORD threadId, const int bpIndex);

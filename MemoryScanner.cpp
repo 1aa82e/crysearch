@@ -10,7 +10,7 @@ volatile Atomic RegionFinishCount;
 // The memory scanner thread pool and synchronisation primitives.
 CoWork threadPool;
 StaticMutex CacheMutex;
-volatile int threadIncrement = 0;
+volatile Atomic threadIncrement = 0;
 
 // Globally used scanning variables. Declared globally to speed up calls and variable access.
 ScanParameterBase* GlobalScanParameter;
@@ -510,7 +510,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 	CloseHandle(regionData.AddressesFile);
 	CloseHandle(regionData.ValuesFile);
 	
-	if (++threadIncrement >= threadCount)
+	if (AtomicInc(threadIncrement) >= threadCount)
 	{
 		delete this->mCompareValues;
 		this->mCompareValues = NULL;
@@ -635,7 +635,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 	CloseHandle(regionData.AddressesFile);
 	CloseHandle(regionData.ValuesFile);
 	
-	if (++threadIncrement >= threadCount)
+	if (AtomicInc(threadIncrement) >= threadCount)
 	{
 		delete this->mCompareValues;
 		this->mCompareValues = NULL;
@@ -741,7 +741,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 	CloseHandle(regionData.AddressesFile);
 	CloseHandle(regionData.ValuesFile);
 	
-	if (++threadIncrement >= threadCount)
+	if (AtomicInc(threadIncrement) >= threadCount)
 	{
 		delete this->mCompareValues;
 		this->mCompareValues = NULL;
@@ -845,7 +845,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 	CloseHandle(regionData.AddressesFile);
 	CloseHandle(regionData.ValuesFile);
 	
-	if (++threadIncrement >= threadCount)
+	if (AtomicInc(threadIncrement) >= threadCount)
 	{
 		delete this->mCompareValues;
 		this->mCompareValues = NULL;
@@ -958,7 +958,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 	CloseHandle(regionData.AddressesFile);
 	CloseHandle(regionData.ValuesFile);
 	
-	if (++threadIncrement >= threadCount)
+	if (AtomicInc(threadIncrement) >= threadCount)
 	{
 		delete this->mCompareValues;
 		this->mCompareValues = NULL;
@@ -1218,7 +1218,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 	FileDelete(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.tempSCANNING", regionData.WorkerIdentifier)));
 	FileDelete(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Values%i.tempSCANNING", regionData.WorkerIdentifier)));
 	
-	if (++threadIncrement >= threadCount)
+	if (AtomicInc(threadIncrement) >= threadCount)
 	{
 		delete this->mCompareValues;
 		this->mCompareValues = NULL;
@@ -1343,7 +1343,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 	FileDelete(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.tempSCANNING", regionData.WorkerIdentifier)));
 	FileDelete(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Values%i.tempSCANNING", regionData.WorkerIdentifier)));
 	
-	if (++threadIncrement >= threadCount)
+	if (AtomicInc(threadIncrement) >= threadCount)
 	{
 		delete this->mCompareValues;
 		this->mCompareValues = NULL;
@@ -1467,7 +1467,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 	FileDelete(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.tempSCANNING", regionData.WorkerIdentifier)));
 	FileDelete(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Values%i.tempSCANNING", regionData.WorkerIdentifier)));
 	
-	if (++threadIncrement >= threadCount)
+	if (AtomicInc(threadIncrement) >= threadCount)
 	{
 		delete this->mCompareValues;
 		this->mCompareValues = NULL;
@@ -1634,7 +1634,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 	FileDelete(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.tempSCANNING", regionData.WorkerIdentifier)));
 	FileDelete(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Values%i.tempSCANNING", regionData.WorkerIdentifier)));
 
-	if (++threadIncrement >= threadCount)
+	if (AtomicInc(threadIncrement) >= threadCount)
 	{
 		delete this->mCompareValues;
 		this->mCompareValues = NULL;
@@ -1741,8 +1741,9 @@ bool MemoryScanner::Peek(const SIZE_T address, const unsigned int size, WString*
 {
 	const unsigned int bytesSize = size * sizeof(wchar);
 	SIZE_T bytesRead;
-	WStringBuffer buffer(bytesSize);
+	WStringBuffer buffer(size);
 	CrySearchRoutines.CryReadMemoryRoutine(this->mOpenedProcessHandle, (void*)address, buffer.Begin(), bytesSize, &bytesRead);
+	buffer.Strlen();
 	*outBuffer = buffer;
 	return bytesRead == bytesSize;
 }
@@ -1754,6 +1755,7 @@ bool MemoryScanner::Peek(const SIZE_T address, const unsigned int size, String* 
 	SIZE_T bytesRead;
 	StringBuffer buffer(size);
 	CrySearchRoutines.CryReadMemoryRoutine(this->mOpenedProcessHandle, (void*)address, buffer.Begin(), size, &bytesRead);
+	buffer.Strlen();
 	*outBuffer = buffer;
 	return bytesRead == size;
 }

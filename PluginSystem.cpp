@@ -91,16 +91,22 @@ void PluginSystem::SendGlobalPluginEvent(CCryPluginEvent evt, void* const data)
 // Returns the base address of the plugin library or NULL if no dumper engines have this flag set.
 HMODULE PluginSystem::GetDefaultDumperEnginePlugin() const
 {
-	for (int i = 0; i < this->mLoadedPlugins.GetCount(); ++i)
+	HMODULE tempretifno = NULL;
+	const int pCount = this->mLoadedPlugins.GetCount();
+	for (int i = 0; i < pCount; ++i)
 	{
 		const CrySearchPlugin& plugin = this->mLoadedPlugins[i];
-		if (plugin.PluginHeader->PluginType & CRYPLUGIN_DUMPER && plugin.PluginHeader->Flags & PLUGIN_CLASS_DEFAULT)
+		if (plugin.PluginHeader->PluginType & CRYPLUGIN_DUMPER)
 		{
-			return plugin.BaseAddress;
+			tempretifno = plugin.BaseAddress;
+			if (plugin.PluginHeader->Flags & PLUGIN_CLASS_DEFAULT)
+			{
+				return plugin.BaseAddress;
+			}
 		}
 	}
 	
-	return NULL;
+	return tempretifno;
 }
 
 // Attempts to unload all plugins that are loaded.

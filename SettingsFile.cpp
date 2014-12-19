@@ -3,7 +3,7 @@
 // Checks whether the settings configuration file exists.
 bool ConfigFileExists()
 {
-	return FileExists(ConfigFile("CrySearch.xml"));
+	return FileExists(ConfigFile(SettingsFile::GetInstance()->GetSettingsFilename()));
 };
 
 void SettingsFile::Xmlize(XmlIO& pXml)
@@ -37,7 +37,10 @@ void SettingsFile::Xmlize(XmlIO& pXml)
 
 SettingsFile::SettingsFile()
 {
-	
+	this->obfuscation[0] = 0x53797243;
+	this->obfuscation[1] = 0x63726165;
+	this->obfuscation[2] = 0x6d782e68;
+	this->obfuscation[3] = 0x6c;
 }
 
 SettingsFile::~SettingsFile()
@@ -75,11 +78,11 @@ bool SettingsFile::Initialize()
 	char binDir[MAX_PATH];
 	if (GetModuleFileName(NULL, binDir, MAX_PATH))
 	{
-		b = LoadFromXMLFile(*this, GetFileDirectory(binDir) + "CrySearch.xml");
+		b = LoadFromXMLFile(*this, GetFileDirectory(binDir) + (char*)this->obfuscation);
 	}
 	else
 	{
-		b = LoadFromXMLFile(*this, "CrySearch.xml");
+		b = LoadFromXMLFile(*this, (char*)this->obfuscation);
 	}
 	
 	this->mLanguage = LNGFromText("EN-EN");
@@ -99,11 +102,11 @@ void SettingsFile::Save()
 	char binDir[MAX_PATH];
 	if (GetModuleFileName(NULL, binDir, MAX_PATH))
 	{
-		StoreAsXMLFile(*this, "ApplicationSettings", GetFileDirectory(binDir) + "CrySearch.xml");
+		StoreAsXMLFile(*this, "ApplicationSettings", GetFileDirectory(binDir) + (char*)this->obfuscation);
 	}
 	else
 	{
-		StoreAsXMLFile(*this, "ApplicationSettings", "CrySearch.xml");
+		StoreAsXMLFile(*this, "ApplicationSettings", (char*)this->obfuscation);
 	}
 }
 

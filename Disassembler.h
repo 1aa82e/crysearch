@@ -55,7 +55,7 @@ struct DisasmLine : Moveable<DisasmLine>
 	int VirtualAddress;
 #endif
 
-	ArrayOfBytes BytesStringRepresentation;
+	ArrayOfBytes BytesStringRepresentation;	
 	String InstructionLine;
 	
 	// The virtual address should be set to 0 to be able to create checks against it.

@@ -9,9 +9,11 @@ void AddressTable::Xmlize(XmlIO& s)
 	WORD minor;
 	CrySearchGetMajorMinorVersion(&major, &minor);
 	
+	const DWORD appname[] = {0x53797243, 0x63726165, 0x68}; //"CrySearch"
+	
 	// Write the address table to the XML serializer.
 	s
-		("CrySearchVersion", Format("%i.%i", major, minor))
+		(Format("%sVersion", (char*)appname), Format("%i.%i", major, minor))
 		("ProcessName", this->mProcessName)
 		("Entries", this->mEntries)
 		("MemoryDissections", this->mDissections)
@@ -269,165 +271,6 @@ void AddressTable::CreateAddressTableFromFile(AddressTable& at, const String& fi
 	AddressTable::ResolveRelativeEntries(at);
 }
 
-// Cheat table entry recursion function.
-/*void CheatEntry(XmlParser& xmp, AddressTable& at)
-{
-	// If a CheatEntries tag is found, a new recursion is necessary.
-	if (xmp.Tag("CheatEntries"))
-	{
-		CheatEntry(xmp, at);
-	}
-
-	// If a CheatEntry tag is found
-	else if (xmp.Tag("CheatEntry"))
-	{
-		// Save the description of the cheat table entry. The recursion choice is always after.
-		String desc;
-		if (xmp.LoopTag("Description"))
-		{
-			desc = xmp.ReadText();
-			xmp.SkipEnd();
-			desc.Replace("\"", "");
-		}
-		
-		// Loop until next decisional tag is found.
-		String nextTag = xmp.ReadTag();
-		for (; nextTag.Compare("CheatEntries") != 0 && nextTag.Compare("VariableType") != 0; )
-		{
-			xmp.SkipEnd();
-			nextTag = xmp.ReadTag();
-		}
-		
-		// Act adequately to the found decisional tag.
-		if (nextTag.Compare("CheatEntries") == 0)
-		{
-			CheatEntry(xmp, at);
-		}
-		else
-		{
-			// Retrieve variable data type and try to retrieve address.
-			String varType = xmp.ReadText();
-			xmp.SkipEnd();
-			if (xmp.Tag("Address"))
-			{
-				// Every field except the offsets has been acquired. Create entry.
-				String addr = xmp.ReadText();
-				addr.Replace("\"", "");
-				bool unicode = false;
-				
-				// Try to retrieve unicode-ness of string values.
-				xmp.SkipEnd();
-				if (xmp.Tag("Unicode"))
-				{
-					unicode = !!StrInt(xmp.ReadText());
-				}
-
-#ifdef _WIN64
-				AddressTableEntry* newEntry = at.Add(desc, ScanInt64(addr, NULL, 16), false, GetCrySearchValueTypeFromCheatTableVariableType(varType, unicode));
-#else
-				AddressTableEntry* newEntry = at.Add(desc, ScanInt(addr, NULL, 16), false, GetCrySearchValueTypeFromCheatTableVariableType(varType, unicode));
-#endif
-				
-				// Try to retrieve the length of the string or array of bytes value.
-				xmp.SkipEnd();
-				if (xmp.Tag("Length"))
-				{
-					newEntry->Size = StrInt(xmp.ReadText());
-				}
-				
-				// Try to retrieve offsets.
-				xmp.SkipEnd();
-				if (xmp.Tag("Offsets"))
-				{
-					// Loop offsets.
-					while (!xmp.End())
-					{
-						if (xmp.TagE("Offset"))
-						{
-							newEntry->OffsetsList.Add(ScanInt(xmp.GetPtr(), NULL, 16));
-						}
-					}
-				}
-			}
-			else
-			{
-				xmp.Skip();
-			}
-		}
-	}
-	else
-	{
-		xmp.Skip();
-	}
-}
-
-// Creates an address table from a .ct Cheat Engine XML data file.
-bool AddressTable::CreateAddressTableFromCheatEngineFile(AddressTable& at, const String& filename)
-{
-	// Clear the address table.
-	at.Clear();
-	
-	// Open Cheat-Engine table file.
-	HANDLE hFile = CreateFile(filename, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
-	
-	// Get file size.
-	LARGE_INTEGER fs;
-	GetFileSizeEx(hFile, &fs);
-	char* fBuffer = new char[fs.LowPart];
-	
-	// Read file contents into locally allocated buffer.
-	DWORD bytesRead;
-	ReadFile(hFile, fBuffer, fs.LowPart, &bytesRead, NULL);
-	
-	// The file doesn't need to be open any longer.
-	CloseHandle(hFile);
-	
-	// File was succesfully read. Check if it actually could be an XML file to avoid retard behavior.
-	if ((bytesRead == fs.LowPart) && (*(WORD*)fBuffer == 0x3F3C))
-	{
-		// Create XML parser and parse xml into memory structure.
-		XmlParser xmp(fBuffer);
-		
-		try
-		{
-			// Skip declaration(s).
-			while (!xmp.IsTag())
-			{
-				xmp.Skip();
-			}
-			
-			// Try to find the root tag.
-			xmp.PassTag("CheatTable");
-			
-			// Loop until the end CheatTable tag was found.
-			while (!xmp.End())
-			{
-				CheatEntry(xmp, at);
-			}
-		}
-		catch (XmlError exc)
-		{
-			// The first tag was not succesfully passed, meaning the XML file is not correct.
-			delete[] fBuffer;
-			return false;
-		}
-	}
-	else
-	{
-		// Delete the allocated buffer.
-		delete[] fBuffer;
-		
-		// File was not read succesfully or not valid.
-		return false;
-	}
-	
-	// Delete the allocated buffer.
-	delete[] fBuffer;
-	
-	// Cheat table was succesfully loaded.
-	return true;
-}*/
-
 // Stores an in-memory address table to a .csat XML data file.
 void AddressTable::SaveAddressTableToFile(AddressTable& pTable, const String& filename)
 {
@@ -455,7 +298,8 @@ void AddressTable::SaveAddressTableToFile(AddressTable& pTable, const String& fi
 	}
 	
 	// Persist address table to file.
-	StoreAsXMLFile(pTable, "CrySearchAddressTable", filename);
+	const DWORD appname[] = {0x53797243, 0x63726165, 0x68}; //"CrySearch"
+	StoreAsXMLFile(pTable, Format("%sAddressTable", (char*)appname), filename);
 	pTable.SetFileName(filename);
 	
 	// Restore temporary saved addresses in memory address table.

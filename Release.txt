@@ -17,7 +17,13 @@ v1.14
 		- Fixed bug in stack view where selecting a stack size higher than 1024 would cause undefined behavior;
 		- Fixed major bug in breakpoint set by the debugger not being reset after being hit;
 		- Fixed disabled breakpoints views (red colors) not being properly cleared after the breakpoint list goes empty;
-		- 
+		- Fixed hardware breakpoints being set incorrectly resulting in undefined behavior depending on the process;
+		- Fixed instability where very fast subsequent breakpoint hits would result in crashing the application;
+		- Fixed instability where removing a breakpoint during very fast subsequent breakpoint hits would result in crashing the application;
+	- Renamed the 'General' tabpage in the Settings window to 'Internals';
+	- Improved error messaging using the module dumper more clear for when there is no dumper available;
+	- Fixed bug where String and WString updating sequences would result in unpredicted data and high cpu utilization;
+	- Fixed bug where float values in the search results or address table would always be truncated to 0;
 v1.13
 	- Changed about dialog to show a list of loaded libraries including their runtime versions;
 	- Added thread context snapshot feature. Right-click thread in thread window to open the snapshot window;
