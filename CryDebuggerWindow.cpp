@@ -174,6 +174,7 @@ void CryDebuggerWindow::RemoveBreakpointButtonClicked()
 
 void CryDebuggerWindow::Cleanup()
 {
+	this->mBreakpointsHitList.Clear();
 	this->mDebuggerHitView.ClearInstructionString();
 	this->mDebuggerHitView.SetRegisterCount(0);
 	this->mStackView.SetVirtualCount(0);
@@ -245,35 +246,42 @@ void CryDebuggerWindow::DebuggerEventOccuredThreadsafe(DebugEvent event, void* p
 // Handles the user interface refreshing for changed breakpoint status.
 void CryDebuggerWindow::HandleBreakpointChanged(const int bpIndex)
 {
-	const int bpCount = mDebugger->GetBreakpointCount();
-	if (bpCount > 0 && bpIndex < bpCount)
+	if (bpIndex == BREAKPOINT_SET_FAILED)
 	{
-		BreakpointMasterIndex = bpIndex;
-		const DbgBreakpoint& bp = (*mDebugger)[bpIndex];
-		
-		// Update the snapshot lists.
-		this->mDebuggerHitView.SetInstructionString(bp.BreakpointSnapshot.DisassemblyAccessLine);
-		this->mDebuggerHitView.SetRegisterCount(bp.BreakpointSnapshot.RegisterFieldCount);
-		this->mStackView.SetVirtualCount(bp.BreakpointSnapshot.StackView.GetCount());
-		this->mCallStackView.SetVirtualCount(bp.BreakpointSnapshot.CallStackView.GetCount());
-		
-		// Recheck all breakpoints and reset display colors. This is the most stable way.
-		for (int i = 0; i < bpCount; ++i)
-		{
-			this->mBreakpointsHitList.SetRowDisplay(i, (*mDebugger)[i].Disabled ? RedDisplayDrawInstance : StdDisplay());
-		}
-		
-		// Set breakpoint count and redraw user interface. It seems that empty an data set keeps the UI from redrawing.
-		this->mBreakpointsHitList.SetVirtualCount(bpCount);
+		Prompt("Fatal Error", CtrlImg::error(), "Failed to set the breakpoint! Are there currently four hardware breakpoints set?", "OK");
 	}
 	else
 	{
-		// If the last breakpoint was removed, clear every list in the window.
-		this->mDebuggerHitView.ClearInstructionString();
-		this->mDebuggerHitView.SetRegisterCount(0);
-		this->mStackView.Clear();
-		this->mCallStackView.Clear();
-		this->mBreakpointsHitList.Clear();
+		const int bpCount = mDebugger->GetBreakpointCount();
+		if (bpCount > 0 && bpIndex < bpCount)
+		{
+			BreakpointMasterIndex = bpIndex;
+			const DbgBreakpoint& bp = (*mDebugger)[bpIndex];
+			
+			// Update the snapshot lists.
+			this->mDebuggerHitView.SetInstructionString(bp.BreakpointSnapshot.DisassemblyAccessLine);
+			this->mDebuggerHitView.SetRegisterCount(bp.BreakpointSnapshot.RegisterFieldCount);
+			this->mStackView.SetVirtualCount(bp.BreakpointSnapshot.StackView.GetCount());
+			this->mCallStackView.SetVirtualCount(bp.BreakpointSnapshot.CallStackView.GetCount());
+			
+			// Recheck all breakpoints and reset display colors. This is the most stable way.
+			for (int i = 0; i < bpCount; ++i)
+			{
+				this->mBreakpointsHitList.SetRowDisplay(i, (*mDebugger)[i].Disabled ? RedDisplayDrawInstance : StdDisplay());
+			}
+			
+			// Set breakpoint count and redraw user interface. It seems that empty an data set keeps the UI from redrawing.
+			this->mBreakpointsHitList.SetVirtualCount(bpCount);
+		}
+		else
+		{
+			// If the last breakpoint was removed, clear every list in the window.
+			this->mDebuggerHitView.ClearInstructionString();
+			this->mDebuggerHitView.SetRegisterCount(0);
+			this->mStackView.Clear();
+			this->mCallStackView.Clear();
+			this->mBreakpointsHitList.Clear();
+		}
 	}
 }
 

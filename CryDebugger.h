@@ -11,6 +11,9 @@ using namespace Upp;
 
 #include "AsyncDisassembler.h"
 
+// If more than 4 hardware breakpoints are about to be set, the user should be informed that it is not possible.
+#define BREAKPOINT_SET_FAILED 0xFFFFFFFF
+
 // Represents a part of dissected stack around ESP when a breakpoint was hit.
 struct StackViewData : Moveable<StackViewData>
 {
@@ -212,10 +215,10 @@ private:
 	void ProcessCreationReturnValue(bool b, bool* const val);
 	void DispatchAction(const CryDebuggerAction action, const void* params);
 	
-	bool SetBreakpointInternal(const SIZE_T address);
-	bool SetHardwareBreakpointInternal(const HardwareBreakpointParameters* pParams);
-	bool DisableBreakpointInternal(const SIZE_T address);
-	bool RemoveBreakpointInternal(const SIZE_T address);
+	void SetBreakpointInternal(const SIZE_T address);
+	void SetHardwareBreakpointInternal(const HardwareBreakpointParameters* pParams);
+	void DisableBreakpointInternal(const SIZE_T address);
+	void RemoveBreakpointInternal(const SIZE_T address);
 		
 	const int FindBreakpointByPreviousInstruction(const SIZE_T address);
 	

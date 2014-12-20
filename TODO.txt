@@ -7,6 +7,11 @@ Package:
 - Update wiki with changes for the release;
 ------------------------------------------------------------------
 
+- Improve SDK documentation, see learn_more's notes;
+- Post-dump (plugin operations) event in plugins!!!
+- Provide the output window / menu bar entry (PLUGIN_WANTS_OUTPUT_TAB);
+
+- Plugin about box has small detail: CrySearch64 as title, not very professional;
 - Implement searching for hexadecimal values (byte, short, int long);
 - Make sure the address updater doesn't run while searching values;
 - Stack trace addresses (dbg/crashhandler) can be resolved to exported functions?
@@ -22,7 +27,6 @@ Package:
 
 - Debugger:
 	- Disabling bp's doesn't always work yet;
-	- When setting multiple hwbp's a few may stop working?
 	- Software bp not correctly removed in Far Cry;
 	- page protection when hwbp???
 	- Data breakpoint still not 100% set back, JUMP instructions wreck the lookup :D

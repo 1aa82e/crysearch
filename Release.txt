@@ -2,6 +2,8 @@ CrySearch Memory Scanner
 
 evolution536, www.unknowncheats.me
 
+v1.15
+	- 
 v1.14
 	- Added event procedure to plugin system. CrySearch calls the event procedure for default in-app events like process open/close;
 	- Small user interface detail modifications and improvements:
@@ -19,11 +21,11 @@ v1.14
 		- Fixed disabled breakpoints views (red colors) not being properly cleared after the breakpoint list goes empty;
 		- Fixed hardware breakpoints being set incorrectly resulting in undefined behavior depending on the process;
 		- Fixed instability where very fast subsequent breakpoint hits would result in crashing the application;
-		- Fixed instability where removing a breakpoint during very fast subsequent breakpoint hits would result in crashing the application;
+		- Fixed instability where removing a breakpoint during very fast subsequent breakpoint hits would result in crashing the application.
 	- Renamed the 'General' tabpage in the Settings window to 'Internals';
 	- Improved error messaging using the module dumper more clear for when there is no dumper available;
 	- Fixed bug where String and WString updating sequences would result in unpredicted data and high cpu utilization;
-	- Fixed bug where float values in the search results or address table would always be truncated to 0;
+	- Fixed bug where float values in the search results or address table would always be truncated to 0.
 v1.13
 	- Changed about dialog to show a list of loaded libraries including their runtime versions;
 	- Added thread context snapshot feature. Right-click thread in thread window to open the snapshot window;

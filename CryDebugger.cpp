@@ -234,102 +234,96 @@ void CryDebugger::DispatchAction(const CryDebuggerAction action, const void* par
 }
 
 // Internally processes set hardware breakpoint request.
-bool CryDebugger::SetHardwareBreakpointInternal(const HardwareBreakpointParameters* pParams)
+void CryDebugger::SetHardwareBreakpointInternal(const HardwareBreakpointParameters* pParams)
 {
-	// Inmediately return if no threads are specified or the address is invalid.
-	if (!pParams->BpThreads.GetCount() || !pParams->Address)
-	{
-		return false;
-	}
-	
 	bool error = false;
 	
-	// If a breakpoint already exists on this address, return true.
-	if (this->FindBreakpoint(pParams->Address) >= 0)
+	// Inmediately return if no threads are specified.
+	if (!pParams->BpThreads.GetCount())
 	{
-		return true;
+		error = true;
 	}
-	
-	// Create breakpoint in local collection for administration.
-	HardwareBreakpoint& hwbp = (HardwareBreakpoint&)this->mBreakpoints.Add(new HardwareBreakpoint());
-	hwbp.BpType = BPTYPE_HARDWARE;
-	hwbp.HitCount = 0;
-	hwbp.Address = pParams->Address;
-	hwbp.Size = pParams->Size;
-	hwbp.Type = pParams->Type;
-	hwbp.MustSet = true;
-	hwbp.PreviousInstructionAddress = 0;
-	hwbp.Disabled = FALSE;
-	
-	// Set old instruction to 0 to indicate that it is a hardware breakpoint.
-	hwbp.OldInstruction = 0;
-	
-	const int count = pParams->BpThreads.GetCount();
-	for (int i = 0; i < count; ++i)
+	else
 	{
-		const int threadId = pParams->BpThreads[i].ThreadIdentifier;
-		hwbp.ThreadId.Add(threadId);
-		
-		// Set breakpoint into thread.
-		if (!this->BreakpointRoutine(&hwbp, threadId))
+		// If a breakpoint already exists on this address, return true.
+		if (this->FindBreakpoint(pParams->Address) == -1)
 		{
-			error = true;
-		}
+			// Create breakpoint in local collection for administration.
+			HardwareBreakpoint& hwbp = (HardwareBreakpoint&)this->mBreakpoints.Add(new HardwareBreakpoint());
+			hwbp.BpType = BPTYPE_HARDWARE;
+			hwbp.HitCount = 0;
+			hwbp.Address = pParams->Address;
+			hwbp.Size = pParams->Size;
+			hwbp.Type = pParams->Type;
+			hwbp.MustSet = true;
+			hwbp.PreviousInstructionAddress = 0;
+			hwbp.Disabled = FALSE;
+			
+			// Set old instruction to 0 to indicate that it is a hardware breakpoint.
+			hwbp.OldInstruction = 0;
+			
+			const int count = pParams->BpThreads.GetCount();
+			for (int i = 0; i < count; ++i)
+			{
+				const int threadId = pParams->BpThreads[i].ThreadIdentifier;
+				hwbp.ThreadId.Add(threadId);
+				
+				// Set breakpoint into thread.
+				if (!this->BreakpointRoutine(&hwbp, threadId))
+				{
+					error = true;
+				}
+			}
+		}		
 	}
 	
 	// Send event to user interface about the breakpoints being changed and flag debugger loop for continuation.
-	this->DebuggerEventOccured(DBG_EVENT_BREAKPOINTS_CHANGED, NULL);
-	
-	return !error;
+	this->DebuggerEventOccured(DBG_EVENT_BREAKPOINTS_CHANGED, error ? (void*)BREAKPOINT_SET_FAILED : NULL);
 }
 
 // Internally processes set breakpoint request.
-bool CryDebugger::SetBreakpointInternal(const SIZE_T address)
-{
-	// Check whether there already is a breakpoint set on this address.
-	if (this->FindBreakpoint(address) >= 0)
-	{
-		return true;
-	}
-	
-	DbgBreakpoint& bp = this->mBreakpoints.Add(new DbgBreakpoint());
-	bp.BpType = BPTYPE_SOFTWARE;
-	bp.HitCount = 0;
-	bp.Address = address;
-	bp.Disabled = FALSE;
-	
-	// Read out current byte.
-	if (!CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), (void*)address, &bp.OldInstruction, sizeof(Byte), NULL))
-	{
-		return false;
-	}
-	
-	// Write INT3 instruction to the specified address.
-	const Byte _int3 = 0xCC;
-	if (!CrySearchRoutines.CryWriteMemoryRoutine(mMemoryScanner->GetHandle(), (void*)address, &_int3, sizeof(Byte), NULL))
-	{
-		return false;
-	}
-	
-	// Flush instruction cache to apply instruction to executable code.
-	FlushInstructionCache(mMemoryScanner->GetHandle(), (void*)address, sizeof(Byte));
-	
-	// Send event to user interface about the breakpoints being changed and flag debugger loop for continuation.
-	this->DebuggerEventOccured(DBG_EVENT_BREAKPOINTS_CHANGED, NULL);
-	
-	return true;
-}
-
-// Internally processes disable breakpoint request.
-bool CryDebugger::DisableBreakpointInternal(const SIZE_T address)
+void CryDebugger::SetBreakpointInternal(const SIZE_T address)
 {
 	bool error = false;
 	
+	// Check whether there already is a breakpoint set on this address.
+	if (this->FindBreakpoint(address) == -1)
+	{
+		DbgBreakpoint& bp = this->mBreakpoints.Add(new DbgBreakpoint());
+		bp.BpType = BPTYPE_SOFTWARE;
+		bp.HitCount = 0;
+		bp.Address = address;
+		bp.Disabled = FALSE;
+		
+		// Read out current byte.
+		if (!CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), (void*)address, &bp.OldInstruction, sizeof(Byte), NULL))
+		{
+			error = true;
+		}
+		
+		// Write INT3 instruction to the specified address.
+		const Byte _int3 = 0xCC;
+		if (!error && !CrySearchRoutines.CryWriteMemoryRoutine(mMemoryScanner->GetHandle(), (void*)address, &_int3, sizeof(Byte), NULL))
+		{
+			error = true;
+		}
+		
+		// Flush instruction cache to apply instruction to executable code.
+		FlushInstructionCache(mMemoryScanner->GetHandle(), (void*)address, sizeof(Byte));		
+	}
+	
+	// Send event to user interface about the breakpoints being changed and flag debugger loop for continuation.
+	this->DebuggerEventOccured(DBG_EVENT_BREAKPOINTS_CHANGED, error ? (void*)BREAKPOINT_SET_FAILED : NULL);
+}
+
+// Internally processes disable breakpoint request.
+void CryDebugger::DisableBreakpointInternal(const SIZE_T address)
+{
 	// Check whether the breakpoint actually exists on this address.
 	const int pos = this->FindBreakpoint(address);
 	if (pos < 0)
 	{
-		return true;
+		return;
 	}
 	
 	DbgBreakpoint* const bp = &this->mBreakpoints[pos];
@@ -342,10 +336,7 @@ bool CryDebugger::DisableBreakpointInternal(const SIZE_T address)
 		const int tCount = hwbp->ThreadId.GetCount();
 		for (int i = 0; i < tCount; ++i)
 		{
-			if (!this->BreakpointRoutine(hwbp, hwbp->ThreadId[i]))
-			{
-				error = true;
-			}
+			this->BreakpointRoutine(hwbp, hwbp->ThreadId[i]);
 		}
 	}
 	else
@@ -353,7 +344,7 @@ bool CryDebugger::DisableBreakpointInternal(const SIZE_T address)
 		// Write the old instruction back to the address.
 		if (!CrySearchRoutines.CryWriteMemoryRoutine(mMemoryScanner->GetHandle(), (void*)address, &bp->OldInstruction, sizeof(Byte), NULL))
 		{
-			return false;
+			return;
 		}
 		
 		// Flush instruction cache to apply instruction to executable code.
@@ -368,20 +359,16 @@ bool CryDebugger::DisableBreakpointInternal(const SIZE_T address)
 	{
 		this->DebuggerEventOccured(DBG_EVENT_BREAKPOINTS_CHANGED, NULL);
 	}
-
-	return !error;
 }
 
 // Internally processes remove breakpoint request.
-bool CryDebugger::RemoveBreakpointInternal(const SIZE_T address)
+void CryDebugger::RemoveBreakpointInternal(const SIZE_T address)
 {
-	bool error = false;
-	
 	// Check whether the breakpoint actually exists on this address.
 	const int pos = this->FindBreakpoint(address);
 	if (pos < 0)
 	{
-		return true;
+		return;
 	}
 	
 	DbgBreakpoint* const bp = &this->mBreakpoints[pos];
@@ -394,10 +381,7 @@ bool CryDebugger::RemoveBreakpointInternal(const SIZE_T address)
 		const int tCount = hwbp->ThreadId.GetCount();
 		for (int i = 0; i < tCount; ++i)
 		{
-			if (!this->BreakpointRoutine(hwbp, hwbp->ThreadId[i]))
-			{
-				error = true;
-			}
+			this->BreakpointRoutine(hwbp, hwbp->ThreadId[i]);
 		}
 	}
 	else
@@ -405,7 +389,7 @@ bool CryDebugger::RemoveBreakpointInternal(const SIZE_T address)
 		// Write the old instruction back to the address.
 		if (!CrySearchRoutines.CryWriteMemoryRoutine(mMemoryScanner->GetHandle(), (void*)address, &bp->OldInstruction, sizeof(Byte), NULL))
 		{
-			return false;
+			return;
 		}
 		
 		// Flush instruction cache to apply instruction to executable code.
@@ -419,9 +403,7 @@ bool CryDebugger::RemoveBreakpointInternal(const SIZE_T address)
 	if (!isDetaching)
 	{
 		this->DebuggerEventOccured(DBG_EVENT_BREAKPOINTS_CHANGED, NULL);
-	}
-	
-	return !error;	
+	}	
 }
 
 // Starts the debugger on a seperate thread at the specified process handle and process ID.
@@ -929,6 +911,7 @@ bool CryDebugger32::BreakpointRoutine(HardwareBreakpoint* pHwbp, const DWORD thr
 	    // If this condition is true, all breakpoints are used, meaning the new breakpoint cannot be set.
 	    if (m_index >= 4)
 	    {
+	        ResumeThread(hThread);
 	        return false;
 	    }
 	    
@@ -1000,6 +983,8 @@ bool CryDebugger32::BreakpointRoutine(HardwareBreakpoint* pHwbp, const DWORD thr
 				ct.Dr3 = 0;
 				break;
 		}
+
+		ct.Dr6 = 0;
 		
 #ifdef _WIN64
 		CrySetBits((DWORD_PTR*)&ct.Dr7, pHwbp->DebugRegister * 2, 1, 0);
@@ -1010,8 +995,6 @@ bool CryDebugger32::BreakpointRoutine(HardwareBreakpoint* pHwbp, const DWORD thr
 	}
 	
 #ifdef _WIN64
-
-	ct.Dr6 = 0;
 	
 	// Prepare context struct and set it into the threads context.
 	if (!Wow64SetThreadContext(hThread, &ct))
@@ -1481,6 +1464,7 @@ void CryDebugger32::HandleHardwareBreakpoint(const DWORD threadId, const int bpI
 		    // If this condition is true, all breakpoints are used, meaning the new breakpoint cannot be set.
 		    if (m_index >= 4)
 		    {
+		        ResumeThread(hThread);
 				VirtualFree(ctxBase, 0, MEM_RELEASE);
 		        return false;
 		    }
