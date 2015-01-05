@@ -10,8 +10,28 @@
 // Global variable to keep track of how addresses in the dissection should be displayed.
 BOOL DissectionAddressViewMode = FALSE;
 
+// Global variable to keep track of whether dissection rows should be displayed in hexadecimal.
+BOOL DissectionRowValueHexMode = FALSE;
+
 // Global variable to keep track of which memory dissection entry was selected.
 int MemoryDissectionMasterIndex = 0;
+
+// Custom display to draw memory dissection entry addresses including their type.
+struct MemoryDissectionEntryDisplay : public Display
+{
+public:
+	void Paint(Draw& w, const Rect& r, const Value& q, Color ink, Color paper, dword style) const
+	{
+		PaintBackground(w, r, q, ink, paper, style);
+		const String& str = q.ToString();
+		const int sep = str.FindFirstOf("-");
+		String addr = str.Left(sep);
+		String type = str.Mid(sep + 2);
+		const Font& dFont = StdFont();
+		w.DrawText(r.left, r.top, addr, dFont, Black());
+		w.DrawText(r.left + (dFont.GetCy() * addr.GetLength()), r.top, type, dFont, Gray());
+	}
+} MemoryDissectionEntryDrawInstance;
 
 // ---------------------------------------------------------------------------------------------
 
@@ -56,17 +76,16 @@ String GetDissectionAddress(const int index)
 String GetDissectionValue(const int index)
 {
 	// Need to check this! (Different row sizes will bring trouble)
-	const bool hex = SettingsFile::GetInstance()->GetDissectionHexadecimalView();
 	const DissectionRowEntry* entry = loadedTable.GetDissection(MemoryDissectionMasterIndex)->AssociatedDissector[index];
 	if (entry->RowType != CRYDATATYPE_STRING && entry->RowType != CRYDATATYPE_AOB && entry->RowType != CRYDATATYPE_WSTRING)
 	{
 		if (entry->RowType == CRYDATATYPE_8BYTES)
 		{
-			return hex ? Format("%llX", ScanInt64(entry->RowValue.ToString(), NULL, 10)) : entry->RowValue;	
+			return DissectionRowValueHexMode ? Format("%llX", ScanInt64(entry->RowValue.ToString(), NULL, 10)) : entry->RowValue;	
 		}
 		else
 		{
-			return hex ? Format("%lX", ScanInt(entry->RowValue.ToString(), NULL, 10)) : entry->RowValue;		
+			return DissectionRowValueHexMode ? Format("%lX", ScanInt(entry->RowValue.ToString(), NULL, 10)) : entry->RowValue;		
 		}
 	}
 	else
@@ -90,7 +109,7 @@ CryMemoryDissectionWindow::CryMemoryDissectionWindow(const AddressTableEntry* co
 	this->mRowSizeControl.WhenValueSet = THISBACK(RowEntryChangeDataSize);
 	
 	this->mDissection.WhenBar = THISBACK(DissectionRightClick);
-	this->mDissection.CryAddRowNumColumn("Address").SetConvert(Single<IndexBasedValueConvert<GetDissectionAddress>>());
+	this->mDissection.CryAddRowNumColumn("Address").SetConvert(Single<IndexBasedValueConvert<GetDissectionAddress>>()).SetDisplay(MemoryDissectionEntryDrawInstance);
 	this->mDissection.CryAddRowNumColumn("Value").SetConvert(Single<IndexBasedValueConvert<GetDissectionValue>>());
 	
 	// Add existing dissections to drop list.
@@ -103,8 +122,7 @@ CryMemoryDissectionWindow::CryMemoryDissectionWindow(const AddressTableEntry* co
 	this->mAvailableDissections.SetCount(count);
 	if (count > 0)
 	{
-		this->mAvailableDissections.SetIndex(0)
-;
+		this->mAvailableDissections.SetIndex(0);
 		this->RefreshDissection();
 	}
 	
@@ -115,6 +133,8 @@ CryMemoryDissectionWindow::CryMemoryDissectionWindow(const AddressTableEntry* co
 	{
 		this->NewDissectionFromAddressTableEntry();
 	}
+	
+	DissectionRowValueHexMode = SettingsFile::GetInstance()->GetDissectionHexadecimalView();
 	
 	// Install time interval callback to dynamically refresh dissection.
 	this->SetTimeCallback(SettingsFile::GetInstance()->GetDissectionUpdateInterval(), THISBACK(IntervalUpdateDissection), 10);
@@ -156,7 +176,7 @@ void CryMemoryDissectionWindow::DissectionMenuBar(Bar& pBar)
 
 void CryMemoryDissectionWindow::ViewMenuBar(Bar& pBar)
 {
-	pBar.Add("View as hexadecimal", THISBACK(ToggleHexadecimalView)).Check(SettingsFile::GetInstance()->GetDissectionHexadecimalView());
+	pBar.Add("View as hexadecimal", THISBACK(ToggleHexadecimalView)).Check(DissectionRowValueHexMode);
 	pBar.Add("View addresses as", THISBACK(ViewAddressesAsMenu));
 	pBar.Separator();
 	pBar.Add("Settings", CrySearchIml::SettingsButton(), THISBACK(SettingsMenuClicked));
@@ -242,37 +262,37 @@ void CryMemoryDissectionWindow::IntervalUpdateDissection()
 // Refreshes the dissection that is currently selected.
 void CryMemoryDissectionWindow::RefreshDissection()
 {
-	const int count = loadedTable.GetDissectionCount() > 0;
+	const int count = loadedTable.GetDissectionCount();
 	
 	// Master index is not always safe. We should check the dissection count, just in case.
 	if (count)
 	{
 		// Attempt to read and dissect the selected memory block.
 		MemoryDissectionEntry* entry = loadedTable.GetDissection(MemoryDissectionMasterIndex);
-		if (entry->AssociatedDissector.Dissect(sizeof(DWORD)))
+		if (!entry->AssociatedDissector.GetDissectionRowCount())
 		{
-			// Update user interface with dissection results.
-			this->mDissection.SetVirtualCount(entry->AssociatedDissector.GetDissectionRowCount());
+			// The default row offset should be 4 but we should also take into account that the user may want to enable type guessing.
+			if (entry->AssociatedDissector.Dissect(sizeof(DWORD), SettingsFile::GetInstance()->GetEnableDissectionTypeGuessing()))
+			{
+				// Update user interface with dissection results.
+				this->mDissection.SetVirtualCount(entry->AssociatedDissector.GetDissectionRowCount());
+			}
+			else
+			{
+				// The memory dissection failed. Display error message and clear out user interface.
+				this->mDissection.Clear();
+				Prompt("Fatal Error", CtrlImg::error(), "Failed to read specified memory block!", "OK");	
+			}
 		}
 		else
 		{
-			// The memory dissection failed. Display error message and clear out user interface.
-			this->mDissection.Clear();
-			Prompt("Fatal Error", CtrlImg::error(), "Failed to read specified memory block!", "OK");
+			// The memory dissection already contains rows. Just load the rows into the window display.
+			this->mDissection.SetVirtualCount(entry->AssociatedDissector.GetDissectionRowCount());
 		}
 	}
 	else
 	{
 		this->mDissection.Clear();
-	}
-	
-	// To save memory when having more than one dissection available, erase resources of invisible dissections.
-	for (int i = 0; i < count; ++i)
-	{
-		if (i != MemoryDissectionMasterIndex)
-		{
-			loadedTable.GetDissection(i)->AssociatedDissector.Clear();
-		}
 	}
 }
 
@@ -282,7 +302,10 @@ void CryMemoryDissectionWindow::RefreshDissection()
 void CryMemoryDissectionWindow::AddressViewModeClicked()
 {
 	DissectionAddressViewMode = !DissectionAddressViewMode;
-	this->mDissection.SetVirtualCount(loadedTable.GetDissection(MemoryDissectionMasterIndex)->AssociatedDissector.GetDissectionRowCount());
+	if (loadedTable.GetDissectionCount())
+	{
+		this->mDissection.SetVirtualCount(loadedTable.GetDissection(MemoryDissectionMasterIndex)->AssociatedDissector.GetDissectionRowCount());
+	}
 }
 
 // Sets the memory dissection size to one byte.
@@ -337,7 +360,7 @@ void CryMemoryDissectionWindow::RowEntryChangeDataSize(const int value)
 void CryMemoryDissectionWindow::AlterSuccessingRows(const int row, const int diff)
 {
 	const int count = loadedTable.GetDissection(MemoryDissectionMasterIndex)->AssociatedDissector.GetDissectionRowCount();
-	for (int i = max(row, 1); i < count; ++i)
+	for (int i = max(row, 1) + 1; i < count; ++i)
 	{
 		// Increment every dissection entry by the specified difference.
 		loadedTable.GetDissection(MemoryDissectionMasterIndex)->AssociatedDissector[i]->RowOffset += diff;
@@ -414,9 +437,8 @@ void CryMemoryDissectionWindow::RowOffsetMenuDouble()
 void CryMemoryDissectionWindow::RowOffsetMenuAOB()
 {
 	const int row = this->mDissection.GetCursor();
-
 	DissectionRowEntry* entry = loadedTable.GetDissection(MemoryDissectionMasterIndex)->AssociatedDissector[row];
-	const int oldSize = GetDataSizeFromValueType(entry->RowType);
+	const int oldSize = entry->DataLength ? entry->DataLength : GetDataSizeFromValueType(entry->RowType);
 	entry->RowType = CRYDATATYPE_AOB;
 	entry->DataLength = GetDataSizeFromValueType(CRYDATATYPE_AOB);
 	this->AlterSuccessingRows(row, entry->DataLength - oldSize);
@@ -427,7 +449,7 @@ void CryMemoryDissectionWindow::RowOffsetMenuString()
 {
 	const int row = this->mDissection.GetCursor();
 	DissectionRowEntry* entry = loadedTable.GetDissection(MemoryDissectionMasterIndex)->AssociatedDissector[row];
-	const int oldSize = GetDataSizeFromValueType(entry->RowType);
+	const int oldSize = entry->DataLength ? entry->DataLength : GetDataSizeFromValueType(entry->RowType);
 	entry->RowType = CRYDATATYPE_STRING;
 	entry->DataLength = GetDataSizeFromValueType(CRYDATATYPE_STRING);
 	this->AlterSuccessingRows(row, entry->DataLength - oldSize);
@@ -438,7 +460,7 @@ void CryMemoryDissectionWindow::RowOffsetMenuWString()
 {
 	const int row = this->mDissection.GetCursor();
 	DissectionRowEntry* entry = loadedTable.GetDissection(MemoryDissectionMasterIndex)->AssociatedDissector[row];
-	const int oldSize = GetDataSizeFromValueType(entry->RowType);
+	const int oldSize = entry->DataLength ? entry->DataLength : GetDataSizeFromValueType(entry->RowType);
 	entry->RowType = CRYDATATYPE_WSTRING;
 	entry->DataLength = GetDataSizeFromValueType(CRYDATATYPE_STRING);
 	this->AlterSuccessingRows(row, entry->DataLength - oldSize);
@@ -481,8 +503,11 @@ void CryMemoryDissectionWindow::NewDissectionFromAddressTableEntry()
 void CryMemoryDissectionWindow::ToggleHexadecimalView()
 {
 	// Swap the value of the hexadecimal view option and refresh the user interface.
-	SettingsFile::GetInstance()->SetDissectionHexadecimalView(!SettingsFile::GetInstance()->GetDissectionHexadecimalView());
-	this->mDissection.SetVirtualCount(loadedTable.GetDissection(MemoryDissectionMasterIndex)->AssociatedDissector.GetDissectionRowCount());
+	DissectionRowValueHexMode = !DissectionRowValueHexMode;
+	if (loadedTable.GetDissectionCount())
+	{
+		this->mDissection.SetVirtualCount(loadedTable.GetDissection(MemoryDissectionMasterIndex)->AssociatedDissector.GetDissectionRowCount());
+	}
 }
 
 void CryMemoryDissectionWindow::MemoryDissectionEntryChanged()
@@ -573,9 +598,14 @@ void CryMemoryDissectionWindow::SettingsMenuClicked()
 {
 	// Execute the settings window.
 	CryMemoryDissectionSettingsWindow* cmdsw = new CryMemoryDissectionSettingsWindow();
-	cmdsw->Execute();
-	delete cmdsw;
+	if (cmdsw->Execute() == 10)
+	{
+		// Reload the hexadecimal toggle value.
+		DissectionRowValueHexMode = SettingsFile::GetInstance()->GetDissectionHexadecimalView();		
+	}
 	
+	delete cmdsw;
+
 	// Most likely it is useful to refresh the dissection, but only if there actually are dissections.
 	if (loadedTable.GetDissectionCount() > 0)
 	{

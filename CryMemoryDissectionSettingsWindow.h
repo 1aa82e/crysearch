@@ -19,6 +19,7 @@ private:
 	Label mUpdateIntervalDesc;
 	EditField mUpdateInterval;
 	Option mDefaultViewAsHex;
+	Option mEnableTypeGuessing;
 	
 	void OkButtonClicked();
 	void CloseWindow();

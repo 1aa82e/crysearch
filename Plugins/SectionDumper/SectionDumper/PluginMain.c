@@ -33,7 +33,7 @@ const BOOL __stdcall CryInitializePlugin()
 
 	// Initialize the plugin header with information.
 	memset(&SectionDumperPluginHeader, 0, sizeof(CRYPLUGINHEADER));
-	SectionDumperPluginHeader.PluginType |= CRYPLUGIN_DUMPER;
+	SectionDumperPluginHeader.PluginFeatures |= CRYPLUGIN_DUMPER;
 	SectionDumperPluginHeader.PluginName = "CrySearch Section Dumper";
 	SectionDumperPluginHeader.MajorVersion = 1;
 	SectionDumperPluginHeader.MinorVersion = 0;
@@ -190,7 +190,7 @@ const BOOL __stdcall CreateModuleDump32(HANDLE hProcess, const void* moduleBase,
 	}
 #endif
 
-void __stdcall CryProcessPluginEvent(CCryPluginEvent event, void* const pParameter)
+void __stdcall CryProcessPluginEvent(CCryPluginEvent event, void* pParameter)
 {
 	switch (event)
 	{

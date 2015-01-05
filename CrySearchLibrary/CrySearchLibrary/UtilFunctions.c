@@ -259,3 +259,11 @@ void GetOSVersionString(char* const pOutString, const DWORD maxLength)
 	
 	strcat_s(pOutString, maxLength, (char*)&lastPart);
 }
+
+// Tries to guess the data type of a value. The 'value' parameter must be a valid pointer to the data to guess.
+// Returns the guessed type or CRYDATATYPE_4BYTES if the type is 4 bytes or when the type could not be guessed.
+const CCryDataType GuessTypeOfValue(const void* value)
+{
+	// The type could not be guessed. Return the default data type.
+	return CRYDATATYPE_4BYTES;
+}

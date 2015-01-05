@@ -48,6 +48,7 @@ struct ScanParameterBase
 	bool CurrentScanFastScan;
 	MemoryScanType GlobalScanType;
 	MemoryScanValueType GlobalScanValueType;
+	bool CurrentScanHexValues;
 	
 	// This parameter contains the size of an array of bytes or the length of a string in case of such a scan.
 	// If the scan value type is not one of these, this parameter is ignored.

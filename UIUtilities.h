@@ -28,6 +28,9 @@ String GenerateStringStyleSignature(const Vector<ArrayOfBytes*>& byteArrays, DWO
 // Parses the input data as string representation for the input value type.
 String ValueAsStringInternal(const Byte* data, const CCryDataType type, const int size);
 
+// Parses a 64-bit number and creates a hexadecimal representation.
+String FormatInt64HexUpper(uint64 a);
+
 // Parameter definitions for the function below.
 #define ARRAYTYPE_CPP		0
 #define ARRAYTYPE_CSHARP	1

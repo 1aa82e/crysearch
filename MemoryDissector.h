@@ -17,6 +17,15 @@ struct DissectionRowEntry : Moveable<DissectionRowEntry>
 	// The data length is only applicable for AOB, string or wstring types.
 	int DataLength;
 	
+	// Default constructor for a new entry for Xmlize.
+	DissectionRowEntry()
+	{
+		this->RowOffset = 0;
+		this->RowValue = 0;
+		this->RowType = 0;
+		this->DataLength = 0;		
+	};
+	
 	// Default constructor to add new entry straight to vector.
 	DissectionRowEntry(const int rowOffset, const char* val, const int rowType, const int length)
 	{
@@ -25,6 +34,16 @@ struct DissectionRowEntry : Moveable<DissectionRowEntry>
 		this->RowType = rowType;
 		this->DataLength = length;
 	};
+	
+	// XML serialization logic function.
+	void Xmlize(XmlIO& s)
+	{
+		s
+			("RowOffset", this->RowOffset)
+			("RowType", this->RowType)
+			("DataLength", this->DataLength)
+		;
+	};	
 };
 
 // Represents a memory dissector. Keeps track of dissected entries and applies operations on it.
@@ -45,7 +64,7 @@ public:
 	const DWORD GetRegionSize() const;
 	const int GetDissectionRowCount() const;
 	
-	bool Dissect(const int rowOffset);
+	bool Dissect(const int rowOffset, const bool enableTypeGuessing);
 	void DissectPartial(const Tuple2<int, int>& range);
 	void Clear();
 	

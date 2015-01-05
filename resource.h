@@ -11,7 +11,7 @@
  
 #define VERSION_MAJOR               1
 #define VERSION_MINOR               0
-#define VERSION_REVISION            12
+#define VERSION_REVISION            15
 #define VERSION_BUILD               0
  
 #define VER_FILE_DESCRIPTION_STR    "CrySearch Memory Scanner, Debugger and Disassembler"

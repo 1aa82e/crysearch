@@ -148,6 +148,7 @@ struct MemoryDissectionEntry : Moveable<MemoryDissectionEntry>
 			("BaseAddress", this->AssociatedDissector.mBaseAddress)
 #endif
 			("MemorySize", this->AssociatedDissector.mRegionSize)
+			("DissectionRows", this->AssociatedDissector.mDissectionRows)
 		;
 	};
 };

@@ -53,7 +53,8 @@ CryNewScanForm::CryNewScanForm(bool FirstScan, const Image& icon) : CryDialogTem
 	
 	*this
 		<< this->mValueInfoLabel.SetLabel("Value:").LeftPos(5, 75).TopPos(5, 20)
-		<< this->mValueToSearchFor.HSizePos(75, 5).TopPos(5, 20)
+		<< this->mValueIsHex.SetLabel("Hex").LeftPos(75, 50).TopPos(5, 20)
+		<< this->mValueToSearchFor.HSizePos(130, 5).TopPos(5, 20)
 		<< this->mBlockSizeSelectorLabel.SetLabel("Size:").LeftPos(5, 75).TopPos(30, 20)
 		<< this->mBlockSizeSelector.Add("Byte").Add("Short (2 Bytes)").Add("Integer (4 Bytes)")
 			.Add("Long (8 Bytes)").Add("Float (4 Bytes)").Add("Double (8 Bytes)").Add("Array of Bytes")
@@ -67,6 +68,7 @@ CryNewScanForm::CryNewScanForm(bool FirstScan, const Image& icon) : CryDialogTem
 		<< this->mCancel.SetLabel("Cancel").RightPos(5, 75).BottomPos(5, 25)
 	;
 	
+	this->mValueIsHex.WhenAction = THISBACK(ValueInputHexToggleChanged);
 	this->mBlockSizeSelector.WhenAction = THISBACK(BlockSizeSelected);
 	this->mScanTypeSelector.WhenAction = THISBACK(ScanTypeSelected);
 	
@@ -94,22 +96,27 @@ CryNewScanForm::CryNewScanForm(bool FirstScan, const Image& icon) : CryDialogTem
 				this->mBlockSizeSelector.SetIndex(3);
 				break;
 			case VALUETYPE_FLOAT:
+				this->mValueIsHex.Disable();
 				this->mBlockSizeSelector.SetIndex(4);
 				break;
 			case VALUETYPE_DOUBLE:
+				this->mValueIsHex.Disable();
 				this->mBlockSizeSelector.SetIndex(5);
 				break;
 			case VALUETYPE_AOB:
+				this->mValueIsHex.Disable();
 				this->mBlockSizeSelector.SetIndex(6);
 				this->mScanTypeSelector.Disable();
 				this->mScanTypeSelectorLabel.Disable();
 				break;
 			case VALUETYPE_STRING:
+				this->mValueIsHex.Disable();
 				this->mBlockSizeSelector.SetIndex(7);
 				this->mScanTypeSelector.Disable();
 				this->mScanTypeSelectorLabel.Disable();
 				break;
 			case VALUETYPE_WSTRING:
+				this->mValueIsHex.Disable();
 				this->mBlockSizeSelector.SetIndex(7);
 				this->mScanTypeSelector.Disable();
 				this->mScanTypeSelectorLabel.Disable();
@@ -151,12 +158,33 @@ CryNewScanForm::~CryNewScanForm()
 	
 }
 
+void CryNewScanForm::ValueInputHexToggleChanged()
+{
+	const String& curInput = this->mValueToSearchFor.GetText().ToString();
+	const String& curType = this->mBlockSizeSelector.GetValue();
+	if (!curInput.IsEmpty())
+	{
+		if (curType != "String (Slower scan, be patient)" && curType != "Array of Bytes" && curType != "Float (4 Bytes)" && curType != "Double (8 Bytes)")
+		{
+			if (curType == "Long (8 Bytes)")
+			{
+				this->mValueToSearchFor.SetText(this->mValueIsHex ? Format("%llX", ScanInt64(curInput)) : Format("%lli", ScanInt64(curInput, NULL, 16)));
+			}
+			else
+			{
+				this->mValueToSearchFor.SetText(this->mValueIsHex ? Format("%llX", ScanInt(curInput)) : Format("%lli", ScanInt(curInput, NULL, 16)));
+			}
+		}
+	}
+}
+
 void CryNewScanForm::ScanTypeSelected()
 {
 	if (this->mScanTypeSelector.GetValue() == "Changed Value" || this->mScanTypeSelector.GetValue() == "Unchanged Value"
 		|| this->mScanTypeSelector.GetValue() == "Increased Value" || this->mScanTypeSelector.GetValue() == "Decreased Value")
 	{
 		this->mValueInfoLabel.Disable();
+		this->mValueIsHex.Disable();
 		this->mValueToSearchFor.Disable();
 		
 		if (this->mNextScan)
@@ -168,11 +196,13 @@ void CryNewScanForm::ScanTypeSelected()
 	else if (this->mScanTypeSelector.GetValue() == "Unknown Initial Value")
 	{
 		this->mValueInfoLabel.Disable();
+		this->mValueIsHex.Disable();
 		this->mValueToSearchFor.Disable();
 	}
 	else
 	{
 		this->mValueInfoLabel.Enable();
+		this->mValueIsHex.Enable();
 		this->mValueToSearchFor.Enable();
 		
 		if (this->mNextScan)
@@ -185,16 +215,19 @@ void CryNewScanForm::ScanTypeSelected()
 
 void CryNewScanForm::BlockSizeSelected()
 {
-	if (this->mBlockSizeSelector.GetValue() == "String (Slower scan, be patient)")
+	const String& selected = this->mBlockSizeSelector.GetValue();
+	if (selected == "String (Slower scan, be patient)")
 	{
+		this->mValueIsHex.Disable();
 		this->useFastScan.Disable();
 		this->mScanTypeSelector.SetIndex(0);
 		this->mScanTypeSelector.Disable();
 		this->mScanTypeSelectorLabel.Disable();
 		this->stringUnicode.Show();
 	}
-	else if (this->mBlockSizeSelector.GetValue() == "Array of Bytes")
+	else if (selected == "Array of Bytes")
 	{
+		this->mValueIsHex.Disable();
 		this->useFastScan.Disable();
 		this->mScanTypeSelector.SetIndex(0);
 		this->mScanTypeSelector.Disable();
@@ -203,6 +236,7 @@ void CryNewScanForm::BlockSizeSelected()
 	}
 	else
 	{
+		this->mValueIsHex.Enable(selected != "Float (4 Bytes)" && selected != "Double (8 Bytes)");		
 		this->useFastScan.Enable();
 		this->mScanTypeSelector.Enable();
 		this->mScanTypeSelectorLabel.Enable();
@@ -224,6 +258,7 @@ void CryNewScanForm::OkButtonClicked()
 		return;
 	}
 	
+	// Delete the old scan parameter placeholder to create a new one.
 	if (GlobalScanParameter)
 	{
 		delete GlobalScanParameter;
@@ -233,32 +268,32 @@ void CryNewScanForm::OkButtonClicked()
 	{
 		case 0: // byte
 			GlobalScanParameter = new ScanParameters<Byte>();
-			(reinterpret_cast<ScanParameters<Byte>*>(GlobalScanParameter))->ScanValue = StrInt(this->mValueToSearchFor.GetText().ToString());
+			(reinterpret_cast<ScanParameters<Byte>*>(GlobalScanParameter))->ScanValue = this->mValueIsHex ? ScanInt(this->mValueToSearchFor.GetText().ToString(), NULL, 16) : StrInt(this->mValueToSearchFor.GetText().ToString());
 			GlobalScanParameter->GlobalScanValueType = VALUETYPE_BYTE;
 			break;
 		case 1: // 2 bytes
 			GlobalScanParameter = new ScanParameters<short>();
-			(reinterpret_cast<ScanParameters<short>*>(GlobalScanParameter))->ScanValue = StrInt(this->mValueToSearchFor.GetText().ToString());
+			(reinterpret_cast<ScanParameters<short>*>(GlobalScanParameter))->ScanValue = this->mValueIsHex ? ScanInt(this->mValueToSearchFor.GetText().ToString(), NULL, 16) : StrInt(this->mValueToSearchFor.GetText().ToString());
 			GlobalScanParameter->GlobalScanValueType = VALUETYPE_2BYTE;
 			break;
 		case 2: // 4 bytes
 			GlobalScanParameter = new ScanParameters<int>();
-			(reinterpret_cast<ScanParameters<int>*>(GlobalScanParameter))->ScanValue = StrInt(this->mValueToSearchFor.GetText().ToString());
+			(reinterpret_cast<ScanParameters<int>*>(GlobalScanParameter))->ScanValue = this->mValueIsHex ? ScanInt(this->mValueToSearchFor.GetText().ToString(), NULL, 16) : StrInt(this->mValueToSearchFor.GetText().ToString());
 			GlobalScanParameter->GlobalScanValueType = VALUETYPE_4BYTE;
 			break;
 		case 3: // 8 bytes
 			GlobalScanParameter = new ScanParameters<__int64>();
-			(reinterpret_cast<ScanParameters<__int64>*>(GlobalScanParameter))->ScanValue = atol(this->mValueToSearchFor.GetText().ToString());
+			(reinterpret_cast<ScanParameters<__int64>*>(GlobalScanParameter))->ScanValue = this->mValueIsHex ? ScanInt64(this->mValueToSearchFor.GetText().ToString(), NULL, 16) : atol(this->mValueToSearchFor.GetText().ToString());
 			GlobalScanParameter->GlobalScanValueType = VALUETYPE_8BYTE;
 			break;
 		case 4: // float
 			GlobalScanParameter = new ScanParameters<float>();
-			(reinterpret_cast<ScanParameters<float>*>(GlobalScanParameter))->ScanValue = (float)StrDbl(this->mValueToSearchFor.GetText().ToString());
+			(reinterpret_cast<ScanParameters<float>*>(GlobalScanParameter))->ScanValue = this->mValueIsHex ? (float)ScanInt(this->mValueToSearchFor.GetText().ToString(), NULL, 16) : (float)StrDbl(this->mValueToSearchFor.GetText().ToString());
 			GlobalScanParameter->GlobalScanValueType = VALUETYPE_FLOAT;
 			break;
 		case 5: // double
 			GlobalScanParameter = new ScanParameters<double>();
-			(reinterpret_cast<ScanParameters<double>*>(GlobalScanParameter))->ScanValue = StrDbl(this->mValueToSearchFor.GetText().ToString());
+			(reinterpret_cast<ScanParameters<double>*>(GlobalScanParameter))->ScanValue = this->mValueIsHex ? (double)ScanInt(this->mValueToSearchFor.GetText().ToString(), NULL, 16) : StrDbl(this->mValueToSearchFor.GetText().ToString());
 			GlobalScanParameter->GlobalScanValueType = VALUETYPE_DOUBLE;
 			break;
 		case 6: // aob
@@ -304,8 +339,9 @@ void CryNewScanForm::OkButtonClicked()
 			break;
 	}
 	
-	// Indicate to the memory scanner that the current scan should be fast aligned scan.
+	// Set additional scanner parameters.
 	GlobalScanParameter->CurrentScanFastScan = this->useFastScan;
+	GlobalScanParameter->CurrentScanHexValues = this->mValueIsHex.IsEnabled() ? this->mValueIsHex : false;
 	
 	// String or WString types can only comply to exact match, all other types can also comply to other operators.
 	if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_STRING || GlobalScanParameter->GlobalScanValueType == VALUETYPE_WSTRING

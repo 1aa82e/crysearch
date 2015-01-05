@@ -60,8 +60,8 @@ void CryPluginsWindow::PluginRightClick(Bar& pBar)
 
 void CryPluginsWindow::ShowPluginAbout()
 {
-	const int row = this->mPluginsList.GetCursor();
-	PromptOK((*mPluginSystem)[row].ShowAboutDialog());
+	const CrySearchPlugin& selected = (*mPluginSystem)[this->mPluginsList.GetCursor()];
+	Prompt(Format("About %s", selected.PluginHeader->PluginName), CtrlImg::information(), selected.ShowAboutDialog(), "OK");
 }
 
 void CryPluginsWindow::UnloadPluginButton()

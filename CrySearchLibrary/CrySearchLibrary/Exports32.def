@@ -27,3 +27,4 @@ EXPORTS
 	GetDataSizeFromValueType
 	GetCrySearchDataTypeRepresentation
 	GetOSVersionString
+	GuessTypeOfValue

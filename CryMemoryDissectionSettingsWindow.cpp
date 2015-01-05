@@ -9,7 +9,8 @@ CryMemoryDissectionSettingsWindow::CryMemoryDissectionSettingsWindow()
 		<< this->mDissectionSettings.SetLabel("Memory Dissection").HSizePos(5, 5).VSizePos(5, 35)
 		<< this->mUpdateIntervalDesc.SetLabel("Update Interval:").LeftPos(10, 100).TopPos(20, 25)
 		<< this->mUpdateInterval.HSizePos(115, 10).TopPos(20, 25)
-		<< this->mDefaultViewAsHex.SetLabel("View values as hexadecimal by default.").HSizePos(10, 10).TopPos(50, 25)
+		<< this->mDefaultViewAsHex.SetLabel("View values as hexadecimal by default").HSizePos(10, 10).TopPos(50, 20)
+		<< this->mEnableTypeGuessing.SetLabel("Enable type guessing when dissecting").HSizePos(10, 10).TopPos(75, 20)
 		<< this->mOK.Ok().SetLabel("OK").RightPos(70, 60).BottomPos(5, 25)
 		<< this->mClose.SetLabel("Cancel").RightPos(5, 60).BottomPos(5, 25)
 	;
@@ -42,9 +43,10 @@ void CryMemoryDissectionSettingsWindow::OkButtonClicked()
 	
 	// Set options in settings file.
 	this->mSettingsInstance->SetDissectionHexadecimalView(this->mDefaultViewAsHex);
-
+	this->mSettingsInstance->SetEnableDissectionTypeGuessing(this->mEnableTypeGuessing);
+	
 	this->mSettingsInstance->Save();
-	this->Close();
+	this->AcceptBreak(10);
 }
 
 void CryMemoryDissectionSettingsWindow::CloseWindow()
@@ -58,4 +60,5 @@ void CryMemoryDissectionSettingsWindow::LoadSettings()
 {
 	this->mUpdateInterval.SetText(IntStr(this->mSettingsInstance->GetDissectionUpdateInterval()));
 	this->mDefaultViewAsHex = this->mSettingsInstance->GetDissectionHexadecimalView();
+	this->mEnableTypeGuessing = this->mSettingsInstance->GetEnableDissectionTypeGuessing();
 }

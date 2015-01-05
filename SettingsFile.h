@@ -84,6 +84,7 @@ private:
 	
 	int mDissectionUpdateInterval;
 	bool mDissectionHexView;
+	bool mEnableDissectionTypeGuessing;
 	
 	SettingsFile();
 	~SettingsFile();
@@ -126,6 +127,7 @@ public:
 	
 	const int GetDissectionUpdateInterval() const				{ return this->mDissectionUpdateInterval; }
 	const bool GetDissectionHexadecimalView() const				{ return this->mDissectionHexView; }
+	const bool GetEnableDissectionTypeGuessing() const			{ return this->mEnableDissectionTypeGuessing; }
 	
 	// inline setters for settings variables
 	void SetFastScanByDefault(bool value = true)				{ this->mFastScanByDefault = value; }	
@@ -157,6 +159,7 @@ public:
 	
 	void SetDissectionUpdateInterval(int value = 500)			{ this->mDissectionUpdateInterval = value; }
 	void SetDissectionHexadecimalView(bool value = false)		{ this->mDissectionHexView = value; }
+	void SetEnableDissectionTypeGuessing(bool value = false)	{ this->mEnableDissectionTypeGuessing = value; }
 	
 	// Hotkey list functions
 	void AddHotkey(const String& description, unsigned int key);

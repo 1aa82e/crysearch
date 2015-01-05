@@ -198,9 +198,7 @@ String ValueAsStringInternal(const Byte* data, const CCryDataType type, const in
 		case CRYDATATYPE_8BYTES:
 			return IntStr64(*(__int64*)data);
 		case CRYDATATYPE_FLOAT:
-			char str[DBL_MAX_10_EXP + 2];
-			sprintf_s(str, DBL_MAX_10_EXP + 2, "%f", *(float*)data);
-			return str;
+			return DblStr(*(float*)data);
 		case CRYDATATYPE_DOUBLE:
 			return DblStr(*(double*)data);
 		case CRYDATATYPE_AOB:
@@ -213,4 +211,19 @@ String ValueAsStringInternal(const Byte* data, const CCryDataType type, const in
 	
 	// Empty string is returned in case the type is invalid.
 	return "";
+}
+
+// Parses a 64-bit number and creates a hexadecimal representation. Returns the hexadecimal
+// representation in a string. The formatting returns upper-case characters.
+String FormatInt64HexUpper(uint64 a)
+{
+	char b[50];
+	char *p = b + 50;
+	do
+	{
+		*--p = "0123456789ABCDEF"[a & 15];
+		a >>= 4;
+	}
+	while(a);
+	return String(p, b + 50);
 }

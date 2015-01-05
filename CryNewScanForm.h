@@ -13,6 +13,7 @@ private:
 	Button mOk;
 	Button mCancel;
 	Label mValueInfoLabel;
+	Option mValueIsHex;
 	EditField mValueToSearchFor;
 	DropList mBlockSizeSelector;
 	Label mBlockSizeSelectorLabel;
@@ -21,6 +22,7 @@ private:
 	Option useFastScan;
 	Option stringUnicode;
 	
+	void ValueInputHexToggleChanged();
 	void ScanTypeSelected();
 	void BlockSizeSelected();
 	void OkButtonClicked();

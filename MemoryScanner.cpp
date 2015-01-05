@@ -38,7 +38,7 @@ void AddResultsToCache(const int Resultcount, const SIZE_T* AddressBuffer, const
 {
 	CacheMutex.Enter();
 	
-	// While the count is not yet bigger than a million, copy the entries into the cache
+	// While the count is not yet bigger than the threshold, copy the entries into the cache
 	const int newCount = CachedAddresses.GetCount() + Resultcount;
 	int indexBarrier = 0;
 
@@ -63,7 +63,7 @@ void AddResultsToCache(const int Resultcount, const SIZE_T* AddressBuffer, const
 			// Add the cache values to the appropriate buffer.
 			CachedAddresses.Add(SearchResultCacheEntry(AddressBuffer[i], !!mod));
 			CachedValues.Add(BytesToString(ValuesBuffer[i].Data, ValuesBuffer[i].Size));
-		}		
+		}
 	}
 	
 	CacheMutex.Leave();
@@ -75,7 +75,7 @@ void AddResultsToCache(const int Resultcount, const SIZE_T* AddressBuffer, const
 {
 	CacheMutex.Enter();
 	
-	// While the count is not yet bigger than a million, copy the entries into the cache
+	// While the count is not yet bigger than the threshold, copy the entries into the cache
 	const int newCount = CachedAddresses.GetCount() + Resultcount;
 	int indexBarrier = 0;
 

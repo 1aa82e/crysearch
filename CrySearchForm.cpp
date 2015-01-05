@@ -64,7 +64,22 @@ String GetAddress(const int index)
 // Virtual array control row accessors.
 String GetValue(const int index)
 {
-	return CachedValues[index].ToString();
+	const Value& v = CachedValues[index];
+	if (IsString(v) || GlobalScanParameter->GlobalScanValueType == VALUETYPE_DOUBLE || GlobalScanParameter->GlobalScanValueType == VALUETYPE_FLOAT)
+	{
+		return v.ToString();
+	}
+	else
+	{
+		if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_8BYTE)
+		{
+			return GlobalScanParameter->CurrentScanHexValues ? FormatInt64HexUpper(v.Get<__int64>()) : v.ToString();
+		}
+		else
+		{
+			return GlobalScanParameter->CurrentScanHexValues ? FormatIntHexUpper(v, 0) : v.ToString();
+		}
+	}
 }
 
 String GetAddressTableDescription(const int index)
@@ -169,34 +184,63 @@ void CrySearchForm::SearchResultListUpdater()
 		Tuple2<int, int> searchResultsRange = this->mScanResults.GetVisibleRange();
 		if (searchResultsRange.a >= 0 && searchResultsRange.b < mMemoryScanner->GetScanResultCount())
 		{
-			for (int start = searchResultsRange.a; start <= searchResultsRange.b; ++start)
+			// As an extra safety measure, the loop will not update any further when a memory scan has been started.
+			for (int start = searchResultsRange.a; (start <= searchResultsRange.b) && !mMemoryScanner->IsScanRunning(); ++start)
 			{
 				if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_BYTE)
 				{
 					Byte value;
-					CachedValues[start] = mMemoryScanner->Peek<Byte>(CachedAddresses[start].Address, 0, &value) ? IntStr(value) : "???";
+					if (mMemoryScanner->Peek<Byte>(CachedAddresses[start].Address, 0, &value))
+					{
+						CachedValues[start] = value;
+					}
+					else
+					{
+						CachedValues[start] = "???";
+					}
 				}
 				else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_2BYTE)
 				{
 					short value;
-					CachedValues[start] = mMemoryScanner->Peek<short>(CachedAddresses[start].Address, 0, &value) ? IntStr(value) : "???";
+					if (mMemoryScanner->Peek<short>(CachedAddresses[start].Address, 0, &value))
+					{
+						CachedValues[start] = value;
+					}
+					else
+					{
+						CachedValues[start] = "???";
+					}
 				}
 				else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_4BYTE)
 				{
 					int value;
-					CachedValues[start] = mMemoryScanner->Peek<int>(CachedAddresses[start].Address, 0, &value) ? IntStr(value) : "???";
+					if (mMemoryScanner->Peek<int>(CachedAddresses[start].Address, 0, &value))
+					{
+						CachedValues[start] = value;
+					}
+					else
+					{
+						CachedValues[start] = "???";
+					}
 				}
 				else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_8BYTE)
 				{
 					__int64 value;
-					CachedValues[start] = mMemoryScanner->Peek<__int64>(CachedAddresses[start].Address, 0, &value) ? IntStr64(value) : "???";
+					if (mMemoryScanner->Peek<__int64>(CachedAddresses[start].Address, 0, &value))
+					{
+						CachedValues[start] = value;
+					}
+					else
+					{
+						CachedValues[start] = "???";
+					}
 				}
 				else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_FLOAT)
 				{
 					float value;
 					if (mMemoryScanner->Peek<float>(CachedAddresses[start].Address, 0, &value))
 					{
-						CachedValues[start] = DblStr(value);
+						CachedValues[start] = value;
 					}
 					else
 					{
@@ -206,7 +250,14 @@ void CrySearchForm::SearchResultListUpdater()
 				else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_DOUBLE)
 				{
 					double value;
-					CachedValues[start] = mMemoryScanner->Peek<double>(CachedAddresses[start].Address, 0, &value) ? DblStr(value) : "???";
+					if (mMemoryScanner->Peek<double>(CachedAddresses[start].Address, 0, &value))
+					{
+						CachedValues[start] = value;
+					}
+					else
+					{
+						CachedValues[start] = "???";
+					}
 				}
 				else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_AOB)
 				{
@@ -558,7 +609,7 @@ void CrySearchForm::ToolsMenu(Bar& pBar)
 		pBar.Add("View PEB", CrySearchIml::AboutButton(), THISBACK(ViewPEBButtonClicked));
 		pBar.Add("View Handles", CrySearchIml::ViewHandlesButton(), THISBACK(ViewSystemHandlesButtonClicked));
 		pBar.Separator();
-		pBar.Add("Allocate Memory", CrySearchIml::CrySearch(), THISBACK(AllocateMemoryButtonClicked));
+		pBar.Add("Allocate Memory", CrySearchIml::AllocateMemoryButton(), THISBACK(AllocateMemoryButtonClicked));
 		pBar.Add("Memory Dissection", CrySearchIml::MemoryDissection(), THISBACK(MemoryDissectionButtonClicked));
 		pBar.Separator();
 		pBar.Add((this->mUserAddressList.GetCount() > 0), "Code Generation", CrySearchIml::CodeGenerationButton(), THISBACK(CodeGenerationButtonClicked));

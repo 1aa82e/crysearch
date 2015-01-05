@@ -10,10 +10,11 @@ void AddressTable::Xmlize(XmlIO& s)
 	CrySearchGetMajorMinorVersion(&major, &minor);
 	
 	const DWORD appname[] = {0x53797243, 0x63726165, 0x68}; //"CrySearch"
+	String appnameStr = (char*)appname;
 	
 	// Write the address table to the XML serializer.
 	s
-		(Format("%sVersion", (char*)appname), Format("%i.%i", major, minor))
+		(appnameStr + "Version", Format("%i.%i", major, minor))
 		("ProcessName", this->mProcessName)
 		("Entries", this->mEntries)
 		("MemoryDissections", this->mDissections)
@@ -269,6 +270,18 @@ void AddressTable::CreateAddressTableFromFile(AddressTable& at, const String& fi
 	
 	// Resolve the addresses of relative entries.
 	AddressTable::ResolveRelativeEntries(at);
+	
+	// Initialize memory dissection values to 0. The fields must be set to prevent errors.
+	const int disCount = at.GetDissectionCount();
+	for (int i = 0; i < disCount; ++i)
+	{
+		MemoryDissectionEntry* entry = at.GetDissection(i);
+		const int rowCount = entry->AssociatedDissector.GetDissectionRowCount();
+		for (int r = 0; r < rowCount; ++r)
+		{
+			entry->AssociatedDissector[r]->RowValue = "";
+		}
+	}
 }
 
 // Stores an in-memory address table to a .csat XML data file.
@@ -299,7 +312,8 @@ void AddressTable::SaveAddressTableToFile(AddressTable& pTable, const String& fi
 	
 	// Persist address table to file.
 	const DWORD appname[] = {0x53797243, 0x63726165, 0x68}; //"CrySearch"
-	StoreAsXMLFile(pTable, Format("%sAddressTable", (char*)appname), filename);
+	String appnameStr = (char*)appname;
+	StoreAsXMLFile(pTable, appnameStr + "AddressTable", filename);
 	pTable.SetFileName(filename);
 	
 	// Restore temporary saved addresses in memory address table.

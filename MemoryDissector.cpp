@@ -34,7 +34,7 @@ const int MemoryDissector::GetDissectionRowCount() const
 }
 
 // Starts dissection of the selected region of memory.
-bool MemoryDissector::Dissect(const int rowOffset)
+bool MemoryDissector::Dissect(const int rowOffset, const bool enableTypeGuessing)
 {
 	bool result = false;
 	
@@ -52,7 +52,8 @@ bool MemoryDissector::Dissect(const int rowOffset)
 		for (Byte* loop = buffer; loop < endAddr; loop += rowOffset, totalSteps += rowOffset)
 		{
 			// The first dissection should have a default row size, or type guessing.
-			this->mDissectionRows.Add(DissectionRowEntry(totalSteps, ValueAsStringInternal(loop, CRYDATATYPE_4BYTES, 0), CRYDATATYPE_4BYTES, 0));
+			const CCryDataType type = GuessTypeOfValue(loop);
+			this->mDissectionRows.Add(DissectionRowEntry(totalSteps, ValueAsStringInternal(loop, type, 0), type, 0));
 		}
 		
 		result = true;

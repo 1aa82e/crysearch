@@ -3,7 +3,17 @@ CrySearch Memory Scanner
 evolution536, www.unknowncheats.me
 
 v1.15
-	- 
+	- The icon of CrySearch has changed, thanks to Daax. He crafted a wonderful new icon for CrySearch;
+	- Made a few changes, bug fixes and improvements to the memory dissection window:
+		- Customized drawing of the memory dissection window, now drawing the address/offset in black and the type in grey;
+		- Fixed bug caused in the changes of last version where the address table file was not properly saved to file anymore;
+		- Fixed bug where float values would always be displayed as 0.0000000 values;
+		- Fixed bug where CrySearch did not save memory dissection contents in the address table file. Custom row types need this;
+		- Fixed bug where altering the type or size of a row would mangle the offset of the second entry in the wrong way;
+		- Fixed bug where changing the view mode of dissection rows when there are no dissections loaded would crash CrySearch;
+		- Fixed bug where setting hexadecimal view mode and default hexadecimal view mode were interfering.
+	- Changed plugin about box title to match the plugin name. This looks better than the default title;
+	- Added possibility to scan a process' memory for hexadecimal values. This option applies for byte, short, int and long;
 v1.14
 	- Added event procedure to plugin system. CrySearch calls the event procedure for default in-app events like process open/close;
 	- Small user interface detail modifications and improvements:

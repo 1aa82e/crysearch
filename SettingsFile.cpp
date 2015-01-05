@@ -32,6 +32,7 @@ void SettingsFile::Xmlize(XmlIO& pXml)
 		("HotkeyList", this->hotkeys)
 		("DissectionUpdateInterval", this->mDissectionUpdateInterval)
 		("DissectionHexView", this->mDissectionHexView)
+		("DissectionEnableTypeGuessing", this->mEnableDissectionTypeGuessing)
 	;
 }
 
@@ -68,6 +69,7 @@ void SettingsFile::DefaultSettings()
 	this->SetCatchAllExceptions();
 	this->SetDissectionUpdateInterval();
 	this->SetDissectionHexadecimalView();
+	this->SetEnableDissectionTypeGuessing();
 	this->Save();
 }
 

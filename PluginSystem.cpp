@@ -63,7 +63,7 @@ void PluginSystem::GetPluginsByType(const DWORD type, Vector<CrySearchPlugin>& o
 	for (int i = 0; i < count; ++i)
 	{
 		const CrySearchPlugin& plugin = this->mLoadedPlugins[i];
-		if (plugin.PluginHeader->PluginType & type)
+		if (plugin.PluginHeader->PluginFeatures & type)
 		{
 			outPlugins.Add(plugin);
 		}
@@ -96,7 +96,7 @@ HMODULE PluginSystem::GetDefaultDumperEnginePlugin() const
 	for (int i = 0; i < pCount; ++i)
 	{
 		const CrySearchPlugin& plugin = this->mLoadedPlugins[i];
-		if (plugin.PluginHeader->PluginType & CRYPLUGIN_DUMPER)
+		if (plugin.PluginHeader->PluginFeatures & CRYPLUGIN_DUMPER)
 		{
 			tempretifno = plugin.BaseAddress;
 			if (plugin.PluginHeader->Flags & PLUGIN_CLASS_DEFAULT)

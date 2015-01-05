@@ -8,12 +8,10 @@ Package:
 ------------------------------------------------------------------
 
 - Improve SDK documentation, see learn_more's notes;
+- Put initials in CrySearch binaries;
 - Post-dump (plugin operations) event in plugins!!!
 - Provide the output window / menu bar entry (PLUGIN_WANTS_OUTPUT_TAB);
 
-- Plugin about box has small detail: CrySearch64 as title, not very professional;
-- Implement searching for hexadecimal values (byte, short, int long);
-- Make sure the address updater doesn't run while searching values;
 - Stack trace addresses (dbg/crashhandler) can be resolved to exported functions?
 - Crash handler mustn't be started from exception handler itself!
 - Resolve thread start addresses to functions/relative addresses?
@@ -36,13 +34,10 @@ Package:
 	- 16-byte registers during snapshot?
 	- VEH debugger
 
-- Structure dissections
-	- settings window, default offset;
-	- Right-click row and select its type;
+- Structure dissections:
 	- type guessing;
 	- data schema (smth like xsd but for memory dissections);
 	- generate struct definition from selection;
-	- save struct (selection) to address table (not entirely, I guess, with type guessing I should save different offsets);
 
 - There is a bug in the process selection window when fooling around with non-responsive processes;
 - Also a bug in the main window complaining about GUI locking (hard to reproduce);
