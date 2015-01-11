@@ -14,6 +14,7 @@ v1.15
 		- Fixed bug where setting hexadecimal view mode and default hexadecimal view mode were interfering.
 	- Changed plugin about box title to match the plugin name. This looks better than the default title;
 	- Added possibility to scan a process' memory for hexadecimal values. This option applies for byte, short, int and long;
+	- Changed thread window to resolve thread start addresses to a module and function if the opened process provides symbols;
 v1.14
 	- Added event procedure to plugin system. CrySearch calls the event procedure for default in-app events like process open/close;
 	- Small user interface detail modifications and improvements:

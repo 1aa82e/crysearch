@@ -6,6 +6,7 @@
 #include "CryThreadInformationBlockWindow.h"
 #include "CryThreadContextSnapWindow.h"
 #include "UIUtilities.h"
+#include "ProcessUtil.h"
 
 Vector<Win32ThreadInformation> mThreadsList;
 
@@ -30,18 +31,64 @@ String GetThreadPriority(const int index)
 
 String GetThreadStartAddress(const int index)
 {
-#ifdef _WIN64
-	if (mMemoryScanner->IsX86Process())
+	const Win32ModuleInformation* mod = NULL;
+	const SIZE_T addr = mThreadsList[index].StartAddress;
+	if (mod = mModuleManager->GetModuleFromContainedAddress(addr))
 	{
-		return Format("%lX", (int)mThreadsList[index].StartAddress);
+		if (mDebugger->IsDebuggerAttached())
+		{
+			char symbolName[MAX_PATH];
+			if (GetSingleSymbolName(mMemoryScanner->GetHandle(), addr, symbolName, MAX_PATH))
+			{
+				return Format("%s!%s", mod->ModuleName, symbolName);
+			}
+			else
+			{
+#ifdef _WIN64
+				if (mMemoryScanner->IsX86Process())
+				{
+					return Format("%s!%lX", mod->ModuleName, (int)addr);
+				}
+				else
+				{
+					return Format("%s!%llX", mod->ModuleName, (__int64)addr);
+				}
+#else
+				return Format("%s!%lX", mod->ModuleName, (int)addr);
+#endif
+			}
+		}
+		else
+		{
+#ifdef _WIN64
+			if (mMemoryScanner->IsX86Process())
+			{
+				return Format("%s!%lX", mod->ModuleName, (int)addr);
+			}
+			else
+			{
+				return Format("%s!%llX", mod->ModuleName, (__int64)addr);
+			}
+#else
+			return Format("%s!%lX", mod->ModuleName, (int)addr);
+#endif			
+		}
 	}
 	else
 	{
-		return Format("%llX", (__int64)mThreadsList[index].StartAddress);
-	}
+#ifdef _WIN64
+		if (mMemoryScanner->IsX86Process())
+		{
+			return Format("%lX", (int)addr);
+		}
+		else
+		{
+			return Format("%llX", (__int64)addr);
+		}
 #else
-	return Format("%lX", (int)mThreadsList[index].StartAddress);
+		return Format("%lX", (int)addr);
 #endif
+	}
 }
 
 CryThreadWindow::CryThreadWindow()
@@ -49,10 +96,10 @@ CryThreadWindow::CryThreadWindow()
 	this->AddFrame(this->tBar);
 	this->tBar.Set(THISBACK(ToolBar));
 	
-	this->mThreads.CryAddRowNumColumn("ID (Decimal)").SetConvert(Single<IndexBasedValueConvert<GetDecimalThreadId>>());
-	this->mThreads.CryAddRowNumColumn("ID (Hex)").SetConvert(Single<IndexBasedValueConvert<GetHexadecimalThreadId>>());
-	this->mThreads.CryAddRowNumColumn("Priority").SetConvert(Single<IndexBasedValueConvert<GetThreadPriority>>());
-	this->mThreads.CryAddRowNumColumn("Start Address").SetConvert(Single<IndexBasedValueConvert<GetThreadStartAddress>>());
+	this->mThreads.CryAddRowNumColumn("ID (Decimal)", 20).SetConvert(Single<IndexBasedValueConvert<GetDecimalThreadId>>());
+	this->mThreads.CryAddRowNumColumn("ID (Hex)", 20).SetConvert(Single<IndexBasedValueConvert<GetHexadecimalThreadId>>());
+	this->mThreads.CryAddRowNumColumn("Priority", 20).SetConvert(Single<IndexBasedValueConvert<GetThreadPriority>>());
+	this->mThreads.CryAddRowNumColumn("Start Address", 40).SetConvert(Single<IndexBasedValueConvert<GetThreadStartAddress>>());
 	this->mThreads.WhenBar = THISBACK(ThreadListRightClick);
 	
 	*this << this->mThreads.SizePos();

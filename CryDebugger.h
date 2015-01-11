@@ -83,7 +83,7 @@ struct DbgBreakpoint : Moveable<DbgBreakpoint>
 		Vector<StackViewData> StackView;
 		
 		// Contains the call stack at the moment of breakpoint hit.
-		Vector<Win32StackTraceEntry> CallStackView;
+		Vector<DWORD64> CallStackView;
 		
 		// Releases memory used by the thread context.
 		void Reset()

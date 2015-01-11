@@ -111,15 +111,13 @@ LONG __stdcall CrashHandler(PEXCEPTION_POINTERS ExceptionInfo)
 	HANDLE hCur = GetCurrentProcess();
 	SymInitialize(hCur, NULL, TRUE);
 	
-	Vector<Win32StackTraceEntry> callstack;
+	Vector<DWORD64> callstack;
 	
 #ifdef _WIN64
 	ConstructStackTrace(hCur, IMAGE_FILE_MACHINE_AMD64, ExceptionInfo->ContextRecord, callstack);
 #else
 	ConstructStackTrace(hCur, IMAGE_FILE_MACHINE_I386, ExceptionInfo->ContextRecord, callstack);
 #endif
-
-	SymCleanup(hCur);
 	
 	excMsg += "\r\nStack Trace:\r\n\r\n";
 	if (!callstack.GetCount())
@@ -128,10 +126,30 @@ LONG __stdcall CrashHandler(PEXCEPTION_POINTERS ExceptionInfo)
 	}
 	
 	// Iterate the obtained stack trace.
-	for (int i = 0; i < callstack.GetCount(); ++i)
+	const int count = callstack.GetCount();
+	for (int i = 0; i < count; ++i)
 	{
-		excMsg += callstack[i].StringRepresentation + "\r\n";
+		const DWORD64& current = callstack[i];
+		const Win32ModuleInformation* mod = NULL;
+		if (mod = mModuleManager->GetModuleFromContainedAddress((SIZE_T)current))
+		{
+			char symbolName[MAX_PATH];
+			if (GetSingleSymbolName(hCur, (SIZE_T)current, symbolName, MAX_PATH))
+			{
+				excMsg += Format("%s!%s\r\n", mod->ModuleName, symbolName);
+			}
+			else
+			{
+				excMsg += Format("%s!%llX\r\n", mod->ModuleName, (LONG_PTR)current);
+			}
+		}
+		else
+		{
+			excMsg += Format("%llX\r\n", (LONG_PTR)current);
+		}
 	}
+	
+	SymCleanup(hCur);
 	
 	// Pop up crash report window.
 	CryCrashHandlerWindow* cchw = new CryCrashHandlerWindow(excMsg);

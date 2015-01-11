@@ -56,18 +56,12 @@ struct Win32HandleInformation : Moveable<Win32HandleInformation>
 	LONG Access;	
 };
 
-// Represents an entry in the call stack from a debugger breakpoint.
-struct Win32StackTraceEntry : Moveable<Win32StackTraceEntry>
-{
-	SIZE_T Address;
-	String StringRepresentation;
-};
-
 void EnumerateHandles(const int processId, Vector<Win32HandleInformation>& handles);
 void EnumerateThreads(const int processId, Vector<Win32ThreadInformation>& threads);
 void EnumerateProcesses(Vector<Win32ProcessInformation>& outList);
 bool EnumerateHeaps(Vector<Win32HeapInformation>& heapInfoList);
-void ConstructStackTrace(HANDLE hProcess, const DWORD machineType, const void* const contextPtr, Vector<Win32StackTraceEntry>& outStackTrace);
+const bool GetSingleSymbolName(HANDLE hProcess, const SIZE_T addrOffset, char* const outSymbolName, const DWORD bufferSize);
+void ConstructStackTrace(HANDLE hProcess, const DWORD machineType, const void* const contextPtr, Vector<DWORD64>& outStackTrace);
 
 // Extern thread list definition, which is needed by the disassembly window to set hardware breakpoints.
 extern Vector<Win32ThreadInformation> mThreadsList;

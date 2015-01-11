@@ -11,10 +11,9 @@ Package:
 - Put initials in CrySearch binaries;
 - Post-dump (plugin operations) event in plugins!!!
 - Provide the output window / menu bar entry (PLUGIN_WANTS_OUTPUT_TAB);
-
+- Improve signature generation to mask bytes;
 - Stack trace addresses (dbg/crashhandler) can be resolved to exported functions?
 - Crash handler mustn't be started from exception handler itself!
-- Resolve thread start addresses to functions/relative addresses?
 - IAT window isn't that perfect in UI stuff;
 - Find import function in window (button on top)?
 - Splitter offset on the right size, I think the border is 3D!

@@ -66,7 +66,24 @@ String GetStackViewValue(const int index)
 
 String GetCallStackFunctionCall(const int index)
 {
-	return (*mDebugger)[BreakpointMasterIndex].BreakpointSnapshot.CallStackView[index].StringRepresentation;
+	const DWORD64 address = (*mDebugger)[BreakpointMasterIndex].BreakpointSnapshot.CallStackView[index];
+	const Win32ModuleInformation* mod = NULL;
+	if (mod = mModuleManager->GetModuleFromContainedAddress((SIZE_T)address))
+	{
+		char symbolName[MAX_PATH];
+		if (GetSingleSymbolName(mMemoryScanner->GetHandle(), (SIZE_T)address, symbolName, MAX_PATH))
+		{
+			return Format("%s!%s", mod->ModuleName, symbolName);
+		}
+		else
+		{
+			return Format("%s!%llX", mod->ModuleName, (LONG_PTR)address);
+		}
+	}
+	else
+	{
+		return Format("%llX", (LONG_PTR)address);
+	}
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -154,8 +171,7 @@ void CryDebuggerWindow::CallStackListRightClick(Bar& pBar)
 
 void CryDebuggerWindow::FollowStackTraceInDisassembler()
 {
-	const Win32StackTraceEntry& entry = (*mDebugger)[BreakpointMasterIndex].BreakpointSnapshot.CallStackView[this->mCallStackView.GetCursor()];
-	mCrySearchWindowManager->GetDisasmWindow()->MoveToAddress(entry.Address);
+	mCrySearchWindowManager->GetDisasmWindow()->MoveToAddress((SIZE_T)(*mDebugger)[BreakpointMasterIndex].BreakpointSnapshot.CallStackView[this->mCallStackView.GetCursor()]);
 	mCrySearchWindowManager->GetParentWindow()->SetActiveTabWindow("Disassembly");
 }
 

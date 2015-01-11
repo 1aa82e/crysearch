@@ -291,8 +291,32 @@ void EnumerateHandles(const int processId, Vector<Win32HandleInformation>& handl
 	VirtualFree(handleInfo, 0, MEM_RELEASE);
 }
 
+// Attempts to retrieve the name of a symbol. This function requires the SymInitialize function
+// to be previously executed. Returns true if the symbol lookup succeeded and false otherwise.
+const bool GetSingleSymbolName(HANDLE hProcess, const SIZE_T addrOffset, char* const outSymbolName, const DWORD bufferSize)
+{
+	const DWORD arrSize = sizeof(IMAGEHLP_SYMBOL64) + MAX_SYM_NAME;
+	char buffer[arrSize];
+	memset(buffer, 0, arrSize);
+
+	IMAGEHLP_SYMBOL64* const symbol = (IMAGEHLP_SYMBOL64*)buffer;
+	symbol->SizeOfStruct = sizeof(IMAGEHLP_SYMBOL64);
+    symbol->MaxNameLength = MAX_SYM_NAME;
+    
+    // Attempt to retrieve symbol name from PDB file.
+    if (SymGetSymFromAddr64(hProcess, addrOffset, NULL, symbol))
+    {
+        UnDecorateSymbolName(symbol->Name, outSymbolName, bufferSize, UNDNAME_COMPLETE);
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
 // Obtains the stack trace for a hit breakpoint and puts it into the last parameter.
-void ConstructStackTrace(HANDLE hProcess, const DWORD machineType, const void* const contextPtr, Vector<Win32StackTraceEntry>& outStackTrace)
+void ConstructStackTrace(HANDLE hProcess, const DWORD machineType, const void* const contextPtr, Vector<DWORD64>& outStackTrace)
 {
 	outStackTrace.Clear();
 
@@ -331,7 +355,6 @@ void ConstructStackTrace(HANDLE hProcess, const DWORD machineType, const void* c
 	StackFrame.AddrStack.Mode = AddrModeFlat;
 	
 	BOOL result;
-	const DWORD arrSize = sizeof(IMAGEHLP_SYMBOL64) + MAX_SYM_NAME;
 	
 	do
 	{
@@ -344,46 +367,8 @@ void ConstructStackTrace(HANDLE hProcess, const DWORD machineType, const void* c
 			break;
 		}
 		
-		char buffer[arrSize];
-		memset(buffer, 0, arrSize);
-
-		IMAGEHLP_SYMBOL64* const symbol = (IMAGEHLP_SYMBOL64*)buffer;
-		symbol->SizeOfStruct = sizeof(IMAGEHLP_SYMBOL64);
-        symbol->MaxNameLength = MAX_SYM_NAME;
-        
-        // Obtain module from stack trace.
-        const Win32ModuleInformation* module = mModuleManager->GetModuleFromContainedAddress((SIZE_T)StackFrame.AddrPC.Offset);
-        
-        char name[MAX_SYM_NAME];
-        char* symNamePtr;
-		DWORD customizedLength = 0;
-        
-        // Set stack trace entry name array to zero to avoid cluttered results.
-		memset(name, 0, MAX_SYM_NAME);
-        Win32StackTraceEntry& newEntry = outStackTrace.Add();
-        newEntry.Address = (SIZE_T)StackFrame.AddrPC.Offset;
-        
-        if (module)
-        {
-            // Set the module name for the stack trace entry.
-            const int strLen = module->ModuleName.GetLength();
-            memcpy(name, module->ModuleName, strLen);
-            name[strLen] = '!';
-			customizedLength = strLen + 1;
-            symNamePtr = name + customizedLength;
-        }
-        
-        // Attempt to retrieve symbol name from PDB file.
-        if (SymGetSymFromAddr64(hProcess, StackFrame.AddrPC.Offset, NULL, symbol))
-        {
-            UnDecorateSymbolName(symbol->Name, symNamePtr, MAX_SYM_NAME - customizedLength, UNDNAME_COMPLETE);
-            newEntry.StringRepresentation = name;
-        }
-        else
-        {
-            // Symbol name was not found, just put module name with address.
-            newEntry.StringRepresentation = Format("%s%llX", name, (LONG_PTR)StackFrame.AddrPC.Offset);
-        }
+		// Add the stack trace entry to the output vector.
+        outStackTrace.Add(StackFrame.AddrPC.Offset);
 	}
 	while (result);
 }
