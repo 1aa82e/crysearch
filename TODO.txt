@@ -8,11 +8,8 @@ Package:
 ------------------------------------------------------------------
 
 - Improve SDK documentation, see learn_more's notes;
-- Put initials in CrySearch binaries;
 - Post-dump (plugin operations) event in plugins!!!
 - Provide the output window / menu bar entry (PLUGIN_WANTS_OUTPUT_TAB);
-- Improve signature generation to mask bytes;
-- Stack trace addresses (dbg/crashhandler) can be resolved to exported functions?
 - Crash handler mustn't be started from exception handler itself!
 - IAT window isn't that perfect in UI stuff;
 - Find import function in window (button on top)?
@@ -169,10 +166,7 @@ Add this line to the TabCtrl::Item class:
 - Log.cpp: Comment out GetUserNameA calls and OutputDebugString calls;
 - App.h: Comment out GetUserName function;
 - App.cpp: Comment out GetUserName function;
-- ArrayCtrl.h:
-	- Move cellInfo variable in to protected;
-	- Comment out SerializeHeader.
-- Ctrl.iml:
-	- Remove networking icon(s);
+- ArrayCtrl.h: Move cellInfo variable in to protected;
+- Ctrl.iml: Remove networking icon(s).
 
 Copy uppsrc-custom files to designated locations before upp build.

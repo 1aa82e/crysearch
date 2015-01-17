@@ -1,23 +1,40 @@
 #include "CryVEHDebug.h"
 
+#define STATUS_WX86_SINGLE_STEP 			0x4000001E
+#define STATUS_WX86_BREAKPOINT				0x4000001F
+
 // ------------------------------------------------------------------------------------------------
 
 HANDLE hCommMapping = NULL;
 CRY_VEH_COMMUNICATION_HEADER* pCommBasePtr = NULL;
 PVOID hExceptionHandler = NULL;
 
-void SetBreakpointHit(CRY_VEH_COMMUNICATION_HEADER* const header, const SIZE_T excAddress, CONTEXT* const pContext)
-{
-	header->BreakpointWasHit = TRUE;
-	header->ExceptionAddress = excAddress;
-	memcpy(&header->ThreadContext, pContext, sizeof(CONTEXT));
-}
-
 // This function is called when an exception occurs in the process where the debugger is loaded.
 LONG __stdcall CryExceptionHandler(PEXCEPTION_POINTERS ExceptionInfo)
 {
-	// Set the breakpoint data in the communication header.
-	SetBreakpointHit(pCommBasePtr, (SIZE_T)ExceptionInfo->ExceptionRecord->ExceptionAddress, ExceptionInfo->ContextRecord);
+	CryVEHDebugger* dbgInstance = CryVEHDebugger::GetInstance();
+	if (dbgInstance->IsRunning())
+	{
+		const SIZE_T excAddress = (SIZE_T)ExceptionInfo->ExceptionRecord->ExceptionAddress;
+		if (ExceptionInfo->ExceptionRecord->ExceptionCode == EXCEPTION_BREAKPOINT || 
+			ExceptionInfo->ExceptionRecord->ExceptionCode == STATUS_WX86_BREAKPOINT)
+		{
+			if (dbgInstance->GetBreakpointCount() > 0)
+			{
+				const int bpIndex = dbgInstance->FindBreakpoint(excAddress);
+				// Save context and insert single step!
+			}
+		}
+		else if (ExceptionInfo->ExceptionRecord->ExceptionCode == EXCEPTION_SINGLE_STEP ||
+			ExceptionInfo->ExceptionRecord->ExceptionCode == STATUS_WX86_SINGLE_STEP)
+		{
+			const int bpCount = dbgInstance->GetBreakpointCount();
+			if (bpCount > 0)
+			{
+				// Find breakpoint and handle it!
+			}
+		}
+	}
 
 	// Let the application continue execution.
 	return EXCEPTION_CONTINUE_EXECUTION;
@@ -36,7 +53,7 @@ BOOL __stdcall CryAttachVEHDebugger()
 	}
 
 	// Map the shared memory to the debugger library.
-	if (!(pCommBasePtr = MapViewOfFile(hCommMapping, FILE_MAP_READ | FILE_MAP_WRITE, 0, 0, COMM_MAPPING_SIZE)))
+	if (!(pCommBasePtr = (CRY_VEH_COMMUNICATION_HEADER*)MapViewOfFile(hCommMapping, FILE_MAP_READ | FILE_MAP_WRITE, 0, 0, COMM_MAPPING_SIZE)))
 	{
 		return FALSE;
 	}
@@ -48,6 +65,9 @@ BOOL __stdcall CryAttachVEHDebugger()
 		return FALSE;
 	}
 
+	// Start the debugger.
+	CryVEHDebugger::GetInstance()->Start();
+
 	// Success, return from thread.
 	return TRUE;
 }
@@ -55,7 +75,13 @@ BOOL __stdcall CryAttachVEHDebugger()
 // Closes communication channels and removes installed vectored exception handlers.
 void __stdcall CryDetachVEHDebugger()
 {
+	// Stop debugger.
+	CryVEHDebugger::GetInstance()->Stop();
+
+	// Free used resources.
 	UnmapViewOfFile(pCommBasePtr);
 	CloseHandle(hCommMapping);
 	RemoveVectoredExceptionHandler(hExceptionHandler);
+
+	// still needs to unload itself from the process!
 }

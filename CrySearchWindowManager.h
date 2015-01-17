@@ -11,14 +11,6 @@
 // Forward declaration of CrySearchForm class type, to allow parent pointer to be declared.
 class CrySearchForm;
 
-// Data structure used to proxy data through dispatched callbacks.
-template <class T>
-struct AsynchronousDispatchable
-{
-	T Data;
-	volatile Atomic Indicator;
-};
-
 // Represents the window manager that CrySearchForm uses to proxy its subwindows to the application backend.
 class CrySearchWindowManager
 {
@@ -45,10 +37,6 @@ public:
 	
 	void ClearWindows();
 	void SetParentWindow(CrySearchForm* pParent);
-	
-	template <class T>
-	void RegisterMainWindowDispatchable(const Callback1<T>& cb);
-	void ExecuteCrashHandlerWindow(const String& msg);
 };
 
 #endif

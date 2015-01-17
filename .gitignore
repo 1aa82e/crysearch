@@ -2,8 +2,7 @@
 *.sdf
 *.user
 *.suo
-CryVEHDebugger/Debug/*
-CryVEHDebugger/Release/*
+CryVEHDebugger/Bin/*
 CryVEHDebugger\CryVEHDebugger/x64/*
 CryVEHDebugger/CryVEHDebugger/Debug/*
 CryVEHDebugger/CryVEHDebugger/Release/*
