@@ -2,7 +2,7 @@
 #include "BackendGlobalDef.h"
 
 // Container of all currently UI visible lines of disassembly.
-Vector<DisasmLine> DisasmVisibleLines;
+Vector<LONG_PTR> DisasmVisibleLines;
 
 // Container of all executable memory pages in the target process.
 Vector<MemoryRegion> mExecutablePagesList;
@@ -115,7 +115,7 @@ void AsyncDisassembler::Kill()
 
 // Disassembles lineCount lines of assembly into MASM syntax OPCodes, starting from address.
 // The output disassembly string is put at outInstructionString. Returns the length of the longest string bytes representation.
-void AsyncDisassembler::Disassemble(const SIZE_T address, const SIZE_T size, const ArchitectureDefinitions architecture, Vector<DisasmLine>& outInstructions)
+void AsyncDisassembler::Disassemble(const SIZE_T address, const SIZE_T size, const ArchitectureDefinitions architecture, Vector<LONG_PTR>& outInstructions)
 {
 	// Get rid of old set of instruction lines. After all, it is a refresh.
 	outInstructions.Clear();
@@ -154,16 +154,7 @@ void AsyncDisassembler::Disassemble(const SIZE_T address, const SIZE_T size, con
 		else
 		{
 			// Disassembled succesfully, add a new line.
-			DisasmLine& line = outInstructions.Add(DisasmLine());
-#ifdef _WIN64
-			line.VirtualAddress = disasm.VirtualAddr;
-#else
-			line.VirtualAddress = (int)disasm.VirtualAddr;
-#endif
-			
-			line.BytesStringRepresentation.Allocate(len);
-			memcpy(line.BytesStringRepresentation.Data, (Byte*)disasm.EIP, len);
-			line.InstructionLine = disasm.CompleteInstr;
+			outInstructions.Add((SIZE_T)disasm.VirtualAddr);
 
 			// Increment disasm structure counters.
 			disasm.EIP += len;

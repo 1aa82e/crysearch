@@ -119,27 +119,27 @@ CryDebuggerHitView::~CryDebuggerHitView()
 }
 
 // Sets the instruction string that is displayed in the underlying label.
-void CryDebuggerHitView::SetInstructionString(const DisasmLine& is)
+void CryDebuggerHitView::SetInstructionString(const SIZE_T is)
 {
 	// Do nothing if the instruction is empty. This happens in the initialization situation.
-	if (!is.VirtualAddress)
+	if (!is)
 	{
 		return;
 	}
 	
-	this->disasmAddress = is.VirtualAddress;
+	this->disasmAddress = is;
 	
 #ifdef _WIN64
 	if (mMemoryScanner->IsX86Process())
 	{
-		this->mAccessedAddress.SetLabel(Format("%lX - %s", is.VirtualAddress, is.InstructionLine));
+		this->mAccessedAddress.SetLabel(Format("%lX - %s", (LONG_PTR)is, DisasmGetLine(is, ARCH_X86, NULL)));
 	}
 	else
 	{
-		this->mAccessedAddress.SetLabel(Format("%llX - %s", is.VirtualAddress, is.InstructionLine));
+		this->mAccessedAddress.SetLabel(Format("%llX - %s", (LONG_PTR)is, DisasmGetLine(is, ARCH_X64, NULL)));
 	}
 #else
-	this->mAccessedAddress.SetLabel(Format("%lX - %s", is.VirtualAddress, is.InstructionLine));
+	this->mAccessedAddress.SetLabel(Format("%lX - %s", (LONG_PTR)is, DisasmGetLine(is, ARCH_X86, NULL)));
 #endif
 }
 

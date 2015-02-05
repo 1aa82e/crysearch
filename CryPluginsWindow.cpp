@@ -39,8 +39,9 @@ CryPluginsWindow::CryPluginsWindow() : CryDialogTemplate(CrySearchIml::PluginsMe
 		<< this->mOK.Ok().SetLabel("Close").RightPos(5, 60).BottomPos(5, 20)
 	;
 	
-	this->mPluginsList.SetVirtualCount(mPluginSystem->GetPluginCount());
-	this->mPluginCount.SetLabel(Format("Total %i plugins", mPluginSystem->GetPluginCount()));
+	const int pCount = mPluginSystem->GetPluginCount();
+	this->mPluginsList.SetVirtualCount(pCount);
+	this->mPluginCount.SetLabel(Format("Total %i plugins", pCount));
 }
 
 CryPluginsWindow::~CryPluginsWindow()

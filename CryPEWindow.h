@@ -25,6 +25,7 @@ private:
 	void ResumeSuspendedProcess();
 	void DumpSection();
 	void DumpDotNetSection();
+	void SectionsListSelectionChanged();
 	
 	typedef CryPEWindow CLASSNAME;
 public:

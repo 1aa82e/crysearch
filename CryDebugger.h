@@ -66,7 +66,7 @@ struct DbgBreakpoint : Moveable<DbgBreakpoint>
 		int RegisterFieldCount;
 		
 		// Contains the line of disassembly that triggered the breakpoint.
-		DisasmLine DisassemblyAccessLine;
+		SIZE_T DisassemblyAccessLine;
 
 		// Contains the snapshot of the processor registers.
 		union
@@ -228,7 +228,7 @@ private:
 	virtual void RemoveSingleStepFromBreakpoint(const DWORD threadId) = 0;
 	virtual bool BreakpointRoutine(HardwareBreakpoint* pHwbp, const DWORD threadId) const = 0;
 	virtual const int CheckHardwareBreakpointRegisters(const DWORD threadId) const = 0;
-	virtual DisasmLine GetDisasmLine(const SIZE_T address, bool prev) const = 0;
+	virtual const SIZE_T GetDisasmLine(const SIZE_T address, bool prev) const = 0;
 	
 	typedef CryDebugger CLASSNAME;
 protected:
@@ -282,7 +282,7 @@ private:
 	virtual void HandleHardwareBreakpoint(const DWORD threadId, const int bpIndex);
 	virtual void RemoveSingleStepFromBreakpoint(const DWORD threadId);
 	virtual const int CheckHardwareBreakpointRegisters(const DWORD threadId) const;
-	virtual DisasmLine GetDisasmLine(const SIZE_T address, bool prev) const;
+	virtual const SIZE_T GetDisasmLine(const SIZE_T address, bool prev) const;
 	
 	typedef CryDebugger32 CLASSNAME;
 protected:
@@ -304,7 +304,7 @@ public:
 		virtual void HandleSoftwareBreakpoint(const DWORD threadId, const int bpIndex);
 		virtual void HandleHardwareBreakpoint(const DWORD threadId, const int bpIndex);
 		virtual const int CheckHardwareBreakpointRegisters(const DWORD threadId) const;
-		virtual DisasmLine GetDisasmLine(const SIZE_T address, bool prev) const;
+		virtual const SIZE_T GetDisasmLine(const SIZE_T address, bool prev) const;
 		
 		typedef CryDebugger64 CLASSNAME;
 	protected:

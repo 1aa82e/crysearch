@@ -37,7 +37,7 @@ void CryDisasmGoToAddressDialog::OkButtonClicked()
 	*this->addrPtr = ScanInt(this->mAddressInput.GetText().ToString(), NULL, 16);
 #endif
 
-	this->Close();
+	this->AcceptBreak(10);
 }
 
 void CryDisasmGoToAddressDialog::CancelButtonClicked()

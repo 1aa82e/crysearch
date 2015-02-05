@@ -55,8 +55,8 @@ enum PEMachineType
 struct ImportAddressTableEntry : Moveable<ImportAddressTableEntry>
 {
 	String FunctionName;
-	WORD Ordinal;
 	SIZE_T VirtualAddress;
+	WORD Ordinal;
 	WORD Hint;
 	
 	// Flag field can be either 0, IAT_FLAG_HOOKED.

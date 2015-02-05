@@ -16,7 +16,7 @@ private:
 	
 	void DoDisassembly(const SIZE_T address);
 	void RefreshDisasm(const SIZE_T addr, const SIZE_T size);
-	void Disassemble(const SIZE_T address, const SIZE_T size, const ArchitectureDefinitions architecture, Vector<DisasmLine>& outInstructions);
+	void Disassemble(const SIZE_T address, const SIZE_T size, const ArchitectureDefinitions architecture, Vector<LONG_PTR>& outInstructions);
 	
 	typedef AsyncDisassembler CLASSNAME;
 public:

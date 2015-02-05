@@ -23,7 +23,7 @@ const int IsTabPageOpened(const TabCtrl& ctrl, const String& text);
 String GenerateRandomWindowTitle();
 
 // Generates a string-style signature of disassembly to be used in C or C++ code.
-String GenerateStringStyleSignature(const Vector<ArrayOfBytes*>& byteArrays, DWORD* outSigLength);
+String GenerateStringStyleSignature(const Vector<Byte>& byteArrays, DWORD* outSigLength);
 
 // Parses the input data as string representation for the input value type.
 String ValueAsStringInternal(const Byte* data, const CCryDataType type, const int size);
@@ -36,7 +36,7 @@ String FormatInt64HexUpper(uint64 a);
 #define ARRAYTYPE_CSHARP	1
 
 // Generates a byte array for either C# or C++ code files.
-String GenerateByteArray(const Vector<ArrayOfBytes*>& byteArrays, const DWORD arrayType);
+String GenerateByteArray(const Vector<Byte>& bytes, const DWORD arrayType);
 
 // Custom red text drawing for hooked imports.
 __declspec(selectany) struct ImportAddressHookedDisplay : public Display

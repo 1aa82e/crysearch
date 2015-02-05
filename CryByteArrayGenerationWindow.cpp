@@ -1,9 +1,10 @@
 #include "CryByteArrayGenerationWindow.h"
 #include "ImlProvider.h"
 #include "UIUtilities.h"
+#include "BackendGlobalDef.h"
 
 // This window needs access to the visible disassembly lines.
-extern Vector<DisasmLine> DisasmVisibleLines;
+extern Vector<LONG_PTR> DisasmVisibleLines;
 
 CryByteArrayGenerationWindow::CryByteArrayGenerationWindow(const Vector<int>& rows) : CryDialogTemplate(CrySearchIml::GenerateByteArrayButton())
 {
@@ -22,10 +23,19 @@ CryByteArrayGenerationWindow::CryByteArrayGenerationWindow(const Vector<int>& ro
 	;
 	
 	// Retrieve byte sets that are selected.
-	Vector<ArrayOfBytes*> byteSets;
+	Vector<Byte> byteSets;
 	for (int i = 0; i < rows.GetCount(); ++i)
 	{
-		byteSets.Add(&DisasmVisibleLines[rows[i]].BytesStringRepresentation);
+		ArrayOfBytes sequence;
+#ifdef _WIN64
+		DisasmGetLine(DisasmVisibleLines[rows[i]], mMemoryScanner->IsX86Process() ? ARCH_X86 : ARCH_X64, &sequence);
+#else
+		DisasmGetLine(DisasmVisibleLines[rows[i]], ARCH_X86, &sequence);
+#endif
+		for (int y = 0; y < sequence.Size; ++y)
+		{
+			byteSets << sequence.Data[y];
+		}
 	}
 	
 	// Generate signatures in all supported styles.
@@ -38,13 +48,13 @@ CryByteArrayGenerationWindow::~CryByteArrayGenerationWindow()
 	
 }
 
-void CryByteArrayGenerationWindow::GenerateCPPStyle(const Vector<ArrayOfBytes*>& aobs)
+void CryByteArrayGenerationWindow::GenerateCPPStyle(const Vector<Byte>& aobs)
 {
 	// Set the string in the user interface controls.
 	this->mCPPStyleSig.SetText(GenerateByteArray(aobs, ARRAYTYPE_CPP));
 }
 
-void CryByteArrayGenerationWindow::GenerateCSharpStyle(const Vector<ArrayOfBytes*>& aobs)
+void CryByteArrayGenerationWindow::GenerateCSharpStyle(const Vector<Byte>& aobs)
 {
 	// Set generated signature inside top textbox.
 	this->mCSharpStyleSig.SetText(GenerateByteArray(aobs, ARRAYTYPE_CSHARP));

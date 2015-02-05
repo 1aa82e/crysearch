@@ -2,7 +2,6 @@
 #define _CrySearch_CryByteArrayGenerationWindow_h_
 
 #include "CryDialogTemplate.h"
-#include "Disassembler.h"
 
 class CryByteArrayGenerationWindow : public CryDialogTemplate
 {
@@ -17,8 +16,8 @@ private:
 	
 	void CloseWindow();
 	
-	void GenerateCPPStyle(const Vector<ArrayOfBytes*>& aobs);
-	void GenerateCSharpStyle(const Vector<ArrayOfBytes*>& aobs);
+	void GenerateCPPStyle(const Vector<Byte>& aobs);
+	void GenerateCSharpStyle(const Vector<Byte>& aobs);
 	
 	typedef CryByteArrayGenerationWindow CLASSNAME;
 public:

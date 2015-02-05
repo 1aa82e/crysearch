@@ -62,6 +62,7 @@ CryPEWindow::CryPEWindow()
 	this->mSections.CryAddRowNumColumn("Virtual Address").SetConvert(Single<IndexBasedValueConvert<GetSectionBaseAddress>>());
 	this->mSections.CryAddRowNumColumn("Virtual Size").SetConvert(Single<IndexBasedValueConvert<GetSectionVirtualSize>>());
 	this->mSections.WhenBar = THISBACK(SectionsListRightClick);
+	this->mSections.WhenSel = THISBACK(SectionsListSelectionChanged);
 	
 	this->mDotNetInformation.CryAddRowNumColumn("Name").SetConvert(Single<IndexBasedValueConvert<GetDotNetSectionName>>());
 	this->mDotNetInformation.CryAddRowNumColumn("Offset").SetConvert(Single<IndexBasedValueConvert<GetDotNetSectionOffset>>());
@@ -83,12 +84,13 @@ CryPEWindow::~CryPEWindow()
 void CryPEWindow::ToolBar(Bar& pBar)
 {
 	pBar.Add("Refresh", CrySearchIml::RefreshButtonSmall(), THISBACK(RefreshPEWindow));
+	pBar.ToolGapRight();
+	pBar.Add(this->mSections.IsCursor(), "Dump Section", CrySearchIml::DumpModuleSmall(), THISBACK(DumpSection));
 	
 	// If a suspended process was created, a button to resume the process should be visible to the user
 	// straight away. Using the Threads window is not straight forward.
 	if (mMemoryScanner && mMemoryScanner->IsProcessSuspended())
 	{
-		pBar.ToolGapRight();
 		pBar.Add("Resume Process", CrySearchIml::ResumeAllThreadsSmall(), THISBACK(ResumeSuspendedProcess));
 	}
 }
@@ -107,6 +109,11 @@ void CryPEWindow::DotNetSectionsListRightClick(Bar& pBar)
 	{
 		pBar.Add("Dump Section", CrySearchIml::DumpModuleSmall(), THISBACK(DumpDotNetSection));
 	}
+}
+
+void CryPEWindow::SectionsListSelectionChanged()
+{
+	this->mToolStrip.Set(THISBACK(ToolBar));
 }
 
 void CryPEWindow::RefreshPEWindow()

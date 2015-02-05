@@ -9,13 +9,13 @@
 #include "ImlProvider.h"
 
 // Extern declarations are needed here to prevent errors.
-extern Vector<DisasmLine> DisasmVisibleLines;
+extern Vector<LONG_PTR> DisasmVisibleLines;
 extern Vector<MemoryRegion> mExecutablePagesList;
 
 // Retrieves the disassembly line index by address.
 const int GetDisasmLineIndexFromAddress(const SIZE_T address)
 {
-	const DisasmLine* next = NULL;
+	const LONG_PTR* next = NULL;
 	const int count = DisasmVisibleLines.GetCount();
 	
 	for (int i = 0; i < count; ++i)
@@ -30,13 +30,8 @@ const int GetDisasmLineIndexFromAddress(const SIZE_T address)
 			next = NULL;
 		}
 
-#ifdef _WIN64
-		const __int64 signedAddr = address;
-#else
-		const long signedAddr = address;
-#endif
-
-		if (DisasmVisibleLines[i].VirtualAddress >= signedAddr && (next && signedAddr < next->VirtualAddress))
+		const LONG_PTR signedAddr = address;
+		if (DisasmVisibleLines[i] >= signedAddr && (*next && signedAddr < *next))
 		{
 			return i;
 		}
@@ -48,18 +43,27 @@ const int GetDisasmLineIndexFromAddress(const SIZE_T address)
 // Virtual column retrieval functions for the disassembler.
 String GetDisasmAddress(const int index)
 {
-	return Format("%llX", DisasmVisibleLines[index].VirtualAddress);
+	return Format("%llX", DisasmVisibleLines[index]);
 }
 
 String GetDisasmBytes(const int index)
 {
-	const ArrayOfBytes& disLineBytes = DisasmVisibleLines[index].BytesStringRepresentation;
+	ArrayOfBytes disLineBytes;
+#ifdef _WIN64
+	DisasmGetLine(DisasmVisibleLines[index], mMemoryScanner->IsX86Process() ? ARCH_X86 : ARCH_X64, &disLineBytes);
+#else
+	DisasmGetLine(DisasmVisibleLines[index], ARCH_X86, &disLineBytes);
+#endif
 	return BytesToString(disLineBytes.Data, disLineBytes.Size);
 }
 
 String GetDisasmInstructionLine(const int index)
 {
-	return DisasmVisibleLines[index].InstructionLine;
+#ifdef _WIN64
+	return DisasmGetLine(DisasmVisibleLines[index], mMemoryScanner->IsX86Process() ? ARCH_X86 : ARCH_X64, NULL);
+#else
+	return DisasmGetLine(DisasmVisibleLines[index], ARCH_X86, NULL);
+#endif
 }
 
 String GetMemoryPageForDropList(const int index)
@@ -121,8 +125,8 @@ void CryDisasmCtrl::DisassemblyRightClick(Bar& pBar)
 		pBar.Add("Copy\t\tCTRL + C", CtrlImg::copy(), THISBACK(CopyCursorLineToClipboard));
 		
 		// Debugger menu items should depend on whether the debugger is attached or not.
-		const bool canDbg = (mDebugger && mDebugger->IsDebuggerAttached());
-		if (mDebugger->FindBreakpoint(DisasmVisibleLines[cursor].VirtualAddress) == -1)
+		const bool canDbg = (mDebugger && mDebugger->IsDebuggerAttached()) && this->disasmDisplay.GetSelectCount() < 2;
+		if (mDebugger->FindBreakpoint(DisasmVisibleLines[cursor]) == -1)
 		{
 			pBar.Add(canDbg, "Set Breakpoint", CrySearchIml::SetBreakpoint(), THISBACK(SetBreakpointMenu));
 		}
@@ -205,7 +209,7 @@ void CryDisasmCtrl::HeapWalkMenuClicked()
 void CryDisasmCtrl::RemoveBreakpointButtonClicked()
 {
 	mCrySearchWindowManager->GetDebuggerWindow()->Cleanup();
-	mDebugger->RemoveBreakpoint(DisasmVisibleLines[this->disasmDisplay.GetCursor()].VirtualAddress);
+	mDebugger->RemoveBreakpoint(DisasmVisibleLines[this->disasmDisplay.GetCursor()]);
 }
 
 void CryDisasmCtrl::SetBreakpointMenu(Bar& pBar)
@@ -220,14 +224,14 @@ void CryDisasmCtrl::SetSoftwareBreakpoint()
 	const int cursor = this->disasmDisplay.GetCursor();
 	if (cursor >= 0 && DisasmVisibleLines.GetCount() > 0)
 	{
-		mDebugger->SetBreakpoint(DisasmVisibleLines[cursor].VirtualAddress);
+		mDebugger->SetBreakpoint(DisasmVisibleLines[cursor]);
 	}
 }
 
 void CryDisasmCtrl::SetHardwareBreakpoint()
 {
 	const int cursor = this->disasmDisplay.GetCursor();
-	mDebugger->SetHardwareBreakpoint(mThreadsList, DisasmVisibleLines[cursor].VirtualAddress, HWBP_SIZE_1, HWBP_TYPE_EXECUTE);
+	mDebugger->SetHardwareBreakpoint(mThreadsList, DisasmVisibleLines[cursor], HWBP_SIZE_1, HWBP_TYPE_EXECUTE);
 }
 
 // Externally available for calling, this function moves the disassembly view to a specific address.
@@ -251,17 +255,14 @@ void CryDisasmCtrl::GoToAddressButtonClicked()
 {
 	LONG_PTR newAddress;
 	CryDisasmGoToAddressDialog* addrDialog = new CryDisasmGoToAddressDialog(&newAddress);
-	addrDialog->Execute();
-	delete addrDialog;
 	
-	// If the cancel button was hit, don't do anything.
-	if (newAddress == -1)
+	if (addrDialog->Execute() == 10)
 	{
-		return;
+		// Move to the inputted address.
+		this->MoveToAddress(newAddress);
 	}
 	
-	// Move to the inputted address.
-	this->MoveToAddress(newAddress);
+	delete addrDialog;
 }
 
 // Copy a line of disassembly containing address, bytes and opcodes to the clipboard.

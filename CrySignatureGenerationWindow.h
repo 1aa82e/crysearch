@@ -2,7 +2,6 @@
 #define _CrySearch_CrySignatureGenerationWindow_h_
 
 #include "CryDialogTemplate.h"
-#include "Disassembler.h"
 
 class CrySignatureGenerationWindow : public CryDialogTemplate
 {
@@ -19,8 +18,8 @@ private:
 	
 	void CloseWindow();
 	
-	void GenerateEvoStyle(const Vector<ArrayOfBytes*>& aobs);
-	void GenerateStringStyle(const Vector<ArrayOfBytes*>& aobs);
+	void GenerateEvoStyle(const Vector<Byte>& aobs);
+	void GenerateStringStyle(const Vector<Byte>& aobs);
 	
 	typedef CrySignatureGenerationWindow CLASSNAME;
 public:

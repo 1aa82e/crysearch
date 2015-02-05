@@ -15,6 +15,11 @@ v1.15
 	- Changed plugin about box title to match the plugin name. This looks better than the default title;
 	- Added possibility to scan a process' memory for hexadecimal values. This option applies for byte, short, int and long;
 	- Changed thread window to resolve thread start addresses to a module and function if the opened process provides symbols;
+	- Greatly improved disassembler;
+		- Fixed bug where selecting multiple rows of disassembly to operate on a breakpoint would cause undefined behavior;
+		- Disassembler dynamically refreshes with user interface flow. This greatly reduces memory usage and indirectly fixes related bugs;
+		- Fixed bug where escaping the 'Go to address' dialog would refresh the disassembly. This was overhead.
+	- Added additional icons for existing operations in some tab windows to signify their existence in CrySearch;
 v1.14
 	- Added event procedure to plugin system. CrySearch calls the event procedure for default in-app events like process open/close;
 	- Small user interface detail modifications and improvements:

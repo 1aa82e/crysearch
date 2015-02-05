@@ -72,9 +72,6 @@
 // Anti-debugging flag check.
 #define ANTI_DEBUG_PEB_FLAGS (FLG_HEAP_ENABLE_TAIL_CHECK | FLG_HEAP_ENABLE_FREE_CHECK | FLG_HEAP_VALIDATE_PARAMETERS)
 
-// Vector of visible (loaded in current page) lines of disassembly.
-extern Vector<DisasmLine> DisasmVisibleLines;
-
 // ---------------------------------------------------------------------------------------------
 
 enum CryDebuggerEventProcessingState
@@ -623,12 +620,12 @@ void CryDebugger::ExceptionWatch()
 				const int bpCount = this->mBreakpoints.GetCount();
 				if (bpCount > 0)
 				{
-					DisasmLine excPrevLine = this->GetDisasmLine(excAddress, true);
+					const SIZE_T excPrevLine = this->GetDisasmLine(excAddress, true);
 					
 					// Get breakpoint at the previous instruction reflected against the current exception address.
-					int bp = this->FindBreakpoint(excPrevLine.VirtualAddress);
+					int bp = this->FindBreakpoint(excPrevLine);
 					
-					DisasmLine excLine = this->GetDisasmLine(excAddress, false);
+					const SIZE_T excLine = this->GetDisasmLine(excAddress, false);
 					if (bp == -1 || bp > bpCount)
 					{
 						// If a breakpoint was not found on the previous instruction, try to find it on the current (HWBP).
@@ -647,7 +644,7 @@ void CryDebugger::ExceptionWatch()
 						// Breakpoint was not found on current address as HWBP, so it may be a data breakpoint.
 						if ((bp = this->CheckHardwareBreakpointRegisters(DebugEv.dwThreadId)) != -1)
 						{
-							excAddress = excPrevLine.VirtualAddress;
+							excAddress = excPrevLine;
 							
 							// If the breakpoint was found, the line of accessing disassembly is found too.
 							if (bp >= 0)
@@ -660,7 +657,7 @@ void CryDebugger::ExceptionWatch()
 					if (bp == -1 || bp > bpCount)
 					{
 						// Data breakpoints can have their single steps occur too. This means the original instruction is disasmIndex - 2.
-						bp = this->FindBreakpointByPreviousInstruction(this->GetDisasmLine(excPrevLine.VirtualAddress, true).VirtualAddress);
+						bp = this->FindBreakpointByPreviousInstruction(this->GetDisasmLine(excPrevLine, true));
 					}
 						
 					if (bp >= 0 && bpCount > 0)
@@ -752,9 +749,9 @@ CryDebugger32::~CryDebugger32()
 }
 
 // Retrieves an instruction line from the disassembly.
-DisasmLine CryDebugger32::GetDisasmLine(const SIZE_T address, bool prev) const
+const SIZE_T CryDebugger32::GetDisasmLine(const SIZE_T address, bool prev) const
 {
-	return prev ? DisasmGetPreviousLine(address, ARCH_X86) : DisasmGetLine(address, ARCH_X86);
+	return prev ? DisasmGetPreviousLine(address, ARCH_X86, NULL) : address;
 }
 
 // Attempts hiding the debugger presence from the process. This way, IsDebuggerPresent would return FALSE.
@@ -1201,9 +1198,9 @@ void CryDebugger32::HandleHardwareBreakpoint(const DWORD threadId, const int bpI
 	}
 	
 	// Retrieves an instruction line from the disassembly.
-	DisasmLine CryDebugger64::GetDisasmLine(const SIZE_T address, bool prev) const
+	const SIZE_T CryDebugger64::GetDisasmLine(const SIZE_T address, bool prev) const
 	{
-		return prev ? DisasmGetPreviousLine(address, ARCH_X64) : DisasmGetLine(address, ARCH_X64);
+		return prev ? DisasmGetPreviousLine(address, ARCH_X64, NULL) : address;
 	}	
 	
 	// Attempts hiding the debugger presence from the process. This way, IsDebuggerPresent would return FALSE.

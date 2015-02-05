@@ -1,9 +1,10 @@
 #include "CrySignatureGenerationWindow.h"
 #include "ImlProvider.h"
 #include "UIUtilities.h"
+#include "BackendGlobalDef.h"
 
 // This window needs access to the visible disassembly lines.
-extern Vector<DisasmLine> DisasmVisibleLines;
+extern Vector<LONG_PTR> DisasmVisibleLines;
 
 CrySignatureGenerationWindow::CrySignatureGenerationWindow(const Vector<int>& rows) : CryDialogTemplate(CrySearchIml::GenerateSignatureButton())
 {
@@ -24,10 +25,19 @@ CrySignatureGenerationWindow::CrySignatureGenerationWindow(const Vector<int>& ro
 	;
 	
 	// Retrieve byte sets that are selected.
-	Vector<ArrayOfBytes*> byteSets;
+	Vector<Byte> byteSets;
 	for (int i = 0; i < rows.GetCount(); ++i)
 	{
-		byteSets.Add(&DisasmVisibleLines[rows[i]].BytesStringRepresentation);
+		ArrayOfBytes sequence;
+#ifdef _WIN64
+		DisasmGetLine(DisasmVisibleLines[rows[i]], mMemoryScanner->IsX86Process() ? ARCH_X86 : ARCH_X64, &sequence);
+#else
+		DisasmGetLine(DisasmVisibleLines[rows[i]], ARCH_X86, &sequence);
+#endif
+		for (int y = 0; y < sequence.Size; ++y)
+		{
+			byteSets << sequence.Data[y];
+		}
 	}
 	
 	// Generate signatures in all supported styles.
@@ -40,24 +50,16 @@ CrySignatureGenerationWindow::~CrySignatureGenerationWindow()
 	
 }
 
-void CrySignatureGenerationWindow::GenerateEvoStyle(const Vector<ArrayOfBytes*>& aobs)
+void CrySignatureGenerationWindow::GenerateEvoStyle(const Vector<Byte>& aobs)
 {
-	// Manually concatenate the byte arrays into one string.
-	String uiText;
-	for (int i = 0; i < aobs.GetCount(); ++i)
-	{
-		const ArrayOfBytes* aob = aobs[i];
-		uiText += BytesToString(aob->Data, aob->Size) + " ";
-	}
-	
-	// Remove the last space from the string.
-	uiText.Remove(uiText.GetCount() - 1);
+	// Manually concatenate the bytes into one string.
+	String uiText = BytesToString(aobs.Begin(), aobs.GetCount());
 	
 	// Set the string in the user interface controls.
 	this->mBytesStyleSig.SetText(uiText);
 }
 
-void CrySignatureGenerationWindow::GenerateStringStyle(const Vector<ArrayOfBytes*>& aobs)
+void CrySignatureGenerationWindow::GenerateStringStyle(const Vector<Byte>& aobs)
 {
 	// Set generated signature inside top textbox.
 	DWORD maskLength;

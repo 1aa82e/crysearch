@@ -7,7 +7,6 @@ using namespace Upp;
 
 #include "CrySearchArrayCtrl.h"
 #include "CryClickLabel.h"
-#include "Disassembler.h"
 
 // Custom control to display the instruction that triggered a breakpoint and the values of its registers at that time.
 class CryDebuggerHitView : public ParentCtrl
@@ -26,7 +25,7 @@ public:
 	
 	void SetRegisterCount(const int count);
 	void SetTooltip(const char* tt);
-	void SetInstructionString(const DisasmLine& is);
+	void SetInstructionString(const SIZE_T is);
 	void ClearInstructionString();
 };
 

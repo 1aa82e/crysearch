@@ -9,8 +9,9 @@ int __stdcall CryDisasm(LPDISASM lpDisasm)
 
 // ---------------------------------------------------------------------------------------------
 
-// Retrieves the line of disassembly at the specified address.
-DisasmLine DisasmGetLine(const SIZE_T address, ArchitectureDefinitions architecture)
+// Retrieves the line of disassembly at the specified address. The return value is the string 
+// representation of the disassembled line. A pointer to receive the bytes can be specified.
+String DisasmGetLine(const SIZE_T address, ArchitectureDefinitions architecture, ArrayOfBytes* const outAob)
 {
 	const DWORD bufferLength = architecture == ARCH_X64 ? 20 : 16;
 	DISASM disasm;
@@ -33,32 +34,30 @@ DisasmLine DisasmGetLine(const SIZE_T address, ArchitectureDefinitions architect
 	disasm.SecurityBlock = (UIntPtr)(codePageEnd - disasm.EIP);
 #endif
 
-	DisasmLine outputVal;
 	int len = CryDisasm(&disasm);
 	if (len > 0)
 	{
-#ifdef _WIN64
-		outputVal.VirtualAddress = disasm.VirtualAddr;
-#else
-		outputVal.VirtualAddress = (int)disasm.VirtualAddr;
-#endif
-	
-		outputVal.BytesStringRepresentation.Allocate(len);
-		memcpy(outputVal.BytesStringRepresentation.Data, (Byte*)disasm.EIP, len);
-		outputVal.InstructionLine = disasm.CompleteInstr;
+		// Place the disassembled byte sequence in the output parameter if it was specified.
+		if (outAob)
+		{
+			outAob->Allocate(len);
+			memcpy(outAob->Data, (Byte*)disasm.EIP, len);
+		}
+		
+		return disasm.CompleteInstr;
 	}
 	
-	return outputVal;
+	return "";
 }
 
 // Retrieves the previous line of disassembly reflected against the specified address. The address inputted must
 // be the address of a valid instruction line. The instruction size parameter specifies how big the desired
 // instruction must be to have a match. This greatly decreases the chance of a mismatch.
-DisasmLine DisasmGetPreviousLine(const SIZE_T address, ArchitectureDefinitions architecture)
+const SIZE_T DisasmGetPreviousLine(const SIZE_T address, ArchitectureDefinitions architecture, ArrayOfBytes* const outAob)
 {
 	// Query the memory page this breakpoint occured in, so we can guarantee accurate instruction parsing.
 	MEMORY_BASIC_INFORMATION block;
-	DisasmLine outputVal;
+	SIZE_T outputVal;
 	if (VirtualQueryEx(mMemoryScanner->GetHandle(), (void*)address, &block, sizeof(block)))
 	{
 		DISASM disasm;
@@ -97,14 +96,14 @@ DisasmLine DisasmGetPreviousLine(const SIZE_T address, ArchitectureDefinitions a
 				if ((disasm.VirtualAddr + len) == address)
 				{
 					// This is the previous instruction, break the loop.
-#ifdef _WIN64
-					outputVal.VirtualAddress = disasm.VirtualAddr;
-#else
-					outputVal.VirtualAddress = (int)disasm.VirtualAddr;
-#endif
-					outputVal.BytesStringRepresentation.Allocate(len);
-					memcpy(outputVal.BytesStringRepresentation.Data, (Byte*)disasm.EIP, len);
-					outputVal.InstructionLine = disasm.CompleteInstr;		
+					outputVal = (SIZE_T)disasm.VirtualAddr;
+					
+					if (outAob)
+					{
+						outAob->Allocate(len);
+						memcpy(outAob->Data, (Byte*)disasm.EIP, len);
+					}
+							
 					break;
 				}
 				else
