@@ -64,22 +64,84 @@ String GetAddress(const int index)
 // Virtual array control row accessors.
 String GetValue(const int index)
 {
-	const Value& v = CachedValues[index];
-	if (IsString(v) || GlobalScanParameter->GlobalScanValueType == VALUETYPE_DOUBLE || GlobalScanParameter->GlobalScanValueType == VALUETYPE_FLOAT)
+	if (!mMemoryScanner->IsScanRunning())
 	{
-		return v.ToString();
-	}
-	else
-	{
-		if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_8BYTE)
+		const bool mustHex = GlobalScanParameter->CurrentScanHexValues;
+		if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_BYTE)
 		{
-			return GlobalScanParameter->CurrentScanHexValues ? FormatInt64HexUpper(v.Get<__int64>()) : v.ToString();
+			Byte value;
+			if (mMemoryScanner->Peek<Byte>(CachedAddresses[index].Address, 0, &value))
+			{
+				return mustHex ? FormatIntHexUpper(value) : IntStr(value);
+			}
 		}
-		else
+		else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_2BYTE)
 		{
-			return GlobalScanParameter->CurrentScanHexValues ? FormatIntHexUpper(v, 0) : v.ToString();
+			short value;
+			if (mMemoryScanner->Peek<short>(CachedAddresses[index].Address, 0, &value))
+			{
+				return mustHex ? FormatIntHexUpper(value) : IntStr(value);
+			}
+		}
+		else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_4BYTE)
+		{
+			int value;
+			if (mMemoryScanner->Peek<int>(CachedAddresses[index].Address, 0, &value))
+			{
+				return mustHex ? FormatIntHexUpper(value) : IntStr(value);
+			}
+		}
+		else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_8BYTE)
+		{
+			__int64 value;
+			if (mMemoryScanner->Peek<__int64>(CachedAddresses[index].Address, 0, &value))
+			{
+				return mustHex ? Format("%llX", value) : IntStr64(value);
+			}
+		}
+		else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_FLOAT)
+		{
+			float value;
+			if (mMemoryScanner->Peek<float>(CachedAddresses[index].Address, 0, &value))
+			{
+				return DblStr(value);
+			}
+		}
+		else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_DOUBLE)
+		{
+			double value;
+			if (mMemoryScanner->Peek<double>(CachedAddresses[index].Address, 0, &value))
+			{
+				return DblStr(value);
+			}
+		}
+		else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_AOB)
+		{
+			ArrayOfBytes value;
+			if (mMemoryScanner->Peek<ArrayOfBytes>(CachedAddresses[index].Address, GlobalScanParameter->ValueSize, &value))
+			{
+				return BytesToString(value.Data, GlobalScanParameter->ValueSize);
+			}
+		}
+		else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_STRING)
+		{
+			String value;
+			if (mMemoryScanner->Peek<String>(CachedAddresses[index].Address, GlobalScanParameter->ValueSize, &value))
+			{
+				return value;
+			}
+		}
+		else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_WSTRING)
+		{
+			WString value;
+			if (mMemoryScanner->Peek<WString>(CachedAddresses[index].Address, GlobalScanParameter->ValueSize, &value))
+			{
+				return value.ToString();
+			}
 		}
 	}
+
+	return "???";
 }
 
 String GetAddressTableDescription(const int index)
@@ -98,26 +160,84 @@ String GetAddressTableAddress(const int index)
 
 String GetAddressTableValue(const int index)
 {
-	const AddressTableEntry* entry = loadedTable[index];
-	
-	// If no process is opened, or the address falls outside the address space of the process, the default unknown value should be displayed.
-	if (entry->Value == "???")
+	if (mMemoryScanner->GetProcessId())
 	{
-		return entry->Value;
+		const AddressTableEntry* const entry = loadedTable[index];
+		if (entry->ValueType == CRYDATATYPE_BYTE)
+		{
+			Byte value;
+			if (mMemoryScanner->Peek<Byte>(entry->Address, 0, &value))
+			{
+				return viewAddressTableValueHex ? FormatIntHexUpper(value) : IntStr(value);
+			}
+		}
+		else if (entry->ValueType == CRYDATATYPE_2BYTES)
+		{
+			short value;
+			if (mMemoryScanner->Peek<short>(entry->Address, 0, &value))
+			{
+				return viewAddressTableValueHex ? FormatIntHexUpper(value) : IntStr(value);
+			}
+		}
+		else if (entry->ValueType == CRYDATATYPE_4BYTES)
+		{
+			int value;
+			if (mMemoryScanner->Peek<int>(entry->Address, 0, &value))
+			{
+				return viewAddressTableValueHex ? FormatIntHexUpper(value) : IntStr(value);
+			}
+		}
+		else if (entry->ValueType == CRYDATATYPE_8BYTES)
+		{
+			__int64 value;
+			if (mMemoryScanner->Peek<__int64>(entry->Address, 0, &value))
+			{
+				return viewAddressTableValueHex ? Format("%llX", value) : IntStr64(value);
+			}
+		}
+		else if (entry->ValueType == CRYDATATYPE_FLOAT)
+		{
+			float value;
+			if (mMemoryScanner->Peek<float>(entry->Address, 0, &value))
+			{
+				return DblStr(value);
+			}
+		}
+		else if (entry->ValueType == CRYDATATYPE_DOUBLE)
+		{
+			double value;
+			if (mMemoryScanner->Peek<double>(entry->Address, 0, &value))
+			{
+				return DblStr(value);
+			}
+		}
+		else if (entry->ValueType == CRYDATATYPE_AOB)
+		{
+			ArrayOfBytes value;
+			if (mMemoryScanner->Peek<ArrayOfBytes>(entry->Address, entry->Size, &value))
+			{
+				return BytesToString(value.Data, value.Size);
+			}
+		}
+		else if (entry->ValueType == CRYDATATYPE_STRING)
+		{
+			String value;
+			if (mMemoryScanner->Peek<String>(entry->Address, entry->Size, &value))
+			{
+				return value;
+			}
+		}
+		else if (entry->ValueType == CRYDATATYPE_WSTRING)
+		{
+			WString value;
+			if (mMemoryScanner->Peek<WString>(entry->Address, entry->Size, &value))
+			{
+				return value.ToString();
+			}
+		}		
 	}
 	
-	if (entry->ValueType != CRYDATATYPE_STRING && entry->ValueType != CRYDATATYPE_AOB && entry->ValueType != CRYDATATYPE_WSTRING)
-	{
-#ifdef _WIN64
-		return viewAddressTableValueHex ? Format("%llX", ScanInt64(entry->Value, NULL, 10)) : entry->Value;
-#else
-		return viewAddressTableValueHex ? Format("%lX", ScanInt(entry->Value, NULL, 10)) : entry->Value;
-#endif		
-	}
-	else
-	{
-		return entry->Value;
-	}
+	return "???";
 }
 
 String GetAddressTableValueType(const int index)
@@ -178,108 +298,8 @@ void CrySearchForm::CheckKeyPresses()
 
 void CrySearchForm::SearchResultListUpdater()
 {
-	// Get the range of visible search results and update them.
-	if (!mMemoryScanner->IsScanRunning() && CachedAddresses.GetCount() > 0 && CachedValues.GetCount() > 0)
-	{
-		Tuple2<int, int> searchResultsRange = this->mScanResults.GetVisibleRange();
-		if (searchResultsRange.a >= 0 && searchResultsRange.b < mMemoryScanner->GetScanResultCount())
-		{
-			// As an extra safety measure, the loop will not update any further when a memory scan has been started.
-			for (int start = searchResultsRange.a; (start <= searchResultsRange.b) && !mMemoryScanner->IsScanRunning(); ++start)
-			{
-				if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_BYTE)
-				{
-					Byte value;
-					if (mMemoryScanner->Peek<Byte>(CachedAddresses[start].Address, 0, &value))
-					{
-						CachedValues[start] = value;
-					}
-					else
-					{
-						CachedValues[start] = "???";
-					}
-				}
-				else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_2BYTE)
-				{
-					short value;
-					if (mMemoryScanner->Peek<short>(CachedAddresses[start].Address, 0, &value))
-					{
-						CachedValues[start] = value;
-					}
-					else
-					{
-						CachedValues[start] = "???";
-					}
-				}
-				else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_4BYTE)
-				{
-					int value;
-					if (mMemoryScanner->Peek<int>(CachedAddresses[start].Address, 0, &value))
-					{
-						CachedValues[start] = value;
-					}
-					else
-					{
-						CachedValues[start] = "???";
-					}
-				}
-				else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_8BYTE)
-				{
-					__int64 value;
-					if (mMemoryScanner->Peek<__int64>(CachedAddresses[start].Address, 0, &value))
-					{
-						CachedValues[start] = value;
-					}
-					else
-					{
-						CachedValues[start] = "???";
-					}
-				}
-				else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_FLOAT)
-				{
-					float value;
-					if (mMemoryScanner->Peek<float>(CachedAddresses[start].Address, 0, &value))
-					{
-						CachedValues[start] = value;
-					}
-					else
-					{
-						CachedValues[start] = "???";
-					}
-				}
-				else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_DOUBLE)
-				{
-					double value;
-					if (mMemoryScanner->Peek<double>(CachedAddresses[start].Address, 0, &value))
-					{
-						CachedValues[start] = value;
-					}
-					else
-					{
-						CachedValues[start] = "???";
-					}
-				}
-				else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_AOB)
-				{
-					ArrayOfBytes value = StringToBytes(CachedValues[start]);
-					CachedValues[start] = mMemoryScanner->Peek<ArrayOfBytes>(CachedAddresses[start].Address, value.Size, &value) ? BytesToString(value.Data, value.Size) : "???";
-				}
-				else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_STRING)
-				{
-					String value = CachedValues[start];
-					CachedValues[start] = mMemoryScanner->Peek<String>(CachedAddresses[start].Address, value.GetLength(), &value) ? value : "???";
-				}
-				else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_WSTRING)
-				{
-					WString value = CachedValues[start];
-					CachedValues[start] = mMemoryScanner->Peek<WString>(CachedAddresses[start].Address, value.GetLength(), &value) ? value.ToString() : "???";
-				}
-			}
-		}
-	}
-	
-	// Refresh the address table ArrayCtrl to display results right away.
-	this->mScanResults.SetVirtualCount(mMemoryScanner->GetScanResultCount() > MEMORYSCANNER_CACHE_LIMIT ? MEMORYSCANNER_CACHE_LIMIT : mMemoryScanner->GetScanResultCount());
+	// Refresh the address table ArrayCtrl to force updating of the values.
+	this->mScanResults.Refresh();
 	
 	// Reinstate the callback for the next iteration.
 	SetTimeCallback(1000, THISBACK(SearchResultListUpdater), 21);
@@ -335,72 +355,8 @@ void CrySearchForm::AddressValuesUpdater()
 		}
 	}
 	
-	// Get range of visible items in ArrayCtrl using CrySearchArrayCtrl function.
-	Tuple2<int, int> addressTableRange = this->mUserAddressList.GetVisibleRange();
-	if (addressTableRange.a >= 0 && addressTableRange.b < loadedTable.GetCount())
-	{
-		for (int start = addressTableRange.a; start <= addressTableRange.b; ++start)
-		{
-			if (loadedTable[start]->ValueType == CRYDATATYPE_BYTE)
-			{
-				Byte value;
-				loadedTable[start]->Value = mMemoryScanner->Peek<Byte>(loadedTable[start]->Address, 0, &value) ? IntStr(value) : "???";
-			}
-			else if (loadedTable[start]->ValueType == CRYDATATYPE_2BYTES)
-			{
-				short value;
-				loadedTable[start]->Value = mMemoryScanner->Peek<short>(loadedTable[start]->Address, 0, &value) ? IntStr(value) : "???";
-			}
-			else if (loadedTable[start]->ValueType == CRYDATATYPE_4BYTES)
-			{
-				int value;
-				loadedTable[start]->Value = mMemoryScanner->Peek<int>(loadedTable[start]->Address, 0, &value) ? IntStr(value) : "???";
-			}
-			else if (loadedTable[start]->ValueType == CRYDATATYPE_8BYTES)
-			{
-				__int64 value;
-				loadedTable[start]->Value = mMemoryScanner->Peek<__int64>(loadedTable[start]->Address, 0, &value) ? IntStr64(value) : "???";
-			}
-			else if (loadedTable[start]->ValueType == CRYDATATYPE_FLOAT)
-			{
-				float value;
-				if (mMemoryScanner->Peek<float>(loadedTable[start]->Address, 0, &value))
-				{
-					loadedTable[start]->Value = DblStr(value);
-				}
-				else
-				{
-					loadedTable[start]->Value = "???";
-				}
-			}
-			else if (loadedTable[start]->ValueType == CRYDATATYPE_DOUBLE)
-			{
-				double value;
-				loadedTable[start]->Value = mMemoryScanner->Peek<double>(loadedTable[start]->Address, 0, &value) ? DblStr(value) : "???";
-			}
-			else if (loadedTable[start]->ValueType == CRYDATATYPE_AOB)
-			{
-				ArrayOfBytes value;
-				const AddressTableEntry* entry = loadedTable[start];
-				entry->Value = mMemoryScanner->Peek<ArrayOfBytes>(entry->Address, entry->Size, &value) ? BytesToString(value.Data, value.Size) : "???";
-			}
-			else if (loadedTable[start]->ValueType == CRYDATATYPE_STRING)
-			{
-				String value;
-				const AddressTableEntry* entry = loadedTable[start];
-				entry->Value = mMemoryScanner->Peek<String>(entry->Address, entry->Size, &value) ? value : "???";
-			}
-			else if (loadedTable[start]->ValueType == CRYDATATYPE_WSTRING)
-			{
-				WString value;
-				const AddressTableEntry* entry = loadedTable[start];
-				entry->Value = mMemoryScanner->Peek<WString>(entry->Address, entry->Size, &value) ? value.ToString() : "???";
-			}
-		}
-	}
-	
-	// Refresh the address table ArrayCtrl to display results right away.
-	this->mUserAddressList.SetVirtualCount(loadedTable.GetCount());
+	// Refresh the address table ArrayCtrl to force the values to update.
+	this->mUserAddressList.Refresh();
 	
 	// Reinstate timer queue callback to ensure timer keeps running.
 	SetTimeCallback(SettingsFile::GetInstance()->GetAddressTableUpdateInterval(), THISBACK(AddressValuesUpdater), 10);

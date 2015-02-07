@@ -53,6 +53,14 @@ struct ScanParameterBase
 	// This parameter contains the size of an array of bytes or the length of a string in case of such a scan.
 	// If the scan value type is not one of these, this parameter is ignored.
 	unsigned int ValueSize;
+	
+	// Default constructor should help preventing bogus values.
+	ScanParameterBase()
+	{
+		this->CurrentScanFastScan = true;
+		this->CurrentScanHexValues = false;
+		this->ValueSize = 0;
+	};
 };
 
 // Scan parameters given to a new scan.
@@ -337,9 +345,7 @@ public:
 
 // User interface would like access to the cache containers.
 extern Vector<SearchResultCacheEntry> CachedAddresses;
-extern Vector<Value> CachedValues;
 
-template <class T>
-void AddResultsToCache(const int Resultcount, const SIZE_T* AddressBuffer, const T* ValuesBuffer);
+void AddResultsToCache(const int Resultcount, const SIZE_T* AddressBuffer);
 
 #endif

@@ -44,7 +44,7 @@ MemoryScanType GetMemoryScanTypeFromStringRepresentation(const String& strRep)
 
 CryNewScanForm::CryNewScanForm(bool FirstScan, const Image& icon) : CryDialogTemplate(icon)
 {
-	this->mNextScan = FirstScan;
+	this->mNextScan = !FirstScan;
 	
 	this->Title(FirstScan ? "New Scan" : "Next Scan").SetRect(0, 0, 275, 130);
 	
@@ -186,12 +186,6 @@ void CryNewScanForm::ScanTypeSelected()
 		this->mValueInfoLabel.Disable();
 		this->mValueIsHex.Disable();
 		this->mValueToSearchFor.Disable();
-		
-		if (this->mNextScan)
-		{
-			this->mBlockSizeSelectorLabel.Disable();
-			this->mBlockSizeSelector.Disable();
-		}
 	}
 	else if (this->mScanTypeSelector.GetValue() == "Unknown Initial Value")
 	{
@@ -204,12 +198,6 @@ void CryNewScanForm::ScanTypeSelected()
 		this->mValueInfoLabel.Enable();
 		this->mValueIsHex.Enable();
 		this->mValueToSearchFor.Enable();
-		
-		if (this->mNextScan)
-		{
-			this->mBlockSizeSelectorLabel.Enable();
-			this->mBlockSizeSelector.Enable();
-		}
 	}
 }
 

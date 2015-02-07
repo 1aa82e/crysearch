@@ -17,7 +17,6 @@ ScanParameterBase* GlobalScanParameter;
 
 // Cache vectors that contain the data visible in the GUI ArrayCtrl.
 Vector<SearchResultCacheEntry> CachedAddresses;
-Vector<Value> CachedValues;
 
 // Deletes all temporary files created from the temp folder.
 void DeleteTemporaryFiles()
@@ -33,45 +32,8 @@ void DeleteTemporaryFiles()
 	}
 }
 
-template <>
-void AddResultsToCache(const int Resultcount, const SIZE_T* AddressBuffer, const ArrayOfBytes* ValuesBuffer)
-{
-	CacheMutex.Enter();
-	
-	// While the count is not yet bigger than the threshold, copy the entries into the cache
-	const int newCount = CachedAddresses.GetCount() + Resultcount;
-	int indexBarrier = 0;
-
-	if (newCount > MEMORYSCANNER_CACHE_LIMIT)
-	{
-		const int countRemainder = newCount % MEMORYSCANNER_CACHE_LIMIT;
-		if ((newCount - countRemainder) == MEMORYSCANNER_CACHE_LIMIT)
-		{
-			indexBarrier = Resultcount - countRemainder;
-		}
-	}
-	else
-	{
-		indexBarrier = Resultcount;
-	}
-
-	if (indexBarrier > 0)
-	{
-		const Win32ModuleInformation* mod = mModuleManager->GetModuleFromContainedAddress(AddressBuffer[0]);
-		for (int i = 0; i < indexBarrier; ++i)
-		{
-			// Add the cache values to the appropriate buffer.
-			CachedAddresses.Add(SearchResultCacheEntry(AddressBuffer[i], !!mod));
-			CachedValues.Add(BytesToString(ValuesBuffer[i].Data, ValuesBuffer[i].Size));
-		}
-	}
-	
-	CacheMutex.Leave();
-}
-
 // Adds a set of new search results to the cache vectors. Up to a million results are kept in memory for GUI visibility.
-template <class T>
-void AddResultsToCache(const int Resultcount, const SIZE_T* AddressBuffer, const T* ValuesBuffer)
+void AddResultsToCache(const int Resultcount, const SIZE_T* AddressBuffer)
 {
 	CacheMutex.Enter();
 	
@@ -99,7 +61,6 @@ void AddResultsToCache(const int Resultcount, const SIZE_T* AddressBuffer, const
 		{
 			// Add the cache values to the appropriate buffer.
 			CachedAddresses.Add(SearchResultCacheEntry(AddressBuffer[i], !!mod));
-			CachedValues.Add(ValuesBuffer[i]);
 		}
 	}
 	
@@ -405,7 +366,6 @@ void MemoryScanner::ClearSearchResults()
 	{
 		this->mScanResultCount = 0;
 		CachedAddresses.Clear();
-		CachedValues.Clear();
 	}
 	
 	// Clear worker parameter data.
@@ -485,7 +445,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 			
 			if (CachedAddresses.GetCount() < MEMORYSCANNER_CACHE_LIMIT)
 			{
-				AddResultsToCache(arrayIndex, localAddresses, localValues);
+				AddResultsToCache(arrayIndex, localAddresses);
 			}
 				
 			WriteFile(regionData.AddressesFile, localAddresses, arrayIndex * sizeof(SIZE_T), &numberOfBytesWritten, NULL);
@@ -598,7 +558,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 			
 			if (CachedAddresses.GetCount() < MEMORYSCANNER_CACHE_LIMIT)
 			{
-				AddResultsToCache(arrayIndex, localAddresses, localValues);
+				AddResultsToCache(arrayIndex, localAddresses);
 			}
 			
 			WriteFile(regionData.AddressesFile, localAddresses, arrayIndex * sizeof(SIZE_T), &numberOfBytesWritten, NULL);
@@ -715,7 +675,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 			
 			if (CachedAddresses.GetCount() < MEMORYSCANNER_CACHE_LIMIT)
 			{
-				AddResultsToCache(arrayIndex, localAddresses, localValues.Begin());
+				AddResultsToCache(arrayIndex, localAddresses);
 			}
 				
 			WriteFile(regionData.AddressesFile, localAddresses, arrayIndex * sizeof(SIZE_T), &numberOfBytesWritten, NULL);
@@ -819,7 +779,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 			
 			if (CachedAddresses.GetCount() < MEMORYSCANNER_CACHE_LIMIT)
 			{
-				AddResultsToCache(arrayIndex, localAddresses, localValues.Begin());
+				AddResultsToCache(arrayIndex, localAddresses);
 			}
 				
 			WriteFile(regionData.AddressesFile, localAddresses, arrayIndex * sizeof(SIZE_T), &numberOfBytesWritten, NULL);
@@ -933,7 +893,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 			
 			if (CachedAddresses.GetCount() < MEMORYSCANNER_CACHE_LIMIT)
 			{
-				AddResultsToCache(arrayIndex, localAddresses, localValues);
+				AddResultsToCache(arrayIndex, localAddresses);
 			}
 
 			WriteFile(regionData.AddressesFile, localAddresses, arrayIndex * sizeof(SIZE_T), &numberOfBytesWritten, NULL);
@@ -1175,7 +1135,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 				
 				if (CachedAddresses.GetCount() < MEMORYSCANNER_CACHE_LIMIT)
 				{
-					AddResultsToCache(arrayIndex, localAddresses, localValues);
+					AddResultsToCache(arrayIndex, localAddresses);
 				}
 				
 				WriteFile(regionData.AddressesFile, localAddresses, arrayIndex * sizeof(SIZE_T), &numberOfBytesWritten, NULL);
@@ -1311,7 +1271,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 				
 				if (CachedAddresses.GetCount() < MEMORYSCANNER_CACHE_LIMIT)
 				{
-					AddResultsToCache(arrayIndex, localAddresses, localValues.Begin());
+					AddResultsToCache(arrayIndex, localAddresses);
 				}
 				
 				WriteFile(regionData.AddressesFile, localAddresses, arrayIndex * sizeof(SIZE_T), &numberOfBytesWritten, NULL);
@@ -1435,7 +1395,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 				
 				if (CachedAddresses.GetCount() < MEMORYSCANNER_CACHE_LIMIT)
 				{
-					AddResultsToCache(arrayIndex, localAddresses, localValues.Begin());
+					AddResultsToCache(arrayIndex, localAddresses);
 				}
 				
 				WriteFile(regionData.AddressesFile, localAddresses, arrayIndex * sizeof(SIZE_T), &numberOfBytesWritten, NULL);
@@ -1597,7 +1557,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 				
 				if (CachedAddresses.GetCount() < MEMORYSCANNER_CACHE_LIMIT)
 				{
-					AddResultsToCache(arrayIndex, localAddresses, localValues);
+					AddResultsToCache(arrayIndex, localAddresses);
 				}
 				
 				WriteFile(regionData.AddressesFile, localAddresses, arrayIndex * sizeof(SIZE_T), &numberOfBytesWritten, NULL);
@@ -1651,7 +1611,6 @@ void MemoryScanner::NextScan()
 	// Clear partial search results for next scanning.
 	this->mScanResultCount = 0;
 	CachedAddresses.Clear();
-	CachedValues.Clear();
 	
 	this->ScanRunning = true;
 

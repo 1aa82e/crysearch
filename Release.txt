@@ -20,6 +20,8 @@ v1.15
 		- Disassembler dynamically refreshes with user interface flow. This greatly reduces memory usage and indirectly fixes related bugs;
 		- Fixed bug where escaping the 'Go to address' dialog would refresh the disassembly. This was overhead.
 	- Added additional icons for existing operations in some tab windows to signify their existence in CrySearch;
+	- Greatly improved memory usage and performance of the memory scanner. Values are dynamically built by the display;
+	- Fixed bug in the dialog for modifying an address table entry where relative addresses could be duplicated in the table.
 v1.14
 	- Added event procedure to plugin system. CrySearch calls the event procedure for default in-app events like process open/close;
 	- Small user interface detail modifications and improvements:

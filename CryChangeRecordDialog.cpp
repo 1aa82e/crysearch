@@ -432,14 +432,9 @@ void CryChangeRecordDialog::DialogOkay()
 			Prompt("Input Error", CtrlImg::error(), "Please enter an address.", "OK");
 			return;
 		}
-		
-		// Make sure the address combined with the selected data type isn't already present in the address table.
-		const int oldIndex = this->mLoadedTable->Find(this->mLoadedEntry->Address, this->mLoadedEntry->ValueType);
-		if ((oldIndex != -1) && ((*this->mLoadedTable)[oldIndex] != this->mLoadedEntry))
-		{
-			Prompt("Input Error", CtrlImg::error(), "The selected address is already added to the table.", "OK");
-			return;
-		}
+
+		LONG_PTR tempAddress;
+		bool relative = false;
 		
 		// If the address input contains a plus, the input is a relative address.
 		const int plusIndex = inputVal.Find("+");
@@ -455,22 +450,30 @@ void CryChangeRecordDialog::DialogOkay()
 			}
 			
 			// Still here, so calculate the address.
-			this->mLoadedEntry->Address = mod->BaseAddress + ScanInt(inputVal.Mid(plusIndex + 1), NULL, 16);
-			this->mLoadedEntry->IsRelative = TRUE;
+			tempAddress = mod->BaseAddress + ScanInt(inputVal.Mid(plusIndex + 1), NULL, 16);
+			relative = true;
 		}
 		else
 		{
 		
 			// Regularly parse the address. It is not a relative one.	
 #ifdef _WIN64
-			this->mLoadedEntry->Address = ScanInt64(inputVal, NULL, 16);
+			tempAddress = ScanInt64(inputVal, NULL, 16);
 #else
-			this->mLoadedEntry->Address = ScanInt(inputVal, NULL, 16);
+			tempAddress = ScanInt(inputVal, NULL, 16);
 #endif
-			
-			// Drop the relative flag from the address table entry.
-			this->mLoadedEntry->IsRelative = FALSE;
 		}
+		
+		// Make sure the address combined with the selected data type isn't already present in the address table.
+		const int oldIndex = this->mLoadedTable->Find(tempAddress, this->mLoadedEntry->ValueType);
+		if ((oldIndex != -1) && ((*this->mLoadedTable)[oldIndex] != this->mLoadedEntry))
+		{
+			Prompt("Input Error", CtrlImg::error(), "The selected address is already added to the table.", "OK");
+			return;
+		}
+		
+		this->mLoadedEntry->Address = tempAddress;
+		this->mLoadedEntry->IsRelative = relative;
 	}
 	
 	// Close the form to pass execution back to the main window.
