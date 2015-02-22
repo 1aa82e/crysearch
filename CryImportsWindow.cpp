@@ -26,18 +26,19 @@ String GetHint(const int index)
 String GetVirtualAddress(const int index)
 {
 #ifdef _WIN64
-	return Format("%llX", (__int64)LoadedProcessPEInformation.ImportAddressTable[MasterIndex].FunctionList[index].VirtualAddress);
+	return FormatInt64HexUpper((__int64)LoadedProcessPEInformation.ImportAddressTable[MasterIndex].FunctionList[index].VirtualAddress);
 #else
-	return Format("%lX", (int)LoadedProcessPEInformation.ImportAddressTable[MasterIndex].FunctionList[index].VirtualAddress);
+	return FormatIntHexUpper((int)LoadedProcessPEInformation.ImportAddressTable[MasterIndex].FunctionList[index].VirtualAddress, 0);
 #endif
 }
 
 String GetModuleStringRepresentation(const int index)
 {
+	const Win32ModuleInformation& mod = (*mModuleManager)[index];
 #ifdef _WIN64
-	return Format("%llX - %s", (__int64)(*mModuleManager)[index].BaseAddress, (*mModuleManager)[index].ModuleName);
+	return Format("%llX - %s", (__int64)mod.BaseAddress, mModuleManager->GetModuleFilename(mod.BaseAddress));
 #else
-	return Format("%lX - %s", (int)(*mModuleManager)[index].BaseAddress, (*mModuleManager)[index].ModuleName);
+	return Format("%lX - %s", (int)mod.BaseAddress, mModuleManager->GetModuleFilename(mod.BaseAddress));
 #endif
 }
 

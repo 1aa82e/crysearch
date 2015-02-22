@@ -53,11 +53,9 @@ CrySearchWindowManager* mCrySearchWindowManager;
 String GetAddress(const int index)
 {
 #ifdef _WIN64
-	const __int64 address = CachedAddresses[index].Address;
-	return Format("%llX", address);
+	return FormatInt64HexUpper(CachedAddresses[index].Address);
 #else
-	const int address = CachedAddresses[index].Address;
-	return Format("%lX", address);
+	return FormatIntHexUpper(CachedAddresses[index].Address, 0);
 #endif
 }
 
@@ -96,7 +94,7 @@ String GetValue(const int index)
 			__int64 value;
 			if (mMemoryScanner->Peek<__int64>(CachedAddresses[index].Address, 0, &value))
 			{
-				return mustHex ? Format("%llX", value) : IntStr64(value);
+				return mustHex ? FormatInt64HexUpper(value) : IntStr64(value);
 			}
 		}
 		else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_FLOAT)
@@ -152,9 +150,9 @@ String GetAddressTableDescription(const int index)
 String GetAddressTableAddress(const int index)
 {
 #ifdef _WIN64
-	return Format("%llX", loadedTable[index]->Address);
+	return FormatInt64HexUpper(loadedTable[index]->Address);
 #else
-	return Format("%lX", loadedTable[index]->Address);
+	return FormatIntHexUpper(loadedTable[index]->Address, 0);
 #endif
 }
 
@@ -192,7 +190,7 @@ String GetAddressTableValue(const int index)
 			__int64 value;
 			if (mMemoryScanner->Peek<__int64>(entry->Address, 0, &value))
 			{
-				return viewAddressTableValueHex ? Format("%llX", value) : IntStr64(value);
+				return viewAddressTableValueHex ? FormatInt64HexUpper(value) : IntStr64(value);
 			}
 		}
 		else if (entry->ValueType == CRYDATATYPE_FLOAT)
@@ -399,6 +397,7 @@ CrySearchForm::CrySearchForm(const char* fn)
 {
 	this->processLoaded = false;
 	this->wndTitleRandomized = false;
+	this->lowerPaneHidden = false;
 	this->mWindowManager.SetParentWindow(this);
 	
 	DWORD wndTitle[] = {0x53797243, 0x63726165, 0x654d2068, 0x79726f6d, 0x61635320, 0x72656e6e, 0x0}; //"CrySearch Memory Scanner"
@@ -439,7 +438,7 @@ CrySearchForm::CrySearchForm(const char* fn)
 			, this->mTabbedDataWindows.SizePos())
 	;
 	
-	this->mMainSplitter.SetPos(3750);
+	this->SetMainSplitterPosition();
 	this->mMainSplitter.SetMinPixels(0, 100);
 	this->mMainSplitter.SetMinPixels(1, 100);
 	this->mInputScanSplitter.SetMinPixels(0, 300);
@@ -454,6 +453,12 @@ CrySearchForm::CrySearchForm(const char* fn)
 	
 	// The settings file saves some routines too. Set the correct routines.
 	CrySearchRoutines.InitializeRoutines();
+	
+	// If one of more NTDLL functions were not succesfully retrieved, notify the user about it.
+	if (CrySearchRoutines.ErrorOccured())
+	{
+		Prompt("Behavioral Warning", CtrlImg::exclamation(), "One or more NTDLL functions were not retrieved succesfully. CrySearch may behave unpredictable from here.", "OK");
+	}
 	
 	// Initiate the memory scanner class, the most important part of CrySearch.
 	mMemoryScanner = MemoryScanner::GetInstance();
@@ -590,6 +595,7 @@ void CrySearchForm::WindowMenu(Bar& pBar)
 {
 	pBar.Add("Always on top", THISBACK(ToggleAlwaysOnTop)).Check(this->IsTopMost());
 	pBar.Add("Randomize window title", THISBACK(RandomizeWindowTitle)).Check(this->wndTitleRandomized);
+	pBar.Add("Hide lower pane", THISBACK(HideLowerPaneButtonClicked)).Check(this->lowerPaneHidden);
 	
 	if (this->processLoaded)
 	{
@@ -605,6 +611,37 @@ void CrySearchForm::WindowMenu(Bar& pBar)
 void CrySearchForm::HelpMenu(Bar& pBar)
 {
 	pBar.Add("About", CrySearchIml::AboutButton(), THISBACK(AboutCrySearch));
+}
+
+void CrySearchForm::HideLowerPaneButtonClicked()
+{
+	Rect r = this->GetRect();
+	if (this->lowerPaneHidden)
+	{
+		this->mMainSplitter.Add(this->mTabbedDataWindows.SizePos());
+		this->SetMinSize(Size(640, 480));
+		r.bottom += 220;
+		this->SetRect(r);
+		this->SetMainSplitterPosition();
+	}
+	else
+	{
+		this->mMainSplitter.Remove(this->mTabbedDataWindows);
+		this->SetMinSize(Size(640, 220));
+		const int remaining = r.bottom - r.top;
+		r.bottom = remaining < 220 ? r.bottom - remaining : 220;
+		this->SetRect(r);
+		this->SetMainSplitterPosition();
+	}
+	
+	this->lowerPaneHidden = !this->lowerPaneHidden;
+}
+
+void CrySearchForm::SetMainSplitterPosition()
+{
+	const Rect r = this->mMainSplitter.GetRect();
+	const int total = r.bottom - r.top;
+	this->mMainSplitter.SetPos((total / 2) * 10000 / total);
 }
 
 void CrySearchForm::ChangeRecordSubMenu(Bar& pBar)
@@ -1494,6 +1531,24 @@ void CrySearchForm::ToggleDebuggerWindow()
 	debuggerWindow->Initialize();
 	this->mTabbedDataWindows.Add(debuggerWindow->SizePos(), "Debugger");
 	this->mTabbedDataWindows.Set(*debuggerWindow);
+}
+
+void CrySearchForm::ExecuteCrashHandlerWindow(const String& msg)
+{
+	volatile bool comp = false;
+	PostCallback(THISBACK2(ExecuteCrashHandlerWindowSafe, msg, &comp));
+	while (!comp)
+	{
+		Sleep(25);
+	}
+}
+
+void CrySearchForm::ExecuteCrashHandlerWindowSafe(const String& msg, volatile bool* const comp)
+{
+	CryCrashHandlerWindow* cchw = new CryCrashHandlerWindow(msg);
+	cchw->Execute();
+	delete cchw;
+	*comp = true;
 }
 
 void CrySearchForm::AboutCrySearch()

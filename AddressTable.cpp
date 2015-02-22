@@ -136,7 +136,7 @@ const bool AddressTable::GetRelativeDisplayString(const AddressTableEntry* entry
 	
 	// Still here, so calculate the offset.
 	const LONG_PTR offset = entry->Address - mod->BaseAddress;
-	outString = Format("%s+%lX", mod->ModuleName, offset);
+	outString = Format("%s+%lX", mModuleManager->GetModuleFilename(mod->BaseAddress), offset);
 	
 	// The function succeeded, return accordingly.
 	return true;
@@ -162,7 +162,7 @@ const bool AddressTable::GetRelativeDisplayString(const AddressTableEntry* entry
 			// If module was found, set module name.
 			if (mod)
 			{
-				ent.ModuleName = mod->ModuleName;
+				ent.ModuleName = mModuleManager->GetModuleFilename(mod->BaseAddress);
 			}
 		}
 
@@ -199,7 +199,7 @@ const bool AddressTable::GetRelativeDisplayString(const AddressTableEntry* entry
 			// If module was found, set module name.
 			if (mod)
 			{
-				ent.ModuleName = mod->ModuleName;
+				ent.ModuleName = mModuleManager->GetModuleFilename(mod->BaseAddress);
 			}
 		}
 		
@@ -270,18 +270,6 @@ void AddressTable::CreateAddressTableFromFile(AddressTable& at, const String& fi
 	
 	// Resolve the addresses of relative entries.
 	AddressTable::ResolveRelativeEntries(at);
-	
-	// Initialize memory dissection values to 0. The fields must be set to prevent errors.
-	const int disCount = at.GetDissectionCount();
-	for (int i = 0; i < disCount; ++i)
-	{
-		MemoryDissectionEntry* entry = at.GetDissection(i);
-		const int rowCount = entry->AssociatedDissector.GetDissectionRowCount();
-		for (int r = 0; r < rowCount; ++r)
-		{
-			entry->AssociatedDissector[r]->RowValue = "";
-		}
-	}
 }
 
 // Stores an in-memory address table to a .csat XML data file.

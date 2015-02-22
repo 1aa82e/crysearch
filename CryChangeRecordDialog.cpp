@@ -48,9 +48,9 @@ CryChangeRecordDialog::CryChangeRecordDialog(AddressTable& addrTable, const int 
 		else
 		{
 #ifdef _WIN64
-		this->mFieldValue.SetText(Format("%llX", this->mLoadedEntry->Address));
+		this->mFieldValue.SetText(FormatInt64HexUpper(this->mLoadedEntry->Address));
 #else
-		this->mFieldValue.SetText(Format("%lX", this->mLoadedEntry->Address));
+		this->mFieldValue.SetText(FormatIntHexUpper(this->mLoadedEntry->Address, 0));
 #endif
 		}
 	}
@@ -151,12 +151,12 @@ void CryChangeRecordDialog::ValueModeHexOptionChanged()
 		if (this->mLoadedEntry->ValueType == CRYDATATYPE_8BYTES)
 		{
 			__int64 v = ScanInt64(this->mFieldValue.GetText().ToString());
-			this->mFieldValue.SetText(Format("%llX", v));
+			this->mFieldValue.SetText(FormatInt64HexUpper(v));
 		}
 		else if (this->mLoadedEntry->ValueType == CRYDATATYPE_4BYTES)
 		{
 			int v = ScanInt(this->mFieldValue.GetText().ToString());
-			this->mFieldValue.SetText(Format("%lX", v));
+			this->mFieldValue.SetText(FormatIntHexUpper(v, 0));
 		}
 		else if (this->mLoadedEntry->ValueType == CRYDATATYPE_2BYTES)
 		{
@@ -474,6 +474,12 @@ void CryChangeRecordDialog::DialogOkay()
 		
 		this->mLoadedEntry->Address = tempAddress;
 		this->mLoadedEntry->IsRelative = relative;
+		
+		// If the module changed, it should be changed in the address table entry as well.
+		if (relative)
+		{
+			this->mLoadedEntry->ModuleName = mModuleManager->GetModuleFilename(tempAddress);
+		}
 	}
 	
 	// Close the form to pass execution back to the main window.

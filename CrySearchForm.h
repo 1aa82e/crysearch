@@ -17,6 +17,7 @@ private:
 	bool processLoaded;
 	bool ProcessTerminated;
 	bool wndTitleRandomized;
+	bool lowerPaneHidden;
 	
 	MenuBar mMenuStrip;
 	ToolBar mToolStrip;
@@ -47,6 +48,8 @@ private:
 	void ChangeRecordSubMenu(Bar& pBar);
 	void SetDataBreakpointMenu(Bar& pBar);
 	
+	void SetMainSplitterPosition();
+	void HideLowerPaneButtonClicked();
 	void ViewSystemHandlesButtonClicked();
 	void ActiveTabWindowChanged();
 	void RandomizeWindowTitle();
@@ -96,6 +99,7 @@ private:
 	void LinkHotkeysToActions();
 	void RemoveBreakpointMenu();
 	void PluginsMenuClicked();
+	void ExecuteCrashHandlerWindowSafe(const String& msg, volatile bool* const comp);
 	
 	bool InitializeProcessUI();
 	void WhenProcessOpened(Win32ProcessInformation* pProc);
@@ -119,6 +123,7 @@ public:
 	
 	CrySearchWindowManager* GetWindowManager();
 	CrySearchArrayCtrl* GetSearchResultCtrl();
+	void ExecuteCrashHandlerWindow(const String& msg);
 	
 	bool SetActiveTabWindow(const String& wndText);
 };

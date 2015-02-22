@@ -85,14 +85,14 @@ String GetRegisterValue(const int index)
 #ifdef _WIN64
 	if (mMemoryScanner->IsX86Process())
 	{
-		return Format("%lX", *(LONG*)((BYTE*)(&(*mDebugger)[BreakpointMasterIndex].BreakpointSnapshot.Wow64Context) + RegisterMapping32LookupTable[index].Offset));
+		return FormatIntHexUpper(*(LONG*)((BYTE*)(&(*mDebugger)[BreakpointMasterIndex].BreakpointSnapshot.Wow64Context) + RegisterMapping32LookupTable[index].Offset), 0);
 	}
 	else
 	{
-		return Format("%llX", *(__int64*)((BYTE*)(&(*mDebugger)[BreakpointMasterIndex].BreakpointSnapshot.Context64) + RegisterMapping64LookupTable[index].Offset));
+		return FormatInt64HexUpper(*(__int64*)((BYTE*)(&(*mDebugger)[BreakpointMasterIndex].BreakpointSnapshot.Context64) + RegisterMapping64LookupTable[index].Offset));
 	}
 #else
-	return Format("%lX", *(LONG*)((BYTE*)(&(*mDebugger)[BreakpointMasterIndex].BreakpointSnapshot.Context86) + RegisterMapping32LookupTable[index].Offset));
+	return FormatIntHexUpper(*(LONG*)((BYTE*)(&(*mDebugger)[BreakpointMasterIndex].BreakpointSnapshot.Context86) + RegisterMapping32LookupTable[index].Offset), 0);
 #endif
 }
 

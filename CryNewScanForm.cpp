@@ -168,11 +168,11 @@ void CryNewScanForm::ValueInputHexToggleChanged()
 		{
 			if (curType == "Long (8 Bytes)")
 			{
-				this->mValueToSearchFor.SetText(this->mValueIsHex ? Format("%llX", ScanInt64(curInput)) : Format("%lli", ScanInt64(curInput, NULL, 16)));
+				this->mValueToSearchFor.SetText(this->mValueIsHex ? FormatInt64HexUpper(ScanInt64(curInput)) : Format("%lli", ScanInt64(curInput, NULL, 16)));
 			}
 			else
 			{
-				this->mValueToSearchFor.SetText(this->mValueIsHex ? Format("%llX", ScanInt(curInput)) : Format("%lli", ScanInt(curInput, NULL, 16)));
+				this->mValueToSearchFor.SetText(this->mValueIsHex ? FormatIntHexUpper(ScanInt(curInput), 0) : Format("%lli", ScanInt(curInput, NULL, 16)));
 			}
 		}
 	}

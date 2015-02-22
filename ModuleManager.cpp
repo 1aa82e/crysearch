@@ -21,35 +21,38 @@ void ModuleManager::EnumerateModules()
 	// Clear previous modules from the list.
 	this->mLoadedModulesList.Clear();
 	
-	// Some processes have so many modules. Better safe than sorry.
-	HMODULE* modules = (HMODULE*)VirtualAlloc(NULL, 1024, MEM_COMMIT, PAGE_READWRITE);
-	DWORD modulesFound = 0;
-	HANDLE hProcess = mMemoryScanner->GetHandle();
-
-#ifdef _WIN64
-	EnumProcessModulesEx(hProcess, modules, 1024 * sizeof(HMODULE), &modulesFound, mMemoryScanner->IsX86Process() ? LIST_MODULES_32BIT : LIST_MODULES_64BIT);
-#else
-	EnumProcessModules(hProcess, modules, 1024 * sizeof(HMODULE), &modulesFound);
-#endif
-	
-	for (unsigned int i = 0; i < modulesFound / sizeof(HMODULE); ++i)
+	// Create debug buffer to hold heap information.
+	PRTL_DEBUG_INFORMATION db = CrySearchRoutines.RtlCreateQueryDebugBuffer(0, FALSE);
+	if (!db)
 	{
-		Win32ModuleInformation curMod;
-				
-		char dllName[MAX_PATH];
-		GetModuleFileNameEx(hProcess, modules[i], dllName, MAX_PATH);
-		curMod.ModuleName = GetFileName(dllName);
-		
-		MODULEINFO modInfo;
-		GetModuleInformation(hProcess, modules[i], &modInfo, sizeof(MODULEINFO));
-		curMod.Length = modInfo.SizeOfImage;
-		curMod.BaseAddress = (SIZE_T)modInfo.lpBaseOfDll;
-		
-		this->mLoadedModulesList.Add(curMod);
+		return;
 	}
 
-	// Free allocated memory.
-	VirtualFree(modules, 0, MEM_RELEASE);
+	// Get heap information and put it inside the debug buffer.
+#ifdef _WIN64
+	NTSTATUS result = CrySearchRoutines.RtlQueryProcessDebugInformation(mMemoryScanner->GetProcessId(), mMemoryScanner->IsX86Process() ? PDI_WOW64_MODULES : PDI_MODULES, db);
+#else
+	NTSTATUS result = CrySearchRoutines.RtlQueryProcessDebugInformation(mMemoryScanner->GetProcessId(), PDI_MODULES, db);
+#endif
+	
+	if (result != STATUS_SUCCESS || !db->Modules)
+	{
+		CrySearchRoutines.RtlDestroyQueryDebugBuffer(db);
+		return;
+	}
+	
+	// Walk and save the enumerated modules.
+	PDEBUG_MODULE_INFORMATIONEX modInfo = (PDEBUG_MODULE_INFORMATIONEX)db->Modules;
+	this->mLoadedModulesList.Reserve(modInfo->Count);
+	for (unsigned int i = 0; i < modInfo->Count; ++i)
+	{
+		Win32ModuleInformation& curMod = this->mLoadedModulesList.Add();
+		curMod.BaseAddress = modInfo->DbgModInfo[i].Base;
+		curMod.Length = modInfo->DbgModInfo[i].Size;
+	}
+	
+	// Free the allocated debug buffer.
+	CrySearchRoutines.RtlDestroyQueryDebugBuffer(db);
 }
 
 // Resets the module list and retrieves modules from scratch.
@@ -99,11 +102,21 @@ const Win32ModuleInformation* ModuleManager::FindModule(const char* modName) con
 	for (int i = 0; i < count; ++i)
 	{
 		const Win32ModuleInformation& mod = this->mLoadedModulesList[i];
-		if (_stricmp(mod.ModuleName, modName) == 0)
+		if (_stricmp(this->GetModuleFilename(mod.BaseAddress), modName) == 0)
 		{
 			return &mod;
 		}
 	}
 	
 	return NULL;
+}
+
+// Retrieves the module filename of a loaded module in the process. Returns an empty string if
+// the retrieval of the filename failed.
+String ModuleManager::GetModuleFilename(const SIZE_T mod) const
+{
+	StringBuffer buffer(MAX_PATH);
+	GetModuleFileNameEx(mMemoryScanner->GetHandle(), (HMODULE)mod, buffer.Begin(), MAX_PATH);
+	buffer.Strlen();
+	return GetFileNamePos(buffer.Begin());
 }

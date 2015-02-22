@@ -18,7 +18,7 @@ MemoryDissector::~MemoryDissector()
 // Retrieves the base address of the dissection entry.
 const SIZE_T MemoryDissector::GetBaseAddress() const
 {
-	return this->mBaseAddress;
+	return (SIZE_T)this->mBaseAddress;
 }
 
 // Retrieves the size of the memory being dissected.
@@ -53,7 +53,7 @@ bool MemoryDissector::Dissect(const int rowOffset, const bool enableTypeGuessing
 		{
 			// The first dissection should have a default row size, or type guessing.
 			const CCryDataType type = GuessTypeOfValue(loop);
-			this->mDissectionRows.Add(DissectionRowEntry(totalSteps, ValueAsStringInternal(loop, type, 0), type, 0));
+			this->mDissectionRows.Add(DissectionRowEntry(totalSteps, type, 0));
 		}
 		
 		result = true;
@@ -62,41 +62,6 @@ bool MemoryDissector::Dissect(const int rowOffset, const bool enableTypeGuessing
 	// Free used resources.
 	delete[] buffer;
 	return result;
-}
-
-// Re-dissects a partial range of the existing dissection.
-void MemoryDissector::DissectPartial(const Tuple2<int, int>& range)
-{
-	int i = range.a;
-	SIZE_T customBase = this->mBaseAddress + this->mDissectionRows[i].RowOffset;
-	unsigned int size = 0;
-	
-	// Calculate memory block to read.
-	for (; i <= range.b; ++i)
-	{
-		size += GetDataSizeFromValueType(this->mDissectionRows[i].RowType);
-	}
-	
-	// Read calculated memory block into local buffer.
-	// sizeof(SIZE_T) bytes are added to avoid the user interface from flickering in the last three rows.
-	const DWORD endSz = size + sizeof(SIZE_T);
-	Byte* buffer = new Byte[endSz];
-	SIZE_T bytesRead;
-	const BOOL b = CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), (void*)customBase, buffer, endSz, &bytesRead);
-	if (b && bytesRead == endSz)
-	{
-		// Change values inside visible rows.
-		size = 0;
-		for (i = range.a; i <= range.b; ++i)
-		{
-			DissectionRowEntry* const row = &this->mDissectionRows[i];
-			row->RowValue = ValueAsStringInternal(buffer + size, row->RowType, row->DataLength);
-			size += row->DataLength > 0 ? row->DataLength : GetDataSizeFromValueType(row->RowType);
-		}
-	}
-	
-	// Free used resources.
-	delete[] buffer;
 }
 
 // Clears resources used by the previously executed dissection operation.

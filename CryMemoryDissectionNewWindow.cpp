@@ -1,5 +1,6 @@
 #include "CryMemoryDissectionNewWindow.h"
 #include "ImlProvider.h"
+#include "UIUtilities.h"
 
 CryMemoryDissectionNewWindow::CryMemoryDissectionNewWindow(String* pName, SIZE_T* pAddr, DWORD* pSize) : CryDialogTemplate(CrySearchIml::AddToAddressList())
 {
@@ -27,9 +28,9 @@ CryMemoryDissectionNewWindow::CryMemoryDissectionNewWindow(String* pName, SIZE_T
 	{
 		this->mFriendlyName.SetText(*pName);
 #ifdef _WIN64
-		this->mPointer.SetText(Format("%llX", (LONG_PTR)*pAddr));
+		this->mPointer.SetText(FormatInt64HexUpper((LONG_PTR)*pAddr));
 #else
-		this->mPointer.SetText(Format("%lX", (LONG_PTR)*pAddr));
+		this->mPointer.SetText(FormatIntHexUpper((LONG_PTR)*pAddr, 0));
 #endif
 		this->mSizeField.SetText(IntStr(*pSize));
 	}

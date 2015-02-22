@@ -95,6 +95,8 @@ extern const bool __stdcall CryProtectMemoryRoutineNt(HANDLE handle, LPVOID addr
 __declspec(selectany) class _CrySearchRoutines
 {
 private:
+	bool wasError;
+	
 	CryReadMemoryRoutineType ReadMemoryRoutine;
 	CryWriteMemoryRoutineType WriteMemoryRoutine;
 	CryProtectMemoryRoutineType ProtectMemoryRoutine;
@@ -107,6 +109,9 @@ public:
 	NtReadVirtualMemoryPrototype NtReadVirtualMemory;
 	NtWriteVirtualMemoryPrototype NtWriteVirtualMemory;
 	NtProtectVirtualMemoryPrototype NtProtectVirtualMemory;
+	RtlCreateQueryDebugBufferPrototype RtlCreateQueryDebugBuffer;
+	RtlDestroyQueryDebugBufferPrototype RtlDestroyQueryDebugBuffer;
+	RtlQueryProcessDebugInformationPrototype RtlQueryProcessDebugInformation;
 	
 	// Construct all internals functions once for application wide use.
 	_CrySearchRoutines();
@@ -120,6 +125,8 @@ public:
 	const bool CryReadMemoryRoutine(HANDLE handle, LPCVOID addr, LPVOID buffer, SIZE_T size, SIZE_T* outSize) const;
 	const bool CryWriteMemoryRoutine(HANDLE handle, LPVOID addr, LPCVOID buffer, SIZE_T size, SIZE_T* outSize) const;
 	const bool CryProtectMemoryRoutine(HANDLE handle, LPVOID addr, SIZE_T size, ULONG newAccess, PULONG oldAccess) const;
+	
+	const bool ErrorOccured() const;
 	
 	// Initializes the routines from the settings file.
 	__declspec(noinline) void InitializeRoutines();

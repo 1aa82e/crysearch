@@ -35,6 +35,7 @@ public:
 	const int GetModuleCount() const;
 	const Win32ModuleInformation* GetModuleFromContainedAddress(const SIZE_T address) const;
 	const Win32ModuleInformation* FindModule(const char* modName) const;
+	String GetModuleFilename(const SIZE_T mod) const;
 	
 	const Win32ModuleInformation& operator [] (const int x) const
 	{

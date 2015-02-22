@@ -2,8 +2,25 @@ CrySearch Memory Scanner
 
 evolution536, www.unknowncheats.me
 
+v1.16
+	- Improved overall performance of the application:
+		- Improved user interface performance in several places due to replacement of slow formatting functions;
+		- Improved memory usage and performance of the memory dissector by enabling dynamic reading of values;
+		- Improved debugger performance slightly by optimizing the stack view;
+		- Improved module window performance by optimizing the way modules are saved and retrieved.
+	- Fixed bug where detaching the debugger would not accurately remove all breakpoints;
+	- Fixed existing bug where changing the size of the first memory dissection row would make the second row not size properly;
+	- Fixed bug where loading 64-bit address table in 32-bit CrySearch could possible crash the application;
+	- Added indicator labels in the modules window and threads window to indicate the amount of modules that are being displayed;
+	- Fixed a few bugs related to rare occasion sanity checking in the PE parser that would have led to crashing the application;
+	- Fixed bug where changing the relative address of an address table entry to another module would not actually change the module name;
+	- Added user interface warning for failed lookup of NTDLL functions used by CrySearch;
+	- Fixed bug where crash handler window would not function properly when exception occured inside child thread;
+	- Added option to hide bottom pane of the application main window. This option is available in the Window menu;
+	- 
 v1.15
 	- The icon of CrySearch has changed, thanks to Daax. He crafted a wonderful new icon for CrySearch;
+	- Improved part of the plugin SDK documentation;
 	- Made a few changes, bug fixes and improvements to the memory dissection window:
 		- Customized drawing of the memory dissection window, now drawing the address/offset in black and the type in grey;
 		- Fixed bug caused in the changes of last version where the address table file was not properly saved to file anymore;

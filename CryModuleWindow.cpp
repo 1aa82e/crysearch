@@ -1,6 +1,7 @@
 #include "CryModuleWindow.h"
 #include "CryDumpModuleSectionWindow.h"
 #include "ImlProvider.h"
+#include "UIUtilities.h"
 #include "BackendGlobalDef.h"
 
 #include <Psapi.h>
@@ -8,24 +9,24 @@
 
 String GetName(const int index)
 {
-	return (*mModuleManager)[index].ModuleName;
+	return mModuleManager->GetModuleFilename((*mModuleManager)[index].BaseAddress);
 }
 
 String GetBaseAddress(const int index)
 {
 #ifdef _WIN64
-	return Format("%llX", (__int64)(*mModuleManager)[index].BaseAddress);
+	return FormatInt64HexUpper((__int64)(*mModuleManager)[index].BaseAddress);
 #else
-	return Format("%lX", (int)(*mModuleManager)[index].BaseAddress);
+	return FormatIntHexUpper((int)(*mModuleManager)[index].BaseAddress, 0);
 #endif
 }
 
 String GetLength(const int index)
 {
 #ifdef _WIN64
-	return Format("%llX", (*mModuleManager)[index].Length);
+	return FormatInt64HexUpper((*mModuleManager)[index].Length);
 #else
-	return Format("%lX", (*mModuleManager)[index].Length);
+	return FormatIntHexUpper((*mModuleManager)[index].Length, 0);
 #endif
 }
 
@@ -34,9 +35,9 @@ CryModuleWindow::CryModuleWindow()
 	this->AddFrame(this->tBar);
 	this->tBar.Set(THISBACK(ToolBar));
 	
-	this->mModules.CryAddRowNumColumn("Name").SetConvert(Single<IndexBasedValueConvert<GetName>>());
-	this->mModules.CryAddRowNumColumn("Base Address").SetConvert(Single<IndexBasedValueConvert<GetBaseAddress>>());
-	this->mModules.CryAddRowNumColumn("Size").SetConvert(Single<IndexBasedValueConvert<GetLength>>());
+	this->mModules.CryAddRowNumColumn("Name", 50).SetConvert(Single<IndexBasedValueConvert<GetName>>());
+	this->mModules.CryAddRowNumColumn("Base Address", 25).SetConvert(Single<IndexBasedValueConvert<GetBaseAddress>>());
+	this->mModules.CryAddRowNumColumn("Size", 25).SetConvert(Single<IndexBasedValueConvert<GetLength>>());
 	this->mModules.WhenBar = THISBACK(ModuleListRightClick);
 	
 	*this << this->mModules.SizePos();
@@ -56,6 +57,8 @@ void CryModuleWindow::ToolBar(Bar& pBar)
 	pBar.Separator();
 	pBar.Add("Dump all modules", CrySearchIml::DumpAllModulesSmall(), THISBACK(DumpAllModulesButton));
 	pBar.Add("Load Library", CrySearchIml::LoadLibrarySmall(), THISBACK(LoadLibraryButtonClicked));
+	pBar.ToolGapRight();
+	pBar.Add(this->mModulesCount.SetAlign(ALIGN_RIGHT), 150);
 }
 
 void CryModuleWindow::ModuleListRightClick(Bar& pBar)
@@ -125,8 +128,8 @@ void CryModuleWindow::UnloadModule()
 		// A plugin is about to be silently unloaded. Remove it from the list.
 		if (mPluginSystem->UnloadPlugin(pName))
 		{
-			PromptOK("Module succesfully unloaded!");
 			this->RefreshModulesList();
+			PromptOK("Module succesfully unloaded!");
 		}
 		else
 		{
@@ -253,7 +256,7 @@ void CryModuleWindow::DumpAllModulesButton()
 			for (int i = 0; i < modCount; ++i)
 			{
 				const Win32ModuleInformation& mod = (*mModuleManager)[i];
-				if (!pCMDP || !pCMDP(mMemoryScanner->GetHandle(), (void*)mod.BaseAddress, (DWORD)mod.Length, AppendFileName(dir, mod.ModuleName)))
+				if (!pCMDP || !pCMDP(mMemoryScanner->GetHandle(), (void*)mod.BaseAddress, (DWORD)mod.Length, AppendFileName(dir, mModuleManager->GetModuleFilename(mod.BaseAddress))))
 				{
 					error = true;
 				}
@@ -271,7 +274,7 @@ void CryModuleWindow::DumpAllModulesButton()
 			for (int i = 0; i < modCount; ++i)
 			{
 				const Win32ModuleInformation& mod = (*mModuleManager)[i];
-				if (!pCMDP || !pCMDP(mMemoryScanner->GetHandle(), (void*)mod.BaseAddress, (DWORD)mod.Length, AppendFileName(dir, mod.ModuleName)))
+				if (!pCMDP || !pCMDP(mMemoryScanner->GetHandle(), (void*)mod.BaseAddress, (DWORD)mod.Length, AppendFileName(dir, mModuleManager->GetModuleFilename(mod.BaseAddress))))
 				{
 					error = true;
 				}
@@ -289,7 +292,7 @@ void CryModuleWindow::DumpAllModulesButton()
 		for (int i = 0; i < modCount; ++i)
 		{
 			const Win32ModuleInformation& mod = (*mModuleManager)[i];
-			if (!pCMDP || !pCMDP(mMemoryScanner->GetHandle(), (void*)mod.BaseAddress, (DWORD)mod.Length, AppendFileName(dir, mod.ModuleName)))
+			if (!pCMDP || !pCMDP(mMemoryScanner->GetHandle(), (void*)mod.BaseAddress, (DWORD)mod.Length, AppendFileName(dir, mModuleManager->GetModuleFilename(mod.BaseAddress))))
 			{
 				error = true;
 			}
@@ -379,7 +382,9 @@ void CryModuleWindow::DumpModuleButton(const SIZE_T pluginBase)
 void CryModuleWindow::RefreshModulesList()
 {
 	mModuleManager->Initialize();
-	this->mModules.SetVirtualCount(mModuleManager->GetModuleCount());
+	const int mCount = mModuleManager->GetModuleCount();
+	this->mModules.SetVirtualCount(mCount);
+	this->mModulesCount.SetLabel(Format("Total %i modules", mCount));
 }
 
 void CryModuleWindow::RestorePEHeader()
@@ -418,15 +423,15 @@ void CryModuleWindow::HideModule()
 {
 	if (mPeInstance->HideModuleFromProcess((*mModuleManager)[this->mModules.GetCursor()]))
 	{
-		PromptOK("Module succesfully hidden!");
 		this->RefreshModulesList();
+		PromptOK("Module succesfully hidden!");
 		return;
 	}
 	else
 	{
+		this->RefreshModulesList();
 		Prompt("Hide Error", CtrlImg::error(), "Failed to hide the module! Either the module selected module was not succesfully found"\
 			", target process writes failed or the nessecary data could not be retrieved. Try again or try another module.", "OK");
-		this->RefreshModulesList();
 	}
 }
 

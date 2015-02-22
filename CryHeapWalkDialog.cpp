@@ -1,5 +1,6 @@
 #include "CryHeapWalkDialog.h"
 #include "ProcessUtil.h"
+#include "UIUtilities.h"
 
 CryHeapWalkDialog::CryHeapWalkDialog(const Image& icon) : CryDialogTemplate(icon)
 {
@@ -25,8 +26,8 @@ CryHeapWalkDialog::CryHeapWalkDialog(const Image& icon) : CryDialogTemplate(icon
 	{
 		for (int i = 0; i < heaps.GetCount(); ++i)
 		{
-			this->mHeapList.Add(Format("%llX", heaps[i].VirtualAddress), Format("%llX", heaps[i].CommittedSize), Format("%llX", heaps[i].AllocatedSize)
-				, Format("%llX", heaps[i].BlockCount), Format("%llX", heaps[i].Flags));
+			this->mHeapList.Add(FormatInt64HexUpper(heaps[i].VirtualAddress), FormatInt64HexUpper(heaps[i].CommittedSize), FormatInt64HexUpper(heaps[i].AllocatedSize)
+				, FormatInt64HexUpper(heaps[i].BlockCount), FormatInt64HexUpper(heaps[i].Flags));
 		}
 	}
 	else

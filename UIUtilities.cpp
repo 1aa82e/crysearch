@@ -159,18 +159,18 @@ String GenerateByteArray(const Vector<Byte>& bytes, const DWORD arrayType)
 // Returns a newly constructed string containing the string representation.
 // The size parameter is optional, and is only used for string, wstring and AOB types.
 // If the function failed, the return value is an empty string.
-String ValueAsStringInternal(const Byte* data, const CCryDataType type, const int size)
+String ValueAsStringInternal(const Byte* data, const CCryDataType type, const int size, const bool hex)
 {
 	switch (type)
 	{
 		case CRYDATATYPE_BYTE:
-			return IntStr(*(Byte*)data);
+			return hex ? FormatIntHexUpper(*(Byte*)data, 0) : IntStr(*(Byte*)data);
 		case CRYDATATYPE_2BYTES:
-			return IntStr(*(short*)data);
+			return hex ? FormatIntHexUpper(*(short*)data, 0) : IntStr(*(short*)data);
 		case CRYDATATYPE_4BYTES:
-			return IntStr(*(int*)data);
+			return hex ? FormatIntHexUpper(*(int*)data, 0) : IntStr(*(int*)data);
 		case CRYDATATYPE_8BYTES:
-			return IntStr64(*(__int64*)data);
+			return hex ? FormatInt64HexUpper(*(__int64*)data) : IntStr64(*(__int64*)data);
 		case CRYDATATYPE_FLOAT:
 			return DblStr(*(float*)data);
 		case CRYDATATYPE_DOUBLE:

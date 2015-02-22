@@ -143,7 +143,7 @@ CryDebugger::CryDebugger()
 		// If the module pointer is not null, lets load up the symbols.
 		if (exeMod)
 		{
-			SymLoadModuleEx(mMemoryScanner->GetHandle(), NULL, fn, exeMod->ModuleName, exeMod->BaseAddress, (DWORD)exeMod->Length, NULL, 0);
+			SymLoadModuleEx(mMemoryScanner->GetHandle(), NULL, fn, mModuleManager->GetModuleFilename(exeMod->BaseAddress), exeMod->BaseAddress, (DWORD)exeMod->Length, NULL, 0);
 		}
 	}
 	
@@ -555,6 +555,21 @@ void CryDebugger::HandleMiscellaneousExceptions(const SIZE_T address, const LONG
 	}
 }
 
+// Processes the debugger action queue. This is a seperate function because the exiting sequence
+// of the debugger loop needs to make sure the queue is empty before quitting.
+void CryDebugger::ProcessActionQueue()
+{
+	while (this->mDebuggerActionQueue.GetCount() > 0)
+	{
+		// Execute the requested operation.
+		const CryDebuggerInternalRequestData& req = this->mDebuggerActionQueue.Head();
+		this->DispatchAction(req.Action, req.ParameterData);
+	
+		// Remove the request from the queue.
+		this->mDebuggerActionQueue.DropHead();
+	}
+}
+
 // The debugger loop that is ran by the debugger thread and will keep that thread alive until detach.
 void CryDebugger::ExceptionWatch()
 {
@@ -574,15 +589,7 @@ void CryDebugger::ExceptionWatch()
 		}
 		
 		// Check whether there are actions to be executed before continueing the loop.
-		while (this->mDebuggerActionQueue.GetCount() > 0)
-		{
-			// Execute the requested operation.
-			const CryDebuggerInternalRequestData& req = this->mDebuggerActionQueue.Head();
-			this->DispatchAction(req.Action, req.ParameterData);
-
-			// Remove the request from the queue.
-			this->mDebuggerActionQueue.DropHead();
-		}
+		this->ProcessActionQueue();
 		
 		// Check for a debug event. 100 ms because I need to be able to close the loop.
 		WaitForDebugEvent(&DebugEv, 100);
@@ -719,6 +726,9 @@ void CryDebugger::ExceptionWatch()
 		// If the loop should break, quit it.
 		if (this->shouldBreakLoop)
 		{
+			// Make sure the debugger action queue is empty before exiting the loop.
+			this->ProcessActionQueue();
+			
 			// Attempt detaching of the debugger with the designated api call.
 			if (this->mAttached = !DebugActiveProcessStop(mMemoryScanner->GetProcessId()))
 			{
@@ -774,27 +784,6 @@ void CryDebugger32::HideDebuggerFromPeb() const
 	// Remove the flags and write them back.
 	pNtGlobalFlag &= ~ANTI_DEBUG_PEB_FLAGS;
 	CrySearchRoutines.CryWriteMemoryRoutine(mMemoryScanner->GetHandle(), &remotePeb->NtGlobalFlag, &pNtGlobalFlag, sizeof(ULONG), NULL);
-}
-
-// Creates a snapshot of the stack pointed to by the second parameter: ESP.
-void CryDebugger32::CreateStackSnapshot(DbgBreakpoint* pBp, const SIZE_T pEsp)
-{
-	pBp->BreakpointSnapshot.StackView.Clear();
-	const int stackLength = this->mSettingsInstance->GetStackSnapshotLimit();
-	
-	Byte* stack = new Byte[stackLength];
-	CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), (void*)pEsp, stack, stackLength, NULL);
-	DWORD stackPtr = (DWORD)stack;
-	const DWORD endAddress = (DWORD)pEsp + stackLength;
-	
-	for (DWORD addr = (DWORD)pEsp; addr < endAddress; addr += sizeof(DWORD), stackPtr += sizeof(DWORD))
-	{
-		StackViewData& newEntry = pBp->BreakpointSnapshot.StackView.Add();
-		newEntry.StackAddress = addr;
-		newEntry.StackValue = *(SIZE_T*)stackPtr;
-	}
-	
-	delete[] stack;
 }
 
 // Retrieves hardware breakpoint from instruction that accessed data that the breakpoint was set on.
@@ -1102,7 +1091,6 @@ void CryDebugger32::HandleSoftwareBreakpoint(const DWORD threadId, const int bpI
 	CloseHandle(hThread);
 	
 	// Set hit associated data for the breakpoint.
-	this->CreateStackSnapshot(&pBreakpoint, ctx.Esp);
 	this->ObtainCallStackTrace(&pBreakpoint, &ctx);
 	pBreakpoint.BreakpointSnapshot.RegisterFieldCount = REGISTERCOUNT_86;
 	
@@ -1173,7 +1161,6 @@ void CryDebugger32::HandleHardwareBreakpoint(const DWORD threadId, const int bpI
 	CloseHandle(hThread);
 	
 	// Set hit associated data for the breakpoint.
-	this->CreateStackSnapshot(&hwbp, ctx.Esp);
 	this->ObtainCallStackTrace(&hwbp, &ctx);
 	hwbp.BreakpointSnapshot.RegisterFieldCount = REGISTERCOUNT_86;
 	
@@ -1223,27 +1210,6 @@ void CryDebugger32::HandleHardwareBreakpoint(const DWORD threadId, const int bpI
 		// Remove the flags and write them back.
 		pNtGlobalFlag &= ~ANTI_DEBUG_PEB_FLAGS;
 		CrySearchRoutines.CryWriteMemoryRoutine(mMemoryScanner->GetHandle(), &remotePeb->NtGlobalFlag, &pNtGlobalFlag, sizeof(ULONG), NULL);
-	}
-	
-	// Creates a snapshot of the stack pointed to by the second parameter: ESP.
-	void CryDebugger64::CreateStackSnapshot(DbgBreakpoint* pBp, const SIZE_T pEsp)
-	{
-		pBp->BreakpointSnapshot.StackView.Clear();
-		const int stackLength = this->mSettingsInstance->GetStackSnapshotLimit();
-		
-		Byte* stack = new Byte[stackLength];
-		CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), (void*)pEsp, stack, stackLength, NULL);
-		SIZE_T stackPtr = (SIZE_T)stack;
-		const SIZE_T endAddress = (SIZE_T)pEsp + stackLength;
-		
-		for (SIZE_T addr = (SIZE_T)pEsp; addr < endAddress; addr += sizeof(SIZE_T), stackPtr += sizeof(SIZE_T))
-		{
-			StackViewData& newEntry = pBp->BreakpointSnapshot.StackView.Add();
-			newEntry.StackAddress = addr;
-			newEntry.StackValue = *(SIZE_T*)stackPtr;
-		}
-		
-		delete[] stack;
 	}
 	
 	// Retrieves hardware breakpoint from instruction that accessed data that the breakpoint was set on.
@@ -1346,7 +1312,6 @@ void CryDebugger32::HandleHardwareBreakpoint(const DWORD threadId, const int bpI
 		bp.BreakpointSnapshot.Reset();
 
 		// Set hit associated data for the breakpoint.
-		this->CreateStackSnapshot(&bp, ctx->Rsp);
 		this->ObtainCallStackTrace(&bp, ctx);
 		memcpy(&bp.BreakpointSnapshot.Context64, ctx, sizeof(CONTEXT));
 		bp.BreakpointSnapshot.RegisterFieldCount = REGISTERCOUNT_64;
@@ -1406,7 +1371,6 @@ void CryDebugger32::HandleHardwareBreakpoint(const DWORD threadId, const int bpI
 		hwbp.BreakpointSnapshot.Reset();
 		
 		// Set hit associated data for the breakpoint.
-		this->CreateStackSnapshot(&hwbp, ctx->Rsp);
 		this->ObtainCallStackTrace(&hwbp, ctx);
 		memcpy(&hwbp.BreakpointSnapshot.Context64, ctx, sizeof(CONTEXT));
 		hwbp.BreakpointSnapshot.RegisterFieldCount = REGISTERCOUNT_64;

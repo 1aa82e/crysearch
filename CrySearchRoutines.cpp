@@ -37,7 +37,8 @@ const bool __stdcall CryProtectMemoryRoutineNt(HANDLE handle, LPVOID addr, SIZE_
 
 _CrySearchRoutines::_CrySearchRoutines()
 {
-	HMODULE ntdll = GetModuleHandle("ntdll.dll");
+	// Attempt lookup of NTDLL functions used throughout the program.
+	const HMODULE ntdll = GetModuleHandle("ntdll.dll");
 	this->NtQuerySystemInformation = (NtQuerySystemInformationPrototype)GetProcAddress(ntdll, "NtQuerySystemInformation");
 	this->NtQueryInformationThread = (NtQueryInformationThreadPrototype)GetProcAddress(ntdll, "NtQueryInformationThread");
 	this->NtQueryInformationProcess = (NtQueryInformationProcessPrototype)GetProcAddress(ntdll, "NtQueryInformationProcess");
@@ -46,10 +47,26 @@ _CrySearchRoutines::_CrySearchRoutines()
 	this->NtReadVirtualMemory = (NtReadVirtualMemoryPrototype)GetProcAddress(ntdll, "NtReadVirtualMemory");
 	this->NtWriteVirtualMemory = (NtWriteVirtualMemoryPrototype)GetProcAddress(ntdll, "NtWriteVirtualMemory");
 	this->NtProtectVirtualMemory = (NtProtectVirtualMemoryPrototype)GetProcAddress(ntdll, "NtProtectVirtualMemory");
+	this->RtlCreateQueryDebugBuffer = (RtlCreateQueryDebugBufferPrototype)GetProcAddress(ntdll, "RtlCreateQueryDebugBuffer");
+	this->RtlDestroyQueryDebugBuffer = (RtlDestroyQueryDebugBufferPrototype)GetProcAddress(ntdll, "RtlDestroyQueryDebugBuffer");
+	this->RtlQueryProcessDebugInformation = (RtlQueryProcessDebugInformationPrototype)GetProcAddress(ntdll, "RtlQueryProcessDebugInformation");
+	
+	// Check if the lookup of any of the functions threw an error.
+	this->wasError = !this->NtQuerySystemInformation || !this->NtQueryInformationThread || !this->NtQueryInformationProcess
+		|| !this->NtOpenProcess || !this->NtQueryObject || !this->NtReadVirtualMemory || !this->NtWriteVirtualMemory
+		|| !this->NtProtectVirtualMemory || !this->RtlCreateQueryDebugBuffer || !this->RtlDestroyQueryDebugBuffer
+		|| !this->RtlQueryProcessDebugInformation;
 	
 	this->ReadMemoryRoutine = NULL;
 	this->WriteMemoryRoutine = NULL;
 	this->ProtectMemoryRoutine = NULL;
+}
+
+// It is possible that an error occured during the retrieval of one of the NTDLL functions. If 
+// this is the case, the user should at least be notified about possible undefined behavior.
+const bool _CrySearchRoutines::ErrorOccured() const
+{
+	return this->wasError;
 }
 
 void _CrySearchRoutines::SetCrySearchReadMemoryRoutine(CryReadMemoryRoutineType read)

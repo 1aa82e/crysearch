@@ -1,5 +1,6 @@
 #include "CryMemoryDissectionChangePointerWindow.h"
 #include "ImlProvider.h"
+#include "UIUtilities.h"
 
 CryMemoryDissectionChangePointerWindow::CryMemoryDissectionChangePointerWindow(SIZE_T* const pPointer) : CryDialogTemplate(CrySearchIml::ChangeRecordIcon())
 {
@@ -18,9 +19,9 @@ CryMemoryDissectionChangePointerWindow::CryMemoryDissectionChangePointerWindow(S
 	
 	// Load current pointer into text field.
 #ifdef _WIN64
-	this->mPointerField.SetText(Format("%llX", (LONG_PTR)*pPointer));
+	this->mPointerField.SetText(FormatInt64HexUpper((LONG_PTR)*pPointer));
 #else
-	this->mPointerField.SetText(Format("%lX", (LONG_PTR)*pPointer));
+	this->mPointerField.SetText(FormatIntHexUpper((LONG_PTR)*pPointer, 0));
 #endif
 }
 

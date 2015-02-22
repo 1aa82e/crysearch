@@ -43,7 +43,11 @@ const int GetDisasmLineIndexFromAddress(const SIZE_T address)
 // Virtual column retrieval functions for the disassembler.
 String GetDisasmAddress(const int index)
 {
-	return Format("%llX", DisasmVisibleLines[index]);
+#ifdef _WIN64
+	return FormatInt64HexUpper(DisasmVisibleLines[index]);
+#else
+	return FormatIntHexUpper(DisasmVisibleLines[index], 0);
+#endif
 }
 
 String GetDisasmBytes(const int index)
@@ -69,9 +73,9 @@ String GetDisasmInstructionLine(const int index)
 String GetMemoryPageForDropList(const int index)
 {
 #ifdef _WIN64
-	return Format("%llX", (__int64)mExecutablePagesList[index].BaseAddress);
+	return FormatInt64HexUpper((__int64)mExecutablePagesList[index].BaseAddress);
 #else
-	return Format("%llX", (int)mExecutablePagesList[index].BaseAddress);
+	return FormatIntHexUpper((int)mExecutablePagesList[index].BaseAddress, 0);
 #endif
 }
 

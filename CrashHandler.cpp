@@ -133,14 +133,15 @@ LONG __stdcall CrashHandler(PEXCEPTION_POINTERS ExceptionInfo)
 		const Win32ModuleInformation* mod = NULL;
 		if (mod = mModuleManager->GetModuleFromContainedAddress((SIZE_T)current))
 		{
+			String modName = mModuleManager->GetModuleFilename(mod->BaseAddress);
 			char symbolName[MAX_PATH];
 			if (GetSingleSymbolName(hCur, (SIZE_T)current, symbolName, MAX_PATH))
 			{
-				excMsg += Format("%s!%s\r\n", mod->ModuleName, symbolName);
+				excMsg += Format("%s!%s\r\n", modName, symbolName);
 			}
 			else
 			{
-				excMsg += Format("%s!%llX\r\n", mod->ModuleName, (LONG_PTR)current);
+				excMsg += Format("%s!%llX\r\n", modName, (LONG_PTR)current);
 			}
 		}
 		else
@@ -152,9 +153,18 @@ LONG __stdcall CrashHandler(PEXCEPTION_POINTERS ExceptionInfo)
 	SymCleanup(hCur);
 	
 	// Pop up crash report window.
-	CryCrashHandlerWindow* cchw = new CryCrashHandlerWindow(excMsg);
-	cchw->Execute();
-	delete cchw;
+	if (Thread::IsMain())
+	{
+		CryCrashHandlerWindow* cchw = new CryCrashHandlerWindow(excMsg);
+		cchw->Execute();
+		delete cchw;
+	}
+	else
+	{
+		// It was not the main thread that caused the exception. Dispatch the handling of it to 
+		// the main thread and wait for it to complete.
+		mCrySearchWindowManager->GetParentWindow()->ExecuteCrashHandlerWindow(excMsg);
+	}
 	
 	// Let the exception run into the next exception handler.
 	return EXCEPTION_EXECUTE_HANDLER;

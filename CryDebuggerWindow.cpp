@@ -16,20 +16,20 @@ String GetBreakpointAddress(const int index)
 #ifdef _WIN64
 	if (mMemoryScanner->IsX86Process())
 	{
-		return Format("%lX", (LONG_PTR)(*mDebugger)[index].Address);
+		return FormatIntHexUpper((int)(*mDebugger)[index].Address, 0);
 	}
 	else
 	{
-		return Format("%llX", (LONG_PTR)(*mDebugger)[index].Address);
+		return FormatInt64HexUpper((*mDebugger)[index].Address);
 	}
 #else
-	return Format("%lX", (LONG_PTR)(*mDebugger)[index].Address);
+	return FormatIntHexUpper((int)(*mDebugger)[index].Address, 0);
 #endif
 }
 
 String GetBreakpointHitCount(const int index)
 {
-	return Format("%i", (*mDebugger)[index].HitCount);
+	return FormatInt((*mDebugger)[index].HitCount);
 }
 
 String GetStackViewAddress(const int index)
@@ -37,14 +37,14 @@ String GetStackViewAddress(const int index)
 #ifdef _WIN64
 	if (mMemoryScanner->IsX86Process())
 	{
-		return Format("%lX", (LONG_PTR)(*mDebugger)[BreakpointMasterIndex].BreakpointSnapshot.StackView[index].StackAddress);
+		return FormatIntHexUpper((int)(*mDebugger)[BreakpointMasterIndex].Address + (index * sizeof(DWORD)), 0);
 	}
 	else
 	{
-		return Format("%llX", (LONG_PTR)(*mDebugger)[BreakpointMasterIndex].BreakpointSnapshot.StackView[index].StackAddress);
+		return FormatInt64HexUpper((*mDebugger)[BreakpointMasterIndex].Address + (index * sizeof(SIZE_T)));
 	}
 #else
-	return Format("%lX", (LONG_PTR)(*mDebugger)[BreakpointMasterIndex].BreakpointSnapshot.StackView[index].StackAddress);
+	return FormatIntHexUpper((*mDebugger)[BreakpointMasterIndex].Address + (index * sizeof(DWORD)), 0);
 #endif
 }
 
@@ -53,14 +53,23 @@ String GetStackViewValue(const int index)
 #ifdef _WIN64
 	if (mMemoryScanner->IsX86Process())
 	{
-		return Format("%lX", (LONG_PTR)(*mDebugger)[BreakpointMasterIndex].BreakpointSnapshot.StackView[index].StackValue);
+		const SIZE_T esp = (*mDebugger)[BreakpointMasterIndex].BreakpointSnapshot.Wow64Context.Esp;
+		int value;
+		mMemoryScanner->Peek(esp + (index * sizeof(DWORD)), 0, &value);
+		return FormatIntHexUpper(value, 0);
 	}
 	else
 	{
-		return Format("%llX", (LONG_PTR)(*mDebugger)[BreakpointMasterIndex].BreakpointSnapshot.StackView[index].StackValue);
+		const SIZE_T esp = (*mDebugger)[BreakpointMasterIndex].BreakpointSnapshot.Context64.Rsp;
+		__int64 value;
+		mMemoryScanner->Peek(esp + (index * sizeof(SIZE_T)), 0, &value);
+		return FormatInt64HexUpper(value);
 	}
 #else
-	return Format("%lX", (LONG_PTR)(*mDebugger)[BreakpointMasterIndex].BreakpointSnapshot.StackView[index].StackValue);
+	const SIZE_T esp = (*mDebugger)[BreakpointMasterIndex].BreakpointSnapshot.Context86.Esp;
+	int value;
+	mMemoryScanner->Peek(esp + (index * sizeof(DWORD)), 0, &value);
+	return FormatIntHexUpper(value, 0);
 #endif
 }
 
@@ -70,19 +79,20 @@ String GetCallStackFunctionCall(const int index)
 	const Win32ModuleInformation* mod = NULL;
 	if (mod = mModuleManager->GetModuleFromContainedAddress((SIZE_T)address))
 	{
+		String modName = mModuleManager->GetModuleFilename(mod->BaseAddress);
 		char symbolName[MAX_PATH];
 		if (GetSingleSymbolName(mMemoryScanner->GetHandle(), (SIZE_T)address, symbolName, MAX_PATH))
 		{
-			return Format("%s!%s", mod->ModuleName, symbolName);
+			return Format("%s!%s", modName, symbolName);
 		}
 		else
 		{
-			return Format("%s!%llX", mod->ModuleName, (LONG_PTR)address);
+			return Format("%s!%llX", modName, (LONG_PTR)address);
 		}
 	}
 	else
 	{
-		return Format("%llX", (LONG_PTR)address);
+		return FormatInt64HexUpper((LONG_PTR)address);
 	}
 }
 
@@ -136,7 +146,7 @@ void CryDebuggerWindow::BreakpointSelectionChanged()
 		const DbgBreakpoint& bp = (*mDebugger)[(int)BreakpointMasterIndex];
 		this->mDebuggerHitView.SetInstructionString(bp.BreakpointSnapshot.DisassemblyAccessLine);
 		this->mDebuggerHitView.SetRegisterCount(bp.BreakpointSnapshot.RegisterFieldCount);
-		this->mStackView.SetVirtualCount(bp.BreakpointSnapshot.StackView.GetCount());
+		this->DynamicCreateStackView();
 		this->mCallStackView.SetVirtualCount(bp.BreakpointSnapshot.CallStackView.GetCount());
 	}
 	
@@ -202,6 +212,25 @@ void CryDebuggerWindow::DebuggerEventOccured(DebugEvent event, void* param)
 	PostCallback(THISBACK2(DebuggerEventOccuredThreadsafe, event, param));
 }
 
+void CryDebuggerWindow::DynamicCreateStackView()
+{
+	if ((*mDebugger)[(int)BreakpointMasterIndex].HitCount)
+	{
+#ifdef _WIN64
+		if (mMemoryScanner->IsX86Process())
+		{
+			this->mStackView.SetVirtualCount(SettingsFile::GetInstance()->GetStackSnapshotLimit() / sizeof(DWORD));
+		}
+		else
+		{
+			this->mStackView.SetVirtualCount(SettingsFile::GetInstance()->GetStackSnapshotLimit() / sizeof(SIZE_T));
+		}
+#else
+		this->mStackView.SetVirtualCount(SettingsFile::GetInstance()->GetStackSnapshotLimit() / sizeof(DWORD));
+#endif	
+	}
+}
+
 void CryDebuggerWindow::DebuggerEventOccuredThreadsafe(DebugEvent event, void* param)
 {
 	switch (event)
@@ -245,8 +274,9 @@ void CryDebuggerWindow::DebuggerEventOccuredThreadsafe(DebugEvent event, void* p
 				const DbgBreakpoint& bp = (*mDebugger)[(int)param];
 				this->mDebuggerHitView.SetInstructionString(bp.BreakpointSnapshot.DisassemblyAccessLine);
 				this->mDebuggerHitView.SetRegisterCount(bp.BreakpointSnapshot.RegisterFieldCount);
-				this->mStackView.SetVirtualCount(bp.BreakpointSnapshot.StackView.GetCount());
+				this->DynamicCreateStackView();
 				this->mCallStackView.SetVirtualCount(bp.BreakpointSnapshot.CallStackView.GetCount());
+				this->mCallStackView.Sync();
 			}
 			
 			// Hit count of breakpoint should have changed, so refresh the breakpoint list too.
@@ -277,7 +307,7 @@ void CryDebuggerWindow::HandleBreakpointChanged(const int bpIndex)
 			// Update the snapshot lists.
 			this->mDebuggerHitView.SetInstructionString(bp.BreakpointSnapshot.DisassemblyAccessLine);
 			this->mDebuggerHitView.SetRegisterCount(bp.BreakpointSnapshot.RegisterFieldCount);
-			this->mStackView.SetVirtualCount(bp.BreakpointSnapshot.StackView.GetCount());
+			this->DynamicCreateStackView();
 			this->mCallStackView.SetVirtualCount(bp.BreakpointSnapshot.CallStackView.GetCount());
 			
 			// Recheck all breakpoints and reset display colors. This is the most stable way.

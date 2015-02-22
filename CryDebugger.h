@@ -14,13 +14,6 @@ using namespace Upp;
 // If more than 4 hardware breakpoints are about to be set, the user should be informed that it is not possible.
 #define BREAKPOINT_SET_FAILED 0xFFFFFFFF
 
-// Represents a part of dissected stack around ESP when a breakpoint was hit.
-struct StackViewData : Moveable<StackViewData>
-{
-	SIZE_T StackAddress;
-	SIZE_T StackValue;
-};
-
 // Field count definitions
 #define REGISTERCOUNT_86	9
 #define REGISTERCOUNT_64	15
@@ -78,9 +71,6 @@ struct DbgBreakpoint : Moveable<DbgBreakpoint>
 			CONTEXT Context86;
 #endif	
 		};
-		
-		// Contains the stack view dissection at the moment of breakpoint hit.
-		Vector<StackViewData> StackView;
 		
 		// Contains the call stack at the moment of breakpoint hit.
 		Vector<DWORD64> CallStackView;
@@ -214,6 +204,7 @@ private:
 	void DbgThread();
 	void ProcessCreationReturnValue(bool b, bool* const val);
 	void DispatchAction(const CryDebuggerAction action, const void* params);
+	void ProcessActionQueue();
 	
 	void SetBreakpointInternal(const SIZE_T address);
 	void SetHardwareBreakpointInternal(const HardwareBreakpointParameters* pParams);
@@ -242,7 +233,6 @@ protected:
 	
 	void HandleMiscellaneousExceptions(const SIZE_T address, const LONG excCode, DWORD* dwContinueStatus);
 	
-	virtual void CreateStackSnapshot(DbgBreakpoint* pBp, const SIZE_T pEsp) = 0;
 	virtual void ObtainCallStackTrace(DbgBreakpoint* pBp, void* const ctx) = 0;
 public:
 	CryDebugger();
@@ -286,7 +276,6 @@ private:
 	
 	typedef CryDebugger32 CLASSNAME;
 protected:
-	virtual void CreateStackSnapshot(DbgBreakpoint* pBp, const SIZE_T pEsp);
 	virtual void ObtainCallStackTrace(DbgBreakpoint* pBp, void* const ctx);
 public:
 	CryDebugger32();
@@ -308,7 +297,6 @@ public:
 		
 		typedef CryDebugger64 CLASSNAME;
 	protected:
-		virtual void CreateStackSnapshot(DbgBreakpoint* pBp, const SIZE_T pEsp);
 		virtual void ObtainCallStackTrace(DbgBreakpoint* pBp, void* const ctx);
 	public:
 		CryDebugger64();

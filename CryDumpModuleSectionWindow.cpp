@@ -1,5 +1,6 @@
 #include "CryDumpModuleSectionWindow.h"
 #include "BackendGlobalDef.h"
+#include "UIUtilities.h"
 
 CryDumpModuleSectionWindow::CryDumpModuleSectionWindow(const int modListIndex, const Image& icon) : CryDialogTemplate(icon)
 {
@@ -47,7 +48,7 @@ CryDumpModuleSectionWindow::CryDumpModuleSectionWindow(const int modListIndex, c
 	for (int i = 0; i < this->imageSections.GetCount(); ++i)
 	{
 		const Win32PESectionInformation& cur = this->imageSections[i];
-		this->mSectionsList.Add(cur.SectionName, Format("%llX", (__int64)cur.BaseAddress), Format("%llX", (__int64)cur.SectionSize));
+		this->mSectionsList.Add(cur.SectionName, FormatInt64HexUpper((__int64)cur.BaseAddress), FormatInt64HexUpper((__int64)cur.SectionSize));
 	}
 	
 	// Set the amount of sections in a label.

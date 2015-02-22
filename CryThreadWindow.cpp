@@ -35,26 +35,27 @@ String GetThreadStartAddress(const int index)
 	const SIZE_T addr = mThreadsList[index].StartAddress;
 	if (mod = mModuleManager->GetModuleFromContainedAddress(addr))
 	{
+		String modName = mModuleManager->GetModuleFilename(mod->BaseAddress);
 		if (mDebugger->IsDebuggerAttached())
 		{
 			char symbolName[MAX_PATH];
 			if (GetSingleSymbolName(mMemoryScanner->GetHandle(), addr, symbolName, MAX_PATH))
 			{
-				return Format("%s!%s", mod->ModuleName, symbolName);
+				return Format("%s!%s", modName, symbolName);
 			}
 			else
 			{
 #ifdef _WIN64
 				if (mMemoryScanner->IsX86Process())
 				{
-					return Format("%s!%lX", mod->ModuleName, (int)addr);
+					return Format("%s!%lX", modName, (int)addr);
 				}
 				else
 				{
-					return Format("%s!%llX", mod->ModuleName, (__int64)addr);
+					return Format("%s!%llX", modName, (__int64)addr);
 				}
 #else
-				return Format("%s!%lX", mod->ModuleName, (int)addr);
+				return Format("%s!%lX", modName, (int)addr);
 #endif
 			}
 		}
@@ -63,14 +64,14 @@ String GetThreadStartAddress(const int index)
 #ifdef _WIN64
 			if (mMemoryScanner->IsX86Process())
 			{
-				return Format("%s!%lX", mod->ModuleName, (int)addr);
+				return Format("%s!%lX", modName, (int)addr);
 			}
 			else
 			{
-				return Format("%s!%llX", mod->ModuleName, (__int64)addr);
+				return Format("%s!%llX", modName, (__int64)addr);
 			}
 #else
-			return Format("%s!%lX", mod->ModuleName, (int)addr);
+			return Format("%s!%lX", modName, (int)addr);
 #endif			
 		}
 	}
@@ -79,14 +80,14 @@ String GetThreadStartAddress(const int index)
 #ifdef _WIN64
 		if (mMemoryScanner->IsX86Process())
 		{
-			return Format("%lX", (int)addr);
+			return FormatIntHexUpper((int)addr, 0);
 		}
 		else
 		{
-			return Format("%llX", (__int64)addr);
+			return FormatInt64HexUpper((__int64)addr);
 		}
 #else
-		return Format("%lX", (int)addr);
+		return FormatIntHexUpper((int)addr, 0);
 #endif
 	}
 }
@@ -122,6 +123,8 @@ void CryThreadWindow::ToolBar(Bar& pBar)
 	pBar.Separator();
 	pBar.Add("Attempt to suspend all threads", CrySearchIml::SuspendAllThreadsSmall(), THISBACK(AttemptSuspendAllThreads));
 	pBar.Add("Attempt to resume all threads", CrySearchIml::ResumeAllThreadsSmall(), THISBACK(AttemptResumeAllThreads));
+	pBar.ToolGapRight();
+	pBar.Add(this->mThreadCount.SetAlign(ALIGN_RIGHT), 150);
 }
 
 void CryThreadWindow::ThreadListRightClick(Bar& pBar)
@@ -143,7 +146,9 @@ void CryThreadWindow::ThreadListRightClick(Bar& pBar)
 void CryThreadWindow::LoadThreads()
 {
 	EnumerateThreads(mMemoryScanner->GetProcessId(), mThreadsList);
-	this->mThreads.SetVirtualCount(mThreadsList.GetCount());
+	const int tCount = mThreadsList.GetCount();
+	this->mThreads.SetVirtualCount(tCount);
+	this->mThreadCount.SetLabel(Format("Total %i threads", tCount));
 	
 	// Set suspended thread row displays to red and running ones to standard.
 	const int threadCount = mThreadsList.GetCount();

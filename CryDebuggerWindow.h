@@ -28,6 +28,7 @@ private:
 	void BreakpointListRightClick(Bar& pBar);
 	void CallStackListRightClick(Bar& pBar);
 	
+	void DynamicCreateStackView();
 	void FollowStackTraceInDisassembler();
 	void DisableBreakpointButtonClicked();
 	void RemoveBreakpointButtonClicked();

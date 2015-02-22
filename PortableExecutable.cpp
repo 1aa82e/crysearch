@@ -483,7 +483,7 @@ SIZE_T PortableExecutable32::GetAddressFromExportTable(const AddrStruct* addr, c
 					const Win32ModuleInformation* modBaseAddr = this->GetResolvedModule(addr->BufferBaseAddress, &ResurseDotIndex, funcAddrPtr, NameOrdinal);
 					
 					// Sometimes infinite redirecting causes stack overflowing. Terminate this sequence by returning not found.
-					if ((SIZE_T)addr->BaseAddress == modBaseAddr->BaseAddress)
+					if (!modBaseAddr || (SIZE_T)addr->BaseAddress == modBaseAddr->BaseAddress)
 					{
 						return EAT_ADDRESS_NOT_FOUND;
 					}
@@ -523,7 +523,7 @@ SIZE_T PortableExecutable32::GetAddressFromExportTable(const AddrStruct* addr, c
 					{
 						const Win32ModuleInformation* modBaseAddr = this->GetResolvedModule(addr->BufferBaseAddress, &ResurseDotIndex, funcAddrPtr, NameOrdinal);
 						
-						if ((SIZE_T)addr->BaseAddress == modBaseAddr->BaseAddress)
+						if (!modBaseAddr || (SIZE_T)addr->BaseAddress == modBaseAddr->BaseAddress)
 						{
 							return EAT_ADDRESS_NOT_FOUND;
 						}
@@ -630,7 +630,7 @@ void PortableExecutable32::GetImportAddressTable() const
 				delete[] outWString;
 			
 				modBaseAddr = mModuleManager->FindModule(redirectedDll.ToString());
-				impDesc.LogicalBaseAddress = modBaseAddr->BaseAddress;
+				impDesc.LogicalBaseAddress = modBaseAddr ? modBaseAddr->BaseAddress : 0;
 			}
 		}
 		else
@@ -937,7 +937,8 @@ bool PortableExecutable32::HideModuleFromProcess(const Win32ModuleInformation& m
                 PathStripPathW(BaseDllName);
                 
                 // Compare current module's base name and desired module name, if it matches, the desired one is found.
-                if (memcmp(module.ModuleName.ToWString().Begin(), BaseDllName, module.ModuleName.GetLength() * sizeof(wchar)) == 0)
+                String selModName = mModuleManager->GetModuleFilename(module.BaseAddress);
+                if (memcmp(selModName.ToWString().Begin(), BaseDllName, selModName.GetLength() * sizeof(wchar)) == 0)
                 {
                     found = true;
                     
@@ -1045,7 +1046,7 @@ bool PortableExecutable32::LoadLibraryExternal(const String& library) const
 	const int modCount = mModuleManager->GetModuleCount();
 	for (int i = 0; i < modCount; ++i)
 	{
-		if (ToLower((*mModuleManager)[i].ModuleName) == "kernel32.dll")
+		if (ToLower(mModuleManager->GetModuleFilename((*mModuleManager)[i].BaseAddress)) == "kernel32.dll")
 		{
 			krnl32Base = (DWORD)(*mModuleManager)[i].BaseAddress;
 			break;
@@ -1191,7 +1192,7 @@ void PortableExecutable32::UnloadLibraryExternal(const SIZE_T module) const
 	const int modCount = mModuleManager->GetModuleCount();
 	for (int i = 0; i < modCount; ++i)
 	{
-		if (ToLower((*mModuleManager)[i].ModuleName) == "kernel32.dll")
+		if (ToLower(mModuleManager->GetModuleFilename((*mModuleManager)[i].BaseAddress)) == "kernel32.dll")
 		{
 			krnl32Base = (DWORD)(*mModuleManager)[i].BaseAddress;
 			break;
@@ -1343,7 +1344,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 					if (*funcAddrPtr > addr->DirectoryAddress->VirtualAddress && *funcAddrPtr < addr->DirectoryAddress->VirtualAddress + addr->DirectoryAddress->Size)
 					{
 						const Win32ModuleInformation* modBaseAddr = this->GetResolvedModule(addr->BufferBaseAddress, &RecurseDotIndex, funcAddrPtr, NameOrdinal);	
-						if ((SIZE_T)addr->BaseAddress == modBaseAddr->BaseAddress)
+						if (!modBaseAddr || (SIZE_T)addr->BaseAddress == modBaseAddr->BaseAddress)
 						{
 							return EAT_ADDRESS_NOT_FOUND;
 						}
@@ -1382,7 +1383,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 						if (*funcAddrPtr > addr->DirectoryAddress->VirtualAddress && *funcAddrPtr < addr->DirectoryAddress->VirtualAddress + addr->DirectoryAddress->Size)
 						{
 							const Win32ModuleInformation* modBaseAddr = this->GetResolvedModule(addr->BufferBaseAddress, &RecurseDotIndex, funcAddrPtr, NameOrdinal);
-							if ((SIZE_T)addr->BaseAddress == modBaseAddr->BaseAddress)
+							if (!modBaseAddr || (SIZE_T)addr->BaseAddress == modBaseAddr->BaseAddress)
 							{
 								return EAT_ADDRESS_NOT_FOUND;
 							}
@@ -1489,7 +1490,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 					delete[] outWString;
 				
 					modBaseAddr = mModuleManager->FindModule(redirectedDll.ToString());
-					impDesc.LogicalBaseAddress = modBaseAddr->BaseAddress;
+					impDesc.LogicalBaseAddress = modBaseAddr ? modBaseAddr->BaseAddress : 0;
 				}
 			}
 			else
@@ -1788,7 +1789,8 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 	                PathStripPathW(BaseDllName);
 	                
 	                // Compare current module's base name and desired module name, if it matches, the desired one is found.
-	                if (memcmp(module.ModuleName.ToWString().Begin(), BaseDllName, module.ModuleName.GetLength() * sizeof(wchar)) == 0)
+	                String selModName = mModuleManager->GetModuleFilename(module.BaseAddress);
+	                if (memcmp(selModName.ToWString().Begin(), BaseDllName, selModName.GetLength() * sizeof(wchar)) == 0)
 	                {
 	                    found = true;
 	                    

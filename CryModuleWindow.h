@@ -7,10 +7,12 @@ using namespace Upp;
 
 #include "CrySearchArrayCtrl.h"
 
+// Represents the modules tab window in CrySearch.
 class CryModuleWindow : public ParentCtrl
 {
 private:
 	ToolBar tBar;
+	Label mModulesCount;
 	CrySearchArrayCtrl mModules;
 	
 	void ToolBar(Bar& pBar);

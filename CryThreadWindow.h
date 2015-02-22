@@ -12,6 +12,7 @@ class CryThreadWindow : public ParentCtrl
 {
 private:
 	ToolBar tBar;
+	Label mThreadCount;
 	CrySearchArrayCtrl mThreads;
 	
 	void ToolBar(Bar& pBar);

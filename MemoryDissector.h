@@ -11,7 +11,6 @@ using namespace Upp;
 struct DissectionRowEntry : Moveable<DissectionRowEntry>
 {
 	int RowOffset;
-	Value RowValue;
 	CCryDataType RowType;
 	
 	// The data length is only applicable for AOB, string or wstring types.
@@ -21,16 +20,14 @@ struct DissectionRowEntry : Moveable<DissectionRowEntry>
 	DissectionRowEntry()
 	{
 		this->RowOffset = 0;
-		this->RowValue = 0;
 		this->RowType = 0;
 		this->DataLength = 0;		
 	};
 	
 	// Default constructor to add new entry straight to vector.
-	DissectionRowEntry(const int rowOffset, const char* val, const int rowType, const int length)
+	DissectionRowEntry(const int rowOffset, const int rowType, const int length)
 	{
 		this->RowOffset = rowOffset;
-		this->RowValue = val;
 		this->RowType = rowType;
 		this->DataLength = length;
 	};
@@ -51,7 +48,7 @@ struct DissectionRowEntry : Moveable<DissectionRowEntry>
 class MemoryDissector
 {
 private:
-	SIZE_T mBaseAddress;
+	__int64 mBaseAddress;
 	DWORD mRegionSize;
 	Vector<DissectionRowEntry> mDissectionRows;
 	
@@ -65,7 +62,6 @@ public:
 	const int GetDissectionRowCount() const;
 	
 	bool Dissect(const int rowOffset, const bool enableTypeGuessing);
-	void DissectPartial(const Tuple2<int, int>& range);
 	void Clear();
 	
 	void SetBaseAddress(const SIZE_T addr);

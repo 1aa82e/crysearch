@@ -109,29 +109,18 @@ void EnumerateThreads(const int processId, Vector<Win32ThreadInformation>& threa
 // Returns true if the function succeeded or false if it did not.
 bool EnumerateHeaps(Vector<Win32HeapInformation>& heapInfoList)
 {
-	// Get addresses of NTDLL functions necessary for the heap enumeration.
-	HMODULE hNtDll = GetModuleHandle("ntdll.dll");
-	RtlCreateQueryDebugBufferPrototype RtlCreateQueryDebugBuffer = (RtlCreateQueryDebugBufferPrototype)GetProcAddress(hNtDll, "RtlCreateQueryDebugBuffer");
-	RtlDestroyQueryDebugBufferPrototype RtlDestroyQueryDebugBuffer = (RtlDestroyQueryDebugBufferPrototype)GetProcAddress(hNtDll, "RtlDestroyQueryDebugBuffer");
-	RtlQueryProcessDebugInformationPrototype RtlQueryProcessDebugInformation = (RtlQueryProcessDebugInformationPrototype)GetProcAddress(hNtDll, "RtlQueryProcessDebugInformation");
-
-	if (!RtlCreateQueryDebugBuffer || !RtlDestroyQueryDebugBuffer || !RtlQueryProcessDebugInformation)
-	{
-		return false;
-	}
-	
 	// Create debug buffer to hold heap information.
-	PRTL_DEBUG_INFORMATION db = RtlCreateQueryDebugBuffer(0, FALSE);
+	PRTL_DEBUG_INFORMATION db = CrySearchRoutines.RtlCreateQueryDebugBuffer(0, FALSE);
 	if (!db)
 	{
 		return false;
 	}
 	
 	// Get heap information and put it inside the debug buffer.
-	NTSTATUS result = RtlQueryProcessDebugInformation(mMemoryScanner->GetProcessId(), PDI_HEAPS | PDI_HEAP_BLOCKS, db);
+	NTSTATUS result = CrySearchRoutines.RtlQueryProcessDebugInformation(mMemoryScanner->GetProcessId(), PDI_HEAPS | PDI_HEAP_BLOCKS, db);
 	if (result != STATUS_SUCCESS)
 	{
-		RtlDestroyQueryDebugBuffer(db);
+		CrySearchRoutines.RtlDestroyQueryDebugBuffer(db);
 		return false;
 	}
 	
@@ -148,7 +137,7 @@ bool EnumerateHeaps(Vector<Win32HeapInformation>& heapInfoList)
 	}
 
 	// Clean up buffer and return.
-	RtlDestroyQueryDebugBuffer(db);
+	CrySearchRoutines.RtlDestroyQueryDebugBuffer(db);
 	return true;
 }
 

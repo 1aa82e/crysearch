@@ -898,6 +898,26 @@ typedef struct _RTL_PROCESS_HEAPS
     RTL_HEAP_INFORMATION Heaps[1];
 } RTL_PROCESS_HEAPS, *PRTL_PROCESS_HEAPS;
 
+// Should also be x64 compatible!
+typedef struct _DEBUG_MODULE_INFORMATION
+{
+	ULONG_PTR Reserved[2];
+	ULONG_PTR Base;
+	ULONG Size;
+	ULONG Flags;
+	USHORT Index;
+	USHORT Unknown;
+	USHORT LoadCount;
+	USHORT ModuleNameOffset;
+	CHAR ImageName[256];
+} DEBUG_MODULE_INFORMATION, *PDEBUG_MODULE_INFORMATION;
+
+typedef struct _DEBUG_MODULE_INFORMATIONEX
+{
+	ULONG Count;
+	DEBUG_MODULE_INFORMATION DbgModInfo[1];
+} DEBUG_MODULE_INFORMATIONEX,*PDEBUG_MODULE_INFORMATIONEX;
+
 typedef struct _RTL_DEBUG_INFORMATION
 {
 	HANDLE SectionHandleClient;
@@ -928,6 +948,7 @@ typedef struct _RTL_DEBUG_INFORMATION
 #define PDI_HEAP_TAGS		0x08
 #define PDI_HEAP_BLOCKS		0x10
 #define PDI_LOCKS			0x20
+#define PDI_WOW64_MODULES	0x40
 
 // Nt functions for enumerating heaps inside the target process.
 typedef PRTL_DEBUG_INFORMATION (__stdcall *RtlCreateQueryDebugBufferPrototype)(ULONG Size, BOOLEAN EventPair);

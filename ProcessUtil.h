@@ -8,7 +8,6 @@ using namespace Upp;
 // Represents a Win32 module
 struct Win32ModuleInformation : Moveable<Win32ModuleInformation>
 {
-	String ModuleName;
 	SIZE_T BaseAddress;
 #ifdef _WIN64
 	__int64 Length;

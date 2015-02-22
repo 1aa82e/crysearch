@@ -21,18 +21,18 @@ String GetSectionName(const int index)
 String GetSectionBaseAddress(const int index)
 {
 #ifdef _WIN64
-	return Format("%llX", (__int64)LoadedProcessPEInformation.ImageSections[index].BaseAddress);
+	return FormatInt64HexUpper((__int64)LoadedProcessPEInformation.ImageSections[index].BaseAddress);
 #else
-	return Format("%lX", (int)LoadedProcessPEInformation.ImageSections[index].BaseAddress);
+	return FormatIntHexUpper((int)LoadedProcessPEInformation.ImageSections[index].BaseAddress, 0);
 #endif
 }
 
 String GetSectionVirtualSize(const int index)
 {
 #ifdef _WIN64
-	return Format("%llX", (__int64)LoadedProcessPEInformation.ImageSections[index].SectionSize);
+	return FormatInt64HexUpper((__int64)LoadedProcessPEInformation.ImageSections[index].SectionSize);
 #else
-	return Format("%lX", (int)LoadedProcessPEInformation.ImageSections[index].SectionSize);
+	return FormatIntHexUpper((int)LoadedProcessPEInformation.ImageSections[index].SectionSize, 0);
 #endif
 }
 
@@ -55,7 +55,7 @@ CryPEWindow::CryPEWindow()
 {
 	this->AddFrame(this->mToolStrip);
 	
-	this->mPeInformationCtrl.CryAddRowNumColumn("Property").SetConvert(Single<IndexBasedValueConvert<GetPEFieldKey>>());
+	this->mPeInformationCtrl.CryAddRowNumColumn("Field").SetConvert(Single<IndexBasedValueConvert<GetPEFieldKey>>());
 	this->mPeInformationCtrl.CryAddRowNumColumn("Value").SetConvert(Single<IndexBasedValueConvert<GetPEFieldValue>>());
 	
 	this->mSections.CryAddRowNumColumn("Name").SetConvert(Single<IndexBasedValueConvert<GetSectionName>>());

@@ -26,7 +26,7 @@ String GenerateRandomWindowTitle();
 String GenerateStringStyleSignature(const Vector<Byte>& byteArrays, DWORD* outSigLength);
 
 // Parses the input data as string representation for the input value type.
-String ValueAsStringInternal(const Byte* data, const CCryDataType type, const int size);
+String ValueAsStringInternal(const Byte* data, const CCryDataType type, const int size, const bool hex);
 
 // Parses a 64-bit number and creates a hexadecimal representation.
 String FormatInt64HexUpper(uint64 a);
