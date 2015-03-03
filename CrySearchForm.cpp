@@ -641,7 +641,7 @@ void CrySearchForm::SetMainSplitterPosition()
 {
 	const Rect r = this->mMainSplitter.GetRect();
 	const int total = r.bottom - r.top;
-	this->mMainSplitter.SetPos((total / 2) * 10000 / total);
+	this->mMainSplitter.SetPos(((total / 2) * 10000 / total) - 600);
 }
 
 void CrySearchForm::ChangeRecordSubMenu(Bar& pBar)

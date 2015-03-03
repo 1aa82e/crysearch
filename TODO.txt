@@ -37,8 +37,6 @@ Package:
 - Also a bug in the main window complaining about GUI locking (hard to reproduce);
 
 - Identify static addresses:
-	- Code generation customized to use offsets;
-		- Pointers as addresses (using offsets);
 	- Generate C++ Fields / Struct / Union;
 	- Expand to be used with pointers, maybe structs;
 
@@ -58,9 +56,7 @@ Package:
 
 - VTable finder / dissection (learn_more, maybe a plugin);
 - Find class instances based on a vtable;
-- Callstack tree, 'Code Map' as in Visual Studio;
 - Dump .NET modules?
-- Cancel IO on application shutdown when huge scan is still running (XP support blocks me here);
 - Detect handles that are 'malicious'?
 - Brute-force PID's to find out about hidden processes (detect hidden processes);
 - Allow entering string as argument for create thread (let's make a custom data type of it);
@@ -79,10 +75,6 @@ Package:
 - Encryption in target process & hide CrySearch from signature scan
 	- Look at AesStream example in bazaar;
 	- Metamorphic code.
-
-- Memory Scanner:
-	- Scan for a custom data type, a C structure;
-	- Import structs from ReClass;
 
 - Winsock analysis, debugging packages sent/received;
 - Pointer scan;

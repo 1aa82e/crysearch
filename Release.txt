@@ -17,6 +17,7 @@ v1.16
 	- Added user interface warning for failed lookup of NTDLL functions used by CrySearch;
 	- Fixed bug where crash handler window would not function properly when exception occured inside child thread;
 	- Added option to hide bottom pane of the application main window. This option is available in the Window menu;
+	- Fixed code generator to take relative addresses into account;
 	- 
 v1.15
 	- The icon of CrySearch has changed, thanks to Daax. He crafted a wonderful new icon for CrySearch;

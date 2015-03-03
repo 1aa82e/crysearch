@@ -1,9 +1,10 @@
 #include "CodeGenerator.h"
 
-#define GENERATED_HANDLEOPENING	"unsigned int pid;\r\n\tHANDLE proc = OpenProcess(PROCESS_VM_READ | PROCESS_VM_WRITE, FALSE, pid);\r\n\r\n"
+#define GENERATED_HANDLEOPENING	"unsigned int pid;\r\n\tHANDLE proc = OpenProcess(PROCESS_VM_READ | PROCESS_VM_WRITE, FALSE, pid);\r\n"
 #define GENERATED_CLOSEHANDLE	"\tCloseHandle(proc);\r\n"
 #define GENERATED_VOIDMAIN		"void main()\r\n{\r\n\t"
 #define GENERATED_ENDVOIDMAIN	"}"
+#define GENERATED_BYTESREAD		"\tDWORD bytesRead;\r\n\r\n"
 
 // CodeGenerator class default constructor, which takes an address table to generate code from.
 CodeGenerator::CodeGenerator(const AddressTable* pTable)
@@ -94,8 +95,16 @@ String CodeGenerator::GenerateInternalEntry(const AddressTableEntry* entry, cons
 	}
 	
 	// Create field and append to output result.
-	taskOutput += Format("%s* %s = (%s*)0x%llX;\r\n", fieldType, description.IsEmpty() ? Format("__unknown%i", number) : description, fieldType
-		, entry->Address);
+	if (entry->IsRelative == TRUE)
+	{
+		taskOutput += Format("%s* %s = (%s*)GetModuleHandle(\"%s\") + 0x%llX;\r\n", fieldType, description.IsEmpty() ? Format("__unknown%i", number)
+			: description, fieldType, entry->ModuleName, (__int64)entry->Address - mModuleManager->FindModule(entry->ModuleName)->BaseAddress);
+	}
+	else
+	{
+		taskOutput += Format("%s* %s = (%s*)0x%llX;\r\n", fieldType, description.IsEmpty() ? Format("__unknown%i", number)
+			: description, fieldType, entry->Address);		
+	}
 
 	return taskOutput;
 }
@@ -109,6 +118,7 @@ String CodeGenerator::GenerateExternalEntry(const AddressTableEntry* entry, cons
 	// Parse field type to language version.
 	String fieldType = CodeGeneratorParseFieldType(entry->ValueType);
 	String description = entry->Description.IsEmpty() ? Format("__unknown%i", number) : entry->Description;
+	String size = "sizeof(fieldType)";
 	
 	// If the description contains spaces, those must be removed and replaced by underscores.
 	description.Replace(" ", "_");
@@ -116,18 +126,31 @@ String CodeGenerator::GenerateExternalEntry(const AddressTableEntry* entry, cons
 	// Create value data field, readprocessmemory and writeprocessmemory calls. The user may choose which he wants himself.
 	if (entry->ValueType == CRYDATATYPE_STRING || entry->ValueType == CRYDATATYPE_AOB)
 	{
-		taskOutput += Format("\t%s %s[%i]; // Value is read/written to/from here...\r\n", fieldType, description, entry->Size);
+		taskOutput += Format("\t%s %s[%i];\r\n", fieldType, description, entry->Size);
+		size = IntStr(entry->Size);
 	}
 	else
 	{
-		taskOutput += Format("\t%s %s; // Value is read/written to/from here...\r\n", fieldType, description);
+		taskOutput += Format("\t%s %s;\r\n", fieldType, description);
 	}
 	
-	taskOutput += Format("\t// ReadProcessMemory call to the address with specified size:\r\n\tReadProcessMemory(proc, (void*)0x%llX, &%s, sizeof(%s), NULL);\r\n\r\n"
-		, entry->Address, description, fieldType);
-	
-	taskOutput += Format("\t// WriteProcessMemory call to the address with specified size:\r\n\tWriteProcessMemory(proc, (void*)0x%llX, &%s, sizeof(%s), NULL);\r\n\r\n"
-		, entry->Address, description, fieldType);
+	if (entry->IsRelative == TRUE)
+	{
+		taskOutput += Format("\tconst SIZE_T %s_Base = (SIZE_T)GetModuleHandle(\"%s\");\r\n", description, entry->ModuleName);
+		taskOutput += Format("\tReadProcessMemory(proc, (void*)(%s_Base + 0x%llX), &%s, %s, &bytesRead);\r\n"
+			, description, (__int64)entry->Address - mModuleManager->FindModule(entry->ModuleName)->BaseAddress, description, size);
+		
+		taskOutput += Format("\tWriteProcessMemory(proc, (void*)(%s_Base + 0x%llX), &%s, %s, &bytesRead);\r\n\r\n"
+			, description, (__int64)entry->Address - mModuleManager->FindModule(entry->ModuleName)->BaseAddress, description, size);
+	}
+	else
+	{
+		taskOutput += Format("\tReadProcessMemory(proc, (void*)0x%llX, &%s, %s, &bytesRead);\r\n"
+			, entry->Address, description, size);
+		
+		taskOutput += Format("\tWriteProcessMemory(proc, (void*)0x%llX, &%s, %s, &bytesRead);\r\n\r\n"
+			, entry->Address, description, size);
+	}
 	
 	return taskOutput;
 }
@@ -142,6 +165,7 @@ void CodeGenerator::Generate(String& codenz)
 		codenz += this->GetIncludesCodeUnit();
 		codenz += GENERATED_VOIDMAIN;
 		codenz += GENERATED_HANDLEOPENING;
+		codenz += GENERATED_BYTESREAD;
 		
 		const int count = this->mTable->GetCount();
 		for (int i = 0; i < count; ++i)

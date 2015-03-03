@@ -3,7 +3,7 @@
 
 CryCodeGenerationForm::CryCodeGenerationForm()
 {
-	this->Title("Generate Code").Icon(CrySearchIml::CodeGenerationButton()).Sizeable().SetRect(0, 0, 450, 300);
+	this->Title("Generate Code").Icon(CrySearchIml::CodeGenerationButton()).Sizeable().SetRect(0, 0, 550, 400);
 	
 	this->mGenerate <<= THISBACK(GenerateButtonClicked);
 	this->mClose <<= THISBACK(CloseForm);
