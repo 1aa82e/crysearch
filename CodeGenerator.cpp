@@ -98,7 +98,7 @@ String CodeGenerator::GenerateInternalEntry(const AddressTableEntry* entry, cons
 	if (entry->IsRelative == TRUE)
 	{
 		taskOutput += Format("%s* %s = (%s*)GetModuleHandle(\"%s\") + 0x%llX;\r\n", fieldType, description.IsEmpty() ? Format("__unknown%i", number)
-			: description, fieldType, entry->ModuleName, (__int64)entry->Address - mModuleManager->FindModule(entry->ModuleName)->BaseAddress);
+			: description, fieldType, entry->ModuleName, (__int64)(entry->Address - mModuleManager->FindModule(entry->ModuleName)->BaseAddress));
 	}
 	else
 	{
@@ -138,10 +138,10 @@ String CodeGenerator::GenerateExternalEntry(const AddressTableEntry* entry, cons
 	{
 		taskOutput += Format("\tconst SIZE_T %s_Base = (SIZE_T)GetModuleHandle(\"%s\");\r\n", description, entry->ModuleName);
 		taskOutput += Format("\tReadProcessMemory(proc, (void*)(%s_Base + 0x%llX), &%s, %s, &bytesRead);\r\n"
-			, description, (__int64)entry->Address - mModuleManager->FindModule(entry->ModuleName)->BaseAddress, description, size);
+			, description, (__int64)(entry->Address - mModuleManager->FindModule(entry->ModuleName)->BaseAddress), description, size);
 		
 		taskOutput += Format("\tWriteProcessMemory(proc, (void*)(%s_Base + 0x%llX), &%s, %s, &bytesRead);\r\n\r\n"
-			, description, (__int64)entry->Address - mModuleManager->FindModule(entry->ModuleName)->BaseAddress, description, size);
+			, description, (__int64)(entry->Address - mModuleManager->FindModule(entry->ModuleName)->BaseAddress), description, size);
 	}
 	else
 	{

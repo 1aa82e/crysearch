@@ -33,6 +33,13 @@ typedef struct _UNICODE_STRING32
 	DWORD  Buffer;
 } UNICODE_STRING32, *PUNICODE_STRING32;
 
+typedef struct _STRING32
+{
+	USHORT Length;
+	USHORT MaximumLength;
+	ULONG Buffer;
+} STRING32, *PSTRING32;
+
 // Multi-Byte string struct definition for Windows driver prototype structs.
 typedef struct _STRING
 {
@@ -238,6 +245,68 @@ typedef struct _API_SET_NAMESPACE_ARRAY_V2
 
 typedef ULONG GDI_HANDLE_BUFFER[GDI_HANDLE_BUFFER_SIZE];
 
+#define RTL_USER_PROC_CURDIR_CLOSE 0x00000002
+#define RTL_USER_PROC_CURDIR_INHERIT 0x00000003
+
+// DOS path descriptor for a drive letter.
+typedef struct _RTL_DRIVE_LETTER_CURDIR
+{
+	USHORT Flags;
+	USHORT Length;
+	ULONG TimeStamp;
+	STRING DosPath;
+} RTL_DRIVE_LETTER_CURDIR, *PRTL_DRIVE_LETTER_CURDIR;
+
+#define DOS_MAX_COMPONENT_LENGTH 255
+#define DOS_MAX_PATH_LENGTH (DOS_MAX_COMPONENT_LENGTH + 5)
+
+// A working directory descriptor.
+typedef struct _CURDIR
+{
+	UNICODE_STRING DosPath;
+	HANDLE Handle;
+} CURDIR, *PCURDIR;
+
+#define RTL_MAX_DRIVE_LETTERS 32
+#define RTL_DRIVE_LETTER_VALID (USHORT)0x0001
+
+// Process parameters including command line.
+typedef struct _RTL_USER_PROCESS_PARAMETERS
+{
+	ULONG MaximumLength;
+	ULONG Length;
+	ULONG Flags;
+	ULONG DebugFlags;
+	HANDLE ConsoleHandle;
+	ULONG ConsoleFlags;
+	HANDLE StandardInput;
+	HANDLE StandardOutput;
+	HANDLE StandardError;
+	CURDIR CurrentDirectory;
+	UNICODE_STRING DllPath;
+	UNICODE_STRING ImagePathName;
+	UNICODE_STRING CommandLine;
+	PVOID Environment;
+	ULONG StartingX;
+	ULONG StartingY;
+	ULONG CountX;
+	ULONG CountY;
+	ULONG CountCharsX;
+	ULONG CountCharsY;
+	ULONG FillAttribute;
+	ULONG WindowFlags;
+	ULONG ShowWindowFlags;
+	UNICODE_STRING WindowTitle;
+	UNICODE_STRING DesktopInfo;
+	UNICODE_STRING ShellInfo;
+	UNICODE_STRING RuntimeData;
+	RTL_DRIVE_LETTER_CURDIR CurrentDirectories[RTL_MAX_DRIVE_LETTERS];
+	ULONG EnvironmentSize;
+	ULONG EnvironmentVersion;
+	PVOID PackageDependencyData;
+	ULONG ProcessGroupId;
+} RTL_USER_PROCESS_PARAMETERS, *PRTL_USER_PROCESS_PARAMETERS;
+
 // Process Environment Block
 typedef struct _PEB
 {
@@ -264,7 +333,7 @@ typedef struct _PEB
 	HANDLE Mutant;
 	PVOID ImageBaseAddress;
 	PPEB_LDR_DATA LoaderData;
-	PVOID ProcessParameters;
+	PRTL_USER_PROCESS_PARAMETERS ProcessParameters;
 	PVOID SubSystemData;
 	PVOID ProcessHeap;
 	PRTL_CRITICAL_SECTION FastPebLock;
@@ -366,6 +435,59 @@ typedef struct _PEB
 	
 	ULONGLONG CsrServerReadOnlySharedMemoryBase;
 } PEB, *PPEB;
+
+// 32-bit working directory descriptor.
+typedef struct _CURDIR32
+{
+	UNICODE_STRING32 DosPath;
+	ULONG Handle;
+} CURDIR32, *PCURDIR32;
+
+// 32-bit drive letter descriptor.
+typedef struct _RTL_DRIVE_LETTER_CURDIR32
+{
+	USHORT Flags;
+	USHORT Length;
+	ULONG TimeStamp;
+	STRING32 DosPath;
+} RTL_DRIVE_LETTER_CURDIR32, *PRTL_DRIVE_LETTER_CURDIR32;
+
+// 32-bit process parameters including command line.
+typedef struct _RTL_USER_PROCESS_PARAMETERS32
+{
+	ULONG MaximumLength;
+	ULONG Length;
+	ULONG Flags;
+	ULONG DebugFlags;
+	ULONG ConsoleHandle;
+	ULONG ConsoleFlags;
+	ULONG StandardInput;
+	ULONG StandardOutput;
+	ULONG StandardError;
+	CURDIR32 CurrentDirectory;
+	UNICODE_STRING32 DllPath;
+	UNICODE_STRING32 ImagePathName;
+	UNICODE_STRING32 CommandLine;
+	ULONG Environment;
+	ULONG StartingX;
+	ULONG StartingY;
+	ULONG CountX;
+	ULONG CountY;
+	ULONG CountCharsX;
+	ULONG CountCharsY;
+	ULONG FillAttribute;
+	ULONG WindowFlags;
+	ULONG ShowWindowFlags;
+	UNICODE_STRING32 WindowTitle;
+	UNICODE_STRING32 DesktopInfo;
+	UNICODE_STRING32 ShellInfo;
+	UNICODE_STRING32 RuntimeData;
+	RTL_DRIVE_LETTER_CURDIR32 CurrentDirectories[RTL_MAX_DRIVE_LETTERS];
+	ULONG EnvironmentSize;
+	ULONG EnvironmentVersion;
+	ULONG PackageDependencyData;
+	ULONG ProcessGroupId;
+} RTL_USER_PROCESS_PARAMETERS32, *PRTL_USER_PROCESS_PARAMETERS32;
 
 // Process Environment Block for 32-bit processes.
 typedef struct _PEB32

@@ -3,7 +3,7 @@
 
 CryProcessEnvironmentBlockWindow::CryProcessEnvironmentBlockWindow(const Image& icon) : CryDialogTemplate(icon)
 {
-	this->Title("Process Information").Sizeable().SetRect(0, 0, 350, 300);
+	this->Title("Process Information").Sizeable().SetRect(0, 0, 500, 300);
 	
 	this->mOk <<= THISBACK(DialogClose);
 	this->mResetDebugFlag <<= THISBACK(ResetDebugFlag);
@@ -24,7 +24,7 @@ CryProcessEnvironmentBlockWindow::~CryProcessEnvironmentBlockWindow()
 	
 }
 
-void CryProcessEnvironmentBlockWindow::Initialize32(const PEB32* peb)
+void CryProcessEnvironmentBlockWindow::Initialize32(const PEB32* peb, const RTL_USER_PROCESS_PARAMETERS32* userparams)
 {
 	this->mPEBInfo.Add("Inherited address space", Format("%X", peb->InheritedAddressSpace));
 	this->mPEBInfo.Add("Read image file exec options", Format("%X", peb->ReadImageFileExecOptions));
@@ -33,6 +33,33 @@ void CryProcessEnvironmentBlockWindow::Initialize32(const PEB32* peb)
 	this->mPEBInfo.Add("Image base address", Format("%lX", (LONG_PTR)peb->ImageBaseAddress));
 	this->mPEBInfo.Add("Loader data address", Format("%lX", (LONG_PTR)peb->LoaderData));
 	this->mPEBInfo.Add("Process parameters", Format("%lX", (LONG_PTR)peb->ProcessParameters));
+
+	// Read user parameters from process parameters.
+	wchar* buffer = new wchar[userparams->CurrentDirectory.DosPath.Length / 2];
+	CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), (void*)userparams->CurrentDirectory.DosPath.Buffer, buffer, userparams->CurrentDirectory.DosPath.Length, NULL);
+	this->mPEBInfo.Add("Current directory", WString(buffer, userparams->CurrentDirectory.DosPath.Length / 2).ToString());
+	delete[] buffer;
+
+	buffer = new wchar[userparams->ImagePathName.Length / 2];
+	CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), (void*)userparams->ImagePathName.Buffer, buffer, userparams->ImagePathName.Length, NULL);
+	this->mPEBInfo.Add("Image path name", WString(buffer, userparams->ImagePathName.Length / 2).ToString());
+	delete[] buffer;
+
+	buffer = new wchar[userparams->CommandLine.Length / 2];
+	CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), (void*)userparams->CommandLine.Buffer, buffer, userparams->CommandLine.Length, NULL);
+	this->mPEBInfo.Add("Command line", WString(buffer, userparams->CommandLine.Length / 2).ToString());
+	delete[] buffer;
+
+	buffer = new wchar[userparams->WindowTitle.Length / 2];
+	CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), (void*)userparams->WindowTitle.Buffer, buffer, userparams->WindowTitle.Length, NULL);
+	this->mPEBInfo.Add("Window title", WString(buffer, userparams->WindowTitle.Length / 2).ToString());
+	delete[] buffer;
+
+	buffer = new wchar[userparams->DesktopInfo.Length / 2];
+	CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), (void*)userparams->DesktopInfo.Buffer, buffer, userparams->DesktopInfo.Length, NULL);
+	this->mPEBInfo.Add("Desktop info", WString(buffer, userparams->DesktopInfo.Length / 2).ToString());
+	delete[] buffer;
+
 	this->mPEBInfo.Add("Subsystem data", Format("%lX", (LONG_PTR)peb->SubSystemData));
 	this->mPEBInfo.Add("Process heap", Format("%lX", (LONG_PTR)peb->ProcessHeap));
 	this->mPEBInfo.Add("Fast PEB lock", Format("%lX", (LONG_PTR)peb->FastPebLock));
@@ -90,7 +117,7 @@ void CryProcessEnvironmentBlockWindow::Initialize32(const PEB32* peb)
 }
 
 #ifdef _WIN64
-	void CryProcessEnvironmentBlockWindow::Initialize64(const PEB* peb)
+	void CryProcessEnvironmentBlockWindow::Initialize64(const PEB* peb, const RTL_USER_PROCESS_PARAMETERS* userparams)
 	{
 		this->mPEBInfo.Add("Inherited address space", Format("%X", peb->InheritedAddressSpace));
 		this->mPEBInfo.Add("Read image file exec options", Format("%X", peb->ReadImageFileExecOptions));
@@ -99,6 +126,33 @@ void CryProcessEnvironmentBlockWindow::Initialize32(const PEB32* peb)
 		this->mPEBInfo.Add("Image base address", Format("%llX", (LONG_PTR)peb->ImageBaseAddress));
 		this->mPEBInfo.Add("Loader data address", Format("%llX", (LONG_PTR)peb->LoaderData));
 		this->mPEBInfo.Add("Process parameters", Format("%llX", (LONG_PTR)peb->ProcessParameters));
+		
+		// Read user parameters from process parameters.
+		wchar* buffer = new wchar[userparams->CurrentDirectory.DosPath.Length / 2];
+		CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), (void*)userparams->CurrentDirectory.DosPath.Buffer, buffer, userparams->CurrentDirectory.DosPath.Length, NULL);
+		this->mPEBInfo.Add("Current directory", WString(buffer, userparams->CurrentDirectory.DosPath.Length / 2).ToString());
+		delete[] buffer;
+
+		buffer = new wchar[userparams->ImagePathName.Length / 2];
+		CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), (void*)userparams->ImagePathName.Buffer, buffer, userparams->ImagePathName.Length, NULL);
+		this->mPEBInfo.Add("Image path name", WString(buffer, userparams->ImagePathName.Length / 2).ToString());
+		delete[] buffer;
+
+		buffer = new wchar[userparams->CommandLine.Length / 2];
+		CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), (void*)userparams->CommandLine.Buffer, buffer, userparams->CommandLine.Length, NULL);
+		this->mPEBInfo.Add("Command line", WString(buffer, userparams->CommandLine.Length / 2).ToString());
+		delete[] buffer;
+
+		buffer = new wchar[userparams->WindowTitle.Length / 2];
+		CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), (void*)userparams->WindowTitle.Buffer, buffer, userparams->WindowTitle.Length, NULL);
+		this->mPEBInfo.Add("Window title", WString(buffer, userparams->WindowTitle.Length / 2).ToString());
+		delete[] buffer;
+
+		buffer = new wchar[userparams->DesktopInfo.Length / 2];
+		CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), (void*)userparams->DesktopInfo.Buffer, buffer, userparams->DesktopInfo.Length, NULL);
+		this->mPEBInfo.Add("Desktop info", WString(buffer, userparams->DesktopInfo.Length / 2).ToString());
+		delete[] buffer;
+		
 		this->mPEBInfo.Add("Subsystem data", Format("%llX", (LONG_PTR)peb->SubSystemData));
 		this->mPEBInfo.Add("Process heap", Format("%llX", (LONG_PTR)peb->ProcessHeap));
 		this->mPEBInfo.Add("Fast PEB lock", Format("%llX", (LONG_PTR)peb->FastPebLock));
@@ -168,13 +222,16 @@ void CryProcessEnvironmentBlockWindow::Initialize()
 			PEB32 peb;
 			CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), (void*)PebBaseAddress, &peb, sizeof(PEB32), NULL);
 			
+			RTL_USER_PROCESS_PARAMETERS32 userParams;
+			CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), (void*)peb.ProcessParameters, &userParams, sizeof(RTL_USER_PROCESS_PARAMETERS32), NULL);
+		
 			this->pIsBeingDebuggedPtr = ((BYTE*)PebBaseAddress) + 0x2;
 			
-			this->mPEBInfo.CryAddColumn("Property", 65);
-			this->mPEBInfo.CryAddColumn("Value", 35);
+			this->mPEBInfo.CryAddColumn("Property", 45);
+			this->mPEBInfo.CryAddColumn("Value", 55);
 				
 			this->mPEBInfo.Add("PEB Address", Format("%lX", (int)PebBaseAddress));
-			this->Initialize32(&peb);
+			this->Initialize32(&peb, &userParams);
 		}
 		else
 		{
@@ -190,15 +247,18 @@ void CryProcessEnvironmentBlockWindow::Initialize()
 			PEB peb;
 			CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), tInfo.PebBaseAddress, &peb, sizeof(PEB), NULL);
 			
+			RTL_USER_PROCESS_PARAMETERS userParams;
+			CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), (void*)peb.ProcessParameters, &userParams, sizeof(RTL_USER_PROCESS_PARAMETERS), NULL);
+
 			this->pIsBeingDebuggedPtr = ((BYTE*)tInfo.PebBaseAddress) + 0x2;
 			
-			this->mPEBInfo.CryAddColumn("Property", 65);
-			this->mPEBInfo.CryAddColumn("Value", 35);
+			this->mPEBInfo.CryAddColumn("Property", 45);
+			this->mPEBInfo.CryAddColumn("Value", 55);
 			
 			char buf[32];
 			sprintf_s(buf, 32, "%016llX", (SIZE_T)tInfo.PebBaseAddress);
 			this->mPEBInfo.Add("PEB Address", buf);
-			this->Initialize64(&peb);
+			this->Initialize64(&peb, &userParams);
 		}
 		else
 		{
@@ -213,13 +273,16 @@ void CryProcessEnvironmentBlockWindow::Initialize()
 		PEB32 peb;
 		CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), tInfo.PebBaseAddress, &peb, sizeof(PEB32), NULL);
 		
+		RTL_USER_PROCESS_PARAMETERS32 userParams;
+		CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), (void*)peb.ProcessParameters, &userParams, sizeof(RTL_USER_PROCESS_PARAMETERS32), NULL);
+
 		this->pIsBeingDebuggedPtr = ((BYTE*)tInfo.PebBaseAddress) + 0x2;
 		
-		this->mPEBInfo.CryAddColumn("Property", 65);
-		this->mPEBInfo.CryAddColumn("Value", 35);
+		this->mPEBInfo.CryAddColumn("Property", 45);
+		this->mPEBInfo.CryAddColumn("Value", 55);
 		
 		this->mPEBInfo.Add("PEB Address", Format("%lX", (int)tInfo.PebBaseAddress));
-		this->Initialize32(&peb);
+		this->Initialize32(&peb, &userParams);
 	}
 	else
 	{

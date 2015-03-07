@@ -19,10 +19,10 @@ private:
 	void DialogClose();
 	void ResetDebugFlag();
 	
-	__declspec(noinline) void Initialize32(const PEB32* peb);
+	__declspec(noinline) void Initialize32(const PEB32* peb, const RTL_USER_PROCESS_PARAMETERS32* userparams);
 
 #ifdef _WIN64
-	__declspec(noinline) void Initialize64(const PEB* peb);
+	__declspec(noinline) void Initialize64(const PEB* peb, const RTL_USER_PROCESS_PARAMETERS* userparams);
 #endif
 	
 	typedef CryProcessEnvironmentBlockWindow CLASSNAME;
