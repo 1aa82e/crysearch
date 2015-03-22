@@ -158,7 +158,6 @@ class AddressTable
 {
 private:
 	String mSavedFileName;
-	String mProcessName;
 	Vector<AddressTableEntry> mEntries;
 	Vector<MemoryDissectionEntry> mDissections;
 public:
@@ -176,9 +175,8 @@ public:
 	const int Find(const int address, const CCryDataType valueType) const;
 #endif
 	
+	void Remove(const Vector<int>& entries);
 	void Clear();
-	void SetProcessName(const String& pName);
-	void ClearProcessName();
 	void SetFileName(const char* str);
 	
 	const int GetCount() const;

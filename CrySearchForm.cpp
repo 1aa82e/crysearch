@@ -13,6 +13,7 @@
 #include "CrashHandler.h"
 #include "ImlProvider.h"
 #include "UIUtilities.h"
+#include "CommandArgumentParser.h"
 
 // Global source IML file declaration. Imaging in the GUI depends on this.
 #define IMAGECLASS CrySearchIml
@@ -425,10 +426,10 @@ CrySearchForm::CrySearchForm(const char* fn)
 	this->mSearchResultsPanel
 		<< this->mSearchResultCount.SetLabel("Search Results: 0").HSizePosZ(5, 5).TopPos(5, 20)
 		<< this->mScanningProgress.RightPos(5, 120).TopPos(5, 20)
-		<< this->mScanResults.MultiSelect(false).HSizePosZ(5, 5).VSizePosZ(30, 0)
+		<< this->mScanResults.MultiSelect().HSizePosZ(5, 5).VSizePosZ(30, 0)
 	;
 	
-	this->mUserAddressPanel << this->mUserAddressList.HSizePos(5, 5).VSizePos(5);
+	this->mUserAddressPanel << this->mUserAddressList.MultiSelect().HSizePos(5, 5).VSizePos(5);
 	
 	this->mScanningProgress.Hide();
 	this->mTabbedDataWindows.WhenSet = THISBACK(ActiveTabWindowChanged);
@@ -984,20 +985,30 @@ void CrySearchForm::ShowHideDisasmWindow()
 
 void CrySearchForm::DeleteUserDefinedAddress()
 {
-	const int row = this->mUserAddressList.GetCursor();
-	if (row >= 0 && loadedTable.GetCount() > 0)
+	const int totalCount = loadedTable.GetCount();
+	if (this->mUserAddressList.GetCursor() >= 0 && totalCount > 0)
 	{
-		// Remove breakpoint from data if necessary.
-		if (mDebugger)
+		// Get selected rows.
+		Vector<int> selectedRows;
+		for (int r = 0; r < totalCount; ++r)
 		{
-			mDebugger->RemoveBreakpoint(loadedTable[row]->Address);
+			if (this->mUserAddressList.IsSelected(r))
+			{
+				selectedRows << r;
+				
+				// Remove breakpoint from data if necessary.
+				if (mDebugger && mDebugger->IsDebuggerAttached())
+				{
+					mDebugger->RemoveBreakpoint(loadedTable[r]->Address);
+				}
+			}
 		}
 		
-#ifdef _WIN64
-		loadedTable.Remove(ScanInt64(GetAddressTableAddress(row).ToString(), NULL, 16), loadedTable[row]->ValueType);
-#else
-		loadedTable.Remove(ScanInt(GetAddressTableAddress(row).ToString(), NULL, 16), loadedTable[row]->ValueType);
-#endif
+		// Delete all selected rows. We do this in reverse to avoid index problems.
+		loadedTable.Remove(selectedRows);
+		
+		// Refresh the address table user interface.
+		this->mUserAddressList.Clear();
 		this->mUserAddressList.SetVirtualCount(loadedTable.GetCount());
 	}
 }
@@ -1007,7 +1018,7 @@ void CrySearchForm::ClearAddressList()
 	if (Prompt("I need your confirmation", CtrlImg::exclamation(), "Are you sure you want to clear the address list?", "Yes", "No"))
 	{
 		// When clearing the list, assurance of all data breakpoints being removed must be made.
-		if (mDebugger)
+		if (mDebugger && mDebugger->IsDebuggerAttached())
 		{
 			for (int i = 0; i < loadedTable.GetCount(); i++)
 			{
@@ -1023,77 +1034,100 @@ void CrySearchForm::ClearAddressList()
 
 void CrySearchForm::SearchResultDoubleClicked()
 {
-	const int cursor = this->mScanResults.GetCursor();
-	if (cursor < 0 || mMemoryScanner->GetScanResultCount() <= 0)
+	if (this->mScanResults.GetCursor() < 0 || mMemoryScanner->GetScanResultCount() <= 0)
 	{
 		return;
 	}
-
-	// Retrieve values from virtual columns of the ArrayCtrl.
-	const String& value = GetValue(cursor);
 	
-	// The first value of the scan type is unknown, so + 1 should be the correct value.
-	CCryDataType toAddToAddressList;
-	switch (GlobalScanParameter->GlobalScanValueType)
+	// If multiple rows are selected, run the add sequence for all of them.
+	int rowcount = this->mScanResults.GetCount();
+	Vector<int> selectedRows;
+	selectedRows.Reserve(this->mScanResults.GetSelectCount());
+	for (int r = 0; r < rowcount; ++r)
 	{
-		case VALUETYPE_BYTE:
-			toAddToAddressList = CRYDATATYPE_BYTE;
-			break;
-		case VALUETYPE_2BYTE:
-			toAddToAddressList = CRYDATATYPE_2BYTES;
-			break;
-		case VALUETYPE_4BYTE:
-			toAddToAddressList = CRYDATATYPE_4BYTES;
-			break;
-		case VALUETYPE_8BYTE:
-			toAddToAddressList = CRYDATATYPE_8BYTES;
-			break;
-		case VALUETYPE_FLOAT:
-			toAddToAddressList = CRYDATATYPE_FLOAT;
-			break;
-		case VALUETYPE_DOUBLE:
-			toAddToAddressList = CRYDATATYPE_DOUBLE;
-			break;
-		case VALUETYPE_AOB:
-			toAddToAddressList = CRYDATATYPE_AOB;
-			break;
-		case VALUETYPE_STRING:
-			toAddToAddressList = CRYDATATYPE_STRING;
-			break;
-		case VALUETYPE_WSTRING:
-			toAddToAddressList = CRYDATATYPE_WSTRING;
-			break;
+		if (this->mScanResults.IsSelected(r))
+		{
+			selectedRows << r;
+		}
 	}
+	
+	// Walk the selected rows.
+	rowcount = selectedRows.GetCount();
+	bool failed = false; 
+	for (int i = 0; i < rowcount; ++i)
+	{
+		// Retrieve values from virtual columns of the ArrayCtrl.
+		const String& value = GetValue(selectedRows[i]);
 		
-	// Try to find the address table entry in the existing table.
-	const int curRow = loadedTable.Find(CachedAddresses[cursor].Address, toAddToAddressList);
-	
-	// Check whether the address table entry already exists.
-	if (curRow != -1)
-	{
-		Prompt("Input Error", CtrlImg::error(), "The selected address is already added to the table.", "OK");
-		return;
+		// The first value of the scan type is unknown, so + 1 should be the correct value.
+		CCryDataType toAddToAddressList;
+		switch (GlobalScanParameter->GlobalScanValueType)
+		{
+			case VALUETYPE_BYTE:
+				toAddToAddressList = CRYDATATYPE_BYTE;
+				break;
+			case VALUETYPE_2BYTE:
+				toAddToAddressList = CRYDATATYPE_2BYTES;
+				break;
+			case VALUETYPE_4BYTE:
+				toAddToAddressList = CRYDATATYPE_4BYTES;
+				break;
+			case VALUETYPE_8BYTE:
+				toAddToAddressList = CRYDATATYPE_8BYTES;
+				break;
+			case VALUETYPE_FLOAT:
+				toAddToAddressList = CRYDATATYPE_FLOAT;
+				break;
+			case VALUETYPE_DOUBLE:
+				toAddToAddressList = CRYDATATYPE_DOUBLE;
+				break;
+			case VALUETYPE_AOB:
+				toAddToAddressList = CRYDATATYPE_AOB;
+				break;
+			case VALUETYPE_STRING:
+				toAddToAddressList = CRYDATATYPE_STRING;
+				break;
+			case VALUETYPE_WSTRING:
+				toAddToAddressList = CRYDATATYPE_WSTRING;
+				break;
+		}
+		
+		// Try to find the address table entry in the existing table.
+		const int curRow = loadedTable.Find(CachedAddresses[selectedRows[i]].Address, toAddToAddressList);
+		
+		// Check whether the address table entry already exists.
+		if (curRow != -1)
+		{
+			failed = true;
+			continue;
+		}
+		
+		// Add the entry to the address table.
+		const SearchResultCacheEntry& selEntry = CachedAddresses[selectedRows[i]];
+		const AddressTableEntry* newEntry = loadedTable.Add("", selEntry.Address, selEntry.StaticAddress, toAddToAddressList);
+		
+		// Special behavior for specific types of search results.
+		if (toAddToAddressList == CRYDATATYPE_AOB)
+		{
+			// Retrieve size of byte array
+			newEntry->Size = StringToBytes(value).Size;
+		}
+		else if (toAddToAddressList == CRYDATATYPE_STRING || toAddToAddressList == CRYDATATYPE_WSTRING)
+		{
+			newEntry->Size = value.GetLength();
+		}
+		
+		// If there is no process loaded, set the value to invalid.
+		if (!mMemoryScanner->GetProcessId())
+		{
+			newEntry->Value = "???";
+		}
 	}
 	
-	// Add the entry to the address table.
-	const SearchResultCacheEntry& selEntry = CachedAddresses[cursor];
-	const AddressTableEntry* newEntry = loadedTable.Add("", selEntry.Address, selEntry.StaticAddress, toAddToAddressList);
-	
-	// Special behavior for specific types of search results.
-	if (toAddToAddressList == CRYDATATYPE_AOB)
+	// If one or more rows were not succesfully added to the address table, throw an error.
+	if (failed)
 	{
-		// Retrieve size of byte array
-		newEntry->Size = StringToBytes(value).Size;
-	}
-	else if (toAddToAddressList == CRYDATATYPE_STRING || toAddToAddressList == CRYDATATYPE_WSTRING)
-	{
-		newEntry->Size = value.GetLength();
-	}
-	
-	// If there is no process loaded, set the value to invalid.
-	if (!mMemoryScanner->GetProcessId())
-	{
-		newEntry->Value = "???";
+		Prompt("Input Error", CtrlImg::error(), "One or more addresses were not succesfully added to the address table.", "OK");
 	}
 	
 	// Refresh address table in user interface.
@@ -1335,9 +1369,6 @@ bool CrySearchForm::CloseProcess()
 	
 	// Kill running timers.
 	KillTimeCallback(10);
-
-	// Clean process name inside address table.
-	loadedTable.ClearProcessName();
 	
 	// Refresh address table for user interface.
 	this->mUserAddressList.SetVirtualCount(loadedTable.GetCount());
@@ -1681,9 +1712,6 @@ void CrySearchForm::WhenProcessOpened(Win32ProcessInformation* pProc)
 				
 				this->ProcessTerminated = false;
 				SetTimeCallback(250, THISBACK(CheckProcessTermination), 30);
-				
-				// Set process name in the address table using the value from the FileSel.
-				loadedTable.SetProcessName(pProc->ExeTitle);
 			}
 			else
 			{
@@ -1732,9 +1760,6 @@ void CrySearchForm::WhenProcessOpened(Win32ProcessInformation* pProc)
 			
 			this->ProcessTerminated = false;
 			SetTimeCallback(250, THISBACK(CheckProcessTermination), 30);
-			
-			// Since the process name is either retrieved or known, setting it here should not bring any problems.
-			loadedTable.SetProcessName(mMemoryScanner->GetProcessName());
 		}
 	}
 	
@@ -1880,13 +1905,27 @@ GUI_APP_MAIN
 	
 	// Get the command line. In case a .csat file was opened, the first argument is the path to the file.
 	const Vector<String>& cmdline = CommandLine();
-	if (cmdline.GetCount() > 0)
+	CommandArgumentParser cmdParser(cmdline);
+	if (cmdParser.GetWasShellExecuted())
 	{
 		frm = new CrySearchForm(cmdline[0]);
 	}
 	else
 	{
-		frm = new CrySearchForm(NULL);
+		// Regularly parse command line arguments.
+		if (cmdParser.GetParameterCount())
+		{
+			// If the help command was executed, don't continue the application but output help.
+			if (cmdParser.WasHelpCommandFound())
+			{
+				Cout() << cmdParser.GetHelpOutput();
+			}
+		}
+		else
+		{
+			// No parameters were found, execute program regularly.
+			frm = new CrySearchForm(NULL);
+		}
 	}
 
 	// Delete temporary files from any earlier run, which might have crashed.

@@ -143,7 +143,7 @@ void CrySearchSettingsDialog::LoadSettings()
 	this->mHotkeysList.SetVirtualCount(this->mSettingsInstance->GetHotkeyCount());
 	this->mSymbolPathsList.SetVirtualCount(this->mSettingsInstance->GetSymbolPathCount());
 	
-	this->mRegisterFileExtensionWithCrySearch = GetIsAddressTableExtensionRegistered();
+	this->mRegisterFileExtensionWithCrySearch = !!GetIsAddressTableExtensionRegistered();
 	this->mStartCheckedExtensionState = this->mRegisterFileExtensionWithCrySearch;
 }
 

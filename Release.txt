@@ -2,6 +2,11 @@ CrySearch Memory Scanner
 
 evolution536, www.unknowncheats.me
 
+v1.17
+	- Added multiple selection possibility for search results. Select multiple and right-click to add them to the address table;
+	- Added possibility to select multiple address table entries and remove them all at once;
+	- Fixed bug in registering CrySearch as default program for opening address tables where the registry key could not be read;
+	- 
 v1.16
 	- Improved overall performance of the application:
 		- Improved user interface performance in several places due to replacement of slow formatting functions;

@@ -45,11 +45,15 @@ const BOOL RegisterAddressTableExtension()
 	if (RegCreateKeyEx(HKEY_CLASSES_ROOT, extension, 0, NULL, 0, KEY_ALL_ACCESS, NULL, &key, NULL) == ERROR_SUCCESS)
 	{
 		const DWORD appname[] = {0x53797243, 0x63726165, 0x68}; //"CrySearch"
-		const DWORD fileDesc[] = {0x53797243, 0x63726165, 0x654d2068, 0x79726f6d, 0x61635320, 0x72656e6e, 0x0}; //"CrySearch Memory Scanner"
+		DWORD fileDesc[] = {0x53797243, 0x63726165, 0x64412068, 0x73657264, 0x61542073, 0x656c62}; //"CrySearch Address Table"
 		
 		// Create the command string for the second registry key action.
 		char pathCommand[MAX_PATH];
-		strcat_s(action, 20, (char*)appname);
+		if (!strstr(action, (char*)appname))
+		{
+			strcat_s(action, 20, (char*)appname);
+		}
+		
 		CreatePathCommand(extension, action, pathCommand);	
 		
 		RegSetValueEx(key, NULL, 0, REG_SZ, (char*)fileDesc, (DWORD)strlen((char*)fileDesc));
@@ -106,10 +110,16 @@ const BOOL GetIsAddressTableExtensionRegistered()
 	char exePath[MAX_PATH];
 	
 	// Create the same path as during the registration function.
+	const DWORD appname[] = {0x53797243, 0x63726165, 0x68}; //"CrySearch"
+	if (!strstr(action, (char*)appname))
+	{
+		strcat_s(action, 20, (char*)appname);
+	}
+	
 	CreatePathCommand(extension, action, regKey);
 	
 	// Try to open the key. If it fails here the key probably doesn't even exist so no need to move on.
-	if (RegOpenKeyEx(HKEY_CLASSES_ROOT, regKey, 0, KEY_READ, &key) != ERROR_SUCCESS)
+	if (RegOpenKeyEx(HKEY_CLASSES_ROOT, regKey, 0, KEY_QUERY_VALUE, &key) != ERROR_SUCCESS)
 	{
 		return FALSE;
 	}

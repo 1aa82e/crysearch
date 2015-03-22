@@ -6,9 +6,9 @@
 const BOOL __stdcall CrySearchGetVersion(char* const pStringBuffer, DWORD* const inOutSize)
 {
 #ifdef _WIN64																													   // This DWORD contains the minor version number
-	DWORD CRYSEARCH_VERSION_STRING[15] = { 0x372B5B01, 0x72432030, 0x61655379, 0x20686372, 0x26343678, 0x73726556, 0x206E6F69, 0x36312E31, 0x20796226, 0x6C6F7665, 0x6F697475, 0x3633356E, 0x4322203A, 0x5D227972, 0x00000000 };
+	DWORD CRYSEARCH_VERSION_STRING[15] = { 0x372B5B01, 0x72432030, 0x61655379, 0x20686372, 0x26343678, 0x73726556, 0x206E6F69, 0x37312E31, 0x20796226, 0x6C6F7665, 0x6F697475, 0x3633356E, 0x4322203A, 0x5D227972, 0x00000000 };
 #else
-	DWORD CRYSEARCH_VERSION_STRING[15] = { 0x372B5B01, 0x72432030, 0x61655379, 0x20686372, 0x26363878, 0x73726556, 0x206E6F69, 0x36312E31, 0x20796226, 0x6C6F7665, 0x6F697475, 0x3633356E, 0x4322203A, 0x5D227972, 0x00000000 };
+	DWORD CRYSEARCH_VERSION_STRING[15] = { 0x372B5B01, 0x72432030, 0x61655379, 0x20686372, 0x26363878, 0x73726556, 0x206E6F69, 0x37312E31, 0x20796226, 0x6C6F7665, 0x6F697475, 0x3633356E, 0x4322203A, 0x5D227972, 0x00000000 };
 #endif
 
 	// We don't to write outside of the input buffer. Check if the buffer is large enough. Return FALSE and the necessary size if not.
@@ -36,7 +36,7 @@ const BOOL __stdcall CrySearchGetVersion(char* const pStringBuffer, DWORD* const
 void __stdcall CrySearchGetMajorMinorVersion(WORD* const pMajor, WORD* const pMinor)
 {
 	*pMajor = 1;
-	*pMinor = 16;
+	*pMinor = 17;
 }
 
 // ---------------------------------------------------------------------------------------------------------

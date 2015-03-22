@@ -12,10 +12,12 @@ void AddressTable::Xmlize(XmlIO& s)
 	const DWORD appname[] = {0x53797243, 0x63726165, 0x68}; //"CrySearch"
 	String appnameStr = (char*)appname;
 	
+	String procName = mMemoryScanner->GetProcessName();
+	
 	// Write the address table to the XML serializer.
 	s
 		(appnameStr + "Version", Format("%i.%i", major, minor))
-		("ProcessName", this->mProcessName)
+		("ProcessName", procName)
 		("Entries", this->mEntries)
 		("MemoryDissections", this->mDissections)
 	;
@@ -29,6 +31,12 @@ AddressTable::AddressTable()
 AddressTable::~AddressTable()
 {
 	
+}
+
+// Removes a set of entries from the address table.
+void AddressTable::Remove(const Vector<int>& entries)
+{
+	this->mEntries.Remove(entries);
 }
 
 // Removes all address table entries from the address table.
@@ -66,18 +74,6 @@ void AddressTable::Clear()
 	}
 
 #endif
-
-// Sets the process name that will be saved in the file.
-void AddressTable::SetProcessName(const String& pName)
-{
-	this->mProcessName = pName;
-}
-
-// Clears the process name saved in the file.
-void AddressTable::ClearProcessName()
-{
-	this->mProcessName.Clear();
-}
 
 // Returns the amount of address table entries in the table.
 const int AddressTable::GetCount() const
