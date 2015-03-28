@@ -207,11 +207,16 @@ bool MemoryScanner::InitializeNewProcess(const char* exetitle, const DWORD flags
 	STARTUPINFO info = { sizeof(info) };
 	PROCESS_INFORMATION processInfo;
 	String cmdArgs = GetFileName(exetitle);
-	cmdArgs += 0x20;
-	cmdArgs +=args;
+	
+	// Append the arguments to the command line string.
+	if (args)
+	{
+		cmdArgs += 0x20;
+		cmdArgs += args;
+	}
 	
 	// Create process with specified flags and command line arguments.
-	bool b = !!CreateProcess(exetitle, strlen(args) > 0 ? const_cast<char*>(cmdArgs.Begin()) : NULL, NULL, NULL, FALSE, flags, NULL, NULL, &info, &processInfo);
+	bool b = !!CreateProcess(exetitle, args ? const_cast<char*>(cmdArgs.Begin()) : NULL, NULL, NULL, FALSE, flags, NULL, NULL, &info, &processInfo);
 	if (b)
 	{
 		// Save operative information for the memoryscanner.

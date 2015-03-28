@@ -172,13 +172,14 @@ void CrySearchSettingsDialog::SaveSettings()
 	CrySearchRoutines.InitializeRoutines();
 	
 	// Attempt registering the CrySearch address table file extension with the currently started architecture of CrySearch.
+	const DWORD appname[] = {0x53797243, 0x63726165, 0x68}; //"CrySearch"
 	if (this->mRegisterFileExtensionWithCrySearch && !this->mStartCheckedExtensionState && !RegisterAddressTableExtension())
 	{
-		Prompt("Fatal Error", CtrlImg::error(), "Failed to register the file extension. Please run CrySearch as Administrator.", "OK");
+		Prompt("Fatal Error", CtrlImg::error(), Format("Failed to register the file extension. Please run %s as Administrator.", (char*)appname), "OK");
 	}
 	else if (!this->mRegisterFileExtensionWithCrySearch && this->mStartCheckedExtensionState && !DeleteAddressTableRegistration())
 	{
-		Prompt("Fatal Error", CtrlImg::error(), "Failed to delete the file extension from the registry. Please run CrySearch as Administrator.", "OK");
+		Prompt("Fatal Error", CtrlImg::error(), Format("Failed to delete the file extension from the registry. Please run %s as Administrator.", (char*)appname), "OK");
 	}
 	
 	this->mSettingsInstance->Save();

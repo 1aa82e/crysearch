@@ -17,6 +17,7 @@ file
 	FrontendGlobalDef.h,
 	CommandArgumentParser.cpp,
 	CommandArgumentParser.h,
+	CrySearchMain.cpp,
 	CrySearchForm.cpp,
 	CrySearchForm.h,
 	CrySearchWindowManager.cpp,

@@ -10,10 +10,8 @@
 #include "CryProcessEnvironmentBlockWindow.h"
 #include "CrySystemHandleInformationWindow.h"
 #include "CryPluginsWindow.h"
-#include "CrashHandler.h"
 #include "ImlProvider.h"
 #include "UIUtilities.h"
-#include "CommandArgumentParser.h"
 
 // Global source IML file declaration. Imaging in the GUI depends on this.
 #define IMAGECLASS CrySearchIml
@@ -458,11 +456,10 @@ CrySearchForm::CrySearchForm(const char* fn)
 	// If one of more NTDLL functions were not succesfully retrieved, notify the user about it.
 	if (CrySearchRoutines.ErrorOccured())
 	{
-		Prompt("Behavioral Warning", CtrlImg::exclamation(), "One or more NTDLL functions were not retrieved succesfully. CrySearch may behave unpredictable from here.", "OK");
+		Prompt("Behavioral Warning", CtrlImg::exclamation(), Format("One or more NTDLL functions were not retrieved succesfully. %s may behave unpredictable from here.", String((char*)wndTitle, 9)), "OK");
 	}
 	
 	// Initiate the memory scanner class, the most important part of CrySearch.
-	mMemoryScanner = MemoryScanner::GetInstance();
 	mMemoryScanner->ErrorOccured = THISBACK(ScannerErrorOccured);
 	mMemoryScanner->ScanCompleted = THISBACK(ScannerCompletedScan);
 	mMemoryScanner->UpdateScanningProgress = THISBACK(ScannerUserInterfaceUpdate);
@@ -1892,59 +1889,4 @@ bool CrySearchForm::SetActiveTabWindow(const String& wndText)
 	}
 	
 	return false;
-}
-
-// ---------------------------------------------------------------------------------------------
-
-GUI_APP_MAIN
-{
-	CrySearchForm* frm;
-	
-	// Wire up the crash handler.
-	SetUnhandledExceptionFilter(CrashHandler);
-	
-	// Get the command line. In case a .csat file was opened, the first argument is the path to the file.
-	const Vector<String>& cmdline = CommandLine();
-	CommandArgumentParser cmdParser(cmdline);
-	if (cmdParser.GetWasShellExecuted())
-	{
-		frm = new CrySearchForm(cmdline[0]);
-	}
-	else
-	{
-		// Regularly parse command line arguments.
-		if (cmdParser.GetParameterCount())
-		{
-			// If the help command was executed, don't continue the application but output help.
-			if (cmdParser.WasHelpCommandFound())
-			{
-				Cout() << cmdParser.GetHelpOutput();
-			}
-		}
-		else
-		{
-			// No parameters were found, execute program regularly.
-			frm = new CrySearchForm(NULL);
-		}
-	}
-
-	// Delete temporary files from any earlier run, which might have crashed.
-	DeleteTemporaryFiles();
-	
-	// Run main window.
-	mCrySearchWindowManager = frm->GetWindowManager();
-	frm->Run();
-	delete frm;
-
-	// Force destruction of global objects to restore states of opened processes.
-	CryGlobalDestruct();
-	
-	// Release the memory scanner and other related resources.
-	delete GlobalScanParameter;
-
-	// Delete temporary files used before quitting.
-	DeleteTemporaryFiles();
-	
-	// Close all threads to make the application able to exit safely.
-	ExitProcess(0);
 }

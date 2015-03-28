@@ -1,4 +1,4 @@
-#include "../SDK/UtilFunctions.h"
+#include "../SDK/CrySearch.h"
 
 // Sets bit flags on a specified numeric value.
 void CrySetBits(DWORD_PTR* const dw, const int lowBit, const int bits, const int newValue)
@@ -169,6 +169,9 @@ void GetOSVersionString(char* const pOutString, const DWORD maxLength)
 	OSVERSIONINFOEX osv;
 	SYSTEM_INFO sysInfo;
 	const WORD lastPart = 0x0A0D;
+	WORD major;
+	WORD minor;
+	char versionBuffer[8];
 
 	// Copy the first part of the string into the output buffer.
 	strcpy_s(pOutString, maxLength, "System Information:\r\n\r\nOS Version:\t\t\t");
@@ -252,11 +255,19 @@ void GetOSVersionString(char* const pOutString, const DWORD maxLength)
 	// Add CrySearch architecture definition.
 	strcat_s(pOutString, maxLength, "\r\nCrySearch:\t\t\t");
 #ifdef _WIN64
-	strcat_s(pOutString, maxLength, "x64");
+	strcat_s(pOutString, maxLength, "x64 (");
 #else
-	strcat_s(pOutString, maxLength, "x86");
+	strcat_s(pOutString, maxLength, "x86 (");
 #endif
 	
+	// Retrieve the version number of CrySearch.
+	CrySearchGetMajorMinorVersion(&major, &minor);
+	_itoa_s(major, versionBuffer, sizeof(versionBuffer), 10);
+	*(WORD*)&versionBuffer[strlen(versionBuffer)] = 0x2E;
+	_itoa_s(minor, versionBuffer + strlen(versionBuffer), sizeof(versionBuffer) - strlen(versionBuffer), 10);
+	*(WORD*)&versionBuffer[strlen(versionBuffer)] = 0x29;
+
+	strcat_s(pOutString, maxLength, versionBuffer);
 	strcat_s(pOutString, maxLength, (char*)&lastPart);
 }
 

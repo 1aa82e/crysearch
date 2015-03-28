@@ -5,6 +5,7 @@
 #include "CrySearchArrayCtrl.h"
 #include "AddressTable.h"
 #include "CrySearchWindowManager.h"
+#include "CrashHandler.h"
 
 #include <CtrlLib/CtrlLib.h>
 

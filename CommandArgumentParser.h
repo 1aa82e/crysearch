@@ -12,6 +12,8 @@ private:
 	bool wasShellExec;
 	bool showHelp;
 	int parameterCount;
+	DWORD procId;
+	String filePath;
 	
 	void Parse(const Vector<String>& args);
 public:
@@ -22,6 +24,8 @@ public:
 	String GetHelpOutput() const;
 	const bool GetWasShellExecuted() const;
 	const bool WasHelpCommandFound() const;
+	const DWORD GetProcessId() const;
+	const String& GetFilePath() const;
 };
 
 #endif
