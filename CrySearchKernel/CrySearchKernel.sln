@@ -1,0 +1,105 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013
+VisualStudioVersion = 12.0.30723.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CrySearchKernel", "CrySearchKernel\CrySearchKernel.vcxproj", "{B630B5DF-2FBE-40C4-9E7E-28A85E5AD652}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CrySearchKernel Package", "CrySearchKernel Package\CrySearchKernel Package.vcxproj", "{51A14778-D179-4749-86D2-F1EBEADCEF53}"
+	ProjectSection(ProjectDependencies) = postProject
+		{B630B5DF-2FBE-40C4-9E7E-28A85E5AD652} = {B630B5DF-2FBE-40C4-9E7E-28A85E5AD652}
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Win7 Debug|Win32 = Win7 Debug|Win32
+		Win7 Debug|x64 = Win7 Debug|x64
+		Win7 Release|Win32 = Win7 Release|Win32
+		Win7 Release|x64 = Win7 Release|x64
+		Win8 Debug|Win32 = Win8 Debug|Win32
+		Win8 Debug|x64 = Win8 Debug|x64
+		Win8 Release|Win32 = Win8 Release|Win32
+		Win8 Release|x64 = Win8 Release|x64
+		Win8.1 Debug|Win32 = Win8.1 Debug|Win32
+		Win8.1 Debug|x64 = Win8.1 Debug|x64
+		Win8.1 Release|Win32 = Win8.1 Release|Win32
+		Win8.1 Release|x64 = Win8.1 Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B630B5DF-2FBE-40C4-9E7E-28A85E5AD652}.Win7 Debug|Win32.ActiveCfg = Win7 Debug|Win32
+		{B630B5DF-2FBE-40C4-9E7E-28A85E5AD652}.Win7 Debug|Win32.Build.0 = Win7 Debug|Win32
+		{B630B5DF-2FBE-40C4-9E7E-28A85E5AD652}.Win7 Debug|Win32.Deploy.0 = Win7 Debug|Win32
+		{B630B5DF-2FBE-40C4-9E7E-28A85E5AD652}.Win7 Debug|x64.ActiveCfg = Win7 Debug|x64
+		{B630B5DF-2FBE-40C4-9E7E-28A85E5AD652}.Win7 Debug|x64.Build.0 = Win7 Debug|x64
+		{B630B5DF-2FBE-40C4-9E7E-28A85E5AD652}.Win7 Debug|x64.Deploy.0 = Win7 Debug|x64
+		{B630B5DF-2FBE-40C4-9E7E-28A85E5AD652}.Win7 Release|Win32.ActiveCfg = Win7 Release|Win32
+		{B630B5DF-2FBE-40C4-9E7E-28A85E5AD652}.Win7 Release|Win32.Build.0 = Win7 Release|Win32
+		{B630B5DF-2FBE-40C4-9E7E-28A85E5AD652}.Win7 Release|Win32.Deploy.0 = Win7 Release|Win32
+		{B630B5DF-2FBE-40C4-9E7E-28A85E5AD652}.Win7 Release|x64.ActiveCfg = Win7 Release|x64
+		{B630B5DF-2FBE-40C4-9E7E-28A85E5AD652}.Win7 Release|x64.Build.0 = Win7 Release|x64
+		{B630B5DF-2FBE-40C4-9E7E-28A85E5AD652}.Win7 Release|x64.Deploy.0 = Win7 Release|x64
+		{B630B5DF-2FBE-40C4-9E7E-28A85E5AD652}.Win8 Debug|Win32.ActiveCfg = Win8 Debug|Win32
+		{B630B5DF-2FBE-40C4-9E7E-28A85E5AD652}.Win8 Debug|Win32.Build.0 = Win8 Debug|Win32
+		{B630B5DF-2FBE-40C4-9E7E-28A85E5AD652}.Win8 Debug|Win32.Deploy.0 = Win8 Debug|Win32
+		{B630B5DF-2FBE-40C4-9E7E-28A85E5AD652}.Win8 Debug|x64.ActiveCfg = Win8 Debug|x64
+		{B630B5DF-2FBE-40C4-9E7E-28A85E5AD652}.Win8 Debug|x64.Build.0 = Win8 Debug|x64
+		{B630B5DF-2FBE-40C4-9E7E-28A85E5AD652}.Win8 Debug|x64.Deploy.0 = Win8 Debug|x64
+		{B630B5DF-2FBE-40C4-9E7E-28A85E5AD652}.Win8 Release|Win32.ActiveCfg = Win8 Release|Win32
+		{B630B5DF-2FBE-40C4-9E7E-28A85E5AD652}.Win8 Release|Win32.Build.0 = Win8 Release|Win32
+		{B630B5DF-2FBE-40C4-9E7E-28A85E5AD652}.Win8 Release|Win32.Deploy.0 = Win8 Release|Win32
+		{B630B5DF-2FBE-40C4-9E7E-28A85E5AD652}.Win8 Release|x64.ActiveCfg = Win8 Release|x64
+		{B630B5DF-2FBE-40C4-9E7E-28A85E5AD652}.Win8 Release|x64.Build.0 = Win8 Release|x64
+		{B630B5DF-2FBE-40C4-9E7E-28A85E5AD652}.Win8 Release|x64.Deploy.0 = Win8 Release|x64
+		{B630B5DF-2FBE-40C4-9E7E-28A85E5AD652}.Win8.1 Debug|Win32.ActiveCfg = Win8.1 Debug|Win32
+		{B630B5DF-2FBE-40C4-9E7E-28A85E5AD652}.Win8.1 Debug|Win32.Build.0 = Win8.1 Debug|Win32
+		{B630B5DF-2FBE-40C4-9E7E-28A85E5AD652}.Win8.1 Debug|Win32.Deploy.0 = Win8.1 Debug|Win32
+		{B630B5DF-2FBE-40C4-9E7E-28A85E5AD652}.Win8.1 Debug|x64.ActiveCfg = Win8.1 Debug|x64
+		{B630B5DF-2FBE-40C4-9E7E-28A85E5AD652}.Win8.1 Debug|x64.Build.0 = Win8.1 Debug|x64
+		{B630B5DF-2FBE-40C4-9E7E-28A85E5AD652}.Win8.1 Debug|x64.Deploy.0 = Win8.1 Debug|x64
+		{B630B5DF-2FBE-40C4-9E7E-28A85E5AD652}.Win8.1 Release|Win32.ActiveCfg = Win8.1 Release|Win32
+		{B630B5DF-2FBE-40C4-9E7E-28A85E5AD652}.Win8.1 Release|Win32.Build.0 = Win8.1 Release|Win32
+		{B630B5DF-2FBE-40C4-9E7E-28A85E5AD652}.Win8.1 Release|Win32.Deploy.0 = Win8.1 Release|Win32
+		{B630B5DF-2FBE-40C4-9E7E-28A85E5AD652}.Win8.1 Release|x64.ActiveCfg = Win8.1 Release|x64
+		{B630B5DF-2FBE-40C4-9E7E-28A85E5AD652}.Win8.1 Release|x64.Build.0 = Win8.1 Release|x64
+		{B630B5DF-2FBE-40C4-9E7E-28A85E5AD652}.Win8.1 Release|x64.Deploy.0 = Win8.1 Release|x64
+		{51A14778-D179-4749-86D2-F1EBEADCEF53}.Win7 Debug|Win32.ActiveCfg = Win7 Debug|Win32
+		{51A14778-D179-4749-86D2-F1EBEADCEF53}.Win7 Debug|Win32.Build.0 = Win7 Debug|Win32
+		{51A14778-D179-4749-86D2-F1EBEADCEF53}.Win7 Debug|Win32.Deploy.0 = Win7 Debug|Win32
+		{51A14778-D179-4749-86D2-F1EBEADCEF53}.Win7 Debug|x64.ActiveCfg = Win7 Debug|x64
+		{51A14778-D179-4749-86D2-F1EBEADCEF53}.Win7 Debug|x64.Build.0 = Win7 Debug|x64
+		{51A14778-D179-4749-86D2-F1EBEADCEF53}.Win7 Debug|x64.Deploy.0 = Win7 Debug|x64
+		{51A14778-D179-4749-86D2-F1EBEADCEF53}.Win7 Release|Win32.ActiveCfg = Win7 Release|Win32
+		{51A14778-D179-4749-86D2-F1EBEADCEF53}.Win7 Release|Win32.Build.0 = Win7 Release|Win32
+		{51A14778-D179-4749-86D2-F1EBEADCEF53}.Win7 Release|Win32.Deploy.0 = Win7 Release|Win32
+		{51A14778-D179-4749-86D2-F1EBEADCEF53}.Win7 Release|x64.ActiveCfg = Win7 Release|x64
+		{51A14778-D179-4749-86D2-F1EBEADCEF53}.Win7 Release|x64.Build.0 = Win7 Release|x64
+		{51A14778-D179-4749-86D2-F1EBEADCEF53}.Win7 Release|x64.Deploy.0 = Win7 Release|x64
+		{51A14778-D179-4749-86D2-F1EBEADCEF53}.Win8 Debug|Win32.ActiveCfg = Win8 Debug|Win32
+		{51A14778-D179-4749-86D2-F1EBEADCEF53}.Win8 Debug|Win32.Build.0 = Win8 Debug|Win32
+		{51A14778-D179-4749-86D2-F1EBEADCEF53}.Win8 Debug|Win32.Deploy.0 = Win8 Debug|Win32
+		{51A14778-D179-4749-86D2-F1EBEADCEF53}.Win8 Debug|x64.ActiveCfg = Win8 Debug|x64
+		{51A14778-D179-4749-86D2-F1EBEADCEF53}.Win8 Debug|x64.Build.0 = Win8 Debug|x64
+		{51A14778-D179-4749-86D2-F1EBEADCEF53}.Win8 Debug|x64.Deploy.0 = Win8 Debug|x64
+		{51A14778-D179-4749-86D2-F1EBEADCEF53}.Win8 Release|Win32.ActiveCfg = Win8 Release|Win32
+		{51A14778-D179-4749-86D2-F1EBEADCEF53}.Win8 Release|Win32.Build.0 = Win8 Release|Win32
+		{51A14778-D179-4749-86D2-F1EBEADCEF53}.Win8 Release|Win32.Deploy.0 = Win8 Release|Win32
+		{51A14778-D179-4749-86D2-F1EBEADCEF53}.Win8 Release|x64.ActiveCfg = Win8 Release|x64
+		{51A14778-D179-4749-86D2-F1EBEADCEF53}.Win8 Release|x64.Build.0 = Win8 Release|x64
+		{51A14778-D179-4749-86D2-F1EBEADCEF53}.Win8 Release|x64.Deploy.0 = Win8 Release|x64
+		{51A14778-D179-4749-86D2-F1EBEADCEF53}.Win8.1 Debug|Win32.ActiveCfg = Win8.1 Debug|Win32
+		{51A14778-D179-4749-86D2-F1EBEADCEF53}.Win8.1 Debug|Win32.Build.0 = Win8.1 Debug|Win32
+		{51A14778-D179-4749-86D2-F1EBEADCEF53}.Win8.1 Debug|Win32.Deploy.0 = Win8.1 Debug|Win32
+		{51A14778-D179-4749-86D2-F1EBEADCEF53}.Win8.1 Debug|x64.ActiveCfg = Win8.1 Debug|x64
+		{51A14778-D179-4749-86D2-F1EBEADCEF53}.Win8.1 Debug|x64.Build.0 = Win8.1 Debug|x64
+		{51A14778-D179-4749-86D2-F1EBEADCEF53}.Win8.1 Debug|x64.Deploy.0 = Win8.1 Debug|x64
+		{51A14778-D179-4749-86D2-F1EBEADCEF53}.Win8.1 Release|Win32.ActiveCfg = Win8.1 Release|Win32
+		{51A14778-D179-4749-86D2-F1EBEADCEF53}.Win8.1 Release|Win32.Build.0 = Win8.1 Release|Win32
+		{51A14778-D179-4749-86D2-F1EBEADCEF53}.Win8.1 Release|Win32.Deploy.0 = Win8.1 Release|Win32
+		{51A14778-D179-4749-86D2-F1EBEADCEF53}.Win8.1 Release|x64.ActiveCfg = Win8.1 Release|x64
+		{51A14778-D179-4749-86D2-F1EBEADCEF53}.Win8.1 Release|x64.Build.0 = Win8.1 Release|x64
+		{51A14778-D179-4749-86D2-F1EBEADCEF53}.Win8.1 Release|x64.Deploy.0 = Win8.1 Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
