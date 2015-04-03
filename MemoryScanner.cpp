@@ -349,6 +349,45 @@ bool __fastcall CompareUnknownInitialValue(const T& input, const T& expected)
 	return true;
 }
 
+// Compares ANSI and Unicode strings until a null character was found.
+bool __fastcall CompareStringNullCharA(const char* input, const int inputLength, const char* expected, int* const outputLength)
+{
+	if (memcmp(input, expected, inputLength) == 0)
+	{
+		const char* iterator = input + inputLength;
+		const int endIterator = STRING_MAX_UNTIL_NULL - inputLength;
+		int i = 0;
+		while (i < endIterator && *iterator != 0)
+		{
+			++iterator;
+			++i;
+		}
+		*outputLength = i + inputLength;
+		return true;
+	}
+	
+	return false;
+}
+
+bool __fastcall CompareStringNullCharW(const wchar* input, const int inputLength, const wchar* expected, int* const outputLength)
+{
+	if (memcmp(input, expected, inputLength) == 0)
+	{
+		const wchar* iterator = input + inputLength;
+		const int endIterator = STRING_MAX_UNTIL_NULL - inputLength;
+		int i = 0;
+		while (i < endIterator && *iterator != 0)
+		{
+			++iterator;
+			++i;
+		}
+		*outputLength = i + inputLength / sizeof(wchar);
+		return true;
+	}
+	
+	return false;
+}
+
 void MemoryScanner::ReallocateMemoryScannerBufferCounter(unsigned int* const length)
 {
 	if (*length >= MEMORY_SCANNER_BUFFER_LENGTH_THRESHOLD)
@@ -624,6 +663,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 	const wchar* const inputData = value.Begin();
 	const int inputLengthInChars = value.GetLength();
 	const int inputLength = value.GetLength() * sizeof(wchar);
+	const bool localNullScan = GlobalScanParameter->ScanUntilNullChar;
 
 	const unsigned int forLoopLength = regionData.OriginalStartIndex + regionData.Length;
 	for (unsigned int i = regionData.OriginalStartIndex; i < forLoopLength; ++i)
@@ -643,7 +683,8 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 			{
 				const wchar* strPtr = (wchar*)&(buffer[i]);
 				
-				if (memcmp(strPtr, inputData, inputLength) == 0)
+				int outputLength = inputLengthInChars;
+				if (localNullScan ? CompareStringNullCharW(strPtr, inputLength, inputData, &outputLength) : (memcmp(strPtr, inputData, inputLength) == 0))
 				{
 					if (!localAddresses)
 					{
@@ -665,7 +706,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 					}
 					
 					localAddresses[arrayIndex] = currentRegion.BaseAddress + i;
-					localValues[arrayIndex++] = WString(strPtr, inputLengthInChars);
+					localValues[arrayIndex++] = WString(strPtr, outputLength);
 					
 					++fileIndex;
 				}
@@ -729,6 +770,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 
 	const char* const inputData = value.Begin();
 	const int inputLength = value.GetLength();
+	const bool localNullScan = GlobalScanParameter->ScanUntilNullChar;
 	
 	const unsigned int forLoopLength = regionData.OriginalStartIndex + regionData.Length;
 	for (unsigned int i = regionData.OriginalStartIndex; i < forLoopLength; ++i)
@@ -743,12 +785,13 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 
 		Byte *buffer = new Byte[currentRegion.MemorySize];
 		if (CrySearchRoutines.CryReadMemoryRoutine(this->mOpenedProcessHandle, (void*)currentRegion.BaseAddress, buffer, currentRegion.MemorySize, NULL))
-		{			
+		{
 			for (SIZE_T i = 0; i < currentRegion.MemorySize; i++)
 			{
 				const char* strPtr = (char*)&(buffer[i]);
 				
-				if (memcmp(strPtr, inputData, inputLength) == 0)
+				int outputLength = inputLength;
+				if (localNullScan ? CompareStringNullCharA(strPtr, inputLength, inputData, &outputLength) : (memcmp(strPtr, inputData, inputLength) == 0))
 				{
 					if (!localAddresses)
 					{
@@ -769,7 +812,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 					}
 					
 					localAddresses[arrayIndex] = currentRegion.BaseAddress + i;
-					localValues[arrayIndex++] = String(strPtr, inputLength);
+					localValues[arrayIndex++] = String(strPtr, outputLength);
 					
 					++fileIndex;
 				}

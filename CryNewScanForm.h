@@ -21,6 +21,7 @@ private:
 	DropList mScanTypeSelector;
 	Option useFastScan;
 	Option stringUnicode;
+	Option stringUntilNull;
 	
 	void ValueInputHexToggleChanged();
 	void ScanTypeSelected();

@@ -27,5 +27,13 @@
     <ClCompile Include="DriverMain.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="MemoryLowLevel.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="MemoryLowLevel.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

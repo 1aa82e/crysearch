@@ -1,5 +1,6 @@
 #include <ntddk.h>
 #include <windef.h>
+#include "MemoryLowLevel.h"
 
 UNICODE_STRING deviceString;
 PVOID deviceStringPtr = NULL;

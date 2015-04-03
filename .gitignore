@@ -18,3 +18,6 @@ Plugins/CryVirtualDump/Bin/*
 Plugins/CryVirtualDump/CryVirtualDump/x64/*
 Plugins/CryVirtualDump/CryVirtualDump/Debug/*
 Plugins/CryVirtualDump/CryVirtualDump/Release/*
+CrySearchKernel/Win7Debug/*
+CrySearchKernel/CrySearchKernel/Win7Debug/*
+CrySearchKernel/CrySearchKernel Package/Win7Debug/*

@@ -54,6 +54,10 @@ struct ScanParameterBase
 	// If the scan value type is not one of these, this parameter is ignored.
 	unsigned int ValueSize;
 	
+	// When searching for strings, it is possible to match strings until null chars are hit. The threshold to
+	// avoid CrySearch from reading excessive amounts of memory into a string is 0x100.
+	bool ScanUntilNullChar;
+	
 	// Default constructor should help preventing bogus values.
 	ScanParameterBase()
 	{
@@ -209,6 +213,11 @@ bool __fastcall CompareGreater(const T& input, const T& expected);
 
 template <class T>
 bool __fastcall CompareUnknownInitialValue(const T& input, const T& expected);
+
+#define STRING_MAX_UNTIL_NULL	0x100
+
+bool __fastcall CompareStringNullCharA(const char* input, const int inputLength, const char* expected, int* const outputLength);
+bool __fastcall CompareStringNullCharW(const wchar* input, const int inputLength, const wchar* expected, int* const outputLength);
 
 // Defines the compare function functor, customizable with template type and parameters using the constructor.
 struct CompareFunction { };

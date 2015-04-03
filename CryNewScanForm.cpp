@@ -62,8 +62,9 @@ CryNewScanForm::CryNewScanForm(bool FirstScan, const Image& icon) : CryDialogTem
 		<< this->mScanTypeSelectorLabel.SetLabel("Type:").LeftPos(5, 75).TopPos(55, 20)
 		<< this->mScanTypeSelector.Add("Exact Value").Add("Smaller Than").Add("Greater Than").HSizePos(75, 5).TopPos(55, 20)
 		<< this->useFastScan.Set(SettingsFile::GetInstance()->GetFastScanByDefault()).SetLabel("Fast Scan")
-			.LeftPos(5, 100).TopPos(75, 25)
+			.LeftPos(5, 75).TopPos(75, 25)
 		<< this->stringUnicode.SetLabel("Unicode").RightPos(5, 75).TopPos(75, 25)
+		<< this->stringUntilNull.SetLabel("Match until null").HSizePos(80, 80).TopPos(75, 25)
 		<< this->mOk.Ok().SetLabel("OK").RightPos(85, 75).BottomPos(5, 25)
 		<< this->mCancel.SetLabel("Cancel").RightPos(5, 75).BottomPos(5, 25)
 	;
@@ -76,6 +77,7 @@ CryNewScanForm::CryNewScanForm(bool FirstScan, const Image& icon) : CryDialogTem
 	this->mBlockSizeSelector.Enable(FirstScan);
 	this->useFastScan.Enable(FirstScan);
 	this->stringUnicode.Hide();
+	this->stringUntilNull.Hide();
 	
 	if (!FirstScan)
 	{
@@ -212,6 +214,7 @@ void CryNewScanForm::BlockSizeSelected()
 		this->mScanTypeSelector.Disable();
 		this->mScanTypeSelectorLabel.Disable();
 		this->stringUnicode.Show();
+		this->stringUntilNull.Show();
 	}
 	else if (selected == "Array of Bytes")
 	{
@@ -221,6 +224,7 @@ void CryNewScanForm::BlockSizeSelected()
 		this->mScanTypeSelector.Disable();
 		this->mScanTypeSelectorLabel.Disable();
 		this->stringUnicode.Hide();
+		this->stringUntilNull.Hide();
 	}
 	else
 	{
@@ -229,6 +233,7 @@ void CryNewScanForm::BlockSizeSelected()
 		this->mScanTypeSelector.Enable();
 		this->mScanTypeSelectorLabel.Enable();
 		this->stringUnicode.Hide();
+		this->stringUntilNull.Hide();
 	}
 }
 
@@ -324,6 +329,7 @@ void CryNewScanForm::OkButtonClicked()
 					GlobalScanParameter->ValueSize = this->mValueToSearchFor.GetLength();
 				}
 			}
+			GlobalScanParameter->ScanUntilNullChar = this->stringUntilNull;
 			break;
 	}
 	
