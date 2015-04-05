@@ -123,7 +123,7 @@ String GetValue(const int index)
 		else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_STRING)
 		{
 			String value;
-			if (mMemoryScanner->Peek<String>(CachedAddresses[index].Address, CachedValues[index].GetLength(), &value))
+			if (mMemoryScanner->Peek<String>(CachedAddresses[index].Address, CachedAddresses[index].StringLength, &value))
 			{
 				return value;
 			}
@@ -131,7 +131,7 @@ String GetValue(const int index)
 		else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_WSTRING)
 		{
 			WString value;
-			if (mMemoryScanner->Peek<WString>(CachedAddresses[index].Address, CachedValues[index].GetLength(), &value))
+			if (mMemoryScanner->Peek<WString>(CachedAddresses[index].Address, CachedAddresses[index].StringLength, &value))
 			{
 				return value.ToString();
 			}

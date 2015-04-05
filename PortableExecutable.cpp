@@ -467,7 +467,7 @@ SIZE_T PortableExecutable32::GetAddressFromExportTable(const AddrStruct* addr, c
 				bool found = false;
 
 				// Compare ordinal values without magic bitoperations!
-				if ((addr->ExportDirectory->Base + *ordValue) == (WORD)NameOrdinal)
+				if ((addr->ExportDirectory->Base + *ordValue) == *reinterpret_cast<WORD*>(&NameOrdinal))
 				{
 					funcAddrPtr = (DWORD*)((addr->BufferBaseAddress + addr->ExportDirectory->AddressOfFunctions) + (sizeof(DWORD) * *ordValue));					
 					found = true;
@@ -723,7 +723,7 @@ void PortableExecutable32::GetImportAddressTable() const
 				funcEntry.Flag = 0;
 				
 				// Check whether actual address is equal to the address it should be, otherwise the IAT is hooked.
-				const SIZE_T eatAddress = this->GetAddressFromExportTable(&addrStruct, funcEntry.Ordinal ? (char*)funcEntry.Ordinal : funcEntry.FunctionName, funcEntry.Ordinal);
+				const SIZE_T eatAddress = this->GetAddressFromExportTable(&addrStruct, funcEntry.Ordinal ? (char*)funcEntry.Ordinal : funcEntry.FunctionName.Begin(), funcEntry.Ordinal);
 				if (eatAddress == EAT_ADDRESS_NOT_FOUND)
 				{
 					funcEntry.Flag = IAT_FLAG_NOT_FOUND;
@@ -945,11 +945,12 @@ bool PortableExecutable32::HideModuleFromProcess(const Win32ModuleInformation& m
                     for (unsigned int index = 0; index < 3; (Node += sizeof(LIST_ENTRY32)), index++)
                     {
 				        LIST_ENTRY32 current;
-				        
+						BOOL localRes = TRUE;
+
 				        // Read current, previous and next list entry from the process memory.
 						CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)Node, &current, sizeof(LIST_ENTRY32), NULL);
 				        
-				        if (GetLastError() > 0)
+						if (!localRes)
 				        {
 				        	found = false;
 				        	break;
@@ -959,8 +960,8 @@ bool PortableExecutable32::HideModuleFromProcess(const Win32ModuleInformation& m
 						const DWORD prevItemAddr = current.Blink;
 						
 						// Overwrite the pointers of the previous and next list entry so the current one is effectively hidden.
-				        CrySearchRoutines.CryWriteMemoryRoutine(this->mProcessHandle, (void*)current.Blink, &nextItemAddr, sizeof(DWORD), NULL);
-				        CrySearchRoutines.CryWriteMemoryRoutine(this->mProcessHandle, (unsigned char*)current.Flink + sizeof(DWORD), &prevItemAddr, sizeof(DWORD), NULL);
+						localRes = CrySearchRoutines.CryWriteMemoryRoutine(this->mProcessHandle, (void*)current.Blink, &nextItemAddr, sizeof(DWORD), NULL);
+						localRes = CrySearchRoutines.CryWriteMemoryRoutine(this->mProcessHandle, (unsigned char*)current.Flink + sizeof(DWORD), &prevItemAddr, sizeof(DWORD), NULL);
                     }
 				    
                     break;
@@ -1330,7 +1331,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 					bool found = false;
 					
 					// Compare ordinal values without magic bitoperations!
-					if ((addr->ExportDirectory->Base + *ordValue) == (WORD)NameOrdinal)
+					if ((addr->ExportDirectory->Base + *ordValue) == *reinterpret_cast<WORD*>(&NameOrdinal))
 					{
 						funcAddrPtr = (DWORD*)(addr->BufferBaseAddress + addr->ExportDirectory->AddressOfFunctions + (sizeof(DWORD) * *ordValue));					
 						found = true;
@@ -1581,7 +1582,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 					funcEntry.Flag = 0;
 					
 					// Check whether actual address is equal to the address it should be, otherwise the IAT is hooked.
-					const SIZE_T eatAddress = this->GetAddressFromExportTable(&addrStruct, funcEntry.Ordinal ? (char*)funcEntry.Ordinal : funcEntry.FunctionName, funcEntry.Ordinal);
+					const SIZE_T eatAddress = this->GetAddressFromExportTable(&addrStruct, funcEntry.Ordinal ? (char*)funcEntry.Ordinal : funcEntry.FunctionName.Begin(), funcEntry.Ordinal);
 					if (eatAddress == EAT_ADDRESS_NOT_FOUND)
 					{
 						funcEntry.Flag = IAT_FLAG_NOT_FOUND;
@@ -1797,11 +1798,12 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 	                    for (unsigned int index = 0; index < 3; Node++, index++)
 	                    {
 					        LIST_ENTRY current;
+					        BOOL localRes = TRUE;
 					        
 					        // Read current, previous and next list entry from the process memory.
 							CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, Node, &current, sizeof(LIST_ENTRY), NULL);
 					        
-					        if (GetLastError() > 0)
+					        if (!localRes)
 					        {
 					        	found = false;
 					        	break;
@@ -1811,8 +1813,8 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 							const unsigned __int64 prevItemAddr = (unsigned __int64)current.Blink;
 							
 							// Overwrite the pointers of the previous and next list entry so the current one is effectively hidden.
-					        CrySearchRoutines.CryWriteMemoryRoutine(this->mProcessHandle, current.Blink, &nextItemAddr, sizeof(LIST_ENTRY*), NULL);
-					        CrySearchRoutines.CryWriteMemoryRoutine(this->mProcessHandle, (unsigned char*)current.Flink + sizeof(LIST_ENTRY*), &prevItemAddr, sizeof(LIST_ENTRY*), NULL);
+					        localRes = CrySearchRoutines.CryWriteMemoryRoutine(this->mProcessHandle, current.Blink, &nextItemAddr, sizeof(LIST_ENTRY*), NULL);
+					        localRes = CrySearchRoutines.CryWriteMemoryRoutine(this->mProcessHandle, (unsigned char*)current.Flink + sizeof(LIST_ENTRY*), &prevItemAddr, sizeof(LIST_ENTRY*), NULL);
 	                    }
 					    
 	                    break;

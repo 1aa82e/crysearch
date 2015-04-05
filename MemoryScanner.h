@@ -102,11 +102,15 @@ struct SearchResultCacheEntry : Moveable<SearchResultCacheEntry>
 	// Indicates whether the address should be displayed as a static one in the user interface.
 	bool StaticAddress;
 	
+	// Indicates the length of a string or wstring in the search results.
+	Byte StringLength;
+	
 	// We should at least manually set the second field in order to prevent mahem in the user interface.
 	SearchResultCacheEntry()
 	{
 		this->Address = 0;
 		this->StaticAddress = false; // Accidentally true could cause unexplainable user interface behavior.
+		this->StringLength = 0;
 	};
 	
 	// Default constructor for adding cache entries.
@@ -354,7 +358,5 @@ public:
 
 // User interface would like access to the cache containers.
 extern Vector<SearchResultCacheEntry> CachedAddresses;
-
-void AddResultsToCache(const int Resultcount, const SIZE_T* AddressBuffer);
 
 #endif

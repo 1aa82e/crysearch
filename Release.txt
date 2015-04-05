@@ -8,6 +8,8 @@ v1.17
 	- Fixed bug in registering CrySearch as default program for opening address tables where the registry key could not be read;
 	- Fixed bug where dump failure in module section dump window would unwantedly close the window;
 	- Added CrySearch version number to the crash dump for more accurate reporting of bugs;
+	- Fixed bug where entering a bigger string in an address table entry would not alter the same search result simultaniously;
+	- Added option to match strings until a null terminator character is found. 256 characters is the maximum string length;
 	- 
 v1.16
 	- Improved overall performance of the application:

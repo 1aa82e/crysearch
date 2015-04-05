@@ -35,6 +35,7 @@ private:
 	Label mSecondFieldDescription;
 	
 	void CancelDialog();
+	void AlterSearchResult(const SIZE_T address, const int size);
 	void DialogOkay();
 	
 	void ValueModeHexOptionChanged();

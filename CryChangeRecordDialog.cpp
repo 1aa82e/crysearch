@@ -230,6 +230,20 @@ void CryChangeRecordDialog::CancelDialog()
 	this->Close();
 }
 
+// In case of a string or wstring, alter the size of the associated search result.
+void CryChangeRecordDialog::AlterSearchResult(const SIZE_T address, const int size)
+{
+	const int count = CachedAddresses.GetCount();
+	for (int i = 0; i < count; ++i)
+	{
+		if (CachedAddresses[i].Address == address)
+		{
+			CachedAddresses[i].StringLength = size;
+			break;
+		}
+	}
+}
+
 void CryChangeRecordDialog::DialogOkay()
 {
 	// Temporarely save the edited values locally to avoid race conditions.
@@ -374,17 +388,20 @@ void CryChangeRecordDialog::DialogOkay()
 		{
 			mMemoryScanner->Poke(this->mLoadedEntry->Address, inputVal);
 			this->mLoadedEntry->Size = this->mFieldValue.GetLength();
+			this->AlterSearchResult(this->mLoadedEntry->Address, this->mLoadedEntry->Size);
 		}
 		else if (this->mLoadedEntry->ValueType == CRYDATATYPE_WSTRING)
 		{
 			mMemoryScanner->Poke(this->mLoadedEntry->Address, this->mFieldValue.GetText());
 			this->mLoadedEntry->Size = this->mFieldValue.GetLength();
+			this->AlterSearchResult(this->mLoadedEntry->Address, this->mLoadedEntry->Size);
 		}
 		else if (this->mLoadedEntry->ValueType == CRYDATATYPE_AOB)
 		{
 			ArrayOfBytes aob = StringToBytes(inputVal);	
 			mMemoryScanner->Poke(this->mLoadedEntry->Address, aob);
 			this->mLoadedEntry->Size = aob.Size;
+			this->AlterSearchResult(this->mLoadedEntry->Address, this->mLoadedEntry->Size);
 		}
 	}
 	else if (this->mMode == CRDM_TYPE)

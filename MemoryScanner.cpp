@@ -33,7 +33,7 @@ void DeleteTemporaryFiles()
 }
 
 // Adds a set of new search results to the cache vectors. Up to a million results are kept in memory for GUI visibility.
-void AddResultsToCache(const int Resultcount, const SIZE_T* AddressBuffer)
+void AddResultsToCache(const int Resultcount, const SIZE_T* AddressBuffer, const Byte* lengthBuffers)
 {
 	CacheMutex.Enter();
 	
@@ -60,7 +60,13 @@ void AddResultsToCache(const int Resultcount, const SIZE_T* AddressBuffer)
 		for (int i = 0; i < indexBarrier; ++i)
 		{
 			// Add the cache values to the appropriate buffer.
-			CachedAddresses.Add(SearchResultCacheEntry(AddressBuffer[i], !!mod));
+			SearchResultCacheEntry& entry = CachedAddresses.Add(SearchResultCacheEntry(AddressBuffer[i], !!mod));
+			
+			// If the string length is specified, add it to the search result identifier.
+			if (lengthBuffers)
+			{
+				entry.StringLength = lengthBuffers[i];
+			}
 		}
 	}
 	
@@ -489,7 +495,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 			
 			if (CachedAddresses.GetCount() < MEMORYSCANNER_CACHE_LIMIT)
 			{
-				AddResultsToCache(arrayIndex, localAddresses);
+				AddResultsToCache(arrayIndex, localAddresses, NULL);
 			}
 				
 			WriteFile(regionData.AddressesFile, localAddresses, arrayIndex * sizeof(SIZE_T), &numberOfBytesWritten, NULL);
@@ -602,7 +608,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 			
 			if (CachedAddresses.GetCount() < MEMORYSCANNER_CACHE_LIMIT)
 			{
-				AddResultsToCache(arrayIndex, localAddresses);
+				AddResultsToCache(arrayIndex, localAddresses, NULL);
 			}
 			
 			WriteFile(regionData.AddressesFile, localAddresses, arrayIndex * sizeof(SIZE_T), &numberOfBytesWritten, NULL);
@@ -672,6 +678,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 		unsigned int currentArrayLength = 256;
 		SIZE_T* localAddresses = NULL;
 		Vector<WString> localValues;
+		Vector<Byte> stringLengths;
 		MemoryRegion& currentRegion = this->memRegions[i];
 		
 		currentRegion.FileDataIndexes.StartIndex = fileIndex;
@@ -690,6 +697,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 					{
 						localAddresses = new SIZE_T[currentArrayLength];
 						localValues.SetCount(currentArrayLength);
+						stringLengths.SetCount(currentArrayLength);
 					}
 					
 					if (arrayIndex >= currentArrayLength)
@@ -703,10 +711,12 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 						localAddresses = newAddressesArray;
 						
 						localValues.SetCount(currentArrayLength);
+						stringLengths.SetCount(currentArrayLength);
 					}
 					
 					localAddresses[arrayIndex] = currentRegion.BaseAddress + i;
-					localValues[arrayIndex++] = WString(strPtr, outputLength);
+					localValues[arrayIndex] = WString(strPtr, outputLength);
+					stringLengths[arrayIndex++] = outputLength;
 					
 					++fileIndex;
 				}
@@ -721,7 +731,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 			
 			if (CachedAddresses.GetCount() < MEMORYSCANNER_CACHE_LIMIT)
 			{
-				AddResultsToCache(arrayIndex, localAddresses);
+				AddResultsToCache(arrayIndex, localAddresses, stringLengths.Begin());
 			}
 				
 			WriteFile(regionData.AddressesFile, localAddresses, arrayIndex * sizeof(SIZE_T), &numberOfBytesWritten, NULL);
@@ -779,6 +789,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 		unsigned int currentArrayLength = 256;
 		SIZE_T* localAddresses = NULL;
 		Vector<String> localValues;
+		Vector<Byte> stringLengths;
 		MemoryRegion& currentRegion = this->memRegions[i];
 		
 		currentRegion.FileDataIndexes.StartIndex = fileIndex;
@@ -797,6 +808,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 					{
 						localAddresses = new SIZE_T[currentArrayLength];
 						localValues.SetCount(currentArrayLength);
+						stringLengths.SetCount(currentArrayLength);
 					}
 					if (arrayIndex >= currentArrayLength)
 					{
@@ -809,10 +821,12 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 						localAddresses = newAddressesArray;
 						
 						localValues.SetCount(currentArrayLength);
+						stringLengths.SetCount(currentArrayLength);
 					}
 					
 					localAddresses[arrayIndex] = currentRegion.BaseAddress + i;
-					localValues[arrayIndex++] = String(strPtr, outputLength);
+					localValues[arrayIndex] = String(strPtr, outputLength);
+					stringLengths[arrayIndex++] = outputLength;
 					
 					++fileIndex;
 				}
@@ -827,7 +841,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 			
 			if (CachedAddresses.GetCount() < MEMORYSCANNER_CACHE_LIMIT)
 			{
-				AddResultsToCache(arrayIndex, localAddresses);
+				AddResultsToCache(arrayIndex, localAddresses, stringLengths.Begin());
 			}
 				
 			WriteFile(regionData.AddressesFile, localAddresses, arrayIndex * sizeof(SIZE_T), &numberOfBytesWritten, NULL);
@@ -941,7 +955,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 			
 			if (CachedAddresses.GetCount() < MEMORYSCANNER_CACHE_LIMIT)
 			{
-				AddResultsToCache(arrayIndex, localAddresses);
+				AddResultsToCache(arrayIndex, localAddresses, NULL);
 			}
 
 			WriteFile(regionData.AddressesFile, localAddresses, arrayIndex * sizeof(SIZE_T), &numberOfBytesWritten, NULL);
@@ -1183,7 +1197,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 				
 				if (CachedAddresses.GetCount() < MEMORYSCANNER_CACHE_LIMIT)
 				{
-					AddResultsToCache(arrayIndex, localAddresses);
+					AddResultsToCache(arrayIndex, localAddresses, NULL);
 				}
 				
 				WriteFile(regionData.AddressesFile, localAddresses, arrayIndex * sizeof(SIZE_T), &numberOfBytesWritten, NULL);
@@ -1253,6 +1267,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 
 	const int inputLengthInChars = value.GetLength();
 	const int inputLength = value.GetLength() * sizeof(wchar);
+	const wchar* const inputData = value.Begin();
 	
 	const unsigned int forLoopLength = regionData.OriginalStartIndex + regionData.Length;
 	for (unsigned int i = regionData.OriginalStartIndex; i < forLoopLength; ++i)
@@ -1267,6 +1282,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 			unsigned int currentArrayLength = 256;
 			SIZE_T* localAddresses = NULL;
 			Vector<WString> localValues;
+			Vector<Byte> stringLengths;
 			
 			Byte* buffer = new Byte[currentRegion.MemorySize];
 			if (CrySearchRoutines.CryReadMemoryRoutine(this->mOpenedProcessHandle, (void*)currentRegion.BaseAddress, buffer, currentRegion.MemorySize, NULL))
@@ -1280,12 +1296,13 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 					const SIZE_T currentResultPtr = addressesFileBuffer[resultIndex];
 					const wchar* currentDataPtr = (wchar*)(buffer + (currentResultPtr - currentRegion.BaseAddress));
 					
-					if (memcmp(currentDataPtr, value, inputLength) == 0)
+					if (memcmp(currentDataPtr, inputData, inputLength) == 0)
 					{
 						if (!localAddresses)
 						{
 							localAddresses = new SIZE_T[currentArrayLength];
-							localValues.SetCount(currentArrayLength);			
+							localValues.SetCount(currentArrayLength);
+							stringLengths.SetCount(currentArrayLength);	
 						}
 						
 						if (arrayIndex >= currentArrayLength)
@@ -1299,10 +1316,12 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 							localAddresses = newAddressesArray;
 							
 							localValues.SetCount(currentArrayLength);
+							stringLengths.SetCount(currentArrayLength);	
 						}
 						
 						localAddresses[arrayIndex] = currentResultPtr;
-						localValues[arrayIndex++] = WString(currentDataPtr, inputLengthInChars);
+						localValues[arrayIndex] = WString(currentDataPtr, inputLengthInChars);
+						stringLengths[arrayIndex++] = inputLengthInChars;
 						
 						++fileIndex;
 					}
@@ -1319,7 +1338,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 				
 				if (CachedAddresses.GetCount() < MEMORYSCANNER_CACHE_LIMIT)
 				{
-					AddResultsToCache(arrayIndex, localAddresses);
+					AddResultsToCache(arrayIndex, localAddresses, stringLengths.Begin());
 				}
 				
 				WriteFile(regionData.AddressesFile, localAddresses, arrayIndex * sizeof(SIZE_T), &numberOfBytesWritten, NULL);
@@ -1391,6 +1410,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 			unsigned int currentArrayLength = 256;
 			SIZE_T* localAddresses = NULL;
 			Vector<String> localValues;
+			Vector<Byte> stringLengths;
 			
 			Byte* buffer = new Byte[currentRegion.MemorySize];
 			if (CrySearchRoutines.CryReadMemoryRoutine(this->mOpenedProcessHandle, (void*)currentRegion.BaseAddress, buffer, currentRegion.MemorySize, NULL))
@@ -1409,7 +1429,8 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 						if (!localAddresses)
 						{
 							localAddresses = new SIZE_T[currentArrayLength];
-							localValues.SetCount(currentArrayLength);						
+							localValues.SetCount(currentArrayLength);
+							stringLengths.SetCount(currentArrayLength);					
 						}
 						
 						if (arrayIndex >= currentArrayLength)
@@ -1423,10 +1444,12 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 							localAddresses = newAddressesArray;
 							
 							localValues.SetCount(currentArrayLength);
+							stringLengths.SetCount(currentArrayLength);
 						}
 						
 						localAddresses[arrayIndex] = currentResultPtr;
-						localValues[arrayIndex++] = String(currentDataPtr, inputLength);
+						localValues[arrayIndex] = String(currentDataPtr, inputLength);
+						stringLengths[arrayIndex++] = inputLength;
 						
 						++fileIndex;
 					}
@@ -1443,7 +1466,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 				
 				if (CachedAddresses.GetCount() < MEMORYSCANNER_CACHE_LIMIT)
 				{
-					AddResultsToCache(arrayIndex, localAddresses);
+					AddResultsToCache(arrayIndex, localAddresses, stringLengths.Begin());
 				}
 				
 				WriteFile(regionData.AddressesFile, localAddresses, arrayIndex * sizeof(SIZE_T), &numberOfBytesWritten, NULL);
@@ -1605,7 +1628,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 				
 				if (CachedAddresses.GetCount() < MEMORYSCANNER_CACHE_LIMIT)
 				{
-					AddResultsToCache(arrayIndex, localAddresses);
+					AddResultsToCache(arrayIndex, localAddresses, NULL);
 				}
 				
 				WriteFile(regionData.AddressesFile, localAddresses, arrayIndex * sizeof(SIZE_T), &numberOfBytesWritten, NULL);
