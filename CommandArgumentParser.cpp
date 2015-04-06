@@ -7,6 +7,7 @@ CommandArgumentParser::CommandArgumentParser(const Vector<String>& args)
 	this->showHelp = false;
 	this->parameterCount = args.GetCount();
 	this->procId = 0;
+	this->options = 0;
 	
 	// Parse the command line arguments to internal variables.
 	this->Parse(args);
@@ -44,6 +45,37 @@ void CommandArgumentParser::Parse(const Vector<String>& args)
 		{
 			this->filePath = args[++i];
 		}
+		else if ((args[i] == "-o" || args[i] == "--options") && i + 1 < argc)
+		{
+			for (int o = i + 1; o < argc && !args[o].StartsWith("-"); ++o)
+			{
+				if (args[o] == "all")
+				{
+					this->options = CRYSEARCH_COMMAND_OPTION_PE | CRYSEARCH_COMMAND_OPTION_IMPORTS | CRYSEARCH_COMMAND_OPTION_THREADS | CRYSEARCH_COMMAND_OPTION_MODULES;
+					break;
+				}
+				else if (args[o] == "pe")
+				{
+					this->options |= CRYSEARCH_COMMAND_OPTION_PE;
+				}
+				else if (args[o] == "imports")
+				{
+					this->options |= CRYSEARCH_COMMAND_OPTION_IMPORTS;
+				}
+				else if (args[o] == "threads")
+				{
+					this->options |= CRYSEARCH_COMMAND_OPTION_THREADS;
+				}
+				else if (args[o] == "modules")
+				{
+					this->options |= CRYSEARCH_COMMAND_OPTION_MODULES;
+				}
+			}
+		}
+		else if ((args[i] == "-w" || args[i] == "--write") && i + 1 < argc)
+		{
+			this->outputFile = args[++i];
+		}
 	}
 }
 
@@ -69,8 +101,9 @@ String CommandArgumentParser::GetHelpOutput() const
 	
 	String appname((char*)wndTitle, 9);
 	return Format("%s v%i.%i by %s\r\n\r\nUsage:\t%s file_name\r\n\t%s [options]\r\n\r\nOptions:\t?, -h, --help\tShows this help menu\r\n"\
-					"\t-p, --pid <pid>\tSelects process ID to operate on\r\n\t-f, --filename <fn>\tCreates process from file\r\n"
-					, (char*)wndTitle, major, minor, (char*)author, appname, appname);
+					"\t-p, --pid <pid>\tSelects process ID to operate on\r\n\t-f, --filename <fn>\tCreates process from file\r\n"\
+					"\t-o, --options <opt>\tSpecifies options to execute\r\n\tPossible options: all pe imports threads modules\r\n"\
+					"\t-w, --write <file>\tSpecifies file to write output to", (char*)wndTitle, major, minor, (char*)author, appname, appname);
 }
 
 // Returns whether CrySearch was opened with a shell execution for an associated file.
@@ -95,4 +128,16 @@ const DWORD CommandArgumentParser::GetProcessId() const
 const String& CommandArgumentParser::GetFilePath() const
 {
 	return this->filePath;
+}
+
+// Gets the options that were specified in the command line option (-o, --options).
+const DWORD CommandArgumentParser::GetOptions() const
+{
+	return this->options;
+}
+
+// Gets the filename of the output file, which to write any output to.
+const String& CommandArgumentParser::GetOutputFile() const
+{
+	return this->outputFile;
 }

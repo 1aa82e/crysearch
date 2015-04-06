@@ -171,7 +171,7 @@ void PortableExecutable::GetImageSectionsList(const IMAGE_SECTION_HEADER* pSecHe
 		// The name of a section can only be 8 characters long. A longer name has a different notation.
 		// This is not taken into account because the chance of it appearing in an executable is very small.
 		list.Add(Win32PESectionInformation((char*)pSecHeader->Name, pSecHeader->VirtualAddress, pSecHeader->Misc.VirtualSize == 0 ? pSecHeader->SizeOfRawData : pSecHeader->Misc.VirtualSize
-			, pSecHeader->SizeOfRawData, (pSecHeader->Characteristics & IMAGE_SCN_CNT_INITIALIZED_DATA) || (pSecHeader->Characteristics & IMAGE_SCN_CNT_UNINITIALIZED_DATA)));
+			, pSecHeader->SizeOfRawData));
 	}
 }
 

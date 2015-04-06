@@ -14,16 +14,14 @@ struct Win32PESectionInformation : Moveable<Win32PESectionInformation>
 	SIZE_T BaseAddress;
 	SIZE_T SectionSize;
 	SIZE_T RawSectionSize;
-	bool CanContainStatic;
 	
 	// Parameter constructor because of the single initialization point, preventing feature envy detections.
-	Win32PESectionInformation(const char* pName, const SIZE_T pBaseAddr, const SIZE_T pSectionSize, const SIZE_T pRawSize, const bool pStatic)
+	Win32PESectionInformation(const char* pName, const SIZE_T pBaseAddr, const SIZE_T pSectionSize, const SIZE_T pRawSize)
 	{
 		this->SectionName = pName;
 		this->BaseAddress = pBaseAddr;
 		this->SectionSize = pSectionSize;
 		this->RawSectionSize = pRawSize;
-		this->CanContainStatic = pStatic;
 	};
 };
 
