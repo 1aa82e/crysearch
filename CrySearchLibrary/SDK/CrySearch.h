@@ -28,19 +28,6 @@ void __stdcall CrySearchGetMajorMinorVersion(WORD* const pMajor, WORD* const pMi
 
 // -------------------------------------------------------------------------------------------------
 
-// Describes an exception that occurs inside CrySearch. May also be used to idenfity exceptions in other processes.
-// Currently, CrySearch uses this structure internally to translate exception codes to human readable string representations.
-typedef struct _ExceptionLookupTableEntry
-{
-	// Represents the exception code of an exception. This may be one of the codes described on the MSDN page for the
-	// EXCEPTION_RECORD structure.
-	DWORD ExceptionCode;
-
-	// A string representation of the exception. The CrySearch library contains a lookup table with statically allocated 
-	// string representations that will be matched to the specified exception code.
-	char* ExceptionString;
-} ExceptionLookupTableEntry;
-
 // Parses an exception code into a string representation for the user interface. Returns the string representation of the exception
 // or 'Unknown Exception' if the exception code could not be parsed.
 const char* ParseExceptionCode(const LONG excCode);

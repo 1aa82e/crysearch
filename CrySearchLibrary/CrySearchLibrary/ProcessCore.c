@@ -6,7 +6,7 @@
 #pragma comment(lib, "Psapi.lib")
 
 // This function is used by CrySearch to identify the architecture of the loaded process, very important and widely used, the whole application depends on it.
-// Returns true if the target process is running in wow64. When this function is called from an x86 operating system, the return value is undefined.
+// Returns true if the target process is running in Wow64. When this function is called from an x86 operating system, the return value is undefined.
 const BOOL __stdcall IsI386Process(HANDLE procHandle)
 {
 	SYSTEM_INFO sysInfo;
@@ -28,9 +28,7 @@ const BOOL __stdcall IsI386Process(HANDLE procHandle)
 	return is32;
 }
 
-// Creates a thread inside the loaded process using the default user-mode WINAPI function(s).
-// 0 = succeeded
-// -1 = failed, failed to create the remote thread
+// Creates a thread inside the loaded process using the default user-mode WINAPI function(s). Returns 0 if the function succeeded and -1 if it failed.
 const int CryCreateExternalThread(HANDLE procHandle, const SIZE_T StartAddress, void* parameter, BOOL suspended, int* pThreadId)
 {
 	int result = 0;
@@ -46,7 +44,7 @@ const int CryCreateExternalThread(HANDLE procHandle, const SIZE_T StartAddress, 
 	return result;
 }
 
-// Gets thread priority using the default user-mode WINAPI function(s).
+// Gets thread priority using the default user-mode WINAPI function GetThreadPriority. The return value is a pointer to statically allocated string.
 const char* CryGetThreadPriority(HANDLE hThread)
 {
 	switch (GetThreadPriority(hThread))
@@ -70,8 +68,7 @@ const char* CryGetThreadPriority(HANDLE hThread)
 	}
 }
 
-// Sets priority on a thread using the default user-mode WINAPI function(s).
-// Returns TRUE if the function succeeded and FALSE otherwise.
+// Sets priority on a thread using the default user-mode WINAPI function SetThreadPriority. Returns TRUE if the function succeeded and FALSE otherwise.
 const BOOL CrySetThreadPriority(const int threadId, const int prior)
 {
 	HANDLE hThread = OpenThread(THREAD_SET_INFORMATION, FALSE, threadId);
@@ -85,7 +82,7 @@ const BOOL CrySetThreadPriority(const int threadId, const int prior)
 }
 
 // Attempts to suspend a thread. If CrySearch is x64 and the opened process is x86, Wow64SuspendThread is used.
-// Returns true if the thread was succesfully suspended and the thread handle succesfully closed. Returns false otherwise.
+// Returns TRUE if the thread was succesfully suspended and the thread handle succesfully closed. Returns FALSE otherwise.
 const BOOL CrySuspendThread(HANDLE hProcess, const int ThreadID)
 {
 	HANDLE hThread = OpenThread(THREAD_SUSPEND_RESUME, FALSE, ThreadID);
@@ -109,9 +106,7 @@ const BOOL CrySuspendThread(HANDLE hProcess, const int ThreadID)
 #endif
 }
 
-// Resume a thread using the default user-mode WINAPI function(s).
-// -1 = failed
-// 0 = succeeded
+// Resume a thread using the default user-mode WINAPI function ResumeThread. Returns 0 if the function succeeded or -1 if it failed.
 const int CryResumeThread(const int ThreadID)
 {
 	HANDLE hThread = OpenThread(THREAD_SUSPEND_RESUME, FALSE, ThreadID);
@@ -124,9 +119,7 @@ const int CryResumeThread(const int ThreadID)
 	return ((ResumeThread(hThread) != (DWORD)-1) & CloseHandle(hThread)) ? 0 : -1;
 }
 
-// Terminates a thread using the default user-mode WINAPI function(s).
-// 0 = succeeded
-// -1 = failed
+// Terminates a thread using the default user-mode WINAPI function TerminateThread. Returns 0 if the function succeeded and -1 if it failed.
 const int CryTerminateThread(const int ThreadID)
 {
 	HANDLE hThread = OpenThread(THREAD_TERMINATE, FALSE, ThreadID);
@@ -139,9 +132,8 @@ const int CryTerminateThread(const int ThreadID)
 	return (TerminateThread(hThread, 0) & CloseHandle(hThread)) ? 0 : -1;
 }
 
-// Allocates a piece of memory inside the target process. Enter 0 or 1 as protection value. Any other value can result in undefined behavior.
-// 0 = succeeded
-// -1 = failed, allocation of virtual memory block failed
+// Allocates a piece of memory inside the target process. Enter 0 or 1 as protection value. 0 is PAGE_EXECUTE_READ and 1 is PAGE_EXECUTE_READWRITE.
+// Any other value is not supported and the compiler assumes that these values are not supplied. Returns 0 if the function succeeded and -1 if it failed.
 const int CryAllocateProcessMemory(HANDLE procHandle, const unsigned int MemorySize, const int protection, SIZE_T* pVirtualAddress)
 {
 	DWORD protect;
@@ -163,7 +155,7 @@ const int CryAllocateProcessMemory(HANDLE procHandle, const unsigned int MemoryS
 }
 
 // Attempts to close a remote handle. It duplicates the handle while closing the source and then closes the duplicate.
-// Returns TRUE if the operation succeeded, FALSE otherwise.
+// Returns TRUE if the operation succeeded and FALSE otherwise.
 const BOOL CloseRemoteHandle(HANDLE procHandle, HANDLE handle)
 {
 	// Duplicate the handle.
@@ -178,7 +170,7 @@ const BOOL CloseRemoteHandle(HANDLE procHandle, HANDLE handle)
 	return TRUE;
 }
 
-// Checks whether a process is still active. This check actually checks whether the process still responds to user input.
+// Checks whether a process is still active. It actually checks whether the process still responds to user input.
 // Returns TRUE if the process is still active and FALSE otherwise.
 const BOOL IsProcessActive(HANDLE procHandle)
 {

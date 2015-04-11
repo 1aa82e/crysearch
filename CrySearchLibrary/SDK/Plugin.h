@@ -34,10 +34,6 @@
 // Flag definitions for plugins, sorted by plugin type. Plugin flags may or may not be used by CrySearch. It is allowed
 // to define custom flags for your own plugin. Below are the plugin definitions, sorted by plugin type.
 
-// The following flags are generic plugin flags. PLUGIN_WANTS_TAB_OUTPUT indicates that the plugin would like CrySearch
-// to provide the plugin an output window in the bottom pane of CrySearch. The plugin may write data to it.
-#define PLUGIN_WANTS_TAB_OUTPUT		0x1
-
 // The following flags are specific to dumper plugins. PLUGIN_CLASS_DEFAULT indicates that a dumper plugin is offering
 // to be the default dumper. When dumping all modules in a process, CrySearch will look for the first plugin that offers
 // itself as default dumper. If no plugins do so, it will take the first available dumper.

@@ -1,7 +1,6 @@
 #include "../SDK/ProcessCore.h"
 
-// GetProcAddress equivalent for external Wow64 processes. Used widely for PE features.
-// Returns the 32-bit address of a function in a 32-bit DLL in a process.
+// GetProcAddress equivalent for external Wow64 processes. Used widely for PE features. Returns the 32-bit address of a function in a 32-bit DLL in a process.
 // If the address is not found, the base address of the module is returned.
 const DWORD Wow64GetProcAddress(HANDLE hProcess, const DWORD moduleBase, const char* const funcName)
 {

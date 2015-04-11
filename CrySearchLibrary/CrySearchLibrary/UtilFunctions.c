@@ -1,13 +1,13 @@
 #include "../SDK/CrySearch.h"
 
-// Sets bit flags on a specified numeric value.
+// Sets 'bits' flags on the specified numeric value 'dw'.
 void CrySetBits(DWORD_PTR* const dw, const int lowBit, const int bits, const int newValue)
 {
 	const DWORD_PTR mask = (1 << bits) - 1;
 	*dw = (*dw & ~(mask << lowBit)) | (newValue << lowBit);
 }
 
-// Checks whether an integer value is a multiple of another value.
+// Checks whether the integer value 'intVal' is a multiple the 'mulVal' value.
 const BOOL GetIsMultipleOf(const LONG_PTR intVal, const int mulVal)
 {
 	return (intVal % mulVal) == 0;
@@ -59,8 +59,8 @@ const char* CodeGeneratorParseFieldType(const CCryDataType valueType)
 	}
 }
 
-// Converts a string representation for a data type size.
-// Returns the size in bytes of the type of data.
+// Converts a string representation for a data type size. Returns the size in bytes of the type of data. Entering a value that is not
+// a valid data type as defined in the CrySearch headers may cause undefined behavior because the compiler assumes these values are not entered.
 const int GetDataSizeFromValueType(CCryDataType type)
 {
 	if (type == CRYDATATYPE_BYTE)
@@ -133,7 +133,8 @@ void AlignPointer(DWORD_PTR* Address, const DWORD Boundary)
 	}
 }
 
-// Retrieves the string representation of a CrySearch data type.
+// Retrieves the string representation of a CrySearch data type. The return value is a pointer to a statically allocated string.
+// It returns NULL if the data type is not one of the definitions from the CrySearch headers.
 const char* GetCrySearchDataTypeRepresentation(const CCryDataType type)
 {
 	switch (type)
@@ -162,7 +163,7 @@ const char* GetCrySearchDataTypeRepresentation(const CCryDataType type)
 	return NULL;
 }
 
-// Retrieves information about the operating system for a crash report.
+// Retrieves information about the operating system for a crash report. The recommended length for the 'maxLength' parameter is 256.
 void GetOSVersionString(char* const pOutString, const DWORD maxLength)
 {
 	// Retrieve OS information.
@@ -273,6 +274,7 @@ void GetOSVersionString(char* const pOutString, const DWORD maxLength)
 
 // Tries to guess the data type of a value. The 'value' parameter must be a valid pointer to the data to guess.
 // Returns the guessed type or CRYDATATYPE_4BYTES if the type is 4 bytes or when the type could not be guessed.
+// This function is not yet implemented so it always returns 4-bytes.
 const CCryDataType GuessTypeOfValue(const void* value)
 {
 	// The type could not be guessed. Return the default data type.

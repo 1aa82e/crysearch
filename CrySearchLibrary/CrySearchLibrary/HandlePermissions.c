@@ -81,8 +81,8 @@ PERMISSIONLINKAGE RegistryKeyPermissionsLookup[] =
 };
 
 // Parses an access mask value and returns the strings of the access constants it incoorporates.
-// The caller must specify a buffer and is responsible for its allocation and deletion.
-// Size constants are defined above.
+// The caller must specify a buffer and is responsible for its allocation and deletion. The recommended
+// size for the 'outBuffer' parameter depends on the type of handle. The size constants per type are defined above.
 void GetHandleObjectAccess(const DWORD type, const DWORD mask, char** const outBuffer, DWORD* const outSize)
 {
 	PPERMISSIONLINKAGE ltPointer = NULL;
