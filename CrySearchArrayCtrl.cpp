@@ -1,5 +1,34 @@
 #include "CrySearchArrayCtrl.h"
 
+// Handles the DEL key for each array control in the application.
+bool CrySearchArrayCtrl::Key(dword key, int count)
+{
+	// Check for DEL key presses.
+	if (key == K_DELETE)
+	{
+		// Execute the removal routine. Since we make such intensive use of virtual rows, we 
+		// can't place responsibility at the control itself.
+		Vector<int> selectedRows;
+		for (int i = 0; i < this->GetCount(); ++i)
+		{
+			if (this->IsSelected(i))
+			{
+				selectedRows << i;
+			}
+		}
+		
+		// If the removal routine was implemented, execute it. Otherwise, the DEL key does nothing.
+		if (this->RemovalRoutine)
+		{
+			this->RemovalRoutine(selectedRows);
+		}
+		return true;
+	}
+	
+	// Execute base key function of the ArrayCtrl class.
+	return ArrayCtrl::Key(key, count);
+}
+
 // Returns a range of visible items in an array control.
 Tuple2<int, int> CrySearchArrayCtrl::GetVisibleRange()
 {

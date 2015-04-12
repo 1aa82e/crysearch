@@ -49,6 +49,7 @@ private:
 	void ChangeRecordSubMenu(Bar& pBar);
 	void SetDataBreakpointMenu(Bar& pBar);
 	
+	void AddressTableRemovalRoutine(const Vector<int>& items);
 	void SetMainSplitterPosition();
 	void HideLowerPaneButtonClicked();
 	void ViewSystemHandlesButtonClicked();

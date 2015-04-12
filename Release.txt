@@ -11,6 +11,7 @@ v1.17
 	- Fixed bug where entering a bigger string in an address table entry would not alter the same search result simultaniously;
 	- Added option to match strings until a null terminator character is found. 256 characters is the maximum string length;
 	- Added command line options. This allows to automate the use of CrySearch as an analysis application (See command help);
+	- Added an option to use the DEL key on the keyboard to delete multiple items at once from the address table;
 	- 
 v1.16
 	- Improved overall performance of the application:

@@ -7,7 +7,6 @@ Package:
 - Update wiki with changes for the release;
 ------------------------------------------------------------------
 
-- Delete key in address list;
 - Improve SDK documentation, see learn_more's notes;
 - Post-dump (plugin operations) event in plugins!!!
 - Provide the output window / menu bar entry (PLUGIN_WANTS_OUTPUT_TAB);

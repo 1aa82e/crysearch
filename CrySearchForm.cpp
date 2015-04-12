@@ -420,6 +420,7 @@ CrySearchForm::CrySearchForm(const char* fn)
 	this->mUserAddressList.CryAddRowNumColumn("Type").SetConvert(Single<IndexBasedValueConvert<GetAddressTableValueType>>());
 	this->mUserAddressList.WhenBar = THISBACK(UserDefinedEntryWhenBar);
 	this->mUserAddressList.WhenLeftDouble = THISBACK(UserDefinedEntryWhenDoubleClicked);
+	this->mUserAddressList.RemovalRoutine = THISBACK(AddressTableRemovalRoutine);
 
 	this->mSearchResultsPanel
 		<< this->mSearchResultCount.SetLabel("Search Results: 0").HSizePosZ(5, 5).TopPos(5, 20)
@@ -611,6 +612,25 @@ void CrySearchForm::HelpMenu(Bar& pBar)
 	pBar.Add("About", CrySearchIml::AboutButton(), THISBACK(AboutCrySearch));
 }
 
+// Handles the removal of items from the address table.
+void CrySearchForm::AddressTableRemovalRoutine(const Vector<int>& items)
+{
+	// Remove breakpoint from data if necessary.
+	const int count = items.GetCount();
+	for (int i = 0; i < count; ++i)
+	{
+		if (mDebugger && mDebugger->IsDebuggerAttached())
+		{
+			mDebugger->RemoveBreakpoint(loadedTable[items[i]]->Address);
+		}
+	}
+	
+	// Remove the items from the address table and refresh the control.
+	loadedTable.Remove(items);
+	this->mUserAddressList.Clear();
+	this->mUserAddressList.SetVirtualCount(loadedTable.GetCount());
+}
+
 void CrySearchForm::HideLowerPaneButtonClicked()
 {
 	Rect r = this->GetRect();
@@ -684,7 +704,7 @@ void CrySearchForm::UserDefinedEntryWhenBar(Bar& pBar)
 		
 		pBar.Add("Change Record", CrySearchIml::ChangeRecordIcon(), THISBACK(ChangeRecordSubMenu));
 		pBar.Separator();
-		pBar.Add("Delete", CrySearchIml::DeleteButton(), THISBACK(DeleteUserDefinedAddress));
+		pBar.Add("Delete\tDEL", CrySearchIml::DeleteButton(), THISBACK(DeleteUserDefinedAddress));
 	}
 }
 
