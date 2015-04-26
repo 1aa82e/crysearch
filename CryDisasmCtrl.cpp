@@ -344,7 +344,9 @@ void CryDisasmCtrl::AsyncDisasmCompletedThreadSafe(const SIZE_T address)
 	}
 	
 	// Scroll down to the selected address.
-	this->disasmDisplay.ScrollInto(GetDisasmLineIndexFromAddress(address));
+	const int newRow = GetDisasmLineIndexFromAddress(address);
+	this->disasmDisplay.ScrollInto(newRow + 5 > DisasmVisibleLines.GetCount() ? newRow : newRow + 5);
+	this->disasmDisplay.Select(newRow);
 }
 
 // Initializes the control state to entrypoint disassembly view.

@@ -2,6 +2,8 @@ CrySearch Memory Scanner
 
 evolution536, www.unknowncheats.me
 
+v1.18
+	- 
 v1.17
 	- Added multiple selection possibility for search results. Select multiple and right-click to add them to the address table;
 	- Added possibility to select multiple address table entries and remove them all at once;
@@ -12,7 +14,8 @@ v1.17
 	- Added option to match strings until a null terminator character is found. 256 characters is the maximum string length;
 	- Added command line options. This allows to automate the use of CrySearch as an analysis application (See command help);
 	- Added an option to use the DEL key on the keyboard to delete multiple items at once from the address table;
-	- 
+	- Following a debugger breakpoint hit instruction now scrolls down further, and selects the address in case;
+	- Changed the disassembler to load any readable, writable and executable memory page in the process instead of only readable and executable.
 v1.16
 	- Improved overall performance of the application:
 		- Improved user interface performance in several places due to replacement of slow formatting functions;

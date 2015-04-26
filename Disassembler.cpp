@@ -137,7 +137,7 @@ void RefreshExecutablePages(Vector<MemoryRegion>& pages)
 		if ((block.State == MEM_COMMIT) && (!(block.Protect & PAGE_GUARD)) && (!(block.Protect & PAGE_NOACCESS)))
 	    {
 	        // Only save pages that contain executable code.
-	     	if (((block.Protect & MEM_EXECUTABLE) != 0))
+	     	if (((block.Protect & MEM_EXECUTABLE) != 0) || ((block.Protect & MEM_WRITABLE) != 0))
 	     	{
 	     		// Memory region is valid for scanning, add it to the region list.
 		        MemoryRegion memReg;
