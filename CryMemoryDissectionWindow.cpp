@@ -1,5 +1,6 @@
 #include "CryMemoryDissectionWindow.h"
 #include "CryMemoryDissectionChangePointerWindow.h"
+#include "CryMemoryDissectionChangeValueWindow.h"
 #include "CryMemoryDissectionNewWindow.h"
 #include "CryMemoryDissectionSettingsWindow.h"
 #include "ImlProvider.h"
@@ -81,7 +82,11 @@ String GetDissectionValue(const int index)
 	const SIZE_T addr = dissection->AssociatedDissector.GetBaseAddress() + entry->RowOffset;
 	
 	// Read data from the address of the row.
-	const int readSize = entry->DataLength ? entry->DataLength : sizeof(__int64);
+	int readSize = entry->DataLength ? entry->DataLength : sizeof(__int64);
+	if (entry->RowType == CRYDATATYPE_WSTRING)
+	{
+		readSize *= 2;
+	}
 	Byte* buffer = new Byte[readSize];
 	SIZE_T bytesRead;
 	String representation = "???";
@@ -204,9 +209,28 @@ void CryMemoryDissectionWindow::DissectionRightClick(Bar& pBar)
 	const int cursor = this->mDissection.GetCursor();
 	if (cursor >= 0 && loadedTable.GetDissection(MemoryDissectionMasterIndex))
 	{
+		pBar.Add("Change Value", CrySearchIml::ChangeRecordIcon(), THISBACK(ChangeRowValue));
 		pBar.Add("Change Type", THISBACK(ChangeRowOffsetMenu));
 	}
 	// generate struct definition for multiple rows?
+}
+
+void CryMemoryDissectionWindow::ChangeRowValue()
+{
+	MemoryDissectionEntry* entry = loadedTable.GetDissection(MemoryDissectionMasterIndex);
+	const SIZE_T addr = entry->AssociatedDissector.GetBaseAddress();
+	const int cursor = this->mDissection.GetCursor();
+	DissectionRowEntry* row = entry->AssociatedDissector[cursor];
+	const int oldLength = row->DataLength;
+	CryMemoryDissectionChangeValueWindow* cmdcvw = new CryMemoryDissectionChangeValueWindow(addr + row->RowOffset, row->RowType, &row->DataLength);
+	cmdcvw->Execute();
+	
+	// If the length of the data was changed, alter the successing row offsets.
+	if (oldLength != row->DataLength)
+	{
+		this->AlterSuccessingRows(cursor, row->DataLength - oldLength);
+	}
+	delete cmdcvw;
 }
 
 void CryMemoryDissectionWindow::ChangeRowOffsetMenu(Bar& pBar)
@@ -348,7 +372,7 @@ void CryMemoryDissectionWindow::RowEntryChangeDataSize(const int value)
 void CryMemoryDissectionWindow::AlterSuccessingRows(const int row, const int diff)
 {
 	const int count = loadedTable.GetDissection(MemoryDissectionMasterIndex)->AssociatedDissector.GetDissectionRowCount();
-	for (int i = max(row, 1); i < count; ++i)
+	for (int i = row + 1; i < count; ++i)
 	{
 		// Increment every dissection entry by the specified difference.
 		loadedTable.GetDissection(MemoryDissectionMasterIndex)->AssociatedDissector[i]->RowOffset += diff;

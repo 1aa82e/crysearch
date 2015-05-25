@@ -2,9 +2,10 @@ CrySearch application TODO list by evolution536
 
 ------------------------------------------------------------------
 Package:
+- Update resource.h with new version number;
 - SDK headers;
 - CrySearchXX.lib file;
-- Update wiki with changes for the release;
+- Update wiki with changes for the release.
 ------------------------------------------------------------------
 
 - Improve SDK documentation, see learn_more's notes;

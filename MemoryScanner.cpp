@@ -326,7 +326,20 @@ bool __fastcall CompareSmaller(const T& input, const T& expected)
 template <>
 bool __fastcall CompareEqual(const ArrayOfBytes& input, const ArrayOfBytes& expected)
 {
-	// Dummy function, nessecary for compilation but will never be called.
+	/*const Byte* first = input.Data;
+	const Byte* end = input.Data + input.Size;
+	const Byte* expectedFirst = expected.Data;
+	const Byte* expectedEnd = expected.Data + expected.Size;
+	
+	while (first != end)
+	{
+		if (*first++ != *expectedFirst++ || *end-- != *expectedEnd--)
+		{
+			return false;
+		}
+	}
+	
+	return true;*/
 	return false;
 }
 
@@ -448,7 +461,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 		
 		currentRegion.FileDataIndexes.StartIndex = fileIndex;
 		
-		Byte *buffer = new Byte[currentRegion.MemorySize];
+		Byte* buffer = new Byte[currentRegion.MemorySize];
 		if (CrySearchRoutines.CryReadMemoryRoutine(this->mOpenedProcessHandle, (void*)currentRegion.BaseAddress, buffer, currentRegion.MemorySize, NULL))
 		{
 			for (SIZE_T i = 0; i < currentRegion.MemorySize; i += fastScanAlignSize)
@@ -533,6 +546,28 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 template <>
 void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const ArrayOfBytes& value)
 {
+		
+	
+	
+	
+	
+	
+	
+	LARGE_INTEGER frequency;
+	LARGE_INTEGER t1;
+	LARGE_INTEGER t2;
+	
+	// Get the amount of ticks per second.
+	QueryPerformanceFrequency(&frequency);
+
+	// Start the timer.
+	QueryPerformanceCounter(&t1);
+	
+	
+	
+	
+	
+	
 	regionData.AddressesFile = CreateFile(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.temp", regionData.WorkerIdentifier))
 		, GENERIC_WRITE, 0, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
 	regionData.ValuesFile = CreateFile(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Values%i.temp", regionData.WorkerIdentifier))
@@ -555,7 +590,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 		
 		currentRegion.FileDataIndexes.StartIndex = fileIndex;
 		
-		Byte *buffer = new Byte[currentRegion.MemorySize];
+		Byte* buffer = new Byte[currentRegion.MemorySize];
 		if (CrySearchRoutines.CryReadMemoryRoutine(this->mOpenedProcessHandle, (void*)currentRegion.BaseAddress, buffer, currentRegion.MemorySize, NULL))
 		{
 			for (SIZE_T i = 0; i < currentRegion.MemorySize; ++i)
@@ -653,6 +688,29 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 		this->ScanRunning = false;
 		this->ScanCompleted();
 	}
+		
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	QueryPerformanceCounter(&t2);
+	
+	OutputDebugString(Format("Worker: %i: %f ms\r\n", regionData.WorkerIdentifier, (t2.QuadPart - t1.QuadPart) * 1000.0 / frequency.QuadPart));
+	
+	
+	
+	
+	
+	
+	
 }
 
 template <>
@@ -683,7 +741,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 		
 		currentRegion.FileDataIndexes.StartIndex = fileIndex;
 		
-		Byte *buffer = new Byte[currentRegion.MemorySize];
+		Byte* buffer = new Byte[currentRegion.MemorySize];
 		if (CrySearchRoutines.CryReadMemoryRoutine(this->mOpenedProcessHandle, (void*)currentRegion.BaseAddress, buffer, currentRegion.MemorySize, NULL))
 		{			
 			for (SIZE_T i = 0; i < currentRegion.MemorySize; ++i)
@@ -794,7 +852,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 		
 		currentRegion.FileDataIndexes.StartIndex = fileIndex;
 
-		Byte *buffer = new Byte[currentRegion.MemorySize];
+		Byte* buffer = new Byte[currentRegion.MemorySize];
 		if (CrySearchRoutines.CryReadMemoryRoutine(this->mOpenedProcessHandle, (void*)currentRegion.BaseAddress, buffer, currentRegion.MemorySize, NULL))
 		{
 			for (SIZE_T i = 0; i < currentRegion.MemorySize; i++)
@@ -882,10 +940,10 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 template <class T>
 void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const T& value)
 {
-	regionData.AddressesFile = CreateFile(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.temp", regionData.WorkerIdentifier))
-		, GENERIC_WRITE, 0, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
-	regionData.ValuesFile = CreateFile(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Values%i.temp", regionData.WorkerIdentifier))
-		, GENERIC_WRITE, 0, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
+	const String addrFile = AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.temp", regionData.WorkerIdentifier));
+	const String valuesFile = AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Values%i.temp", regionData.WorkerIdentifier));
+	regionData.AddressesFile = CreateFile(addrFile, GENERIC_WRITE, 0, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
+	regionData.ValuesFile = CreateFile(valuesFile, GENERIC_WRITE, 0, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
 	
 	int fastScanAlignSize = GlobalScanParameter->CurrentScanFastScan ? sizeof(T) : 1;
 	if (fastScanAlignSize == sizeof(__int64))
@@ -908,7 +966,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 		SIZE_T* localAddresses = NULL;
 		T* localValues = NULL;
 		
-		Byte *buffer = new Byte[currentRegion.MemorySize];
+		Byte* buffer = new Byte[currentRegion.MemorySize];
 		if (CrySearchRoutines.CryReadMemoryRoutine(this->mOpenedProcessHandle, (void*)currentRegion.BaseAddress, buffer, currentRegion.MemorySize, NULL))
 		{
 			for (SIZE_T i = 0; i < currentRegion.MemorySize; i += fastScanAlignSize)
@@ -962,7 +1020,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 			delete[] localAddresses;
 			
 			WriteFile(regionData.ValuesFile, localValues, arrayIndex * sizeof(T), &numberOfBytesWritten, NULL);
-			delete[] localValues;	
+			delete[] localValues;
 		}
 		else
 		{
@@ -1082,29 +1140,29 @@ void MemoryScanner::FirstScan()
 	
 	// Assign compare function accordingly
 	this->mCompareValues = new ValueComparator<T>(GlobalScanParameter->GlobalScanType);
-	
+
 	// Set up constant values for calculating the sublists.
 	const int remainder = regionCount % threadCount;
 	int workerListLength = regionCount / threadCount;
 
-	for (int i = 0; i < threadCount; i++)
+	for (int i = 0; i < threadCount;)
 	{
 		// Append default calculated count of regions to the current worker vector.
 		const int currentLength = (i * workerListLength);
-		
+
 		// Calculate whether the calculated division remainder is equal to the current leftovers,
 		// meaning that this is the last thread and the remainder should be appended.
 		if (((currentLength + workerListLength) + remainder) == regionCount)
 		{
 			workerListLength += remainder;
 		}
-		
+
 		WorkerRegionParameterData regionData;
 		regionData.OriginalStartIndex = currentLength;
 		regionData.Length = workerListLength;
-		regionData.WorkerIdentifier = i + 1;
-		
-		threadPool & THISBACK2(FirstScanWorker<T>, this->mWorkerFileOrder.Add(regionData), ((T)(reinterpret_cast<ScanParameters<T>*>(GlobalScanParameter))->ScanValue));	
+		regionData.WorkerIdentifier = ++i;
+
+		threadPool & THISBACK2(FirstScanWorker<T>, this->mWorkerFileOrder.Add(regionData), ((T)(reinterpret_cast<ScanParameters<T>*>(GlobalScanParameter))->ScanValue));
 	}
 }
 
@@ -1512,23 +1570,23 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 template <class T>
 void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const T& value)
 {
-	regionData.AddressesFile = CreateFile(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.temp", regionData.WorkerIdentifier))
-		, GENERIC_WRITE, 0, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
+	const String addrOutFile = AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.temp", regionData.WorkerIdentifier));
+	const String valuesOutFile = AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Values%i.temp", regionData.WorkerIdentifier));
+	const String addrFileOld = AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.tempSCANNING", regionData.WorkerIdentifier));
+	const String valuesFileOld = AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Values%i.tempSCANNING", regionData.WorkerIdentifier));
+	
+	regionData.AddressesFile = CreateFile(addrOutFile, GENERIC_WRITE, 0, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
+	regionData.ValuesFile = CreateFile(valuesOutFile, GENERIC_WRITE, 0, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
 
-	regionData.ValuesFile = CreateFile(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Values%i.temp", regionData.WorkerIdentifier))
-		, GENERIC_WRITE, 0, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
-
-	HANDLE hFile = CreateFile(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.tempSCANNING", regionData.WorkerIdentifier))
-		, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
+	HANDLE hFile = CreateFile(addrFileOld, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
 
 	HANDLE hOldValues = NULL;
-	
+
 	if (GlobalScanParameter->GlobalScanType == SCANTYPE_CHANGED || GlobalScanParameter->GlobalScanType == SCANTYPE_UNCHANGED)
 	{
-		hOldValues = CreateFile(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Values%i.tempSCANNING", regionData.WorkerIdentifier))
-			, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
+		hOldValues = CreateFile(valuesFileOld, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
 	}
-	
+
 	unsigned int fileIndex = 0;
 	DWORD numberOfBytesWritten;
 	
@@ -1614,7 +1672,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 				
 				delete[] addressesFileBuffer;
 				
-				if ((int)GlobalScanParameter->GlobalScanType >= (int)SCANTYPE_CHANGED)
+				if (valuesFileBuffer)
 				{
 					delete[] valuesFileBuffer;
 				}
@@ -1652,18 +1710,11 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 		this->UpdateScanningProgress(++RegionFinishCount);
 	}
 	
-	CloseHandle(hFile);
-	
-	if ((int)GlobalScanParameter->GlobalScanType >= (int)SCANTYPE_CHANGED)
-	{
-		CloseHandle(hOldValues);
-	}
-	
 	CloseHandle(regionData.AddressesFile);
 	CloseHandle(regionData.ValuesFile);
 	
-	FileDelete(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.tempSCANNING", regionData.WorkerIdentifier)));
-	FileDelete(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Values%i.tempSCANNING", regionData.WorkerIdentifier)));
+	FileDelete(addrFileOld);
+	FileDelete(valuesFileOld);
 
 	if (AtomicInc(threadIncrement) >= threadCount)
 	{

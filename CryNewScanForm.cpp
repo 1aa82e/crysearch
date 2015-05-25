@@ -291,15 +291,9 @@ void CryNewScanForm::OkButtonClicked()
 			break;
 		case 6: // aob
 			GlobalScanParameter = new ScanParameters<ArrayOfBytes>();
-			
 			{
 				ArrayOfBytes aob = StringToBytes(this->mValueToSearchFor.GetText().ToString());
-				
-				if (!this->mNextScan)
-				{
-					GlobalScanParameter->ValueSize = aob.Size;
-				}
-				
+				GlobalScanParameter->ValueSize = aob.Size;
 				(reinterpret_cast<ScanParameters<ArrayOfBytes>*>(GlobalScanParameter))->ScanValue = aob;		
 				GlobalScanParameter->GlobalScanValueType = VALUETYPE_AOB;
 			}
@@ -311,11 +305,7 @@ void CryNewScanForm::OkButtonClicked()
 				GlobalScanParameter = new ScanParameters<WString>();
 				(reinterpret_cast<ScanParameters<WString>*>(GlobalScanParameter))->ScanValue = this->mValueToSearchFor.GetText();
 				GlobalScanParameter->GlobalScanValueType = VALUETYPE_WSTRING;
-				
-				if (!this->mNextScan)				
-				{
-					GlobalScanParameter->ValueSize = this->mValueToSearchFor.GetLength() * 2;
-				}
+				GlobalScanParameter->ValueSize = this->mValueToSearchFor.GetLength() * 2;
 			}
 			else
 			{
@@ -323,11 +313,7 @@ void CryNewScanForm::OkButtonClicked()
 				GlobalScanParameter = new ScanParameters<String>();
 				(reinterpret_cast<ScanParameters<String>*>(GlobalScanParameter))->ScanValue = this->mValueToSearchFor.GetText().ToString();
 				GlobalScanParameter->GlobalScanValueType = VALUETYPE_STRING;
-				
-				if (!this->mNextScan)
-				{
-					GlobalScanParameter->ValueSize = this->mValueToSearchFor.GetLength();
-				}
+				GlobalScanParameter->ValueSize = this->mValueToSearchFor.GetLength();
 			}
 			GlobalScanParameter->ScanUntilNullChar = this->stringUntilNull;
 			break;

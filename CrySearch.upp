@@ -62,6 +62,8 @@ file
 	CryMemoryDissectionSettingsWindow.h,
 	CryMemoryDissectionChangePointerWindow.cpp,
 	CryMemoryDissectionChangePointerWindow.h,
+	CryMemoryDissectionChangeValueWindow.cpp,
+	CryMemoryDissectionChangeValueWindow.h,
 	CryMemoryDissectionNewWindow.cpp,
 	CryMemoryDissectionNewWindow.h,
 	CryMemoryDissectionWindow.cpp,

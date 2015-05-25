@@ -149,6 +149,15 @@ struct WorkerRegionParameterData : Moveable<WorkerRegionParameterData>
 	// File handles.
 	HANDLE AddressesFile;
 	HANDLE ValuesFile;
+	
+	WorkerRegionParameterData()
+	{
+		this->WorkerIdentifier = 0;
+		this->OriginalStartIndex = 0;
+		this->Length = 0;
+		this->AddressesFile = NULL;
+		this->ValuesFile = NULL;
+	};
 };
 
 // Represents an array of bytes to be searched for in memory.

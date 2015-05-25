@@ -3,6 +3,10 @@ CrySearch Memory Scanner
 evolution536, www.unknowncheats.me
 
 v1.18
+	- Improved memory dissector:
+		- Fixed bug where row offsets did not change correctly when changing its size;
+		- Added option to edit the value of the row inline.
+	- Fixed bug in next scan where array of bytes and string sizes were not set, resulting in null searches;
 	- 
 v1.17
 	- Added multiple selection possibility for search results. Select multiple and right-click to add them to the address table;
