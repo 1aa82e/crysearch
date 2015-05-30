@@ -133,23 +133,23 @@ void AsyncDisassembler::Disassemble(const SIZE_T address, const SIZE_T size, con
 	disasm.VirtualAddr = (UInt64)address;
 
 	const UInt64 codePageEnd = ((UInt64)buffer + size);
-	
-#ifdef _WIN64
-	disasm.SecurityBlock = (UInt32)(codePageEnd - disasm.EIP);
-#else
-	disasm.SecurityBlock = (UIntPtr)(codePageEnd - disasm.EIP);
-#endif
 
-	int error = 0;
-	
 	// Disassembly each line encountered until the end of the buffer is reached.
-	while (this->mRunning && !error)
+	while (this->mRunning && disasm.EIP < codePageEnd)
 	{
 		const int len = CryDisasm(&disasm);
-		if (len == OUT_OF_BLOCK || len == UNKNOWN_OPCODE)
+		if (len == OUT_OF_BLOCK)
 		{
-			// Invalid OPcode was detected or the disassembler is not allowed to read any more bytes. Exit the loop.
-			error = TRUE;
+			break;
+		}
+		else if (len == UNKNOWN_OPCODE)
+		{
+			// An unknown instruction was encountered. Increment the counter to proceed disassembling until the end of the page is hit.
+			outInstructions.Add((SIZE_T)disasm.VirtualAddr);
+
+			// Increment disasm structure counters.
+			++disasm.EIP;
+			++disasm.VirtualAddr;
 		}
 		else
 		{
@@ -159,12 +159,6 @@ void AsyncDisassembler::Disassemble(const SIZE_T address, const SIZE_T size, con
 			// Increment disasm structure counters.
 			disasm.EIP += len;
 			disasm.VirtualAddr += len;
-
-			if (disasm.EIP >= codePageEnd)
-			{
-				// End of page reached, exit the loop.
-				error = TRUE;
-			}
 		}
 	}
 	

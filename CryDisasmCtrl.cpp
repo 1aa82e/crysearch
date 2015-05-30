@@ -58,6 +58,7 @@ String GetDisasmBytes(const int index)
 #else
 	DisasmGetLine(DisasmVisibleLines[index], ARCH_X86, &disLineBytes);
 #endif
+	
 	return BytesToString(disLineBytes.Data, disLineBytes.Size);
 }
 
@@ -73,9 +74,9 @@ String GetDisasmInstructionLine(const int index)
 String GetMemoryPageForDropList(const int index)
 {
 #ifdef _WIN64
-	return FormatInt64HexUpper((__int64)mExecutablePagesList[index].BaseAddress);
+	return FormatInt64HexUpper((__int64)mExecutablePagesList[index].BaseAddress) + " - " + FormatInt64HexUpper((__int64)(mExecutablePagesList[index].BaseAddress + mExecutablePagesList[index].MemorySize));
 #else
-	return FormatIntHexUpper((int)mExecutablePagesList[index].BaseAddress, 0);
+	return FormatIntHexUpper((int)mExecutablePagesList[index].BaseAddress, 0) + " - " + FormatIntHexUpper((int)(mExecutablePagesList[index].BaseAddress + mExecutablePagesList[index].MemorySize), 0);
 #endif
 }
 

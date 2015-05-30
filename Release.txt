@@ -7,6 +7,7 @@ v1.18
 		- Fixed bug where row offsets did not change correctly when changing its size;
 		- Added option to edit the value of the row inline.
 	- Fixed bug in next scan where array of bytes and string sizes were not set, resulting in null searches;
+	- Fixed bug in disassembler where disassembling would stop on error, not covering the whole page;
 	- 
 v1.17
 	- Added multiple selection possibility for search results. Select multiple and right-click to add them to the address table;

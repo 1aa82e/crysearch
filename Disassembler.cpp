@@ -29,13 +29,28 @@ String DisasmGetLine(const SIZE_T address, ArchitectureDefinitions architecture,
 	const UInt64 codePageEnd = ((UInt64)buffer + bufferLength);
 	
 #ifdef _WIN64
-	disasm.SecurityBlock = (UInt32)(codePageEnd - disasm.EIP);
+	disasm.SecurityBlock = (UInt32)(bufferLength);
 #else
-	disasm.SecurityBlock = (UIntPtr)(codePageEnd - disasm.EIP);
+	disasm.SecurityBlock = (UIntPtr)(bufferLength);
 #endif
 
 	int len = CryDisasm(&disasm);
-	if (len > 0)
+	if (len == UNKNOWN_OPCODE)
+	{
+		const Byte value = *buffer;
+		delete[] buffer;
+
+		// Even if the instruction was not recognized, place the byte into the output array if it was specified.
+		if (outAob)
+		{
+			outAob->Allocate(sizeof(Byte));
+			*outAob->Data = value;
+		}
+
+		// Just return a 'defined byte' description to identify an unknown instruction.
+		return "db " + FormatIntHexUpper(value, 0);
+	}
+	else if (len > 0)
 	{
 		// Place the disassembled byte sequence in the output parameter if it was specified.
 		if (outAob)
@@ -44,9 +59,11 @@ String DisasmGetLine(const SIZE_T address, ArchitectureDefinitions architecture,
 			memcpy(outAob->Data, (Byte*)disasm.EIP, len);
 		}
 		
+		delete[] buffer;
 		return disasm.CompleteInstr;
 	}
 	
+	delete[] buffer;
 	return "";
 }
 
