@@ -8,6 +8,9 @@ Package:
 - Update wiki with changes for the release.
 ------------------------------------------------------------------
 
+- Freezing values doesn't work anymore, fix it;
+- Closing the application when the debugger window is focussed and has data is not working well;
+
 - Improve SDK documentation, see learn_more's notes;
 - Post-dump (plugin operations) event in plugins!!!
 - Provide the output window / menu bar entry (PLUGIN_WANTS_OUTPUT_TAB);
@@ -21,11 +24,6 @@ Package:
 - Debugger:
 	- Disabling bp's doesn't always work yet;
 	- Software bp not correctly removed in Far Cry;
-	- page protection when hwbp???
-	- Data breakpoint still not 100% set back, JUMP instructions wreck the lookup :D
-		- JMP <const>
-		- CALL <const>
-		- JMP <reg>
 	- 16-byte registers during snapshot?
 	- VEH debugger
 

@@ -248,7 +248,7 @@ public:
 	void RemoveBreakpoint(const SIZE_T address);
 	
 	void ClearBreakpoints();
-	int FindBreakpoint(const SIZE_T address) const;
+	const int FindBreakpoint(const SIZE_T address) const;
 	
 	bool IsDebuggerAttached() const;
 	const int GetBreakpointCount() const;

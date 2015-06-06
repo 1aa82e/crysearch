@@ -481,13 +481,12 @@ void CryDebugger::RemoveBreakpoint(const SIZE_T address)
 	this->mDebuggerActionQueue.AddTail(data);
 }
 
-// Checks whether a software breakpoint already exists. Hardware breakpoints are different, because they can be on the same address but for multiple threads.
-int CryDebugger::FindBreakpoint(const SIZE_T address) const
+// Checks whether a software breakpoint already exists.
+const int CryDebugger::FindBreakpoint(const SIZE_T address) const
 {
 	const int persistentCount = this->mBreakpoints.GetCount();
 	for (int i = 0; i < persistentCount; ++i)
 	{
-		// Check whether the address is equal, but also whether the old instruction byte is set. If it is not set, we have a hardware breakpoint.
 		if (this->mBreakpoints[i].Address == address)
 		{
 			return i;
@@ -580,6 +579,9 @@ void CryDebugger::ExceptionWatch()
 	DWORD dwContinueStatus = DBG_CONTINUE;
 	DEBUG_EVENT DebugEv;
 	
+	// Quick workaround variable to keep track of breakpoints set on branch instructions.
+	SIZE_T branchAddressTracker;
+	
 	while (1)
 	{
 		// Check if the previously dispatched output debugger event has finished processing.
@@ -609,11 +611,12 @@ void CryDebugger::ExceptionWatch()
 				if (this->mBreakpoints.GetCount() > 0)
 				{
 					const int bpIndex = this->FindBreakpoint(excAddress);
-					this->HandleSoftwareBreakpoint(DebugEv.dwThreadId, bpIndex);
 					
 					// Set the line of disassembly that triggered the breakpoint.
 					if (bpIndex != -1)
 					{
+						branchAddressTracker = excAddress;
+						this->HandleSoftwareBreakpoint(DebugEv.dwThreadId, bpIndex);
 						this->mBreakpoints[bpIndex].BreakpointSnapshot.DisassemblyAccessLine = this->GetDisasmLine(excAddress, false);
 					}
 				}
@@ -666,6 +669,12 @@ void CryDebugger::ExceptionWatch()
 						// Data breakpoints can have their single steps occur too. This means the original instruction is disasmIndex - 2.
 						bp = this->FindBreakpointByPreviousInstruction(this->GetDisasmLine(excPrevLine, true));
 					}
+					
+					if (bp == -1 || bp > bpCount)
+					{
+						// A workaround to the branch instruction breakpoint bug: save one trigger address to increase the chance of retrieving a branched breakpoint.
+						bp = this->FindBreakpoint(branchAddressTracker);
+					}
 						
 					if (bp >= 0 && bpCount > 0)
 					{
@@ -679,11 +688,13 @@ void CryDebugger::ExceptionWatch()
 								this->BreakpointRoutine(pHwbp, DebugEv.dwThreadId);
 								pHwbp->ProcessorTrapFlag = 0;
 								pHwbp->PreviousInstructionAddress = 0;
+								branchAddressTracker = 0;
 							}
 							else
 							{
 								// Hardware breakpoint is hit, take care of it.
 								pHwbp->PreviousInstructionAddress = excAddress;
+								branchAddressTracker = excAddress;
 								this->HandleHardwareBreakpoint(DebugEv.dwThreadId, bp);
 							}
 						}
@@ -696,6 +707,7 @@ void CryDebugger::ExceptionWatch()
 
 							// Remove single step flag from the thread context.
 							this->RemoveSingleStepFromBreakpoint(DebugEv.dwThreadId);
+							branchAddressTracker = 0;
 						}
 					}
 				}
@@ -1039,11 +1051,6 @@ void CryDebugger32::RemoveSingleStepFromBreakpoint(const DWORD threadId)
 // Takes care of a software breakpoint the moment it is hit.
 void CryDebugger32::HandleSoftwareBreakpoint(const DWORD threadId, const int bpIndex)
 {
-	if (bpIndex == -1)
-	{
-		return;
-	}
-	
 	DbgBreakpoint& pBreakpoint = this->mBreakpoints[bpIndex];
 	++pBreakpoint.HitCount;
 	
@@ -1274,11 +1281,6 @@ void CryDebugger32::HandleHardwareBreakpoint(const DWORD threadId, const int bpI
 	// Takes care of a software breakpoint the moment it is hit.
 	void CryDebugger64::HandleSoftwareBreakpoint(const DWORD threadId, const int bpIndex)
 	{
-		if (bpIndex == -1)
-		{
-			return;
-		}
-
 		DbgBreakpoint& bp = this->mBreakpoints[bpIndex];
 		++bp.HitCount;
 		

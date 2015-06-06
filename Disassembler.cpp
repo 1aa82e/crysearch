@@ -87,23 +87,11 @@ const SIZE_T DisasmGetPreviousLine(const SIZE_T address, ArchitectureDefinitions
 		disasm.EIP = (UIntPtr)buffer;
 		disasm.Archi = architecture;
 		disasm.VirtualAddr = (UInt64)block.BaseAddress;
-	
-		UInt64 codePageEnd = ((UInt64)buffer + block.RegionSize);
-		
-#ifdef _WIN64
-		disasm.SecurityBlock = (UInt32)(codePageEnd - disasm.EIP);
-#else
-		disasm.SecurityBlock = (UIntPtr)(codePageEnd - disasm.EIP);
-#endif
 
 		while (disasm.VirtualAddr < address)
 		{
 			const int len = CryDisasm(&disasm);
-			if (len == OUT_OF_BLOCK)
-			{
-				break;
-			}
-			else if (len == UNKNOWN_OPCODE)
+			if (len == UNKNOWN_OPCODE)
 			{
 				++disasm.EIP;
 				++disasm.VirtualAddr;

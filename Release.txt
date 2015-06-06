@@ -8,7 +8,7 @@ v1.18
 		- Added option to edit the value of the row inline.
 	- Fixed bug in next scan where array of bytes and string sizes were not set, resulting in null searches;
 	- Fixed bug in disassembler where disassembling would stop on error, not covering the whole page;
-	- 
+	- Fixed bug in debugger for breakpoints that were set on branch instructions. They could not be resolved after the branch was taken;
 v1.17
 	- Added multiple selection possibility for search results. Select multiple and right-click to add them to the address table;
 	- Added possibility to select multiple address table entries and remove them all at once;
