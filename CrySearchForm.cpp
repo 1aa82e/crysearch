@@ -159,13 +159,14 @@ String GetAddressTableValue(const int index)
 {
 	if (mMemoryScanner->GetProcessId())
 	{
-		const AddressTableEntry* const entry = loadedTable[index];
+		AddressTableEntry* const entry = loadedTable[index];
 		if (entry->ValueType == CRYDATATYPE_BYTE)
 		{
 			Byte value;
 			if (mMemoryScanner->Peek<Byte>(entry->Address, 0, &value))
 			{
-				return viewAddressTableValueHex ? FormatIntHexUpper(value) : IntStr(value);
+				entry->Value = viewAddressTableValueHex ? FormatIntHexUpper(value) : IntStr(value);
+				return entry->Value;
 			}
 		}
 		else if (entry->ValueType == CRYDATATYPE_2BYTES)
@@ -173,7 +174,8 @@ String GetAddressTableValue(const int index)
 			short value;
 			if (mMemoryScanner->Peek<short>(entry->Address, 0, &value))
 			{
-				return viewAddressTableValueHex ? FormatIntHexUpper(value) : IntStr(value);
+				entry->Value = viewAddressTableValueHex ? FormatIntHexUpper(value) : IntStr(value);
+				return entry->Value;
 			}
 		}
 		else if (entry->ValueType == CRYDATATYPE_4BYTES)
@@ -181,7 +183,8 @@ String GetAddressTableValue(const int index)
 			int value;
 			if (mMemoryScanner->Peek<int>(entry->Address, 0, &value))
 			{
-				return viewAddressTableValueHex ? FormatIntHexUpper(value) : IntStr(value);
+				entry->Value = viewAddressTableValueHex ? FormatIntHexUpper(value) : IntStr(value);
+				return entry->Value;
 			}
 		}
 		else if (entry->ValueType == CRYDATATYPE_8BYTES)
@@ -189,7 +192,8 @@ String GetAddressTableValue(const int index)
 			__int64 value;
 			if (mMemoryScanner->Peek<__int64>(entry->Address, 0, &value))
 			{
-				return viewAddressTableValueHex ? FormatInt64HexUpper(value) : IntStr64(value);
+				entry->Value = viewAddressTableValueHex ? FormatInt64HexUpper(value) : IntStr64(value);
+				return entry->Value;
 			}
 		}
 		else if (entry->ValueType == CRYDATATYPE_FLOAT)
@@ -197,7 +201,8 @@ String GetAddressTableValue(const int index)
 			float value;
 			if (mMemoryScanner->Peek<float>(entry->Address, 0, &value))
 			{
-				return DblStr(value);
+				entry->Value = DblStr(value);
+				return entry->Value;
 			}
 		}
 		else if (entry->ValueType == CRYDATATYPE_DOUBLE)
@@ -205,7 +210,8 @@ String GetAddressTableValue(const int index)
 			double value;
 			if (mMemoryScanner->Peek<double>(entry->Address, 0, &value))
 			{
-				return DblStr(value);
+				entry->Value = DblStr(value);
+				return entry->Value;
 			}
 		}
 		else if (entry->ValueType == CRYDATATYPE_AOB)
@@ -213,7 +219,8 @@ String GetAddressTableValue(const int index)
 			ArrayOfBytes value;
 			if (mMemoryScanner->Peek<ArrayOfBytes>(entry->Address, entry->Size, &value))
 			{
-				return BytesToString(value.Data, value.Size);
+				entry->Value = BytesToString(value.Data, value.Size);
+				return entry->Value;
 			}
 		}
 		else if (entry->ValueType == CRYDATATYPE_STRING)
@@ -221,7 +228,8 @@ String GetAddressTableValue(const int index)
 			String value;
 			if (mMemoryScanner->Peek<String>(entry->Address, entry->Size, &value))
 			{
-				return value;
+				entry->Value = value;
+				return entry->Value;
 			}
 		}
 		else if (entry->ValueType == CRYDATATYPE_WSTRING)
@@ -229,7 +237,8 @@ String GetAddressTableValue(const int index)
 			WString value;
 			if (mMemoryScanner->Peek<WString>(entry->Address, entry->Size, &value))
 			{
-				return value.ToString();
+				entry->Value = value.ToString();
+				return entry->Value;
 			}
 		}		
 	}
