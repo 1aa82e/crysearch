@@ -376,7 +376,7 @@ bool __fastcall CompareStringNullCharA(const char* input, const int inputLength,
 		const char* iterator = input + inputLength;
 		const int endIterator = STRING_MAX_UNTIL_NULL - inputLength;
 		int i = 0;
-		while (i < endIterator && *iterator != 0)
+		while (*iterator != 0 && i < endIterator)
 		{
 			++iterator;
 			++i;
@@ -395,7 +395,7 @@ bool __fastcall CompareStringNullCharW(const wchar* input, const int inputLength
 		const wchar* iterator = input + inputLength;
 		const int endIterator = STRING_MAX_UNTIL_NULL - inputLength;
 		int i = 0;
-		while (i < endIterator && *iterator != 0)
+		while (*iterator != 0 && i < endIterator)
 		{
 			++iterator;
 			++i;
@@ -440,10 +440,10 @@ void MemoryScanner::ClearSearchResults()
 template <>
 void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const double& value)
 {
-	regionData.AddressesFile = CreateFile(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.temp", regionData.WorkerIdentifier))
-		, GENERIC_WRITE, 0, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
-	regionData.ValuesFile = CreateFile(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Values%i.temp", regionData.WorkerIdentifier))
-		, GENERIC_WRITE, 0, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
+	const String addrFile = AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.temp", regionData.WorkerIdentifier));
+	const String valuesFile = AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Values%i.temp", regionData.WorkerIdentifier));
+	regionData.AddressesFile = CreateFile(addrFile, GENERIC_WRITE, 0, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
+	regionData.ValuesFile = CreateFile(valuesFile, GENERIC_WRITE, 0, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
 	
 	int fastScanAlignSize = GlobalScanParameter->CurrentScanFastScan ? sizeof(int) : 1;
 	
@@ -504,7 +504,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 		
 		if (arrayIndex > 0)
 		{
-			this->mScanResultCount += arrayIndex;
+			AtomicXAdd(this->mScanResultCount, arrayIndex);
 			
 			if (CachedAddresses.GetCount() < MEMORYSCANNER_CACHE_LIMIT)
 			{
@@ -527,7 +527,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 		}
 		
 		currentRegion.FileDataIndexes.ResultCount = arrayIndex;
-		this->UpdateScanningProgress(++RegionFinishCount);
+		this->UpdateScanningProgress(AtomicInc(RegionFinishCount));
 	}
 	
 	CloseHandle(regionData.AddressesFile);
@@ -546,32 +546,8 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 template <>
 void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const ArrayOfBytes& value)
 {
-		
-	
-	
-	
-	
-	
-	
-	LARGE_INTEGER frequency;
-	LARGE_INTEGER t1;
-	LARGE_INTEGER t2;
-	
-	// Get the amount of ticks per second.
-	QueryPerformanceFrequency(&frequency);
-
-	// Start the timer.
-	QueryPerformanceCounter(&t1);
-	
-	
-	
-	
-	
-	
-	regionData.AddressesFile = CreateFile(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.temp", regionData.WorkerIdentifier))
-		, GENERIC_WRITE, 0, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
-	regionData.ValuesFile = CreateFile(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Values%i.temp", regionData.WorkerIdentifier))
-		, GENERIC_WRITE, 0, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
+	const String addrFile = AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.temp", regionData.WorkerIdentifier));
+	regionData.AddressesFile = CreateFile(addrFile, GENERIC_WRITE, 0, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
 	
 	unsigned int fileIndex = 0;
 	DWORD numberOfBytesWritten;
@@ -585,7 +561,6 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 		unsigned int arrayIndex = 0;
 		unsigned int currentArrayLength = 256;
 		SIZE_T* localAddresses = NULL;
-		ArrayOfBytes* localValues = NULL;
 		MemoryRegion& currentRegion = this->memRegions[i];
 		
 		currentRegion.FileDataIndexes.StartIndex = fileIndex;
@@ -599,10 +574,9 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 				
 				if (memcmp(tempStore, inputData, inputLength) == 0)
 				{
-					if (!localAddresses || !localValues)
+					if (!localAddresses)
 					{
 						localAddresses = new SIZE_T[currentArrayLength];
-						localValues = new ArrayOfBytes[currentArrayLength];
 					}
 					
 					if (arrayIndex >= currentArrayLength)
@@ -614,24 +588,9 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 						memcpy(newAddressesArray, localAddresses, oldCurrentArrayLength * sizeof(SIZE_T));
 						delete[] localAddresses;
 						localAddresses = newAddressesArray;
-						
-						ArrayOfBytes* newValuesArray = new ArrayOfBytes[currentArrayLength];
-						memcpy(newValuesArray, localValues, oldCurrentArrayLength * sizeof(ArrayOfBytes));
-						
-						// A quick workaround to the destruction of non-allocated pointers is setting all items to NULL.
-						for (unsigned int i = 0; i < oldCurrentArrayLength; ++i)
-						{
-							localValues[i].Data = NULL;
-						}
-						
-						delete[] localValues;
-						localValues = newValuesArray;
 					}
 					
-					localAddresses[arrayIndex] = currentRegion.BaseAddress + i;
-					localValues[arrayIndex].Data = tempStore;
-					localValues[arrayIndex++].Size = inputLength;
-
+					localAddresses[arrayIndex++] = currentRegion.BaseAddress + i;
 					++fileIndex;
 				}
 			}
@@ -639,7 +598,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 	
 		if (arrayIndex > 0)
 		{
-			this->mScanResultCount += arrayIndex;
+			AtomicXAdd(this->mScanResultCount, arrayIndex);
 			
 			if (CachedAddresses.GetCount() < MEMORYSCANNER_CACHE_LIMIT)
 			{
@@ -648,37 +607,22 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 			
 			WriteFile(regionData.AddressesFile, localAddresses, arrayIndex * sizeof(SIZE_T), &numberOfBytesWritten, NULL);
 			delete[] localAddresses;
-			
-			int tmpIndex = 0;
-			Byte* fileData = new Byte[arrayIndex * value.Size];
-			for (unsigned int counter = 0; counter < arrayIndex; ++counter)
-			{
-				memcpy(fileData + tmpIndex, localValues[counter].Data, localValues[counter].Size);
-				localValues[counter].Data = NULL;
-				tmpIndex += value.Size;
-			}
-			
-			delete[] localValues;
-			WriteFile(regionData.ValuesFile, fileData, tmpIndex, &numberOfBytesWritten, NULL);
-			delete[] fileData;
 		}
 		else
 		{
 			if (localAddresses)
 			{
 				delete[] localAddresses;
-				delete[] localValues;
 			}
 		}
 		
 		delete[] buffer;
 		
 		currentRegion.FileDataIndexes.ResultCount = arrayIndex;
-		this->UpdateScanningProgress(++RegionFinishCount);
+		this->UpdateScanningProgress(AtomicInc(RegionFinishCount));
 	}
 	
 	CloseHandle(regionData.AddressesFile);
-	CloseHandle(regionData.ValuesFile);
 	
 	if (AtomicInc(threadIncrement) >= threadCount)
 	{
@@ -688,38 +632,13 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 		this->ScanRunning = false;
 		this->ScanCompleted();
 	}
-		
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	QueryPerformanceCounter(&t2);
-	
-	OutputDebugString(Format("Worker: %i: %f ms\r\n", regionData.WorkerIdentifier, (t2.QuadPart - t1.QuadPart) * 1000.0 / frequency.QuadPart));
-	
-	
-	
-	
-	
-	
-	
 }
 
 template <>
 void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const WString& value)
 {
-	regionData.AddressesFile = CreateFile(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.temp", regionData.WorkerIdentifier))
-		, GENERIC_WRITE, 0, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
-	regionData.ValuesFile = CreateFile(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Values%i.temp", regionData.WorkerIdentifier))
-		, GENERIC_WRITE, 0, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
+	const String addrFile = AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.temp", regionData.WorkerIdentifier));
+	regionData.AddressesFile = CreateFile(addrFile, GENERIC_WRITE, 0, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
 	
 	unsigned int fileIndex = 0;
 	DWORD numberOfBytesWritten;
@@ -735,7 +654,6 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 		unsigned int arrayIndex = 0;
 		unsigned int currentArrayLength = 256;
 		SIZE_T* localAddresses = NULL;
-		Vector<WString> localValues;
 		Vector<Byte> stringLengths;
 		MemoryRegion& currentRegion = this->memRegions[i];
 		
@@ -754,7 +672,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 					if (!localAddresses)
 					{
 						localAddresses = new SIZE_T[currentArrayLength];
-						localValues.SetCount(currentArrayLength);
+
 						stringLengths.SetCount(currentArrayLength);
 					}
 					
@@ -767,13 +685,10 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 						memcpy(newAddressesArray, localAddresses, oldCurrentArrayLength * sizeof(SIZE_T));
 						delete[] localAddresses;
 						localAddresses = newAddressesArray;
-						
-						localValues.SetCount(currentArrayLength);
 						stringLengths.SetCount(currentArrayLength);
 					}
 					
 					localAddresses[arrayIndex] = currentRegion.BaseAddress + i;
-					localValues[arrayIndex] = WString(strPtr, outputLength);
 					stringLengths[arrayIndex++] = outputLength;
 					
 					++fileIndex;
@@ -785,7 +700,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 		
 		if (arrayIndex > 0)
 		{
-			this->mScanResultCount += arrayIndex;
+			AtomicXAdd(this->mScanResultCount, arrayIndex);
 			
 			if (CachedAddresses.GetCount() < MEMORYSCANNER_CACHE_LIMIT)
 			{
@@ -794,11 +709,6 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 				
 			WriteFile(regionData.AddressesFile, localAddresses, arrayIndex * sizeof(SIZE_T), &numberOfBytesWritten, NULL);
 			delete[] localAddresses;
-				
-			for (unsigned int strCount = 0; strCount < arrayIndex; ++strCount)
-			{
-				WriteFile(regionData.ValuesFile, localValues[strCount], localValues[strCount].GetLength(), &numberOfBytesWritten, NULL);
-			}
 		}
 		else
 		{
@@ -809,11 +719,10 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 		}
 		
 		currentRegion.FileDataIndexes.ResultCount = arrayIndex;
-		this->UpdateScanningProgress(++RegionFinishCount);
+		this->UpdateScanningProgress(AtomicInc(RegionFinishCount));
 	}
 	
 	CloseHandle(regionData.AddressesFile);
-	CloseHandle(regionData.ValuesFile);
 	
 	if (AtomicInc(threadIncrement) >= threadCount)
 	{
@@ -828,10 +737,8 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 template <>
 void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const String& value)
 {
-	regionData.AddressesFile = CreateFile(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.temp", regionData.WorkerIdentifier))
-		, GENERIC_WRITE, 0, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
-	regionData.ValuesFile = CreateFile(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Values%i.temp", regionData.WorkerIdentifier))
-		, GENERIC_WRITE, 0, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
+	const String addrFile = AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.temp", regionData.WorkerIdentifier));
+	regionData.AddressesFile = CreateFile(addrFile, GENERIC_WRITE, 0, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
 	
 	unsigned int fileIndex = 0;
 	DWORD numberOfBytesWritten;
@@ -846,7 +753,6 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 		unsigned int arrayIndex = 0;
 		unsigned int currentArrayLength = 256;
 		SIZE_T* localAddresses = NULL;
-		Vector<String> localValues;
 		Vector<Byte> stringLengths;
 		MemoryRegion& currentRegion = this->memRegions[i];
 		
@@ -865,7 +771,6 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 					if (!localAddresses)
 					{
 						localAddresses = new SIZE_T[currentArrayLength];
-						localValues.SetCount(currentArrayLength);
 						stringLengths.SetCount(currentArrayLength);
 					}
 					if (arrayIndex >= currentArrayLength)
@@ -878,12 +783,10 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 						delete[] localAddresses;
 						localAddresses = newAddressesArray;
 						
-						localValues.SetCount(currentArrayLength);
 						stringLengths.SetCount(currentArrayLength);
 					}
 					
 					localAddresses[arrayIndex] = currentRegion.BaseAddress + i;
-					localValues[arrayIndex] = String(strPtr, outputLength);
 					stringLengths[arrayIndex++] = outputLength;
 					
 					++fileIndex;
@@ -895,7 +798,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 		
 		if (arrayIndex > 0)
 		{
-			this->mScanResultCount += arrayIndex;
+			AtomicXAdd(this->mScanResultCount, arrayIndex);
 			
 			if (CachedAddresses.GetCount() < MEMORYSCANNER_CACHE_LIMIT)
 			{
@@ -904,11 +807,6 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 				
 			WriteFile(regionData.AddressesFile, localAddresses, arrayIndex * sizeof(SIZE_T), &numberOfBytesWritten, NULL);
 			delete[] localAddresses;
-				
-			for (unsigned int strCount = 0; strCount < arrayIndex; ++strCount)
-			{
-				WriteFile(regionData.ValuesFile, localValues[strCount], localValues[strCount].GetLength(), &numberOfBytesWritten, NULL);
-			}
 		}
 		else
 		{
@@ -919,11 +817,10 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 		}
 		
 		currentRegion.FileDataIndexes.ResultCount = arrayIndex;
-		this->UpdateScanningProgress(++RegionFinishCount);
+		this->UpdateScanningProgress(AtomicInc(RegionFinishCount));
 	}
 	
 	CloseHandle(regionData.AddressesFile);
-	CloseHandle(regionData.ValuesFile);
 	
 	if (AtomicInc(threadIncrement) >= threadCount)
 	{
@@ -1009,7 +906,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 		
 		if (arrayIndex > 0)
 		{
-			this->mScanResultCount += arrayIndex;
+			AtomicXAdd(this->mScanResultCount, arrayIndex);
 			
 			if (CachedAddresses.GetCount() < MEMORYSCANNER_CACHE_LIMIT)
 			{
@@ -1032,7 +929,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 		}
 		
 		currentRegion.FileDataIndexes.ResultCount = arrayIndex;
-		this->UpdateScanningProgress(++RegionFinishCount);
+		this->UpdateScanningProgress(AtomicInc(RegionFinishCount));
 	}
 
 	CloseHandle(regionData.AddressesFile);
@@ -1169,14 +1066,11 @@ void MemoryScanner::FirstScan()
 template <>
 void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const ArrayOfBytes& value)
 {
-	regionData.AddressesFile = CreateFile(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.temp", regionData.WorkerIdentifier))
-		, GENERIC_WRITE, 0, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
+	const String addrOutFile = AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.temp", regionData.WorkerIdentifier));
+	const String addrFileOld = AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.tempSCANNING", regionData.WorkerIdentifier));
 
-	regionData.ValuesFile = CreateFile(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Values%i.temp", regionData.WorkerIdentifier))
-		, GENERIC_WRITE, 0, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
-
-	HANDLE hFile = CreateFile(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.tempSCANNING", regionData.WorkerIdentifier))
-		, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
+	regionData.AddressesFile = CreateFile(addrOutFile, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
+	HANDLE hFile = CreateFile(addrFileOld, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
 
 	unsigned int fileIndex = 0;
 	DWORD numberOfBytesWritten;
@@ -1193,7 +1087,6 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 			unsigned int arrayIndex = 0;
 			unsigned int currentArrayLength = 256;
 			SIZE_T* localAddresses = NULL;
-			ArrayOfBytes* localValues = NULL;
 			
 			Byte* buffer = new Byte[currentRegion.MemorySize];
 			if (CrySearchRoutines.CryReadMemoryRoutine(this->mOpenedProcessHandle, (void*)currentRegion.BaseAddress, buffer, currentRegion.MemorySize, NULL))
@@ -1209,10 +1102,9 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 					
 					if (memcmp(currentDataPtr, value.Data, value.Size) == 0)
 					{
-						if (!localAddresses || !localValues)
+						if (!localAddresses)
 						{
-							localAddresses = new SIZE_T[currentArrayLength];
-							localValues = new ArrayOfBytes[currentArrayLength];						
+							localAddresses = new SIZE_T[currentArrayLength];					
 						}
 						
 						if (arrayIndex >= currentArrayLength)
@@ -1224,24 +1116,9 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 							memcpy(newAddressesArray, localAddresses, oldCurrentArrayLength * sizeof(SIZE_T));
 							delete[] localAddresses;
 							localAddresses = newAddressesArray;
-							
-							ArrayOfBytes* newValuesArray = new ArrayOfBytes[currentArrayLength];
-							memcpy(newValuesArray, localValues, oldCurrentArrayLength * sizeof(ArrayOfBytes));
-							
-							// A quick workaround to the destruction of non-allocated pointers is setting all items to NULL.
-							for (unsigned int i = 0; i < oldCurrentArrayLength; ++i)
-							{
-								localValues[i].Data = NULL;
-							}
-							
-							delete[] localValues;
-							localValues = newValuesArray;
 						}
 						
-						localAddresses[arrayIndex] = currentResultPtr;
-						localValues[arrayIndex].Data = currentDataPtr;
-						localValues[arrayIndex++].Size = value.Size;
-						
+						localAddresses[arrayIndex++] = currentResultPtr;
 						++fileIndex;
 					}
 				}
@@ -1251,7 +1128,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 
 			if (arrayIndex > 0)
 			{
-				this->mScanResultCount += arrayIndex;
+				AtomicXAdd(this->mScanResultCount, arrayIndex);
 				
 				if (CachedAddresses.GetCount() < MEMORYSCANNER_CACHE_LIMIT)
 				{
@@ -1260,26 +1137,12 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 				
 				WriteFile(regionData.AddressesFile, localAddresses, arrayIndex * sizeof(SIZE_T), &numberOfBytesWritten, NULL);
 				delete[] localAddresses;
-				
-				int tmpIndex = 0;
-				Byte* fileData = new Byte[arrayIndex * value.Size];	
-				for (unsigned int counter = 0; counter < arrayIndex; ++counter)
-				{
-					memcpy(fileData + tmpIndex, localValues[counter].Data, localValues[counter].Size);
-					localValues[counter].Data = NULL;
-					tmpIndex += value.Size;
-				}
-					
-				delete[] localValues;
-				WriteFile(regionData.ValuesFile, fileData, tmpIndex, &numberOfBytesWritten, NULL);
-				delete[] fileData;
 			}
 			else
 			{
 				if (localAddresses)
 				{
 					delete[] localAddresses;
-					delete[] localValues;
 				}
 			}
 			
@@ -1288,15 +1151,13 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 			currentRegion.FileDataIndexes.ResultCount = arrayIndex;
 		}
 
-		this->UpdateScanningProgress(++RegionFinishCount);
+		this->UpdateScanningProgress(AtomicInc(RegionFinishCount));
 	}
 	
 	CloseHandle(hFile);
 	CloseHandle(regionData.AddressesFile);
-	CloseHandle(regionData.ValuesFile);
 	
-	FileDelete(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.tempSCANNING", regionData.WorkerIdentifier)));
-	FileDelete(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Values%i.tempSCANNING", regionData.WorkerIdentifier)));
+	FileDelete(addrFileOld);
 	
 	if (AtomicInc(threadIncrement) >= threadCount)
 	{
@@ -1311,14 +1172,11 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 template <>
 void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const WString& value)
 {
-	regionData.AddressesFile = CreateFile(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.temp", regionData.WorkerIdentifier))
-		, GENERIC_WRITE, 0, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
+	const String addrOutFile = AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.temp", regionData.WorkerIdentifier));
+	const String addrFileOld = AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.tempSCANNING", regionData.WorkerIdentifier));
 
-	regionData.ValuesFile = CreateFile(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Values%i.temp", regionData.WorkerIdentifier))
-		, GENERIC_WRITE, 0, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
-
-	HANDLE hFile = CreateFile(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.tempSCANNING", regionData.WorkerIdentifier))
-		, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
+	regionData.AddressesFile = CreateFile(addrOutFile, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
+	HANDLE hFile = CreateFile(addrFileOld, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
 
 	unsigned int fileIndex = 0;
 	DWORD numberOfBytesWritten;
@@ -1339,7 +1197,6 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 			unsigned int arrayIndex = 0;
 			unsigned int currentArrayLength = 256;
 			SIZE_T* localAddresses = NULL;
-			Vector<WString> localValues;
 			Vector<Byte> stringLengths;
 			
 			Byte* buffer = new Byte[currentRegion.MemorySize];
@@ -1359,7 +1216,6 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 						if (!localAddresses)
 						{
 							localAddresses = new SIZE_T[currentArrayLength];
-							localValues.SetCount(currentArrayLength);
 							stringLengths.SetCount(currentArrayLength);	
 						}
 						
@@ -1372,13 +1228,10 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 							memcpy(newAddressesArray, localAddresses, oldCurrentArrayLength * sizeof(SIZE_T));
 							delete[] localAddresses;
 							localAddresses = newAddressesArray;
-							
-							localValues.SetCount(currentArrayLength);
 							stringLengths.SetCount(currentArrayLength);	
 						}
 						
 						localAddresses[arrayIndex] = currentResultPtr;
-						localValues[arrayIndex] = WString(currentDataPtr, inputLengthInChars);
 						stringLengths[arrayIndex++] = inputLengthInChars;
 						
 						++fileIndex;
@@ -1392,7 +1245,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 
 			if (arrayIndex > 0)
 			{
-				this->mScanResultCount += arrayIndex;
+				AtomicXAdd(this->mScanResultCount, arrayIndex);
 				
 				if (CachedAddresses.GetCount() < MEMORYSCANNER_CACHE_LIMIT)
 				{
@@ -1401,11 +1254,6 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 				
 				WriteFile(regionData.AddressesFile, localAddresses, arrayIndex * sizeof(SIZE_T), &numberOfBytesWritten, NULL);
 				delete[] localAddresses;
-				
-				for (unsigned int strCount = 0; strCount < arrayIndex; strCount++)
-				{
-					WriteFile(regionData.ValuesFile, localValues[strCount], localValues[strCount].GetLength() * sizeof(wchar), &numberOfBytesWritten, NULL);
-				}
 			}
 			else
 			{
@@ -1418,15 +1266,13 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 			currentRegion.FileDataIndexes.ResultCount = arrayIndex;
 		}
 
-		this->UpdateScanningProgress(++RegionFinishCount);
+		this->UpdateScanningProgress(AtomicInc(RegionFinishCount));
 	}
 	
 	CloseHandle(hFile);
 	CloseHandle(regionData.AddressesFile);
-	CloseHandle(regionData.ValuesFile);
 	
-	FileDelete(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.tempSCANNING", regionData.WorkerIdentifier)));
-	FileDelete(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Values%i.tempSCANNING", regionData.WorkerIdentifier)));
+	FileDelete(addrFileOld);
 	
 	if (AtomicInc(threadIncrement) >= threadCount)
 	{
@@ -1441,14 +1287,11 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 template <>
 void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const String& value)
 {
-	regionData.AddressesFile = CreateFile(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.temp", regionData.WorkerIdentifier))
-		, GENERIC_WRITE, 0, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
+	const String addrOutFile = AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.temp", regionData.WorkerIdentifier));
+	const String addrFileOld = AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.tempSCANNING", regionData.WorkerIdentifier));
 
-	regionData.ValuesFile = CreateFile(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Values%i.temp", regionData.WorkerIdentifier))
-		, GENERIC_WRITE, 0, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
-
-	HANDLE hFile = CreateFile(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.tempSCANNING", regionData.WorkerIdentifier))
-		, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
+	regionData.AddressesFile = CreateFile(addrOutFile, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
+	HANDLE hFile = CreateFile(addrFileOld, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
 
 	unsigned int fileIndex = 0;
 	DWORD numberOfBytesWritten;
@@ -1467,7 +1310,6 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 			unsigned int arrayIndex = 0;
 			unsigned int currentArrayLength = 256;
 			SIZE_T* localAddresses = NULL;
-			Vector<String> localValues;
 			Vector<Byte> stringLengths;
 			
 			Byte* buffer = new Byte[currentRegion.MemorySize];
@@ -1487,7 +1329,6 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 						if (!localAddresses)
 						{
 							localAddresses = new SIZE_T[currentArrayLength];
-							localValues.SetCount(currentArrayLength);
 							stringLengths.SetCount(currentArrayLength);					
 						}
 						
@@ -1500,13 +1341,10 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 							memcpy(newAddressesArray, localAddresses, oldCurrentArrayLength * sizeof(SIZE_T));
 							delete[] localAddresses;
 							localAddresses = newAddressesArray;
-							
-							localValues.SetCount(currentArrayLength);
 							stringLengths.SetCount(currentArrayLength);
 						}
 						
 						localAddresses[arrayIndex] = currentResultPtr;
-						localValues[arrayIndex] = String(currentDataPtr, inputLength);
 						stringLengths[arrayIndex++] = inputLength;
 						
 						++fileIndex;
@@ -1520,7 +1358,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 
 			if (arrayIndex > 0)
 			{
-				this->mScanResultCount += arrayIndex;
+				AtomicXAdd(this->mScanResultCount, arrayIndex);
 				
 				if (CachedAddresses.GetCount() < MEMORYSCANNER_CACHE_LIMIT)
 				{
@@ -1529,11 +1367,6 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 				
 				WriteFile(regionData.AddressesFile, localAddresses, arrayIndex * sizeof(SIZE_T), &numberOfBytesWritten, NULL);
 				delete[] localAddresses;
-				
-				for (unsigned int strCount = 0; strCount < arrayIndex; strCount++)
-				{
-					WriteFile(regionData.ValuesFile, localValues[strCount], localValues[strCount].GetLength(), &numberOfBytesWritten, NULL);
-				}
 			}
 			else
 			{
@@ -1546,15 +1379,13 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 			currentRegion.FileDataIndexes.ResultCount = arrayIndex;
 		}
 
-		this->UpdateScanningProgress(++RegionFinishCount);
+		this->UpdateScanningProgress(AtomicInc(RegionFinishCount));
 	}
 	
 	CloseHandle(hFile);
 	CloseHandle(regionData.AddressesFile);
-	CloseHandle(regionData.ValuesFile);
 	
-	FileDelete(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.tempSCANNING", regionData.WorkerIdentifier)));
-	FileDelete(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Values%i.tempSCANNING", regionData.WorkerIdentifier)));
+	FileDelete(addrFileOld);
 	
 	if (AtomicInc(threadIncrement) >= threadCount)
 	{
@@ -1575,8 +1406,8 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 	const String addrFileOld = AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.tempSCANNING", regionData.WorkerIdentifier));
 	const String valuesFileOld = AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Values%i.tempSCANNING", regionData.WorkerIdentifier));
 	
-	regionData.AddressesFile = CreateFile(addrOutFile, GENERIC_WRITE, 0, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
-	regionData.ValuesFile = CreateFile(valuesOutFile, GENERIC_WRITE, 0, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
+	regionData.AddressesFile = CreateFile(addrOutFile, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
+	regionData.ValuesFile = CreateFile(valuesOutFile, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
 
 	HANDLE hFile = CreateFile(addrFileOld, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
 
@@ -1682,7 +1513,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 
 			if (arrayIndex > 0)
 			{
-				this->mScanResultCount += arrayIndex;
+				AtomicXAdd(this->mScanResultCount, arrayIndex);
 				
 				if (CachedAddresses.GetCount() < MEMORYSCANNER_CACHE_LIMIT)
 				{
@@ -1707,9 +1538,15 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 			currentRegion.FileDataIndexes.ResultCount = arrayIndex;
 		}
 
-		this->UpdateScanningProgress(++RegionFinishCount);
+		this->UpdateScanningProgress(AtomicInc(RegionFinishCount));
 	}
 	
+	if (hOldValues)
+	{
+		CloseHandle(hOldValues);
+	}
+	
+	CloseHandle(hFile);
 	CloseHandle(regionData.AddressesFile);
 	CloseHandle(regionData.ValuesFile);
 	
@@ -1740,22 +1577,40 @@ void MemoryScanner::NextScan()
 	{
 		String addrFn = AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.temp", i));
 		String valFn = AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Values%i.temp", i));
-
-		// If one of the data files are deleted, the scan should not start in order to prevent crashing.
-		if (!FileExists(addrFn) || !FileExists(valFn))
-		{
-			ClearSearchResults();
-			
-			this->ErrorOccured(DATAFILENOTFOUND);
-			this->ScanRunning = false;
-			this->ScanCompleted();
 		
-			return;
+		// If the scan is a string, wstring or aob, the values file is not required.
+		if (GlobalScanParameter->GlobalScanValueType >= VALUETYPE_STRING)
+		{
+			if (!FileExists(addrFn))
+			{
+				ClearSearchResults();
+			
+				this->ErrorOccured(DATAFILENOTFOUND);
+				this->ScanRunning = false;
+				this->ScanCompleted();
+			
+				return;
+			}
+			
+			FileMove(addrFn, AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.tempSCANNING", i)));
 		}
-
-		// Move original scan data files under a new name so the default data files can be recreated again without errors.
-		FileMove(addrFn, AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.tempSCANNING", i)));
-		FileMove(valFn, AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Values%i.tempSCANNING", i)));
+		else
+		{
+			// If one of the data files are deleted, the scan should not start in order to prevent crashing.
+			if (!FileExists(addrFn) || !FileExists(valFn))
+			{
+				ClearSearchResults();
+				
+				this->ErrorOccured(DATAFILENOTFOUND);
+				this->ScanRunning = false;
+				this->ScanCompleted();
+			
+				return;
+			}
+			
+			FileMove(addrFn, AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.tempSCANNING", i)));
+			FileMove(valFn, AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Values%i.tempSCANNING", i)));
+		}
 	}
 	
 	// Reset progress indication bar in the GUI.

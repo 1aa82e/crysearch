@@ -8,8 +8,14 @@ v1.18
 		- Added option to edit the value of the row inline.
 	- Fixed bug in next scan where array of bytes and string sizes were not set, resulting in null searches;
 	- Fixed bug in disassembler where disassembling would stop on error, not covering the whole page;
-	- Fixed bug in debugger for breakpoints that were set on branch instructions. They could not be resolved after the branch was taken;
+	- Improved debugger:
+		- Fixed bug for breakpoints that were set on branch instructions. They could not be resolved after the branch was taken;
+		- Fixed bug where closing the application with breakpoints active could freeze the execution.
 	- Fixed bug with address table where freezing a value would not work properly anymore due to previous optimizations;
+	- Fixed bug in memory scanner where it was possible, very rarely, for a data race to occur when counting the results;
+	- Fixed bug where subsequent next scans could crash the application;
+	- Added about dialog detection for instruction sets AVX2, FMA3 and TSX;
+	- Improved performance of string, wstring and aob scans by eliminating the values file dependency;
 	- 
 v1.17
 	- Added multiple selection possibility for search results. Select multiple and right-click to add them to the address table;

@@ -124,7 +124,10 @@ CryDebuggerWindow::CryDebuggerWindow()
 
 CryDebuggerWindow::~CryDebuggerWindow()
 {
-	
+	if (mDebugger)
+	{
+		mDebugger->SetDebuggerEventLockProcessed();
+	}
 }
 
 void CryDebuggerWindow::ToolStrip(Bar& pBar)

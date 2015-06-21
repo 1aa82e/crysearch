@@ -14,11 +14,12 @@ void GetProcessorSupportInformation(char pProcInformationString[128])
 	BOOL ssse3;
 	BOOL sse41;
 	BOOL sse42;
-	BOOL avx;
 	BOOL mmx;
 	BOOL vtx;
-	BOOL htt;
-	BOOL pae;
+	BOOL fma;
+	BOOL avx;
+	BOOL avx2;
+	BOOL tsx;
 	int CPUInfo[4] = {-1};
 	size_t lastChar = 0;
 	char* prefixString = "\1[+70 Your processor supports: ";
@@ -32,17 +33,18 @@ void GetProcessorSupportInformation(char pProcInformationString[128])
 	sse41 = CPUInfo[2] & (1 << 19);
 	sse42 = CPUInfo[2] & (1 << 20);
 	avx = CPUInfo[2] & (1 << 28);
-	pae = CPUInfo[3] & (1 << 6);
+	fma = CPUInfo[2] & (1 << 12);
 	mmx = CPUInfo[3] & (1 << 23);
 	sse = CPUInfo[3] & (1 << 25);
 	sse2 = CPUInfo[3] & (1 << 26);
-	htt = CPUInfo[3] & (1 << 28);
 	
-	// Create output string to display to the user.
-	/*sprintf_s(pProcInformationString, 128, "\1[+70 Your processor supports: %s%s%s%s%s%s%s%s%s%s%s.]", sse ? "SSE, " : "", sse2 ? "SSE2, " : ""
-		, sse3 ? "SSE3, " : "", ssse3 ? "SSSE3, " : "", sse41 ? "SSE4.1, " : "", sse42 ? "SSE4.2, " : "", mmx ? "MMX, " : ""
-		, avx ? "AVX, " : "", vtx ? "VT, " : "", htt ? "HTT, " : "", pae ? "PAE, " : "");*/
+	// Get extended CPU information and dissect this information into seperate variables.
+	__cpuid(CPUInfo, 7);
 
+	avx2 = CPUInfo[1] & (1 << 5);
+	tsx = CPUInfo[1] & (1 << 11);
+
+	// Create output string to display to the user.
 	strcpy(pProcInformationString, prefixString);
 
 	if (sse)
@@ -73,21 +75,25 @@ void GetProcessorSupportInformation(char pProcInformationString[128])
 	{
 		strcat(pProcInformationString, "MMX, ");
 	}
+	if (vtx)
+	{
+		strcat(pProcInformationString, "VMX, ");
+	}
+	if (fma)
+	{
+		strcat(pProcInformationString, "FMA3, ");
+	}
 	if (avx)
 	{
 		strcat(pProcInformationString, "AVX, ");
 	}
-	if (vtx)
+	if (avx2)
 	{
-		strcat(pProcInformationString, "VT, ");
+		strcat(pProcInformationString, "AVX2, ");
 	}
-	if (htt)
+	if (tsx)
 	{
-		strcat(pProcInformationString, "HTT, ");
-	}
-	if (pae)
-	{
-		strcat(pProcInformationString, "PAE, ");
+		strcat(pProcInformationString, "TSX, ");
 	}
 
 	strcat(pProcInformationString, ".]");

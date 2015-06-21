@@ -301,7 +301,7 @@ private:
 	Vector<MemoryRegion> memRegions;
 	
 	// Resultcount variable that contains the result count of the most recent memory scan.
-	int mScanResultCount;
+	volatile Atomic mScanResultCount;
 	
 	typedef MemoryScanner CLASSNAME;
 
