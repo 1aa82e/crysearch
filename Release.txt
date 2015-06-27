@@ -5,6 +5,7 @@ evolution536, www.unknowncheats.me
 v1.18
 	- Improved memory dissector:
 		- Fixed bug where row offsets did not change correctly when changing its size;
+		- Added option to right-click address in memory dissection window to add it to the address table;
 		- Added option to edit the value of the row inline.
 	- Fixed bug in next scan where array of bytes and string sizes were not set, resulting in null searches;
 	- Fixed bug in disassembler where disassembling would stop on error, not covering the whole page;
@@ -16,6 +17,9 @@ v1.18
 	- Fixed bug where subsequent next scans could crash the application;
 	- Added about dialog detection for instruction sets AVX2, FMA3 and TSX;
 	- Improved performance of string, wstring and aob scans by eliminating the values file dependency;
+	- Optimized the way memory is assigned to workers, increasing memory scanner speed;
+	- Fixed bug in imports window where loaded modules with an empty import table would return false information or potentially crash application;
+	- Added function counter in the imports window that displays the amount of functions imported from the selected module;
 	- 
 v1.17
 	- Added multiple selection possibility for search results. Select multiple and right-click to add them to the address table;

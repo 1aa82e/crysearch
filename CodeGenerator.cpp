@@ -7,9 +7,9 @@
 #define GENERATED_BYTESREAD		"\tDWORD bytesRead;\r\n\r\n"
 
 // CodeGenerator class default constructor, which takes an address table to generate code from.
-CodeGenerator::CodeGenerator(const AddressTable* pTable)
+CodeGenerator::CodeGenerator()
 {
-	this->mTable = pTable;
+	this->mTable = &loadedTable;
 	this->external = false;
 	this->CreateConstants();
 }

@@ -4,6 +4,7 @@
 #include "CrySearchArrayCtrl.h"
 #include "CryDialogTemplate.h"
 
+// When a process is opened, all system handles associated with it can be displayed inside this window.
 class CrySystemHandleInformationWindow : public CryDialogTemplate
 {
 private:

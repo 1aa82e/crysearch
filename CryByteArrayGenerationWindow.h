@@ -3,6 +3,7 @@
 
 #include "CryDialogTemplate.h"
 
+// When a process' code is disassembled, byte arrays can be generated from this window.
 class CryByteArrayGenerationWindow : public CryDialogTemplate
 {
 private:

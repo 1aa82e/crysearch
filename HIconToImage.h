@@ -5,6 +5,7 @@
 
 using namespace Upp;
 
+// These functions support the icon retrieval functionality inside the process selection window.
 HICON hIconFromWindow(HWND hWindow);
 BOOL __stdcall enumProc(HWND hwnd, LPARAM lParam);
 HICON hIconForPID(DWORD pID);

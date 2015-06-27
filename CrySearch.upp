@@ -1,5 +1,7 @@
 description "Memory scanning, filtering, disassembling and debugging application\377";
 
+noblitz;
+
 uses
 	CtrlLib,
 	plugin/z;

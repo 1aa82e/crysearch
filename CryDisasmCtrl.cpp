@@ -31,7 +31,7 @@ const int GetDisasmLineIndexFromAddress(const SIZE_T address)
 		}
 
 		const LONG_PTR signedAddr = address;
-		if (DisasmVisibleLines[i] >= signedAddr && (*next && signedAddr < *next))
+		if (DisasmVisibleLines[i] >= signedAddr && (next && (*next && signedAddr < *next)))
 		{
 			return i;
 		}

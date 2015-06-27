@@ -8,7 +8,7 @@ Package:
 - Update wiki with changes for the release.
 ------------------------------------------------------------------
 
-- Scrolling to disassembler address is not good yet;
+- Multithread disassembler, Skype has rediculously big pages;
 
 - Improve SDK documentation, see learn_more's notes;
 - Post-dump (plugin operations) event in plugins!!!

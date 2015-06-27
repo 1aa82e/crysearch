@@ -21,8 +21,8 @@ CryCodeGenerationForm::CryCodeGenerationForm()
 
 	this->mLanguageSelector.SetIndex(0);
 	
-	// Create code generator
-	this->mCodeGen = new CodeGenerator(&loadedTable);
+	// Create code generator instance in the scope of the window.
+	this->mCodeGen = new CodeGenerator();
 }
 
 CryCodeGenerationForm::~CryCodeGenerationForm()
@@ -30,23 +30,16 @@ CryCodeGenerationForm::~CryCodeGenerationForm()
 	delete this->mCodeGen;
 }
 
-/*void CryCodeGenerationForm::ExternalCheckChanged()
-{
-	
-}
-
-void CryCodeGenerationForm::LanguageSelectionChanged()
-{
-	
-}*/
-
 void CryCodeGenerationForm::GenerateButtonClicked()
 {
+	// Set internal/external switch for code generation.
 	this->mCodeGen->SetExternal(this->mCreateExternalCode);
 	
+	// Generate code.
 	String codenz;
 	this->mCodeGen->Generate(codenz);
 	
+	// Display generated code inside window.
 	this->mCodeField.Set(codenz);
 }
 

@@ -3,6 +3,7 @@
 
 #include "CryDialogTemplate.h"
 
+// When a process' code is disassembled, signatures can be generated from this window.
 class CrySignatureGenerationWindow : public CryDialogTemplate
 {
 private:

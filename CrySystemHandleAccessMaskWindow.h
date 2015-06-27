@@ -4,6 +4,7 @@
 #include "CryDialogTemplate.h"
 #include "CrySearchArrayCtrl.h"
 
+// This window displays the access mask associated with a specific handle inside the opened process.
 class CrySystemHandleAccessMaskWindow : public CryDialogTemplate
 {
 private:

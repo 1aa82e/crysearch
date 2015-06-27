@@ -28,6 +28,7 @@ CryMemoryDissectionChangeValueWindow::CryMemoryDissectionChangeValueWindow(SIZE_
 		this->mValueIsHex.WhenAction = THISBACK(ValueModeHexOptionChanged);
 	}
 	
+	// Read and format existing value from memory for display inside the input field.
 	if (this->rowType == CRYDATATYPE_BYTE)
 	{
 		Byte value;

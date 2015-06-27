@@ -5,7 +5,8 @@
 #include "VirtualDropList.h"
 #include "AsyncDisassembler.h"
 
-// Disassembly control, can be placed on a tab page.
+// Disassembly control, which is used in a tab window. The opened process' code is disassembled
+// and shown inside this control.
 class CryDisasmCtrl : public ParentCtrl
 {
 private:

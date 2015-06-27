@@ -25,12 +25,14 @@ CryDisasmGoToAddressDialog::~CryDisasmGoToAddressDialog()
 
 void CryDisasmGoToAddressDialog::OkButtonClicked()
 {
+	// Check if a valid address was entered.
 	if (this->mAddressInput.GetText().IsEmpty())
 	{
 		Prompt("Input Error", CtrlImg::error(), "Please enter an address.", "OK");
 		return;
 	}
-		
+	
+	// Save it in the return pointer and close the window.
 #ifdef _WIN64
 	*this->addrPtr = ScanInt64(this->mAddressInput.GetText().ToString(), NULL, 16);
 #else

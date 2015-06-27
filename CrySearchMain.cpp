@@ -248,7 +248,7 @@ GUI_APP_MAIN
 			// If the help command was executed, don't continue the application but output help.
 			if (cmdParser.WasHelpCommandFound())
 			{
-				MessageBox(NULL, cmdParser.GetHelpOutput(), "Help", MB_ICONINFORMATION);
+				MessageBox(NULL, CommandArgumentParser::GetHelpOutput(), "Help", MB_ICONINFORMATION);
 			}
 			else
 			{

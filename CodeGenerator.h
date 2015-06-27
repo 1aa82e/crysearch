@@ -28,7 +28,7 @@ private:
 	
 	void CreateConstants();
 public:
-	CodeGenerator(const AddressTable* pTable);
+	CodeGenerator();
 	~CodeGenerator();
 	
 	void SetExternal(bool external = true)	{ this->external = external; };

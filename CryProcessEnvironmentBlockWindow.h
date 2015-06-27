@@ -5,6 +5,8 @@
 #include "NativeAPI.h"
 #include "CrySearchArrayCtrl.h"
 
+// When a process is opened, the PEB (Process Environment Block) can be analyzed and displayed
+// inside this window. The debug flag can be reset as well. (PEB->BeingDebugged)
 class CryProcessEnvironmentBlockWindow : public CryDialogTemplate
 {
 private:

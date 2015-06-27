@@ -125,8 +125,8 @@ public:
 	
 	CrySearchWindowManager* GetWindowManager();
 	CrySearchArrayCtrl* GetSearchResultCtrl();
-	void ExecuteCrashHandlerWindow(const String& msg);
 	
+	void ExecuteCrashHandlerWindow(const String& msg);
 	bool SetActiveTabWindow(const String& wndText);
 };
 

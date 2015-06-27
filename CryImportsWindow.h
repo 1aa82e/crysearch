@@ -18,6 +18,7 @@ private:
 	Splitter mControlSplitter;
 	Label mModulesDescriptorLabel;
 	VirtualDropList mModulesDropList;
+	Label mFunctionCount;
 	
 	void ToolStrip(Bar& pBar);
 	

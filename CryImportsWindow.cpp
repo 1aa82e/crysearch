@@ -20,7 +20,7 @@ String GetFunction(const int index)
 String GetHint(const int index)
 {
 	const ImportAddressTableEntry& current = LoadedProcessPEInformation.ImportAddressTable[MasterIndex].FunctionList[index];
-	return current.Hint ? Format("%X", current.Hint) : Format("Ord (%i)", (int)current.Ordinal);
+	return current.Ordinal ? Format("Ord (%i)", (int)current.Ordinal) : Format("%X", current.Hint);
 }
 
 String GetVirtualAddress(const int index)
@@ -78,6 +78,8 @@ void CryImportsWindow::ToolStrip(Bar& pBar)
 	pBar.Add(this->mModulesDropList, 200);
 	pBar.Separator();
 	pBar.Add("Refresh", CrySearchIml::RefreshButtonSmall(), THISBACK(RefreshImports));
+	pBar.ToolGapRight();
+	pBar.Add(this->mFunctionCount.SetAlign(ALIGN_RIGHT), 150);
 }
 
 void CryImportsWindow::ModulesDropped()
@@ -230,6 +232,12 @@ void CryImportsWindow::ModuleChanged()
 				this->mFunctionsList.SetRowDisplay(i, StdDisplay());
 			}
 		}
+		
+		this->mFunctionCount.SetLabel(Format("Total %i functions", virtualcount));
+	}
+	else
+	{
+		this->mFunctionCount.SetLabel("Total 0 functions");
 	}
 }
 
@@ -270,16 +278,18 @@ void CryImportsWindow::Initialize()
 	
 	// Make sure the base address is correct again.
 	this->DataRetrievalDone();
+
+	// Update the user interface with the amount of entries in the import table.
+	this->mModulesList.SetVirtualCount(LoadedProcessPEInformation.ImportAddressTable.GetCount());
 	
-	// If the IAT could not be loaded, and is empty, do not trigger the event. This will crash CrySearch.
+	// If the import table is not empty, update the user interface to point at the first entry.
 	if (LoadedProcessPEInformation.ImportAddressTable.GetCount())
 	{
-		this->mModulesList.SetVirtualCount(LoadedProcessPEInformation.ImportAddressTable.GetCount());
 		this->mModulesList.SetCursor(0);
-		
-		// Trigger the event to load the functions inside an imported module.
-		this->ModuleChanged();
 	}
+		
+	// Trigger the event to load the functions inside an imported module.
+	this->ModuleChanged();
 }
 
 // Just in case, a function that clears everything in this window to avoid problems.

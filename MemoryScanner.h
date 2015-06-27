@@ -62,8 +62,11 @@ struct ScanParameterBase
 	ScanParameterBase()
 	{
 		this->CurrentScanFastScan = true;
+		this->GlobalScanType = SCANTYPE_UNKNOWN_INITIAL_VALUE;
+		this->GlobalScanValueType = VALUETYPE_UNKNOWN;
 		this->CurrentScanHexValues = false;
 		this->ValueSize = 0;
+		this->ScanUntilNullChar = false;
 	};
 };
 
@@ -146,17 +149,11 @@ struct WorkerRegionParameterData : Moveable<WorkerRegionParameterData>
 	unsigned int OriginalStartIndex;
 	unsigned int Length;
 	
-	// File handles.
-	HANDLE AddressesFile;
-	HANDLE ValuesFile;
-	
 	WorkerRegionParameterData()
 	{
 		this->WorkerIdentifier = 0;
 		this->OriginalStartIndex = 0;
 		this->Length = 0;
-		this->AddressesFile = NULL;
-		this->ValuesFile = NULL;
 	};
 };
 

@@ -88,7 +88,7 @@ const int CommandArgumentParser::GetParameterCount() const
 }
 
 // Provides help output for the CrySearch command line.
-String CommandArgumentParser::GetHelpOutput() const
+String CommandArgumentParser::GetHelpOutput()
 {
 	// Retrieve the current CrySearch version.
 	WORD major;

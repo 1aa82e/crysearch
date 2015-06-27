@@ -5,6 +5,8 @@
 #include "NativeAPI.h"
 #include "CrySearchArrayCtrl.h"
 
+// When a process is opened, the TEB (Thread Environment Block) of each thread inside it can be
+// displayed inside this window.
 class CryThreadInformationBlockWindow : public CryDialogTemplate
 {
 private:

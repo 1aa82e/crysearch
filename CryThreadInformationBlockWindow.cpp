@@ -35,12 +35,14 @@ CryThreadInformationBlockWindow::CryThreadInformationBlockWindow(const int threa
 		}
 		else
 		{
+			// Read 64-bit TEB.
 			TEB tib;
 			CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), tInfo.TebBaseAddress, &tib, sizeof(TEB), NULL);
 			
 			Initialize64(&tib);
 		}
 #else
+		// Regularly read 32-bit TEB.
 		TEB32 tib;
 		CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), tInfo.TebBaseAddress, &tib, sizeof(TEB32), NULL);
 		

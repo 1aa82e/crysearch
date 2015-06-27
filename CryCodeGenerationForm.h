@@ -8,6 +8,8 @@
 
 using namespace Upp;
 
+// When the address table contains addresses and a process is opened, C++ code can be generated
+// from this window, using the contents of the address table.
 class CryCodeGenerationForm : public TopWindow
 {
 private:
@@ -21,8 +23,6 @@ private:
 	CodeGenerator* mCodeGen;
 	
 	void CloseForm();
-	//void ExternalCheckChanged();
-	//void LanguageSelectionChanged();
 	void GenerateButtonClicked();
 	
 	typedef CryCodeGenerationForm CLASSNAME;

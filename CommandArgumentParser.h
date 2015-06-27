@@ -27,8 +27,9 @@ public:
 	CommandArgumentParser(const Vector<String>& args);
 	~CommandArgumentParser();
 	
+	static String GetHelpOutput();
+	
 	const int GetParameterCount() const;
-	String GetHelpOutput() const;
 	const bool GetWasShellExecuted() const;
 	const bool WasHelpCommandFound() const;
 	const DWORD GetProcessId() const;

@@ -5,7 +5,8 @@
 
 using namespace Upp;
 
-// Represents a Win32 module
+// Represents a module that is loaded into the opened process. It is used to idenfity static addresses
+// and to dump data from the process' memory.
 struct Win32ModuleInformation : Moveable<Win32ModuleInformation>
 {
 	SIZE_T BaseAddress;
@@ -16,7 +17,8 @@ struct Win32ModuleInformation : Moveable<Win32ModuleInformation>
 #endif
 };
 
-// Represents a Win32 process
+// Represents a process that is running on the system. It can be enumerated and used as identifying
+// information to open it inside CrySearch.
 struct Win32ProcessInformation : Moveable<Win32ProcessInformation>
 {
 	int ProcessId;
@@ -24,10 +26,10 @@ struct Win32ProcessInformation : Moveable<Win32ProcessInformation>
 	String ProcessArguments;
 
 	// The flags are WinAPI process creation flags. This allows direct pass-through of flags into CreateProcess.
-	DWORD UserInterfaceFlags;	
+	DWORD UserInterfaceFlags;
 };
 
-// Represents a numeric thread identification value.
+// Represents a thread identifier. It is used to enumerate threads inside the opened process.
 struct Win32ThreadInformation : Moveable<Win32ThreadInformation>
 {
 	int ThreadIdentifier;
@@ -35,7 +37,7 @@ struct Win32ThreadInformation : Moveable<Win32ThreadInformation>
 	bool IsSuspended;
 };
 
-// Contains information about a heap block inside a process.
+// Contains information about a heap block inside a process. Heaps are solely enumerated whenever possible.
 struct Win32HeapInformation : Moveable<Win32HeapInformation>
 {
 	LONG_PTR VirtualAddress;
@@ -45,7 +47,7 @@ struct Win32HeapInformation : Moveable<Win32HeapInformation>
 	LONG Flags;
 };
 
-// Contains information about a handle in the system.
+// Contains information about a handle in the system. Handles can be enumerated and closed.
 struct Win32HandleInformation : Moveable<Win32HandleInformation>
 {
 	USHORT Handle;

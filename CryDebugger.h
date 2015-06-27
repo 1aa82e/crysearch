@@ -254,7 +254,7 @@ public:
 	const int GetBreakpointCount() const;
 	void SetDebuggerEventLockProcessed();
 	
-	const DbgBreakpoint& operator [] (const int x)
+	const DbgBreakpoint& operator [] (const int x) const
 	{
 		return this->mBreakpoints[x];
 	}

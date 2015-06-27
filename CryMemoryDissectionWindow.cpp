@@ -109,7 +109,7 @@ CryMemoryDissectionWindow::CryMemoryDissectionWindow(const AddressTableEntry* co
 	this->AddFrame(this->mMenuBar);
 	this->mMenuBar.Set(THISBACK(WindowMenuBar));
 	
-	*this << this->mDissection.MultiSelect().NoGrid().NoMovingHeader().SizePos();
+	*this << this->mDissection.NoGrid().NoMovingHeader().SizePos();
 	
 	// Set properties of row-specific size input field.
 	this->mRowSizeControl.WhenValueSet = THISBACK(RowEntryChangeDataSize);
@@ -211,8 +211,39 @@ void CryMemoryDissectionWindow::DissectionRightClick(Bar& pBar)
 	{
 		pBar.Add("Change Value", CrySearchIml::ChangeRecordIcon(), THISBACK(ChangeRowValue));
 		pBar.Add("Change Type", THISBACK(ChangeRowOffsetMenu));
+		pBar.Separator();
+		pBar.Add("Add to address list", CrySearchIml::AddToAddressList(), THISBACK(AddRowToAddressList));
 	}
 	// generate struct definition for multiple rows?
+}
+
+void CryMemoryDissectionWindow::AddRowToAddressList()
+{
+	const int cursor = this->mDissection.GetCursor();
+	if (cursor >= 0 && loadedTable.GetDissection(MemoryDissectionMasterIndex))
+	{
+		MemoryDissectionEntry* entry = loadedTable.GetDissection(MemoryDissectionMasterIndex);
+		const DissectionRowEntry* row = entry->AssociatedDissector[cursor];
+		const SIZE_T addr = entry->AssociatedDissector.GetBaseAddress() + row->RowOffset;
+		
+		// Check whether address with specified type already exists in the address table.
+		if (loadedTable.Find(addr, row->RowType) != -1)
+		{
+			Prompt("Input Error", CtrlImg::error(), "The address already exists in the address table.", "OK");
+			return;
+		}
+		
+		// Check whether the address is static and add it to the address table.
+		const Win32ModuleInformation* mod = mModuleManager->GetModuleFromContainedAddress(addr);
+		const AddressTableEntry* newEntry = loadedTable.Add("", addr, !!mod, row->RowType);
+		newEntry->Size = row->DataLength;
+		
+		// If there is no process loaded, set the value to invalid.
+		if (!mMemoryScanner->GetProcessId())
+		{
+			newEntry->Value = "???";
+		}
+	}
 }
 
 void CryMemoryDissectionWindow::ChangeRowValue()

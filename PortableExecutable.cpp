@@ -604,7 +604,7 @@ void PortableExecutable32::GetImportAddressTable() const
 	IMAGE_IMPORT_DESCRIPTOR pDesc;
 	CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(this->mBaseAddress + pOptionalHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress + (counter * sizeof(IMAGE_IMPORT_DESCRIPTOR))), &pDesc, sizeof(IMAGE_IMPORT_DESCRIPTOR), NULL);
 
-	while (pDesc.FirstThunk)
+	while (pDesc.FirstThunk && pDesc.Name != 0xFFFF)
 	{
 		// Read DLL name from import descriptor entry.
 		char dllName[48];
@@ -1465,7 +1465,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 		IMAGE_IMPORT_DESCRIPTOR pDesc;
 		CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(this->mBaseAddress + pOptionalHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress + (counter * sizeof(IMAGE_IMPORT_DESCRIPTOR))), &pDesc, sizeof(IMAGE_IMPORT_DESCRIPTOR), NULL);
 		
-		while (pDesc.FirstThunk)
+		while (pDesc.FirstThunk && pDesc.Name != 0xFFFF)
 		{
 			// Read DLL name from import descriptor entry.
 			char dllName[48];
