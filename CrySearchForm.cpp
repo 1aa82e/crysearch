@@ -652,6 +652,8 @@ void CrySearchForm::HideLowerPaneButtonClicked()
 		this->SetMainSplitterPosition();
 	}
 	
+	this->mMainSplitter.SetMinPixels(0, 100);
+	this->mMainSplitter.SetMinPixels(1, 100);
 	this->lowerPaneHidden = !this->lowerPaneHidden;
 }
 

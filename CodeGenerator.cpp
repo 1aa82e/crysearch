@@ -97,8 +97,10 @@ String CodeGenerator::GenerateInternalEntry(const AddressTableEntry* entry, cons
 	// Create field and append to output result.
 	if (entry->IsRelative == TRUE)
 	{
+		const SIZE_T modBase = mModuleManager->GetModuleFromContainedAddress(entry->Address)->BaseAddress;
+		const String modName = mModuleManager->GetModuleFilename(modBase);
 		taskOutput += Format("%s* %s = (%s*)GetModuleHandle(\"%s\") + 0x%llX;\r\n", fieldType, description.IsEmpty() ? Format("__unknown%i", number)
-			: description, fieldType, entry->ModuleName, (__int64)(entry->Address - mModuleManager->FindModule(entry->ModuleName)->BaseAddress));
+			: description, fieldType, modName, (__int64)(entry->Address - modBase));
 	}
 	else
 	{

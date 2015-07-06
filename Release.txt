@@ -17,9 +17,11 @@ v1.18
 	- Fixed bug where subsequent next scans could crash the application;
 	- Added about dialog detection for instruction sets AVX2, FMA3 and TSX;
 	- Improved performance of string, wstring and aob scans by eliminating the values file dependency;
-	- Optimized the way memory is assigned to workers, increasing memory scanner speed;
+	- Optimized the way readable memory is assigned to workers, increasing memory scanner speed;
 	- Fixed bug in imports window where loaded modules with an empty import table would return false information or potentially crash application;
 	- Added function counter in the imports window that displays the amount of functions imported from the selected module;
+	- Fixed bug in main window where hiding and showing the bottom pane would eliminate the drag limit;
+	- Fixed bug in code generator where generating code for static addresses could possibly crash the application;
 	- 
 v1.17
 	- Added multiple selection possibility for search results. Select multiple and right-click to add them to the address table;

@@ -8,6 +8,7 @@ Package:
 - Update wiki with changes for the release.
 ------------------------------------------------------------------
 
+- Removing all windows from the bottom pane and re-adding the disasm window will crash the application;
 - Multithread disassembler, Skype has rediculously big pages;
 
 - Improve SDK documentation, see learn_more's notes;
@@ -15,7 +16,6 @@ Package:
 - Provide the output window / menu bar entry (PLUGIN_WANTS_OUTPUT_TAB);
 - IAT window isn't that perfect in UI stuff;
 - Find import function in window (button on top)?
-- Splitter offset on the right size, I think the border is 3D!
 - I think the way imports are saved needs some optimization!!!
 - Debugger window (stack / registers) resolve addresses to relative/apis;
 - More icons for actions in the designated toolbars!!!
@@ -31,8 +31,7 @@ Package:
 	- data schema (smth like xsd but for memory dissections);
 	- generate struct definition from selection;
 
-- There is a bug in the process selection window when fooling around with non-responsive processes;
-- Also a bug in the main window complaining about GUI locking (hard to reproduce);
+- Make code generator a modular component;
 
 - Identify static addresses:
 	- Generate C++ Fields / Struct / Union;
