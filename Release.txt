@@ -22,7 +22,7 @@ v1.18
 	- Added function counter in the imports window that displays the amount of functions imported from the selected module;
 	- Fixed bug in main window where hiding and showing the bottom pane would eliminate the drag limit;
 	- Fixed bug in code generator where generating code for static addresses could possibly crash the application;
-	- 
+	- Fixed bug in main window where hiding and showing the disassembly window would crash the application.
 v1.17
 	- Added multiple selection possibility for search results. Select multiple and right-click to add them to the address table;
 	- Added possibility to select multiple address table entries and remove them all at once;

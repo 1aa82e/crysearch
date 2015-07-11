@@ -8,7 +8,6 @@ Package:
 - Update wiki with changes for the release.
 ------------------------------------------------------------------
 
-- Removing all windows from the bottom pane and re-adding the disasm window will crash the application;
 - Multithread disassembler, Skype has rediculously big pages;
 
 - Improve SDK documentation, see learn_more's notes;

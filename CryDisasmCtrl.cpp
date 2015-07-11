@@ -312,7 +312,7 @@ void CryDisasmCtrl::ClearList()
 	mExecutablePagesList.Clear();
 	
 	this->mExecutablePages.SetCount(0);
-	this->disasmDisplay.SetVirtualCount(0);
+	this->disasmDisplay.Clear();
 }
 
 // Callback that executes when the asynchronous disassembly process was kicked off.
@@ -359,7 +359,7 @@ void CryDisasmCtrl::Initialize()
 	this->mAsyncHelper->DisasmCompleted = THISBACK(AsyncDisasmCompleted);
 	
 	// Clear list to put new disassembly.
-	this->disasmDisplay.SetVirtualCount(0);
+	this->disasmDisplay.Clear();
 	
 	// Load pages into toolbar droplist for manual selection.
 	RefreshExecutablePages(mExecutablePagesList);
