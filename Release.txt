@@ -2,6 +2,11 @@ CrySearch Memory Scanner
 
 evolution536, www.unknowncheats.me
 
+v2.0
+	- 
+
+A new revision is released after v1.18. Major improvements were implemented and XP support is discontinued.
+
 v1.18
 	- Improved memory dissector:
 		- Fixed bug where row offsets did not change correctly when changing its size;
