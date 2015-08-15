@@ -12,3 +12,8 @@ Open up Visual Studio and open the CrySearchLibrary project. Compile it for the 
 
 evolution536
 
+## Contribute
+
+If you want to contribute to CrySearch, feel free to create a pull request. Every information available can be found at the UnknownCheats forum.
+
+http://www.unknowncheats.me/forum/general-programming-and-reversing/100677-crysearch-memory-scanner.html
