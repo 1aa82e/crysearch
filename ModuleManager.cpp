@@ -5,6 +5,53 @@
 
 #pragma comment(lib, "Psapi.lib")
 
+// Retrieves all modules loaded from a process including base and size.
+const bool ModuleManager::EnumerateModules(const int procID, Vector<Win32ModuleInformation>& outModules)
+{
+	// Create debug buffer to hold heap information.
+	PRTL_DEBUG_INFORMATION db = CrySearchRoutines.RtlCreateQueryDebugBuffer(0, FALSE);
+	if (!db)
+	{
+		return false;
+	}
+
+	// Get heap information and put it inside the debug buffer.
+	NTSTATUS result;
+	if (procID == GetCurrentProcessId())
+	{
+		result = CrySearchRoutines.RtlQueryProcessDebugInformation(procID, PDI_MODULES, db);
+	}
+	else
+	{
+#ifdef _WIN64
+	result = CrySearchRoutines.RtlQueryProcessDebugInformation(procID, mMemoryScanner->IsX86Process() ? PDI_WOW64_MODULES : PDI_MODULES, db);
+#else
+	result = CrySearchRoutines.RtlQueryProcessDebugInformation(procID, PDI_MODULES, db);
+#endif
+	}
+	
+	if (result != STATUS_SUCCESS || !db->Modules)
+	{
+		CrySearchRoutines.RtlDestroyQueryDebugBuffer(db);
+		return false;
+	}
+	
+	// Walk and save the enumerated modules.
+	PDEBUG_MODULE_INFORMATIONEX modInfo = (PDEBUG_MODULE_INFORMATIONEX)db->Modules;
+	outModules.Reserve(modInfo->Count);
+	for (unsigned int i = 0; i < modInfo->Count; ++i)
+	{
+		Win32ModuleInformation& curMod = outModules.Add();
+		curMod.BaseAddress = modInfo->DbgModInfo[i].Base;
+		curMod.Length = modInfo->DbgModInfo[i].Size;
+	}
+	
+	// Free the allocated debug buffer.
+	CrySearchRoutines.RtlDestroyQueryDebugBuffer(db);
+	
+	return true;
+}
+
 ModuleManager::ModuleManager()
 {
 	
@@ -15,50 +62,20 @@ ModuleManager::~ModuleManager()
 	
 }
 
-// Retrieves all modules loaded from a process including base and size.
-void ModuleManager::EnumerateModules()
+// Initializes the internal module store.
+void ModuleManager::InitModulesList()
 {
 	// Clear previous modules from the list.
 	this->mLoadedModulesList.Clear();
 	
-	// Create debug buffer to hold heap information.
-	PRTL_DEBUG_INFORMATION db = CrySearchRoutines.RtlCreateQueryDebugBuffer(0, FALSE);
-	if (!db)
-	{
-		return;
-	}
-
-	// Get heap information and put it inside the debug buffer.
-#ifdef _WIN64
-	NTSTATUS result = CrySearchRoutines.RtlQueryProcessDebugInformation(mMemoryScanner->GetProcessId(), mMemoryScanner->IsX86Process() ? PDI_WOW64_MODULES : PDI_MODULES, db);
-#else
-	NTSTATUS result = CrySearchRoutines.RtlQueryProcessDebugInformation(mMemoryScanner->GetProcessId(), PDI_MODULES, db);
-#endif
-	
-	if (result != STATUS_SUCCESS || !db->Modules)
-	{
-		CrySearchRoutines.RtlDestroyQueryDebugBuffer(db);
-		return;
-	}
-	
-	// Walk and save the enumerated modules.
-	PDEBUG_MODULE_INFORMATIONEX modInfo = (PDEBUG_MODULE_INFORMATIONEX)db->Modules;
-	this->mLoadedModulesList.Reserve(modInfo->Count);
-	for (unsigned int i = 0; i < modInfo->Count; ++i)
-	{
-		Win32ModuleInformation& curMod = this->mLoadedModulesList.Add();
-		curMod.BaseAddress = modInfo->DbgModInfo[i].Base;
-		curMod.Length = modInfo->DbgModInfo[i].Size;
-	}
-	
-	// Free the allocated debug buffer.
-	CrySearchRoutines.RtlDestroyQueryDebugBuffer(db);
+	// Fill the internal module list with the loaded modules inside the target process.
+	ModuleManager::EnumerateModules(mMemoryScanner->GetProcessId(), this->mLoadedModulesList);
 }
 
 // Resets the module list and retrieves modules from scratch.
 void ModuleManager::Initialize()
 {
-	this->EnumerateModules();
+	this->InitModulesList();
 }
 
 // Clears the module list.

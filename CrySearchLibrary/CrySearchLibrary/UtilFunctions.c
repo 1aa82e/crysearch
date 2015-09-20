@@ -174,17 +174,29 @@ void GetOSVersionString(char* const pOutString, const DWORD maxLength)
 	WORD minor;
 	char versionBuffer[8];
 
+	// GetVersionEx alternative on ntdll.dll level.
+	typedef NTSTATUS(__stdcall* RtlGetVersionPrototype)(POSVERSIONINFOEX osVersion);
+	RtlGetVersionPrototype RtlGetVersion = (RtlGetVersionPrototype)GetProcAddress(GetModuleHandle(L"ntdll.dll"), "RtlGetVersion");
+	
 	// Copy the first part of the string into the output buffer.
 	strcpy_s(pOutString, maxLength, "System Information:\r\n\r\nOS Version:\t\t\t");
 
 	// Retrieve version of Windows.
 	osv.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
-	GetVersionEx((OSVERSIONINFO*)&osv);
+	RtlGetVersion(&osv);
 
 	// Parse version numbers into a version string for the crash report.
-	if (osv.dwMajorVersion == 6)
+	if (osv.dwMajorVersion == 10)
 	{
-		if (osv.dwMinorVersion == 3)
+		strcat_s(pOutString, maxLength, "Windows 10");
+	}
+	else if (osv.dwMajorVersion == 6)
+	{
+		if (osv.dwMinorVersion == 4)
+		{
+			strcat_s(pOutString, maxLength, "Windows 10");
+		}
+		else if (osv.dwMinorVersion == 3)
 		{
 			if (osv.wProductType == VER_NT_WORKSTATION)
 			{
@@ -246,6 +258,10 @@ void GetOSVersionString(char* const pOutString, const DWORD maxLength)
 		{
 			strcat_s(pOutString, maxLength, "Windows XP");
 		}
+	}
+	else
+	{
+		strcat_s(pOutString, maxLength, "Unknown Windows version");
 	}
 
 	// Add the OS architecture to the crash report.

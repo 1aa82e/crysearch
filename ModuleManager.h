@@ -20,13 +20,15 @@ private:
 	ModuleManager(ModuleManager const&);
 	void operator=(ModuleManager const&);
 	
-	void EnumerateModules();
+	void InitModulesList();
 public:
 	static ModuleManager* GetInstance()
 	{
 		static ModuleManager instance;
 		return &instance;
 	}
+	
+	static const bool EnumerateModules(const int procID, Vector<Win32ModuleInformation>& outModules);
 	
 	void ClearModules();
 	void Initialize();

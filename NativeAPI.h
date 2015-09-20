@@ -1427,4 +1427,7 @@ typedef NTSTATUS (__stdcall* NtReadVirtualMemoryPrototype)(HANDLE hProcess, LPCV
 typedef NTSTATUS (__stdcall* NtWriteVirtualMemoryPrototype)(HANDLE hProcess, LPVOID lpAddress, LPCVOID lpBuffer, SIZE_T size, SIZE_T* outSize);
 typedef NTSTATUS (__stdcall* NtProtectVirtualMemoryPrototype)(HANDLE hProcess, PVOID lpAddress, PULONG NumberOfBytesToProtect, ULONG NewAccessProtection, PULONG OldAccessProtection);
 
+// GetVersionEx alternative on ntdll.dll level.
+typedef NTSTATUS(__stdcall* RtlGetVersionPrototype)(POSVERSIONINFOEX osVersion);
+
 #endif

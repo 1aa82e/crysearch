@@ -565,7 +565,7 @@ static auxthread_t auxthread__ sExeIconThread(void *)
 	return 0;
 }
 
-void LazyFileIcons::Done(Image img)
+void LazyExeFileIcons::Done(Image img)
 {
 	if(pos >= ndx.GetCount())
 		return;
@@ -580,7 +580,7 @@ void LazyFileIcons::Done(Image img)
 	pos++;
 }
 
-String LazyFileIcons::Path()
+String LazyExeFileIcons::Path()
 {
 	if(pos >= ndx.GetCount())
 		return Null;
@@ -591,7 +591,7 @@ String LazyFileIcons::Path()
 	return ToSystemCharset(AppendFileName(dir, f.name));
 }
 
-void LazyFileIcons::Do()
+void LazyExeFileIcons::Do()
 {
 	int start = msecs();
 	for(;;) {
@@ -633,7 +633,7 @@ void LazyFileIcons::Do()
 	}
 }
 
-void LazyFileIcons::ReOrder()
+void LazyExeFileIcons::ReOrder()
 { // gather .exe files; sort based on length so that small .exe get resolved first
 	ndx.Clear();
 	Vector<int> len;
@@ -648,7 +648,7 @@ void LazyFileIcons::ReOrder()
 	Restart(0);
 }
 
-void LazyFileIcons::Start(FileList& list_, const String& dir_, Callback3<bool, const String&, Image&> WhenIcon_)
+void LazyExeFileIcons::Start(FileList& list_, const String& dir_, Callback3<bool, const String&, Image&> WhenIcon_)
 {
 	list = &list_;
 	dir = dir_;
@@ -865,7 +865,110 @@ void FileSel::SearchLoad()
 #ifdef GUI_WIN
 	lazyicons.Start(list, d, WhenIcon);
 #endif
+#ifdef _MULTITHREADED
+	StartLI();
+#endif
 }
+
+#ifdef _MULTITHREADED
+
+StaticMutex FileSel::li_mutex;
+void      (*FileSel::li_current)(const String& path, Image& result);
+String      FileSel::li_path;
+Image       FileSel::li_result;
+bool        FileSel::li_running;
+int         FileSel::li_pos;
+
+void FileSel::LIThread()
+{
+	String path;
+	void (*li)(const String& path, Image& result);
+	{
+		Mutex::Lock __(li_mutex);
+		path = li_path;
+		li = li_current;
+	}
+	Image result;
+	if(path.GetCount())
+		li(path, result);
+	if(!IsNull(result) && result.GetWidth() > 16 || result.GetHeight() > 16)
+		result = Rescale(result, 16, 16);
+	{
+		Mutex::Lock __(li_mutex);
+		li_result = result;
+		li_running = false;
+	}
+}
+
+String FileSel::LIPath()
+{
+	return li_pos >= 0 && li_pos < list.GetCount() ? FilePath(list.Get(li_pos).name) : Null;
+}
+
+void FileSel::DoLI()
+{
+	int start = msecs();
+	for(;;) {
+		for(;;) {
+			bool done = false;
+			String path = LIPath();
+			if(IsNull(path))
+				return;
+			bool running;
+			Image img;
+			{
+				Mutex::Lock __(li_mutex);
+				running = li_running;
+				if(!running) {
+					done = li_path == path && li_current == WhenIconLazy;
+					img = li_result;
+				}
+			}
+			if(done) {
+				if(li_pos < 0 || li_pos >= list.GetCount())
+					return;
+				if(!IsNull(img)) {
+					const FileList::File& f = list.Get(li_pos);
+					WhenIcon(f.isdir, f.name, img);
+					if(f.hidden)
+						img = Contrast(img, 200);
+					list.SetIcon(li_pos, img);
+				}
+				li_pos++;
+			}
+			if(!running)
+				break;
+			Sleep(0);
+			if(msecs(start) > 10 || Ctrl::IsWaitingEvent()) {
+				ScheduleLI();
+				return;
+			}
+		}
+
+		String path = LIPath();
+		if(IsNull(path))
+			return;
+		{
+			Mutex::Lock __(li_mutex);
+			if(!li_running) {
+				li_current = WhenIconLazy;
+				li_path = path;
+				li_running = true;
+				Thread::Start(callback(LIThread));
+			}
+		}
+	}
+}
+
+void FileSel::StartLI()
+{
+	if(WhenIconLazy) {
+		li_pos = 0;
+		ScheduleLI();
+	}
+}
+
+#endif
 
 String TrimDot(String f) {
 	int i = f.Find('.');
@@ -1454,15 +1557,15 @@ Image GetDirIcon(const String& s)
 #ifdef PLATFORM_X11
 	img = GetFileIcon(GetFileFolder(s), GetFileName(s), true, false, false);
 #endif
-#ifdef GUI_WIN
-	/*if((byte)*s.Last() == 255)
+/*#ifdef GUI_WIN
+	if((byte)*s.Last() == 255)
 		img = CtrlImg::Network();
-	else*/
+	else
 		img = s.GetCount() ? GetFileIcon(s, false, true, false) : CtrlImg::Computer();
-#endif
+#endif*/
 	if(IsNull(img))
 		img = CtrlImg::Dir();
-	return img;
+	return DPI(img);
 }
 
 void FolderDisplay::Paint(Draw& w, const Rect& r, const Value& q,
@@ -1472,7 +1575,7 @@ void FolderDisplay::Paint(Draw& w, const Rect& r, const Value& q,
 	w.DrawRect(r, paper);
 	Image img = GetDirIcon(s);
 	w.DrawImage(r.left, r.top + (r.Height() - img.GetSize().cx) / 2, img);
-	w.DrawText(r.left + 20,
+	w.DrawText(r.left + Zx(20),
 	           r.top + (r.Height() - StdFont().Bold().Info().GetHeight()) / 2,
 			   ~s, StdFont().Bold(), ink);
 }
@@ -1481,9 +1584,10 @@ struct HomeDisplay : public Display {
 	virtual void Paint(Draw& w, const Rect& r, const Value& q,
 	                   Color ink, Color paper, dword style) const {
 		w.DrawRect(r, paper);
-		w.DrawImage(r.left, r.top + (r.Height() - CtrlImg::Home().GetSize().cx) / 2,
+		Image img = CtrlImg::Home();
+		w.DrawImage(r.left, r.top + (r.Height() - img.GetSize().cx) / 2,
 			        CtrlImg::Home());
-		w.DrawText(r.left + 20,
+		w.DrawText(r.left + Zx(20),
 		           r.top + (r.Height() - StdFont().Bold().Info().GetHeight()) / 2,
 				   String(q), StdFont().Bold(), ink);
 	}
@@ -1532,13 +1636,13 @@ bool FileSel::Execute(int _mode) {
 		sort_lbl.Hide();
 		ok.SetLabel(t_("&Select"));
 		Logc p = filename.GetPos().y;
-		int q = ok.GetPos().y.GetA() + ok.GetPos().y.GetB() + 8;
+		int q = ok.GetPos().y.GetA() + ok.GetPos().y.GetB() + Zy(8);
 		p.SetA(q);
 		filename.SetPosY(p);
 		filesize.SetPosY(p);
 		filetime.SetPosY(p);
 		p = splitter.Ctrl::GetPos().y;
-		p.SetB(q + 20);
+		p.SetB(q + Zy(20));
 		splitter.SetPosY(p);
 		LogPos ps = search.GetPos();
 		LogPos pl = sort_lbl.GetPos();
@@ -1822,7 +1926,7 @@ void FileSel::AddPlaceRaw(const String& path, const Image& m, const String& name
 		row = row < 0 ? places.GetCount() : row;
 		places.Insert(row);
 		places.Set(row, 0, path);
-		places.Set(row, 1, m);
+		places.Set(row, 1, DPI(m));
 		places.Set(row, 2, name);
 		places.Set(row, 3, group);
 		places.SetLineCy(row, max(m.GetSize().cy + 4, GetStdFontCy() + 4));
@@ -1834,7 +1938,7 @@ void FileSel::AddPlaceRaw(const String& path, const Image& m, const String& name
 FileSel& FileSel::AddPlace(const String& path, const Image& m, const String& name, const char* group, int row)
 {
 	if(path.GetCount())
-		AddPlaceRaw(NormalizePath(path), m, name, group, row);
+		AddPlaceRaw(NormalizePath(path), DPI(m), name, group, row);
 	return *this;
 }
 
@@ -1901,6 +2005,7 @@ void FileSel::AddSystemPlaces(int row)
 		if(*fn != '.' && fn.Find("floppy") < 0)
 			AddPlace("/media/" + fn, fn, "PLACES:SYSTEM", row++);
 	}
+	AddPlace("/", t_("Computer"), "PLACES:SYSTEM");
 #endif
 }
 
@@ -2036,6 +2141,10 @@ FileSel::FileSel() {
 	
 	list.AutoHideSb();
 	places.AutoHideSb();
+
+#ifdef _MULTITHREADED	
+	WhenIconLazy = NULL;
+#endif
 }
 
 FileSel::~FileSel() {}

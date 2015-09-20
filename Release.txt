@@ -3,7 +3,9 @@ CrySearch Memory Scanner
 evolution536, www.unknowncheats.me
 
 v2.0
-	- 
+	- Fixed a bug in the crash handler window where the module names of stack trace entries would not correctly resolve;
+	- Added support for Windows 10:
+		- Fixed OS version detection for Windows 10;
 
 A new revision is released after v1.18. Major improvements were implemented and XP support is discontinued.
 

@@ -44,6 +44,21 @@ void CryCrashHandlerWindow::CloseWindow()
 	this->Close();
 }
 
+const Win32ModuleInformation* FindLocalModuleAddress(const Vector<Win32ModuleInformation>& mods, const SIZE_T current)
+{
+	const int modCount = mods.GetCount();
+	for (int i = 0; i < modCount; ++i)
+	{
+		const Win32ModuleInformation& curMod = mods[i];
+		if (current >= curMod.BaseAddress && current < curMod.BaseAddress + curMod.Length)
+		{
+			return &curMod;
+		}
+	}
+	
+	return NULL;
+}
+
 // ---------------------------------------------------------------------------------------------
 
 // Handles exceptions that are not caught just before the application crashes.
@@ -125,15 +140,25 @@ LONG __stdcall CrashHandler(PEXCEPTION_POINTERS ExceptionInfo)
 		excMsg += "Failed to obtain the stack trace for the exception!";
 	}
 	
+	// Retrieve a locally loaded module list to trace back the exception through modules.
+	Vector<Win32ModuleInformation> localMods;
+	ModuleManager::EnumerateModules(GetCurrentProcessId(), localMods);
+	
 	// Iterate the obtained stack trace.
 	const int count = callstack.GetCount();
 	for (int i = 0; i < count; ++i)
 	{
 		const DWORD64& current = callstack[i];
 		const Win32ModuleInformation* mod = NULL;
-		if (mod = mModuleManager->GetModuleFromContainedAddress((SIZE_T)current))
+		if (mod = FindLocalModuleAddress(localMods, (SIZE_T)current))
 		{
-			String modName = mModuleManager->GetModuleFilename(mod->BaseAddress);
+			// Retrieve the module name of the local module that caused the exception.
+			StringBuffer buffer(MAX_PATH);
+			GetModuleFileName((HMODULE)mod->BaseAddress, buffer.Begin(), MAX_PATH);
+			buffer.Strlen();
+			String modName = GetFileNamePos(buffer.Begin());
+			
+			// Retrieve the name of a symbol that is related to the call stack entry.
 			char symbolName[MAX_PATH];
 			if (GetSingleSymbolName(hCur, (SIZE_T)current, symbolName, MAX_PATH))
 			{

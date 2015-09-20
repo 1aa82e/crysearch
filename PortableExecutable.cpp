@@ -179,7 +179,7 @@ void PortableExecutable::GetImageSectionsList(const IMAGE_SECTION_HEADER* pSecHe
 // This increases the code readability even though the function will probably be inlined by the compiler.
 wchar* PortableExecutable::InlineResolveApiSetSchema(const WString& str) const
 {
-	return IsWindows8Point1OrGreater() ? this->ResolveApiSetSchemaMappingEx(str, str.GetLength()) : this->ResolveApiSetSchemaMapping(str, str.GetLength());
+	return IsGreaterOrEqualWindows8Point1() ? this->ResolveApiSetSchemaMappingEx(str, str.GetLength()) : this->ResolveApiSetSchemaMapping(str, str.GetLength());
 }
 
 // Resolves Windows 6.x ApiSetSchema redirections found in the IAT. Usually they redirect to a common Windows DLL like advapi32.dll.

@@ -67,4 +67,6 @@ void ConstructStackTrace(HANDLE hProcess, const DWORD machineType, const void* c
 // Extern thread list definition, which is needed by the disassembly window to set hardware breakpoints.
 extern Vector<Win32ThreadInformation> mThreadsList;
 
+const bool IsGreaterOrEqualWindows8Point1();
+
 #endif

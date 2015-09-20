@@ -361,3 +361,34 @@ void ConstructStackTrace(HANDLE hProcess, const DWORD machineType, const void* c
 	}
 	while (result);
 }
+
+// Customized OS version check. The default check does not work well on Windows 10.
+const bool IsGreaterOrEqualWindows8Point1()
+{
+	// Retrieve the function address for the RtlGetVersion function.
+	RtlGetVersionPrototype RtlGetVersion = (RtlGetVersionPrototype)GetProcAddress(GetModuleHandle("ntdll.dll"), "RtlGetVersion");
+	if (!RtlGetVersion)
+	{
+		return false;
+	}
+	
+	// Attempt to retrieve the OS version information.
+	OSVERSIONINFOEX osv;
+	osv.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
+	RtlGetVersion(&osv);
+	
+	// Check whether the OS currently running is newer than Windows 8.1.
+	if (osv.dwMajorVersion == 6)
+	{
+		if (osv.dwMinorVersion > 2)
+		{
+			return true;
+		}
+	}
+	else if (osv.dwMajorVersion == 10)
+	{
+		return true;
+	}
+	
+	return false;
+}
