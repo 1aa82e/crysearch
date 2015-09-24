@@ -231,7 +231,7 @@ String GetAddressTableValue(const int index)
 			{
 				return value.ToString();
 			}
-		}		
+		}
 	}
 	
 	return "???";
@@ -1042,7 +1042,7 @@ void CrySearchForm::ClearAddressList()
 			for (int i = 0; i < loadedTable.GetCount(); i++)
 			{
 				mDebugger->RemoveBreakpoint(loadedTable[i]->Address);
-			}			
+			}
 		}
 		
 		// Clear UI and underlying data table structures.
@@ -1072,7 +1072,7 @@ void CrySearchForm::SearchResultDoubleClicked()
 	
 	// Walk the selected rows.
 	rowcount = selectedRows.GetCount();
-	bool failed = false; 
+	bool failed = false;
 	for (int i = 0; i < rowcount; ++i)
 	{
 		// Retrieve values from virtual columns of the ArrayCtrl.
@@ -1349,7 +1349,7 @@ bool CrySearchForm::CloseProcess()
 	// If the process was terminated, the warning should not be shown, it is annoying to the user.
 	if (!this->ProcessTerminated)
 	{
-	  	this->ClearScanResultsWithoutWarning();
+		this->ClearScanResultsWithoutWarning();
 	}
 	else
 	{

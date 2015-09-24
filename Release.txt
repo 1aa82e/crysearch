@@ -6,8 +6,10 @@ v2.0
 	- Fixed a bug in the crash handler window where the module names of stack trace entries would not correctly resolve;
 	- Added support for Windows 10:
 		- Fixed OS version detection for Windows 10;
+		- Added support for Windows 10 ApiSetSchema;
+		- 
 
-A new revision is released after v1.18. Major improvements were implemented and XP support is discontinued.
+A new revision is released after v1.18. Major improvements were implemented and XP support is discontinued. CrySearch may still work on Windows XP but support may be removed in the future.
 
 v1.18
 	- Improved memory dissector:

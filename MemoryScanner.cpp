@@ -829,28 +829,6 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 template <class T>
 void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const T& value)
 {
-	LARGE_INTEGER frequency;
-	LARGE_INTEGER t1;
-	LARGE_INTEGER t2;
-	QueryPerformanceFrequency(&frequency);
-	QueryPerformanceCounter(&t1);
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
 	FileOut addressesFile(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.temp", regionData.WorkerIdentifier)));
 	FileOut valFile(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Values%i.temp", regionData.WorkerIdentifier)));
 	
@@ -955,20 +933,6 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 		this->ScanRunning = false;
 		this->ScanCompleted();
 	}
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	QueryPerformanceCounter(&t2);
-	const double elapsed = (t2.QuadPart - t1.QuadPart) * 1000.0 / frequency.QuadPart;
-	OutputDebugString(Format("Worker %i took %d ms\r\n", regionData.WorkerIdentifier, elapsed));
 }
 
 // Initializes the first scan sequence. Call this function from the user interface.

@@ -86,7 +86,7 @@ typedef struct _CLIENT_ID32
 typedef NTSTATUS (__stdcall* NtOpenProcessPrototype)(PHANDLE ProcessHandle, ACCESS_MASK AccessMask, POBJECT_ATTRIBUTES ObjectAttributes, PCLIENT_ID ClientId);
 
 // Defines all ways to query a thread using NtQueryInformationThread.
-typedef enum _THREAD_INFORMATION_CLASS
+typedef enum _THREAD_INFORMATION_CLASS_EVO
 {
     ThreadBasicInformation,
     ThreadTimes,
@@ -106,7 +106,7 @@ typedef enum _THREAD_INFORMATION_CLASS
     ThreadSetTlsArrayAddress,
     ThreadIsIoPending,
     ThreadHideFromDebugger
-} THREAD_INFORMATION_CLASS, *PTHREAD_INFORMATION_CLASS;
+} THREAD_INFORMATION_CLASS_EVO, *PTHREAD_INFORMATION_CLASS_EVO;
 
 typedef struct _LDR_MODULE
 {
@@ -166,7 +166,7 @@ typedef struct _PEB_LDR_DATA32
 typedef void (*PPEBLOCKROUTINE)(PVOID PebLock);
 
 // ApiSetschema v1 structs
-// ----------------------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------
 
 // Windows 6.x redirection descriptor, describes forward and backward redirections.
 typedef struct _REDIRECTION
@@ -202,8 +202,8 @@ typedef struct _APISETMAP
     DLLHOSTDESCRIPTOR descriptors[1]; // array of DLLHOSTDESCRIPTOR structures.
 } APISETMAP, *PAPISETMAP;
 
-// ApiSetschema v2 structs for Windows 8.1 and higher.
-// ----------------------------------------------------------------------------------------------------------------------------------
+// ApiSetschema v2 structs for Windows 8.1.
+// ---------------------------------------------------------------------------------------------
 
 typedef struct _API_SET_VALUE_ENTRY_V2
 {
@@ -239,6 +239,45 @@ typedef struct _API_SET_NAMESPACE_ARRAY_V2
     ULONG Count;
     _API_SET_NAMESPACE_ENTRY_V2 Array[ANYSIZE_ARRAY];
 } API_SET_NAMESPACE_ARRAY_V2, *PAPI_SET_NAMESPACE_ARRAY_V2;
+
+// ApiSetschema structs for Windows 10.
+// ---------------------------------------------------------------------------------------------
+
+typedef struct _API_SET_VALUE_ENTRY_10
+{
+    ULONG Flags;
+    ULONG NameOffset;
+    ULONG NameLength;
+    ULONG ValueOffset;
+    ULONG ValueLength;
+} API_SET_VALUE_ENTRY_10, *PAPI_SET_VALUE_ENTRY_10;
+
+typedef struct _API_SET_VALUE_ARRAY_10
+{
+    ULONG Flags;
+    ULONG NameOffset;
+    ULONG Unk;
+    ULONG NameLength;
+    ULONG DataOffset;
+    ULONG Count;
+} API_SET_VALUE_ARRAY_10, *PAPI_SET_VALUE_ARRAY_10;
+
+typedef struct _API_SET_NAMESPACE_ENTRY_10
+{
+    ULONG Limit;
+    ULONG Size;
+} API_SET_NAMESPACE_ENTRY_10, *PAPI_SET_NAMESPACE_ENTRY_10;
+
+typedef struct _API_SET_NAMESPACE_ARRAY_10
+{
+    ULONG Version;
+    ULONG Size;
+    ULONG Flags;
+    ULONG Count;
+    ULONG Start;
+    ULONG End;
+    API_SET_NAMESPACE_ENTRY_10 Array[1];
+} API_SET_NAMESPACE_ARRAY_10, *PAPI_SET_NAMESPACE_ARRAY_10;
 
 #define GDI_HANDLE_BUFFER_SIZE32	34
 #define GDI_HANDLE_BUFFER_SIZE		GDI_HANDLE_BUFFER_SIZE32
@@ -957,7 +996,7 @@ typedef struct _THREAD_BASIC_INFORMATION
 } THREAD_BASIC_INFORMATION, *PTHREAD_BASIC_INFORMATION;
 
 // Enumeration to select query/set call type.
-typedef enum _PROCESSINFOCLASS
+typedef enum _PROCESSINFOCLASS_EVO
 {
 	ProcessBasicInformation = 0,
 	ProcessQuotaLimits = 1,
@@ -994,7 +1033,7 @@ typedef enum _PROCESSINFOCLASS
 	ProcessHandleTracing = 32,
 	ProcessExecuteFlags = 34,
 	MaxProcessInfoClass
-} PROCESSINFOCLASS, PROCESS_INFORMATION_CLASS;
+} PROCESSINFOCLASS_EVO, PROCESSINFOCLASS_EVO;
 
 // Debug information is used by the heap enumeration window.
 typedef struct _RTL_HEAP_INFORMATION
@@ -1419,8 +1458,8 @@ typedef NTSTATUS (__stdcall* NtQueryObjectPrototype)(HANDLE Handle, OBJECT_INFOR
 typedef NTSTATUS (__stdcall* NtQuerySystemInformationPrototype)(SYSTEM_INFORMATION_CLASS ProcessInformationClass, PVOID ProcessInformation, ULONG ProcessInformationLength, PULONG ReturnLength);
 
 // Nt functions for thread and process query calls.
-typedef NTSTATUS (__stdcall* NtQueryInformationThreadPrototype)(HANDLE ThreadHandle, THREAD_INFORMATION_CLASS ThreadInformationClass, PVOID ThreadInformation, ULONG ThreadInformationLength, PULONG ReturnLength);
-typedef NTSTATUS (__stdcall* NtQueryInformationProcessPrototype)(HANDLE ProcessHandle, PROCESSINFOCLASS ProcessInformationClass, PVOID ProcessInformation, ULONG ProcessInformationLength, PULONG ReturnLength);
+typedef NTSTATUS (__stdcall* NtQueryInformationThreadPrototype)(HANDLE ThreadHandle, THREAD_INFORMATION_CLASS_EVO ThreadInformationClass, PVOID ThreadInformation, ULONG ThreadInformationLength, PULONG ReturnLength);
+typedef NTSTATUS (__stdcall* NtQueryInformationProcessPrototype)(HANDLE ProcessHandle, PROCESSINFOCLASS_EVO ProcessInformationClass, PVOID ProcessInformation, ULONG ProcessInformationLength, PULONG ReturnLength);
 
 // Nt functions for memory operations.
 typedef NTSTATUS (__stdcall* NtReadVirtualMemoryPrototype)(HANDLE hProcess, LPCVOID lpAddress, LPVOID lpBuffer, SIZE_T size, SIZE_T* outSize);

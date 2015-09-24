@@ -179,7 +179,37 @@ void PortableExecutable::GetImageSectionsList(const IMAGE_SECTION_HEADER* pSecHe
 // This increases the code readability even though the function will probably be inlined by the compiler.
 wchar* PortableExecutable::InlineResolveApiSetSchema(const WString& str) const
 {
-	return IsGreaterOrEqualWindows8Point1() ? this->ResolveApiSetSchemaMappingEx(str, str.GetLength()) : this->ResolveApiSetSchemaMapping(str, str.GetLength());
+	// Check which version of Windows is running. We need this to differentiate between ApiSetSchema versions.
+	Tuple2<int, int> winver;
+	if (GetInlineWindowsVersion(&winver))
+	{
+		// Call the correct ApiSetSchema parsing function.
+		if (winver.a == 6)
+		{
+			if (winver.b == 4)
+			{
+				// Call the Windows 10 version of the parser.
+				return this->ResolveApiSetSchemaMapping10(str, str.GetLength());
+			}
+			else if (winver.b > 2)
+			{
+				// Call the Windows 8(.1) version of the parser.
+				return this->ResolveApiSetSchemaMappingEx(str, str.GetLength());
+			}
+			else
+			{
+				// Call the Windows 7 version of the parser.
+				return this->ResolveApiSetSchemaMapping(str, str.GetLength());
+			}
+		}
+		else if (winver.a == 10)
+		{
+			// Call the Windows 10 version of the parser.
+			return this->ResolveApiSetSchemaMapping10(str, str.GetLength());
+		}
+	}
+	
+	return NULL;
 }
 
 // Resolves Windows 6.x ApiSetSchema redirections found in the IAT. Usually they redirect to a common Windows DLL like advapi32.dll.
@@ -206,20 +236,17 @@ wchar* PortableExecutable::ResolveApiSetSchemaMapping(const wchar* ApiSetSchemaD
 			
 			// Iterate redirections for this api set.
 			REDIRECTION* pRedirectionDescriptor = directorStruct->Redirection;
-			for (unsigned int r = 0; r < directorStruct->NumberOfRedirections; ++r, ++pRedirectionDescriptor)
-			{
-				const wchar* const redirectionString = (wchar*)(apiSetSchemaFileBuffer + pRedirectionDescriptor->OffsetRedirection2);
-				
-				// Redirection is found, create buffer to return to the caller and copy the logical dll name into it.
-				const DWORD wcsLength = pRedirectionDescriptor->RedirectionLength2 / 2;
-				wchar* const nameBuffer = new wchar[wcsLength + 1];
-				memcpy(nameBuffer, redirectionString, pRedirectionDescriptor->RedirectionLength2);
-				
-				// Set null terminator in the string, otherwise the result contains the redirected dll name but the rest is undefined.
-				nameBuffer[wcsLength] = NULL;
-				
-				return nameBuffer;
-			}
+			const wchar* const redirectionString = (wchar*)(apiSetSchemaFileBuffer + pRedirectionDescriptor->OffsetRedirection2);
+			
+			// Redirection is found, create buffer to return to the caller and copy the logical dll name into it.
+			const DWORD wcsLength = pRedirectionDescriptor->RedirectionLength2 / 2;
+			wchar* const nameBuffer = new wchar[wcsLength + 1];
+			memcpy(nameBuffer, redirectionString, pRedirectionDescriptor->RedirectionLength2);
+			
+			// Set null terminator in the string, otherwise the result contains the redirected dll name but the rest is undefined.
+			nameBuffer[wcsLength] = NULL;
+			
+			return nameBuffer;
 		}
 	}
 	
@@ -250,20 +277,58 @@ wchar* PortableExecutable::ResolveApiSetSchemaMappingEx(const wchar* ApiSetSchem
 			
 			// Iterate redirections for this api set.
 			API_SET_VALUE_ENTRY_V2* pRedirectionDescriptor = directorStruct->Array;
-			for (unsigned int r = 0; r < directorStruct->Count; ++r, ++pRedirectionDescriptor)
-			{
-				const wchar* const redirectionString = (wchar*)(apiSetSchemaFileBuffer + pRedirectionDescriptor->ValueOffset);
+			const wchar* const redirectionString = (wchar*)(apiSetSchemaFileBuffer + pRedirectionDescriptor->ValueOffset);
 				
-				// Redirection is found, create buffer to return to the caller and copy the logical dll name into it.
-				const DWORD wcsLength = pRedirectionDescriptor->ValueLength / 2;
-				wchar* const nameBuffer = new wchar[wcsLength + 1];
-				memcpy(nameBuffer, redirectionString, pRedirectionDescriptor->ValueLength);
-				
-				// Set null terminator in the string, otherwise the result contains the redirected dll name but the rest is undefined.
-				nameBuffer[wcsLength] = NULL;
-				
-				return nameBuffer;
-			}
+			// Redirection is found, create buffer to return to the caller and copy the logical dll name into it.
+			const DWORD wcsLength = pRedirectionDescriptor->ValueLength / 2;
+			wchar* const nameBuffer = new wchar[wcsLength + 1];
+			memcpy(nameBuffer, redirectionString, pRedirectionDescriptor->ValueLength);
+			
+			// Set null terminator in the string, otherwise the result contains the redirected dll name but the rest is undefined.
+			nameBuffer[wcsLength] = NULL;
+			
+			return nameBuffer;
+		}
+	}
+	
+	return NULL;
+}
+
+// Compatibility with Windows 10 ApiSetSchema is implemented since v2.0 of CrySearch.
+// Return value is the same as the PortableExecutable::ResolveApiSetSchemaMapping function.
+wchar* PortableExecutable::ResolveApiSetSchemaMapping10(const wchar* ApiSetSchemaDll, const DWORD Length ) const
+{
+	// Retrieve PEB, the address of the map is there.
+#ifdef _WIN64
+	API_SET_NAMESPACE_ARRAY_10* const apiSetSchemaBase = (API_SET_NAMESPACE_ARRAY_10*)((PPEB)__readgsqword(0x60))->ApiSetMap;
+#else
+	API_SET_NAMESPACE_ARRAY_10* const apiSetSchemaBase = (API_SET_NAMESPACE_ARRAY_10*)((PPEB)__readfsdword(0x30))->ApiSetMap;
+#endif
+	
+	Byte* const apiSetSchemaFileBuffer = (Byte*)apiSetSchemaBase;
+	API_SET_NAMESPACE_ENTRY_10* pDescriptor = (API_SET_NAMESPACE_ENTRY_10*)(apiSetSchemaFileBuffer + apiSetSchemaBase->End);
+
+	// Iterate through the descriptor structs.
+	for (unsigned int i = 0; i < apiSetSchemaBase->Count; ++i, ++pDescriptor)
+	{
+		// Retrieve the data associated with the current ApiSet schema entry.
+		API_SET_VALUE_ARRAY_10* const directorStruct = (API_SET_VALUE_ARRAY_10*)(apiSetSchemaFileBuffer + apiSetSchemaBase->Start + sizeof(API_SET_VALUE_ARRAY_10) * pDescriptor->Size);
+		
+		// Compare virtual API with input. We need to add 4 words to the pointer because in Windows 10, the API names are not truncated to 'ms-win...'.
+		if (_wcsnicmp(ApiSetSchemaDll, (wchar*)(apiSetSchemaFileBuffer + directorStruct->NameOffset + 8), Length - 1) == 0)
+		{
+			// Iterate redirections for this api set.
+			API_SET_VALUE_ENTRY_10* pRedirectionDescriptor = (API_SET_VALUE_ENTRY_10*)(apiSetSchemaFileBuffer + directorStruct->DataOffset);
+			const wchar* const redirectionString = (wchar*)(apiSetSchemaFileBuffer + pRedirectionDescriptor->ValueOffset);
+			
+			// Redirection is found, create buffer to return to the caller and copy the logical dll name into it.
+			const DWORD wcsLength = pRedirectionDescriptor->ValueLength / 2;
+			wchar* const nameBuffer = new wchar[wcsLength + 1];
+			memcpy(nameBuffer, redirectionString, pRedirectionDescriptor->ValueLength);
+			
+			// Set null terminator in the string, otherwise the result contains the redirected dll name but the rest is undefined.
+			nameBuffer[wcsLength] = NULL;
+			return nameBuffer;
 		}
 	}
 	

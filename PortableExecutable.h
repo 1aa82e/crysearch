@@ -159,6 +159,7 @@ public:
 	
 	wchar* ResolveApiSetSchemaMapping(const wchar* ApiSetSchemaDll, const DWORD Length) const;
 	wchar* ResolveApiSetSchemaMappingEx(const wchar* ApiSetSchemaDll, const DWORD Length) const;
+	wchar* ResolveApiSetSchemaMapping10(const wchar* ApiSetSchemaDll, const DWORD Length ) const;
 	
 	__declspec(noinline) void ParseSubsystemValue(const DWORD subSystem) const;
 	__declspec(noinline) void ParseMachineType(const DWORD machineType) const;
