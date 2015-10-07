@@ -11,8 +11,7 @@ Package:
 v2.0:
 	- Drop XP support, look for improved API's that are inside Windows XP+;
 	- Let's go with C++ 11?
-	- monstrous icons in newest upp version???
-	
+
 - Multithread disassembler, Skype has rediculously big pages;
 
 - Improve SDK documentation, see learn_more's notes;
