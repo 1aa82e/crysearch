@@ -171,7 +171,7 @@ const int CryDebugger::GetBreakpointCount() const
 	return this->mBreakpoints.GetCount();
 }
 
-// Returns a reference to the internal debugger lock for breakpoint events.
+// Sets the internal debugger event lock to support the processing of debugger events on the user interface side.
 void CryDebugger::SetDebuggerEventLockProcessed()
 {
 	_InterlockedCompareExchange(&this->mDebuggerEventLockVariable, PROCESSING_COMPLETED, WAITING_FOR_EVENT);
@@ -271,7 +271,7 @@ void CryDebugger::SetHardwareBreakpointInternal(const HardwareBreakpointParamete
 					error = true;
 				}
 			}
-		}		
+		}
 	}
 	
 	// Send event to user interface about the breakpoints being changed and flag debugger loop for continuation.
@@ -286,6 +286,7 @@ void CryDebugger::SetBreakpointInternal(const SIZE_T address)
 	// Check whether there already is a breakpoint set on this address.
 	if (this->FindBreakpoint(address) == -1)
 	{
+		// Create a new breakpoint object and add it to the internal store.
 		DbgBreakpoint& bp = this->mBreakpoints.Add(new DbgBreakpoint());
 		bp.BpType = BPTYPE_SOFTWARE;
 		bp.HitCount = 0;
@@ -306,7 +307,7 @@ void CryDebugger::SetBreakpointInternal(const SIZE_T address)
 		}
 		
 		// Flush instruction cache to apply instruction to executable code.
-		FlushInstructionCache(mMemoryScanner->GetHandle(), (void*)address, sizeof(Byte));		
+		FlushInstructionCache(mMemoryScanner->GetHandle(), (void*)address, sizeof(Byte));
 	}
 	
 	// Send event to user interface about the breakpoints being changed and flag debugger loop for continuation.
@@ -400,12 +401,13 @@ void CryDebugger::RemoveBreakpointInternal(const SIZE_T address)
 	if (!isDetaching)
 	{
 		this->DebuggerEventOccured(DBG_EVENT_BREAKPOINTS_CHANGED, NULL);
-	}	
+	}
 }
 
 // Starts the debugger on a seperate thread at the specified process handle and process ID.
 void CryDebugger::Start()
 {
+	// Set the debugger control variables to their default state for starting.
 	this->isDetaching = false;
 	this->shouldBreakLoop = false;
 	this->mDebuggerEventLockVariable = NO_EVENT;
@@ -447,14 +449,14 @@ void CryDebugger::SetHardwareBreakpoint(const Vector<Win32ThreadInformation>& th
 
 // Set a regular software breakpoint on an address containing executable code.
 void CryDebugger::SetBreakpoint(const SIZE_T address)
-{	
+{
 	// Queue the action with the breakpoint address to be set and wait for it to be executed.
 	CryDebuggerInternalRequestData data;
 	data.Action = ACTION_SET_BREAKPOINT;
 	SIZE_T* pAddr = new SIZE_T;
 	*pAddr = address;
 	data.ParameterData = pAddr;
-	this->mDebuggerActionQueue.AddTail(data);	
+	this->mDebuggerActionQueue.AddTail(data);
 }
 
 // Disable a breakpoint set in the process.
@@ -466,7 +468,7 @@ void CryDebugger::DisableBreakpoint(const SIZE_T address)
 	SIZE_T* pAddr = new SIZE_T;
 	*pAddr = address;
 	data.ParameterData = pAddr;
-	this->mDebuggerActionQueue.AddTail(data);	
+	this->mDebuggerActionQueue.AddTail(data);
 }
 
 // Remove a breakpoint from the process.
@@ -487,12 +489,14 @@ const int CryDebugger::FindBreakpoint(const SIZE_T address) const
 	const int persistentCount = this->mBreakpoints.GetCount();
 	for (int i = 0; i < persistentCount; ++i)
 	{
+		// Loop until a breakpoint is found with the specified address.
 		if (this->mBreakpoints[i].Address == address)
 		{
 			return i;
 		}
 	}
 	
+	// No breakpoint was found.
 	return -1;
 }
 
@@ -501,8 +505,10 @@ const int CryDebugger::FindBreakpointByPreviousInstruction(const SIZE_T address)
 {
 	for (int i = 0; i < this->mBreakpoints.GetCount(); i++)
 	{
+		// Previous instruction only applies to hardware breakpoints.
 		if (this->mBreakpoints[i].BpType == BPTYPE_HARDWARE)
 		{
+			// Loop until a breakpoint is found with the specified address as previous instruction address.
 			if (static_cast<HardwareBreakpoint*>(&this->mBreakpoints[i])->PreviousInstructionAddress == address)
 			{
 				return i;
@@ -510,12 +516,14 @@ const int CryDebugger::FindBreakpointByPreviousInstruction(const SIZE_T address)
 		}
 	}
 	
+	// No breakpoint was found.
 	return -1;
 }
 
 // Clears all breakpoints from the list of breakpoints and removes them from the target process.
 void CryDebugger::ClearBreakpoints()
 {
+	// Dirty way to alter debugger behavior for clearing breakpoints without detaching.
 	this->isDetaching = true;
 	
 	// Remove all breakpoints from the list.
@@ -604,7 +612,7 @@ void CryDebugger::ExceptionWatch()
 			// Parse exception code.
 			if (DebugEv.u.Exception.ExceptionRecord.ExceptionCode == EXCEPTION_BREAKPOINT
 #ifdef _WIN64
-				|| DebugEv.u.Exception.ExceptionRecord.ExceptionCode == STATUS_WX86_BREAKPOINT	
+				|| DebugEv.u.Exception.ExceptionRecord.ExceptionCode == STATUS_WX86_BREAKPOINT
 #endif
 )
 			{
@@ -645,7 +653,7 @@ void CryDebugger::ExceptionWatch()
 						// If the breakpoint was found, the line of accessing disassembly is found too.
 						if (bp >= 0)
 						{
-							this->mBreakpoints[bp].BreakpointSnapshot.DisassemblyAccessLine = excLine;	
+							this->mBreakpoints[bp].BreakpointSnapshot.DisassemblyAccessLine = excLine;
 						}
 					}
 					
@@ -659,7 +667,7 @@ void CryDebugger::ExceptionWatch()
 							// If the breakpoint was found, the line of accessing disassembly is found too.
 							if (bp >= 0)
 							{
-								this->mBreakpoints[bp].BreakpointSnapshot.DisassemblyAccessLine = excPrevLine;	
+								this->mBreakpoints[bp].BreakpointSnapshot.DisassemblyAccessLine = excPrevLine;
 							}
 						}
 					}
@@ -803,18 +811,18 @@ const int CryDebugger32::CheckHardwareBreakpointRegisters(const DWORD threadId) 
 {
 	HANDLE hThread = OpenThread(THREAD_GET_CONTEXT, FALSE, threadId);
 	
+	// Retrieve the architecture-specific thread context to find out about breakpoint register values.
 #ifdef _WIN64
 	WOW64_CONTEXT ctx;
 	memset(&ctx, 0, sizeof(WOW64_CONTEXT));
 	ctx.ContextFlags = WOW64_CONTEXT_DEBUG_REGISTERS;
 	Wow64GetThreadContext(hThread, &ctx);
-
 #else
 	CONTEXT ctx;
 	memset(&ctx, 0, sizeof(CONTEXT));
 	ctx.ContextFlags = CONTEXT_DEBUG_REGISTERS;
 	GetThreadContext(hThread, &ctx);
-#endif	
+#endif
 
 	CloseHandle(hThread);
 	
@@ -836,6 +844,7 @@ const int CryDebugger32::CheckHardwareBreakpointRegisters(const DWORD threadId) 
 		return this->FindBreakpoint(ctx.Dr3);
 	}
 	
+	// No hardware breakpoint register triggered the exception.
 	return -1;
 }
 
@@ -1088,7 +1097,7 @@ void CryDebugger32::HandleSoftwareBreakpoint(const DWORD threadId, const int bpI
 	pBreakpoint.BreakpointSnapshot.Reset();
 
 #ifdef _WIN64
-	Wow64SetThreadContext(hThread, &ctx);	
+	Wow64SetThreadContext(hThread, &ctx);
 	memcpy(&pBreakpoint.BreakpointSnapshot.Wow64Context, &ctx, sizeof(WOW64_CONTEXT));
 #else
 	SetThreadContext(hThread, &ctx);

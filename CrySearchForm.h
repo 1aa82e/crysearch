@@ -64,6 +64,7 @@ private:
 	void DebuggerAttachMenu();
 	void DebuggerDetachMenu();
 	void AllocateMemoryButtonClicked();
+	void FillMemoryButtonClicked();
 	void ViewPEBButtonClicked();
 	void CodeGenerationButtonClicked();
 	void MemoryDissectionButtonClicked();

@@ -10,6 +10,7 @@ struct AllocateMemoryDataStruct
 	int BlockProtection;
 };
 
+// Represents the dialog that allows a user to allocate a block of memory in the targeted process.
 class CryAllocateMemoryWindow : public CryDialogTemplate
 {
 private:
@@ -28,7 +29,7 @@ private:
 	typedef CryAllocateMemoryWindow CLASSNAME;
 public:
 	CryAllocateMemoryWindow(AllocateMemoryDataStruct* dataStruct);
-	~CryAllocateMemoryWindow();	
+	~CryAllocateMemoryWindow();
 };
 
 #endif

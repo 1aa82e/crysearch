@@ -31,15 +31,9 @@ CryAllocateMemoryWindow::~CryAllocateMemoryWindow()
 
 void CryAllocateMemoryWindow::OkButton()
 {
-	// Check the validity of the memory size input field.
-	if (this->mMemorySize.GetText().IsEmpty())
-	{
-		Prompt("Input Error", CtrlImg::error(), "Please insert a valid decimal numeric value as memory size.", "OK");
-		return;
-	}
-	
 	this->dataStruct->MemorySize = ScanInt(this->mMemorySize.GetText().ToString(), NULL, 10);
 	
+	// Check the validity of the memory size input field.
 	if (this->dataStruct->MemorySize <= 0)
 	{
 		Prompt("Input Error", CtrlImg::error(), "Please insert a valid decimal numeric value as memory size.", "OK");

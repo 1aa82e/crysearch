@@ -5,7 +5,6 @@
 #define _WIN32_WINNT_WIN8                   0x0602
 #define _WIN32_WINNT_WINBLUE                0x0603
 
-#include <VersionHelpers.h>
 #include <Shlwapi.h>
 
 #pragma comment(lib, "shlwapi.lib")
@@ -59,6 +58,7 @@ void* PortableExecutable::GetPebAddress() const
 #ifdef WIN64
 	if (mMemoryScanner->IsX86Process())
 	{
+		// If we run CrySearch x64 and we target an x86 process, we use NtQueryInformationProcess with a ULONG_PTR parameter.
 		ULONG_PTR PebBaseAddress;
 		if (CrySearchRoutines.NtQueryInformationProcess(this->mProcessHandle, ProcessWow64Information, &PebBaseAddress, sizeof(ULONG_PTR), NULL) == STATUS_SUCCESS)
 		{
@@ -67,6 +67,7 @@ void* PortableExecutable::GetPebAddress() const
 	}
 	else
 	{
+		// If we run CrySearch x64 and we target an x64 process, we use NtQueryInformationProcess with a PROCESS_BASIC_INFORMATION parameter.
 		PROCESS_BASIC_INFORMATION tInfo;
 		if (CrySearchRoutines.NtQueryInformationProcess(this->mProcessHandle, ProcessBasicInformation, &tInfo, sizeof(PROCESS_BASIC_INFORMATION), NULL) == STATUS_SUCCESS)
 		{
@@ -74,6 +75,7 @@ void* PortableExecutable::GetPebAddress() const
 		}
 	}
 #else
+	// If we run CrySearch x86, we can only target an x86 process and we use NtQueryInformationProcess with a PROCESS_BASIC_INFORMATION parameter.
 	PROCESS_BASIC_INFORMATION tInfo;
 	if (CrySearchRoutines.NtQueryInformationProcess(this->mProcessHandle, ProcessBasicInformation, &tInfo, sizeof(PROCESS_BASIC_INFORMATION), NULL) == STATUS_SUCCESS)
 	{
@@ -99,6 +101,7 @@ void PortableExecutable::ParseMachineType(const DWORD machineType) const
 			LoadedProcessPEInformation.PEFields.Add("Machine Type", "amd64");
 			break;
 		default:
+			// This function is never called with other values than the three cases so we may assume a dead code path.
 			__assume(0);
 	}
 }
@@ -537,7 +540,8 @@ SIZE_T PortableExecutable32::GetAddressFromExportTable(const AddrStruct* addr, c
 					funcAddrPtr = (DWORD*)((addr->BufferBaseAddress + addr->ExportDirectory->AddressOfFunctions) + (sizeof(DWORD) * *ordValue));					
 					found = true;
 				}
-
+				
+				// Skip the entry if it is not found.
 				if (!found || ((Byte*)funcAddrPtr < addr->BufferBaseAddress || (Byte*)funcAddrPtr > addr->BufferEndAddress))
 				{
 					continue;
@@ -1401,7 +1405,8 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 						funcAddrPtr = (DWORD*)(addr->BufferBaseAddress + addr->ExportDirectory->AddressOfFunctions + (sizeof(DWORD) * *ordValue));					
 						found = true;
 					}
-
+					
+					// Skip the entry if it is not found.
 					if (!found || ((Byte*)funcAddrPtr < addr->BufferBaseAddress || (Byte*)funcAddrPtr > addr->BufferEndAddress))
 					{
 						continue;
@@ -1431,7 +1436,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 							, &dataDir, (IMAGE_EXPORT_DIRECTORY*)exportDirectoryBuffer);
 
 						SIZE_T forwardedAddress = this->GetAddressFromExportTable(&addrStruct, (char*)ScanInt((char*)(addr->BufferBaseAddress + *funcAddrPtr + RecurseDotIndex + 1), NULL, 10), true);
-						delete[] exportDirectoryBuffer;						
+						delete[] exportDirectoryBuffer;
 						return forwardedAddress;
 					}
 	

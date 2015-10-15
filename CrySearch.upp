@@ -40,6 +40,8 @@ file
 	CryNewScanForm.h,
 	CryAllocateMemoryWindow.cpp,
 	CryAllocateMemoryWindow.h,
+	CryFillMemoryWindow.cpp,
+	CryFillMemoryWindow.h,
 	CryDumpModuleSectionWindow.cpp,
 	CryDumpModuleSectionWindow.h,
 	CryModuleWindow.cpp,

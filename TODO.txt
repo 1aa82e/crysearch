@@ -17,7 +17,6 @@ v2.0:
 - Improve SDK documentation, see learn_more's notes;
 - Post-dump (plugin operations) event in plugins!!!
 - Provide the output window / menu bar entry (PLUGIN_WANTS_OUTPUT_TAB);
-- IAT window isn't that perfect in UI stuff;
 - Find import function in window (button on top)?
 - I think the way imports are saved needs some optimization!!!
 - Debugger window (stack / registers) resolve addresses to relative/apis;

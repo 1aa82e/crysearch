@@ -5,6 +5,7 @@
 #include "CryProcessEnumeratorForm.h"
 #include "CryNewScanForm.h"
 #include "CryAllocateMemoryWindow.h"
+#include "CryFillMemoryWindow.h"
 #include "CryCodeGenerationForm.h"
 #include "CryMemoryDissectionWindow.h"
 #include "CryProcessEnvironmentBlockWindow.h"
@@ -570,6 +571,7 @@ void CrySearchForm::ToolsMenu(Bar& pBar)
 		pBar.Add("View Handles", CrySearchIml::ViewHandlesButton(), THISBACK(ViewSystemHandlesButtonClicked));
 		pBar.Separator();
 		pBar.Add("Allocate Memory", CrySearchIml::AllocateMemoryButton(), THISBACK(AllocateMemoryButtonClicked));
+		pBar.Add("Fill Memory", THISBACK(FillMemoryButtonClicked));
 		pBar.Add("Memory Dissection", CrySearchIml::MemoryDissection(), THISBACK(MemoryDissectionButtonClicked));
 		pBar.Separator();
 		pBar.Add((this->mUserAddressList.GetCount() > 0), "Code Generation", CrySearchIml::CodeGenerationButton(), THISBACK(CodeGenerationButtonClicked));
@@ -1464,6 +1466,7 @@ void CrySearchForm::ViewPEBButtonClicked()
 	delete cpebw;
 }
 
+// Opens the dialog to allocate a block of memory in the targeted process.
 void CrySearchForm::AllocateMemoryButtonClicked()
 {
 	AllocateMemoryDataStruct dataStruct;
@@ -1474,6 +1477,8 @@ void CrySearchForm::AllocateMemoryButtonClicked()
 		delete allocWnd;
 		return;
 	}
+	
+	delete allocWnd;
 	
 	SIZE_T outVirtualAddress;
 	switch (CryAllocateProcessMemory(mMemoryScanner->GetHandle(), dataStruct.MemorySize, dataStruct.BlockProtection, &outVirtualAddress))
@@ -1496,8 +1501,67 @@ void CrySearchForm::AllocateMemoryButtonClicked()
 			Prompt("Allocation Error", CtrlImg::error(), "The memory was not allocated because the system call failed. This could be due to incorrect memory size input.", "OK");
 			break;
 	}
+}
+
+// Opens the dialog to fill a block of memory in the targeted process.
+void CrySearchForm::FillMemoryButtonClicked()
+{
+	FillMemoryDataStruct dataStruct;
+	CryFillMemoryWindow* cfmw = new CryFillMemoryWindow(&dataStruct);
 	
-	delete allocWnd;
+	// Execute the fill memory window to allow the user to input his choices.
+	if (cfmw->Execute() != 10)
+	{
+		delete cfmw;
+		return;
+	}
+	
+	delete cfmw;
+	
+	bool succeeded = false;
+	DWORD written = 0;
+	
+	// Set the limit for the size of a memory block to 128 MB. Otherwise idiots can easily crash CrySearch.
+	const unsigned int memorySize = dataStruct.MemorySize;
+	if (memorySize <= 134217728)
+	{
+		// Locally allocate a memory block to write out.
+		Byte* const memoryBlock = new Byte[memorySize];
+		
+		if (dataStruct.Randomize)
+		{
+			// The user chose random values for the memory block to be filled.
+			for (unsigned int i = 0; i < memorySize; i += sizeof(DWORD))
+			{
+				*(DWORD*)(memoryBlock + i) = Random();
+			}
+			
+			// Write the filled memory block to the targeted process.
+			succeeded = WriteProcessMemory(mMemoryScanner->GetHandle(), (void*)dataStruct.Address, memoryBlock, memorySize, &written);
+		}
+		else
+		{
+			// The user chose the memory block to be filled with a specific integer value.
+			memset(memoryBlock, dataStruct.Value, memorySize);
+			
+			// Write the filled memory block to the targeted process.
+			succeeded = WriteProcessMemory(mMemoryScanner->GetHandle(), (void*)dataStruct.Address, memoryBlock, memorySize, &written);
+		}
+		
+		delete[] memoryBlock;
+	}
+	else
+	{
+		// The memory block was bigger than 128 MB.
+		Prompt("Input Error", CtrlImg::error(), "The limit for filling blocks is 128 MB.", "OK");
+		return;
+	}
+	
+	// Check if the write succeeded. If not, throw an error.
+	if (!succeeded || written != memorySize)
+	{
+		Prompt("Input Error", CtrlImg::error(), "Failed to write the filled memory block to the target process.", "OK");
+	}
 }
 
 void CrySearchForm::ViewThreadsButtonClicked()
@@ -1792,11 +1856,13 @@ void CrySearchForm::WhenProcessOpened(Win32ProcessInformation* pProc)
 	mPluginSystem->SendGlobalPluginEvent(CRYPLUGINEVENT_PROCESS_OPENED, (void*)pProc->ProcessId);
 }
 
+// Executed asynchronously when the memory scanner has started a scan.
 void CrySearchForm::ScannerScanStarted(int threadCount)
 {
 	PostCallback(THISBACK1(ScannerScanStartedThreadSafe, threadCount));
 }
 
+// Executed synchronously when the memory scanner has started a scan. This function may alter UI components.
 void CrySearchForm::ScannerScanStartedThreadSafe(int threadCount)
 {
 	this->mToolStrip.Set(THISBACK(ToolStrip));
@@ -1804,21 +1870,25 @@ void CrySearchForm::ScannerScanStartedThreadSafe(int threadCount)
 	this->mScanningProgress.Set(0, threadCount);
 }
 
+// Executed asynchronously when the memory scanner updates its status.
 void CrySearchForm::ScannerUserInterfaceUpdate(Atomic threadCount)
 {
 	PostCallback(THISBACK1(ScannerUserInterfaceUpdateThreadSafe, threadCount));
 }
 
+// Executed synchronously when the memory scanner updates its status. This function may alter UI components.
 void CrySearchForm::ScannerUserInterfaceUpdateThreadSafe(Atomic threadCount)
 {
 	this->mScanningProgress.Set(threadCount);
 }
 
+// Executed asynchronously when an error occured in the memory scanner.
 void CrySearchForm::ScannerErrorOccured(MemoryScannerError error)
 {
 	PostCallback(THISBACK1(ScannerErrorOccuredThreadSafe, error));
 }
 
+// Executed synchronously when an error occured in the memory scanner. This function may alter UI components.
 void CrySearchForm::ScannerErrorOccuredThreadSafe(MemoryScannerError error)
 {
 	const DWORD appname[] = {0x53797243, 0x63726165, 0x68}; //"CrySearch"
@@ -1851,11 +1921,13 @@ void CrySearchForm::ScannerErrorOccuredThreadSafe(MemoryScannerError error)
 	}
 }
 
+// Executed asynchronously when a memory scan is completed.
 void CrySearchForm::ScannerCompletedScan()
 {
 	PostCallback(THISBACK(ScannerCompletedThreadSafe));
 }
 
+// Executed synchronously when a memory scan is completed. This function may alter UI components.
 void CrySearchForm::ScannerCompletedThreadSafe()
 {
 	if (mMemoryScanner->GetScanResultCount() > MEMORYSCANNER_CACHE_LIMIT)
@@ -1906,9 +1978,11 @@ CrySearchArrayCtrl* CrySearchForm::GetSearchResultCtrl()
 // Returns true if the window was found and hence moved to front. Returns false if the window was not found.
 bool CrySearchForm::SetActiveTabWindow(const String& wndText)
 {
+	// Check whether the tag page is already opened.
 	const int i = IsTabPageOpened(this->mTabbedDataWindows, wndText);
 	if (i >= 0)
 	{
+		// Set it to be active.
 		this->mTabbedDataWindows.Set(i);
 		return true;
 	}

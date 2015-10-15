@@ -8,7 +8,7 @@ v2.0
 		- Fixed OS version detection for Windows 10;
 		- Added support for Windows 10 ApiSetSchema;
 		- Support for UHD displays was added due to a major U++ update. Therefore the toolbar icons are smaller than they used to be;
-		- 
+	- Added a tool to fill the memory with a specific value or randomized values. This tool can be found in the Tools menu.
 
 A new revision is released after v1.18. Major improvements were implemented and XP support is discontinued. CrySearch may still work on Windows XP but support may be removed in the future.
 
