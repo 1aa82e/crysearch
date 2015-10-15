@@ -27,6 +27,7 @@ const MemoryRegion* GetPageFromAddress(const SIZE_T address)
 {
 	for (int i = 0; i < mExecutablePagesList.GetCount(); ++i)
 	{
+		// Loops until the memory region containing the specified address is found.
 		const MemoryRegion* mem = &mExecutablePagesList[i];
 		if (address >= mem->BaseAddress && address < mem->BaseAddress + mem->MemorySize)
 		{
@@ -34,6 +35,7 @@ const MemoryRegion* GetPageFromAddress(const SIZE_T address)
 		}
 	}
 	
+	// No containing memory page was found.
 	return NULL;
 }
 

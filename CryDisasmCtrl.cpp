@@ -250,7 +250,7 @@ void CryDisasmCtrl::MoveToAddress(const SIZE_T address)
 	}
 	
 	// Still here, so start refreshing the disasm.
-	this->disasmDisplay.SetVirtualCount(0);
+	this->disasmDisplay.Clear();
 	this->mAsyncHelper->Start(address);
 }
 

@@ -2,6 +2,10 @@ CrySearch Memory Scanner
 
 evolution536, www.unknowncheats.me
 
+v2.01
+	- Fixed bug in disassembler where going to an address from a search result may crash the application;
+	- 
+
 v2.0
 	- Fixed a bug in the crash handler window where the module names of stack trace entries would not correctly resolve;
 	- Added support for Windows 10:

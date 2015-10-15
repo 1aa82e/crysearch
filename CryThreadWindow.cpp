@@ -161,7 +161,7 @@ void CryThreadWindow::LoadThreads()
 void CryThreadWindow::ClearList()
 {
 	mThreadsList.Clear();
-	this->mThreads.SetVirtualCount(0);
+	this->mThreads.Clear();
 }
 
 void CryThreadWindow::AttemptSuspendAllThreads()

@@ -1519,7 +1519,7 @@ void CrySearchForm::FillMemoryButtonClicked()
 	delete cfmw;
 	
 	bool succeeded = false;
-	DWORD written = 0;
+	SIZE_T written = 0;
 	
 	// Set the limit for the size of a memory block to 128 MB. Otherwise idiots can easily crash CrySearch.
 	const unsigned int memorySize = dataStruct.MemorySize;
