@@ -1106,7 +1106,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 					{
 						if (!localAddresses)
 						{
-							localAddresses = new SIZE_T[currentArrayLength];					
+							localAddresses = new SIZE_T[currentArrayLength];
 						}
 						
 						if (arrayIndex >= currentArrayLength)
@@ -1178,7 +1178,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 	FileOut addressesFile(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.temp", regionData.WorkerIdentifier)));
 	FileIn oldAddrFile(addrFileOld);
 
-	unsigned int fileIndex = 0;	
+	unsigned int fileIndex = 0;
 	const int inputLengthInChars = value.GetLength();
 	const int inputLength = value.GetLength() * sizeof(wchar);
 	const wchar* const inputData = value.Begin();
@@ -1214,7 +1214,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 						if (!localAddresses)
 						{
 							localAddresses = new SIZE_T[currentArrayLength];
-							stringLengths.SetCount(currentArrayLength);	
+							stringLengths.SetCount(currentArrayLength);
 						}
 						
 						if (arrayIndex >= currentArrayLength)
@@ -1226,7 +1226,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 							memcpy(newAddressesArray, localAddresses, oldCurrentArrayLength * sizeof(SIZE_T));
 							delete[] localAddresses;
 							localAddresses = newAddressesArray;
-							stringLengths.SetCount(currentArrayLength);	
+							stringLengths.SetCount(currentArrayLength);
 						}
 						
 						localAddresses[arrayIndex] = currentResultPtr;
@@ -1323,7 +1323,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 						if (!localAddresses)
 						{
 							localAddresses = new SIZE_T[currentArrayLength];
-							stringLengths.SetCount(currentArrayLength);					
+							stringLengths.SetCount(currentArrayLength);
 						}
 						
 						if (arrayIndex >= currentArrayLength)
@@ -1403,8 +1403,9 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 
 	FileIn oldAddrFile(addrFileOld);
 	FileIn oldValuesFile;
-
-	if (GlobalScanParameter->GlobalScanType == SCANTYPE_CHANGED || GlobalScanParameter->GlobalScanType == SCANTYPE_UNCHANGED)
+	
+	// This part is crucial for the comparison scan types (CHANGED, UNCHANGED, INCREASED, DECREASED) to work!
+	if (GlobalScanParameter->GlobalScanType >= SCANTYPE_CHANGED)
 	{
 		oldValuesFile.Open(valuesFileOld);
 	}
@@ -1465,7 +1466,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 						if (!localAddresses || !localValues)
 						{
 							localAddresses = new SIZE_T[currentArrayLength];
-							localValues = new T[currentArrayLength];			
+							localValues = new T[currentArrayLength];
 						}
 						
 						if (arrayIndex >= currentArrayLength)
@@ -1531,6 +1532,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 		this->UpdateScanningProgress(AtomicInc(RegionFinishCount));
 	}
 	
+	// If necessary, close the old values file.
 	if (oldValuesFile.IsOpen())
 	{
 		oldValuesFile.Close();

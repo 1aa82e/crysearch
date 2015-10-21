@@ -4,6 +4,7 @@ evolution536, www.unknowncheats.me
 
 v2.01
 	- Fixed bug in disassembler where going to an address from a search result may crash the application;
+	- Fixed serious bug in next scans: unchanged, changed, increased and decreased value;
 	- 
 
 v2.0
