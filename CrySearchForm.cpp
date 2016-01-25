@@ -772,6 +772,7 @@ void CrySearchForm::SearchResultWhenBar(Bar& pBar)
 	if (this->mScanResults.GetCursor() >= 0 && mMemoryScanner->GetScanResultCount() > 0)
 	{
 		pBar.Add("Add to address list", CrySearchIml::AddToAddressList(), THISBACK(SearchResultDoubleClicked));
+		pBar.Add("View as hexadecimal", THISBACK(ToggleSearchResultViewAs)).Check(GlobalScanParameter->CurrentScanHexValues);
 	}
 }
 
@@ -911,6 +912,11 @@ void CrySearchForm::ToggleAddressTableFreezeThaw()
 void CrySearchForm::ToggleAddressTableValueView()
 {
 	viewAddressTableValueHex = !viewAddressTableValueHex;
+}
+
+void CrySearchForm::ToggleSearchResultViewAs()
+{
+	GlobalScanParameter->CurrentScanHexValues = !GlobalScanParameter->CurrentScanHexValues;
 }
 
 void CrySearchForm::ManuallyAddAddressToTable()

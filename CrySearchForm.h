@@ -71,6 +71,7 @@ private:
 	void ToggleDebuggerWindow();
 	void ToggleAddressTableFreezeThaw();
 	void ToggleAddressTableValueView();
+	void ToggleSearchResultViewAs();
 	void AddressListEntryMemoryDissection();
 	void OpenProcessMenu();
 	void CloseProcessMenu();

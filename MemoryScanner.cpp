@@ -327,20 +327,6 @@ bool __fastcall CompareSmaller(const T& input, const T& expected)
 template <>
 bool __fastcall CompareEqual(const ArrayOfBytes& input, const ArrayOfBytes& expected)
 {
-	/*const Byte* first = input.Data;
-	const Byte* end = input.Data + input.Size;
-	const Byte* expectedFirst = expected.Data;
-	const Byte* expectedEnd = expected.Data + expected.Size;
-	
-	while (first != end)
-	{
-		if (*first++ != *expectedFirst++ || *end-- != *expectedEnd--)
-		{
-			return false;
-		}
-	}
-	
-	return true;*/
 	return false;
 }
 
@@ -1032,7 +1018,7 @@ void MemoryScanner::FirstScan()
 	// Assign compare function accordingly
 	this->mCompareValues = new ValueComparator<T>(GlobalScanParameter->GlobalScanType);
 
-	SIZE_T workerAmount = totalMemorySize / threadCount;
+	const SIZE_T workerAmount = totalMemorySize / threadCount;
 	SIZE_T memoryCounter = 0;
 	int regionIndex = 0;
 	int oldRegionIndex = 0;
