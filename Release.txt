@@ -4,7 +4,8 @@ evolution536, www.unknowncheats.me
 
 v2.02
 	- Added a view option to the right-click menu for search results to manually switch view of formatting to hexadecimal;
-	- 
+	- Fixed bug where Null integer values 0x80000000(00000000) were not propely formatted in views;
+	-  
 
 v2.01
 	- Fixed bug in disassembler where going to an address from a search result may crash the application;

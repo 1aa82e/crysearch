@@ -1,4 +1,5 @@
 #include "CodeGenerator.h"
+#include "UIUtilities.h"
 
 #define GENERATED_HANDLEOPENING	"unsigned int pid;\r\n\tHANDLE proc = OpenProcess(PROCESS_VM_READ | PROCESS_VM_WRITE, FALSE, pid);\r\n"
 #define GENERATED_CLOSEHANDLE	"\tCloseHandle(proc);\r\n"
@@ -129,7 +130,7 @@ String CodeGenerator::GenerateExternalEntry(const AddressTableEntry* entry, cons
 	if (entry->ValueType == CRYDATATYPE_STRING || entry->ValueType == CRYDATATYPE_AOB)
 	{
 		taskOutput += Format("\t%s %s[%i];\r\n", fieldType, description, entry->Size);
-		size = IntStr(entry->Size);
+		size = FormatIntSpecial(entry->Size);
 	}
 	else
 	{

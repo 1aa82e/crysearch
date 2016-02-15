@@ -50,7 +50,7 @@ CryChangeRecordDialog::CryChangeRecordDialog(AddressTable& addrTable, const int 
 #ifdef _WIN64
 		this->mFieldValue.SetText(FormatInt64HexUpper(this->mLoadedEntry->Address));
 #else
-		this->mFieldValue.SetText(FormatIntHexUpper(this->mLoadedEntry->Address, 0));
+		this->mFieldValue.SetText(FormatHexadecimalIntSpecial(this->mLoadedEntry->Address));
 #endif
 		}
 	}
@@ -156,7 +156,7 @@ void CryChangeRecordDialog::ValueModeHexOptionChanged()
 		else if (this->mLoadedEntry->ValueType == CRYDATATYPE_4BYTES)
 		{
 			int v = ScanInt(this->mFieldValue.GetText().ToString());
-			this->mFieldValue.SetText(FormatIntHexUpper(v, 0));
+			this->mFieldValue.SetText(FormatHexadecimalIntSpecial(v));
 		}
 		else if (this->mLoadedEntry->ValueType == CRYDATATYPE_2BYTES)
 		{

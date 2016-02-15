@@ -80,14 +80,14 @@ String GetThreadStartAddress(const int index)
 #ifdef _WIN64
 		if (mMemoryScanner->IsX86Process())
 		{
-			return FormatIntHexUpper((int)addr, 0);
+			return FormatHexadecimalIntSpecial((int)addr);
 		}
 		else
 		{
 			return FormatInt64HexUpper((__int64)addr);
 		}
 #else
-		return FormatIntHexUpper((int)addr, 0);
+		return FormatHexadecimalIntSpecial((int)addr);
 #endif
 	}
 }

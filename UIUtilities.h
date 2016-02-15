@@ -38,6 +38,18 @@ String FormatInt64HexUpper(uint64 a);
 // Generates a byte array for either C# or C++ code files.
 String GenerateByteArray(const Vector<Byte>& bytes, const DWORD arrayType);
 
+// Formats hexadecimal numbers as a string, including special cases such as 0x80000000.
+String FormatHexadecimalIntSpecial(const uint32 value);
+
+// Formats 64-bits hexadecimal numbers as a string, including special cases such as 0x8000000000000000.
+String FormatHexadecimalIntSpecial64(const uint64 value);
+
+// Formats decimal numbers as a string, including special cases such as 0x80000000.
+String FormatIntSpecial(const uint32 value);
+
+// Formats 64-bits hexadecimal numbers as a string, including special cases such as 0x8000000000000000.
+String FormatIntSpecial64(const uint64 value);
+
 // Custom red text drawing for hooked imports.
 __declspec(selectany) struct ImportAddressHookedDisplay : public Display
 {

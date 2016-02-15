@@ -17,7 +17,7 @@ String GetBaseAddress(const int index)
 #ifdef _WIN64
 	return FormatInt64HexUpper((__int64)(*mModuleManager)[index].BaseAddress);
 #else
-	return FormatIntHexUpper((int)(*mModuleManager)[index].BaseAddress, 0);
+	return FormatHexadecimalIntSpecial((int)(*mModuleManager)[index].BaseAddress);
 #endif
 }
 
@@ -26,7 +26,7 @@ String GetLength(const int index)
 #ifdef _WIN64
 	return FormatInt64HexUpper((*mModuleManager)[index].Length);
 #else
-	return FormatIntHexUpper((*mModuleManager)[index].Length, 0);
+	return FormatHexadecimalIntSpecial((*mModuleManager)[index].Length);
 #endif
 }
 

@@ -1,6 +1,7 @@
 #include "CrySettingsDialog.h"
 #include "ImlProvider.h"
 #include "CryAddHotkeyWindow.h"
+#include "UIUtilities.h"
 
 extern const char* HotkeyToString(const unsigned int hotkey);
 
@@ -128,8 +129,8 @@ void CrySearchSettingsDialog::LoadSettings()
 	this->mWriteMemoryProcRoutineSelector.SetIndex(this->mSettingsInstance->GetWriteMemoryRoutine());
 	this->mProtectMemoryProcRoutineSelector.SetIndex(this->mSettingsInstance->GetProtectMemoryRoutine());
 	this->mInjectionMethod.SetIndex(this->mSettingsInstance->GetLibraryInjectionMethod());
-	this->mAddressTableUpdaterIntervalEditField.SetText(IntStr(this->mSettingsInstance->GetAddressTableUpdateInterval()));
-	this->mStackSnapshotLimitEdit.SetText(IntStr(this->mSettingsInstance->GetStackSnapshotLimit()));
+	this->mAddressTableUpdaterIntervalEditField.SetText(FormatIntSpecial(this->mSettingsInstance->GetAddressTableUpdateInterval()));
+	this->mStackSnapshotLimitEdit.SetText(FormatIntSpecial(this->mSettingsInstance->GetStackSnapshotLimit()));
 	this->dbgAttemptHidePeb = this->mSettingsInstance->GetAttemptHideDebuggerFromPeb();
 	this->mHotkeysOption = this->mSettingsInstance->GetEnableHotkeys();
 	this->dbgInvadeProcess = this->mSettingsInstance->GetInvadeProcess();

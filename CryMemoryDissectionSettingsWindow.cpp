@@ -1,5 +1,6 @@
 #include "CryMemoryDissectionSettingsWindow.h"
 #include "ImlProvider.h"
+#include "UIUtilities.h"
 
 CryMemoryDissectionSettingsWindow::CryMemoryDissectionSettingsWindow()
 {
@@ -58,7 +59,7 @@ void CryMemoryDissectionSettingsWindow::CloseWindow()
 
 void CryMemoryDissectionSettingsWindow::LoadSettings()
 {
-	this->mUpdateInterval.SetText(IntStr(this->mSettingsInstance->GetDissectionUpdateInterval()));
+	this->mUpdateInterval.SetText(FormatIntSpecial(this->mSettingsInstance->GetDissectionUpdateInterval()));
 	this->mDefaultViewAsHex = this->mSettingsInstance->GetDissectionHexadecimalView();
 	this->mEnableTypeGuessing = this->mSettingsInstance->GetEnableDissectionTypeGuessing();
 }

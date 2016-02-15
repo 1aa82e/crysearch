@@ -12,7 +12,7 @@ v2.0:
 	- Drop XP support, look for improved API's that are inside Windows XP+;
 	- Let's go with C++ 11?
 
-- 0x80000000 is shown as empty string in UI;
+- setting relative address in memory dissector???
 - saving search results with attached debugger, possible crash;
 
 - Multithread disassembler, Skype has rediculously big pages;

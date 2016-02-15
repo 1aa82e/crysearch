@@ -1,5 +1,6 @@
 #include "Disassembler.h"
 #include "BackendGlobalDef.h"
+#include "UIUtilities.h"
 
 // Stub functions are needed to avoid linker errors from multiple usage of the Disasm functions.
 int __stdcall CryDisasm(LPDISASM lpDisasm)
@@ -48,7 +49,7 @@ String DisasmGetLine(const SIZE_T address, ArchitectureDefinitions architecture,
 		}
 
 		// Just return a 'defined byte' description to identify an unknown instruction.
-		return "db " + FormatIntHexUpper(value, 0);
+		return "db " + FormatHexadecimalIntSpecial(value);
 	}
 	else if (len > 0)
 	{

@@ -23,7 +23,7 @@ String GetSectionBaseAddress(const int index)
 #ifdef _WIN64
 	return FormatInt64HexUpper((__int64)LoadedProcessPEInformation.ImageSections[index].BaseAddress);
 #else
-	return FormatIntHexUpper((int)LoadedProcessPEInformation.ImageSections[index].BaseAddress, 0);
+	return FormatHexadecimalIntSpecial((int)LoadedProcessPEInformation.ImageSections[index].BaseAddress);
 #endif
 }
 
@@ -32,7 +32,7 @@ String GetSectionVirtualSize(const int index)
 #ifdef _WIN64
 	return FormatInt64HexUpper((__int64)LoadedProcessPEInformation.ImageSections[index].SectionSize);
 #else
-	return FormatIntHexUpper((int)LoadedProcessPEInformation.ImageSections[index].SectionSize, 0);
+	return FormatHexadecimalIntSpecial((int)LoadedProcessPEInformation.ImageSections[index].SectionSize);
 #endif
 }
 

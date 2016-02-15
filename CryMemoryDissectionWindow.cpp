@@ -47,7 +47,7 @@ String GetDissectionForDropList(const int index)
 		return Format("%s - (%llX)", dissection->FriendlyName, (LONG_PTR)dissection->AssociatedDissector.GetBaseAddress());
 #else
 		return Format("%s - (%lX)", dissection->FriendlyName, (LONG_PTR)dissection->AssociatedDissector.GetBaseAddress());
-#endif		
+#endif
 	}
 	else
 	{

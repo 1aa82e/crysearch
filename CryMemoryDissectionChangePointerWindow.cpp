@@ -21,7 +21,7 @@ CryMemoryDissectionChangePointerWindow::CryMemoryDissectionChangePointerWindow(S
 #ifdef _WIN64
 	this->mPointerField.SetText(FormatInt64HexUpper((LONG_PTR)*pPointer));
 #else
-	this->mPointerField.SetText(FormatIntHexUpper((LONG_PTR)*pPointer, 0));
+	this->mPointerField.SetText(FormatHexadecimalIntSpecial((LONG_PTR)*pPointer));
 #endif
 }
 

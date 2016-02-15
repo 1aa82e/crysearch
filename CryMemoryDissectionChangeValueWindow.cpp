@@ -106,7 +106,7 @@ void CryMemoryDissectionChangeValueWindow::ValueModeHexOptionChanged()
 		else if (this->rowType == CRYDATATYPE_4BYTES)
 		{
 			int v = ScanInt(this->mFieldValue.GetText().ToString());
-			this->mFieldValue.SetText(FormatIntHexUpper(v, 0));
+			this->mFieldValue.SetText(FormatHexadecimalIntSpecial(v));
 		}
 		else if (this->rowType == CRYDATATYPE_2BYTES)
 		{

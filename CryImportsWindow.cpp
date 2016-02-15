@@ -28,7 +28,7 @@ String GetVirtualAddress(const int index)
 #ifdef _WIN64
 	return FormatInt64HexUpper((__int64)LoadedProcessPEInformation.ImportAddressTable[MasterIndex].FunctionList[index].VirtualAddress);
 #else
-	return FormatIntHexUpper((int)LoadedProcessPEInformation.ImportAddressTable[MasterIndex].FunctionList[index].VirtualAddress, 0);
+	return FormatHexadecimalIntSpecial((int)LoadedProcessPEInformation.ImportAddressTable[MasterIndex].FunctionList[index].VirtualAddress);
 #endif
 }
 

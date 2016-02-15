@@ -16,14 +16,14 @@ String GetBreakpointAddress(const int index)
 #ifdef _WIN64
 	if (mMemoryScanner->IsX86Process())
 	{
-		return FormatIntHexUpper((int)(*mDebugger)[index].Address, 0);
+		return FormatHexadecimalIntSpecial((int)(*mDebugger)[index].Address);
 	}
 	else
 	{
 		return FormatInt64HexUpper((*mDebugger)[index].Address);
 	}
 #else
-	return FormatIntHexUpper((int)(*mDebugger)[index].Address, 0);
+	return FormatHexadecimalIntSpecial((int)(*mDebugger)[index].Address);
 #endif
 }
 
@@ -37,14 +37,14 @@ String GetStackViewAddress(const int index)
 #ifdef _WIN64
 	if (mMemoryScanner->IsX86Process())
 	{
-		return FormatIntHexUpper((int)(*mDebugger)[BreakpointMasterIndex].Address + (index * sizeof(DWORD)), 0);
+		return FormatHexadecimalIntSpecial((int)(*mDebugger)[BreakpointMasterIndex].Address + (index * sizeof(DWORD)));
 	}
 	else
 	{
 		return FormatInt64HexUpper((*mDebugger)[BreakpointMasterIndex].Address + (index * sizeof(SIZE_T)));
 	}
 #else
-	return FormatIntHexUpper((*mDebugger)[BreakpointMasterIndex].Address + (index * sizeof(DWORD)), 0);
+	return FormatHexadecimalIntSpecial((*mDebugger)[BreakpointMasterIndex].Address + (index * sizeof(DWORD)));
 #endif
 }
 
@@ -56,7 +56,7 @@ String GetStackViewValue(const int index)
 		const SIZE_T esp = (*mDebugger)[BreakpointMasterIndex].BreakpointSnapshot.Wow64Context.Esp;
 		int value;
 		mMemoryScanner->Peek(esp + (index * sizeof(DWORD)), 0, &value);
-		return FormatIntHexUpper(value, 0);
+		return FormatHexadecimalIntSpecial(value);
 	}
 	else
 	{
@@ -69,7 +69,7 @@ String GetStackViewValue(const int index)
 	const SIZE_T esp = (*mDebugger)[BreakpointMasterIndex].BreakpointSnapshot.Context86.Esp;
 	int value;
 	mMemoryScanner->Peek(esp + (index * sizeof(DWORD)), 0, &value);
-	return FormatIntHexUpper(value, 0);
+	return FormatHexadecimalIntSpecial(value);
 #endif
 }
 

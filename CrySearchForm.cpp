@@ -55,7 +55,7 @@ String GetAddress(const int index)
 #ifdef _WIN64
 	return FormatInt64HexUpper(CachedAddresses[index].Address);
 #else
-	return FormatIntHexUpper(CachedAddresses[index].Address, 0);
+	return FormatHexadecimalIntSpecial(CachedAddresses[index].Address);
 #endif
 }
 
@@ -70,7 +70,7 @@ String GetValue(const int index)
 			Byte value;
 			if (mMemoryScanner->Peek<Byte>(CachedAddresses[index].Address, 0, &value))
 			{
-				return mustHex ? FormatIntHexUpper(value) : IntStr(value);
+				return mustHex ? FormatHexadecimalIntSpecial(value) : FormatIntSpecial(value);
 			}
 		}
 		else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_2BYTE)
@@ -78,7 +78,7 @@ String GetValue(const int index)
 			short value;
 			if (mMemoryScanner->Peek<short>(CachedAddresses[index].Address, 0, &value))
 			{
-				return mustHex ? FormatIntHexUpper(value) : IntStr(value);
+				return mustHex ? FormatHexadecimalIntSpecial(value) : FormatIntSpecial(value);
 			}
 		}
 		else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_4BYTE)
@@ -86,7 +86,7 @@ String GetValue(const int index)
 			int value;
 			if (mMemoryScanner->Peek<int>(CachedAddresses[index].Address, 0, &value))
 			{
-				return mustHex ? FormatIntHexUpper(value) : IntStr(value);
+				return mustHex ? FormatHexadecimalIntSpecial(value) : FormatIntSpecial(value);
 			}
 		}
 		else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_8BYTE)
@@ -94,7 +94,7 @@ String GetValue(const int index)
 			__int64 value;
 			if (mMemoryScanner->Peek<__int64>(CachedAddresses[index].Address, 0, &value))
 			{
-				return mustHex ? FormatInt64HexUpper(value) : IntStr64(value);
+				return mustHex ? FormatHexadecimalIntSpecial64(value) : FormatIntSpecial64(value);
 			}
 		}
 		else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_FLOAT)
@@ -152,7 +152,7 @@ String GetAddressTableAddress(const int index)
 #ifdef _WIN64
 	return FormatInt64HexUpper(loadedTable[index]->Address);
 #else
-	return FormatIntHexUpper(loadedTable[index]->Address, 0);
+	return FormatHexadecimalIntSpecial(loadedTable[index]->Address);
 #endif
 }
 
@@ -166,7 +166,7 @@ String GetAddressTableValue(const int index)
 			Byte value;
 			if (mMemoryScanner->Peek<Byte>(entry->Address, 0, &value))
 			{
-				return viewAddressTableValueHex ? FormatIntHexUpper(value) : IntStr(value);
+				return viewAddressTableValueHex ? FormatHexadecimalIntSpecial(value) : FormatIntSpecial(value);
 			}
 		}
 		else if (entry->ValueType == CRYDATATYPE_2BYTES)
@@ -174,7 +174,7 @@ String GetAddressTableValue(const int index)
 			short value;
 			if (mMemoryScanner->Peek<short>(entry->Address, 0, &value))
 			{
-				return viewAddressTableValueHex ? FormatIntHexUpper(value) : IntStr(value);
+				return viewAddressTableValueHex ? FormatHexadecimalIntSpecial(value) : FormatIntSpecial(value);
 			}
 		}
 		else if (entry->ValueType == CRYDATATYPE_4BYTES)
@@ -182,7 +182,7 @@ String GetAddressTableValue(const int index)
 			int value;
 			if (mMemoryScanner->Peek<int>(entry->Address, 0, &value))
 			{
-				return viewAddressTableValueHex ? FormatIntHexUpper(value) : IntStr(value);
+				return viewAddressTableValueHex ? FormatHexadecimalIntSpecial(value) : FormatIntSpecial(value);
 			}
 		}
 		else if (entry->ValueType == CRYDATATYPE_8BYTES)
@@ -190,7 +190,7 @@ String GetAddressTableValue(const int index)
 			__int64 value;
 			if (mMemoryScanner->Peek<__int64>(entry->Address, 0, &value))
 			{
-				return viewAddressTableValueHex ? FormatInt64HexUpper(value) : IntStr64(value);
+				return viewAddressTableValueHex ? FormatHexadecimalIntSpecial64(value) : FormatIntSpecial64(value);
 			}
 		}
 		else if (entry->ValueType == CRYDATATYPE_FLOAT)

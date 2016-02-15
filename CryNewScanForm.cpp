@@ -174,7 +174,7 @@ void CryNewScanForm::ValueInputHexToggleChanged()
 			}
 			else
 			{
-				this->mValueToSearchFor.SetText(this->mValueIsHex ? FormatIntHexUpper(ScanInt(curInput), 0) : Format("%lli", ScanInt(curInput, NULL, 16)));
+				this->mValueToSearchFor.SetText(this->mValueIsHex ? FormatHexadecimalIntSpecial(ScanInt(curInput)) : Format("%lli", ScanInt(curInput, NULL, 16)));
 			}
 		}
 	}

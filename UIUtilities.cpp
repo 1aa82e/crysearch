@@ -147,7 +147,7 @@ String GenerateByteArray(const Vector<Byte>& bytes, const DWORD arrayType)
 	{
 		retVal.Insert(counter, "0x");
 		counter += 6;
-	}	
+	}
 	
 	// Prefix and close the array declaration and return.
 	retVal.Insert(0, arrayType == ARRAYTYPE_CPP ? "const BYTE sigArray[] = { " : "byte[] sigArray = new byte[] { ");
@@ -164,13 +164,13 @@ String ValueAsStringInternal(const Byte* data, const CCryDataType type, const in
 	switch (type)
 	{
 		case CRYDATATYPE_BYTE:
-			return hex ? FormatIntHexUpper(*(Byte*)data, 0) : IntStr(*(Byte*)data);
+			return hex ? FormatHexadecimalIntSpecial(*(Byte*)data) : FormatIntSpecial(*(Byte*)data);
 		case CRYDATATYPE_2BYTES:
-			return hex ? FormatIntHexUpper(*(short*)data, 0) : IntStr(*(short*)data);
+			return hex ? FormatHexadecimalIntSpecial(*(short*)data) : FormatIntSpecial(*(short*)data);
 		case CRYDATATYPE_4BYTES:
-			return hex ? FormatIntHexUpper(*(int*)data, 0) : IntStr(*(int*)data);
+			return hex ? FormatHexadecimalIntSpecial(*(int*)data) : FormatIntSpecial(*(int*)data);
 		case CRYDATATYPE_8BYTES:
-			return hex ? FormatInt64HexUpper(*(__int64*)data) : IntStr64(*(__int64*)data);
+			return hex ? FormatHexadecimalIntSpecial64(*(__int64*)data) : FormatIntSpecial64(*(__int64*)data);
 		case CRYDATATYPE_FLOAT:
 			return DblStr(*(float*)data);
 		case CRYDATATYPE_DOUBLE:
@@ -200,4 +200,64 @@ String FormatInt64HexUpper(uint64 a)
 	}
 	while(a);
 	return String(p, b + 50);
+}
+
+// Formats hexadecimal numbers as a string, including special cases such as 0x80000000.
+String FormatHexadecimalIntSpecial(const uint32 value)
+{
+	// Check for Null values, this doesn't get formatted properly.
+	if (value == 0x80000000)
+	{
+		return "80000000";
+	}
+	else
+	{
+		// Normally return the formatted string.
+		return FormatIntHexUpper(value, 0);
+	}
+}
+
+// Formats 64-bits hexadecimal numbers as a string, including special cases such as 0x8000000000000000.
+String FormatHexadecimalIntSpecial64(const uint64 value)
+{
+	// Check for Null values, this doesn't get formatted properly.
+	if (value == 0x8000000000000000)
+	{
+		return "8000000000000000";
+	}
+	else
+	{
+		// Normally return the formatted string.
+		return FormatInt64HexUpper(value);
+	}
+}
+
+// Formats decimal numbers as a string, including special cases such as 0x80000000.
+String FormatIntSpecial(const uint32 value)
+{
+	// Check for Null values, this doesn't get formatted properly.
+	if (value == 0x80000000)
+	{
+		return "-2147483648";
+	}
+	else
+	{
+		// Normally return the formatted string.
+		return IntStr(value);
+	}
+}
+
+// Formats 64-bits hexadecimal numbers as a string, including special cases such as 0x8000000000000000.
+String FormatIntSpecial64(const uint64 value)
+{
+	// Check for Null values, this doesn't get formatted properly.
+	if (value == 0x8000000000000000)
+	{
+		return "-9223372036854775808";
+	}
+	else
+	{
+		// Normally return the formatted string.
+		return IntStr64(value);
+	}
 }

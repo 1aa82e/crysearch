@@ -46,7 +46,7 @@ String GetDisasmAddress(const int index)
 #ifdef _WIN64
 	return FormatInt64HexUpper(DisasmVisibleLines[index]);
 #else
-	return FormatIntHexUpper(DisasmVisibleLines[index], 0);
+	return FormatHexadecimalIntSpecial(DisasmVisibleLines[index]);
 #endif
 }
 
@@ -76,7 +76,7 @@ String GetMemoryPageForDropList(const int index)
 #ifdef _WIN64
 	return FormatInt64HexUpper((__int64)mExecutablePagesList[index].BaseAddress) + " - " + FormatInt64HexUpper((__int64)(mExecutablePagesList[index].BaseAddress + mExecutablePagesList[index].MemorySize));
 #else
-	return FormatIntHexUpper((int)mExecutablePagesList[index].BaseAddress, 0) + " - " + FormatIntHexUpper((int)(mExecutablePagesList[index].BaseAddress + mExecutablePagesList[index].MemorySize), 0);
+	return FormatHexadecimalIntSpecial((int)mExecutablePagesList[index].BaseAddress) + " - " + FormatHexadecimalIntSpecial((int)(mExecutablePagesList[index].BaseAddress + mExecutablePagesList[index].MemorySize));
 #endif
 }
 

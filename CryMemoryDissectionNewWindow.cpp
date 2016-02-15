@@ -30,9 +30,9 @@ CryMemoryDissectionNewWindow::CryMemoryDissectionNewWindow(String* pName, SIZE_T
 #ifdef _WIN64
 		this->mPointer.SetText(FormatInt64HexUpper((LONG_PTR)*pAddr));
 #else
-		this->mPointer.SetText(FormatIntHexUpper((LONG_PTR)*pAddr, 0));
+		this->mPointer.SetText(FormatHexadecimalIntSpecial((LONG_PTR)*pAddr));
 #endif
-		this->mSizeField.SetText(IntStr(*pSize));
+		this->mSizeField.SetText(FormatIntSpecial(*pSize));
 	}
 }
 
