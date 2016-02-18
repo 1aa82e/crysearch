@@ -1008,7 +1008,7 @@ void MemoryScanner::FirstScan()
 	
 	// Start worker threads using the regions that are found and readable.
 #ifdef _MULTITHREADED
-	threadPool.SetThreadPriority(this->mSettingsInstance->GetScanThreadPriority());	
+	threadPool.SetThreadPriority(this->mSettingsInstance->GetScanThreadPriority());
 #endif
 
 	// Signal user interface with a count to set progress indicator to ready state.

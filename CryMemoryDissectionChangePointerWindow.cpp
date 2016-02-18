@@ -1,6 +1,7 @@
 #include "CryMemoryDissectionChangePointerWindow.h"
 #include "ImlProvider.h"
 #include "UIUtilities.h"
+#include "BackendGlobalDef.h"
 
 CryMemoryDissectionChangePointerWindow::CryMemoryDissectionChangePointerWindow(SIZE_T* const pPointer) : CryDialogTemplate(CrySearchIml::ChangeRecordIcon())
 {
@@ -41,11 +42,33 @@ void CryMemoryDissectionChangePointerWindow::OkButtonClicked()
 		return;
 	}
 	
+	SIZE_T newptr;
+	
+	// If the address input contains a plus, the input is a relative address.
+	const int plusIndex = addrField.Find("+");
+	if (plusIndex != -1)
+	{
+		// Parse the relative address into the new address table entry.
+		const Win32ModuleInformation* mod = mModuleManager->FindModule(addrField.Left(plusIndex));
+		if (!mod)
+		{
+			// If the module was not found in the loaded modules list, the relative address cannot be calculated.
+			Prompt("Input Error", CtrlImg::error(), "The typed module was not found!", "OK");
+			return;
+		}
+			
+		// Still here, so calculate the address.
+		newptr = mod->BaseAddress + ScanInt(addrField.Mid(plusIndex + 1), NULL, 16);
+	}
+	else
+	{
+		// Regularly parse the address. It is not a relative one.
 #ifdef _WIN64
-	const SIZE_T newptr = (SIZE_T)ScanInt64(addrField, NULL, 16);
+		newptr = ScanInt64(addrField, NULL, 16);
 #else
-	const SIZE_T newptr = (SIZE_T)ScanInt(addrField, NULL, 16);
+		newptr = ScanInt(addrField, NULL, 16);
 #endif
+	}
 	
 	// If a bogus value was entered, the following value should be returned.
 	if (newptr == 0x80000000)

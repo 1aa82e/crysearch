@@ -1,9 +1,10 @@
 #include "CryDisasmGoToAddressDialog.h"
 #include "ImlProvider.h"
+#include "BackendGlobalDef.h"
 
 CryDisasmGoToAddressDialog::CryDisasmGoToAddressDialog(LONG_PTR* addr) : CryDialogTemplate(CrySearchIml::CrySearch())
 {
-	this->addrPtr = addr;	
+	this->addrPtr = addr;
 	
 	this->Title("Go to Address").SetRect(0, 0, 180, 75);
 		
@@ -32,12 +33,32 @@ void CryDisasmGoToAddressDialog::OkButtonClicked()
 		return;
 	}
 	
-	// Save it in the return pointer and close the window.
+	// If the address input contains a plus, the input is a relative address.
+	const String& addrField = this->mAddressInput.GetText().ToString();
+	const int plusIndex = addrField.Find("+");
+	if (plusIndex != -1)
+	{
+		// Parse the relative address into the new address table entry.
+		const Win32ModuleInformation* mod = mModuleManager->FindModule(addrField.Left(plusIndex));
+		if (!mod)
+		{
+			// If the module was not found in the loaded modules list, the relative address cannot be calculated.
+			Prompt("Input Error", CtrlImg::error(), "The typed module was not found!", "OK");
+			return;
+		}
+			
+		// Still here, so calculate the address.
+		*this->addrPtr = mod->BaseAddress + ScanInt(addrField.Mid(plusIndex + 1), NULL, 16);
+	}
+	else
+	{
+		// Regularly parse the address. It is not a relative one.
 #ifdef _WIN64
-	*this->addrPtr = ScanInt64(this->mAddressInput.GetText().ToString(), NULL, 16);
+		*this->addrPtr = ScanInt64(addrField, NULL, 16);
 #else
-	*this->addrPtr = ScanInt(this->mAddressInput.GetText().ToString(), NULL, 16);
+		*this->addrPtr = ScanInt(addrField, NULL, 16);
 #endif
+	}
 
 	this->AcceptBreak(10);
 }

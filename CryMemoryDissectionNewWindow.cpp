@@ -1,6 +1,7 @@
 #include "CryMemoryDissectionNewWindow.h"
 #include "ImlProvider.h"
 #include "UIUtilities.h"
+#include "BackendGlobalDef.h"
 
 CryMemoryDissectionNewWindow::CryMemoryDissectionNewWindow(String* pName, SIZE_T* pAddr, DWORD* pSize) : CryDialogTemplate(CrySearchIml::AddToAddressList())
 {
@@ -51,7 +52,7 @@ void CryMemoryDissectionNewWindow::OkButtonClicked()
 	if (nameField.IsEmpty())
 	{
 		Prompt("Input Error", CtrlImg::error(), "Please enter a friendly name.", "OK");
-		return;		
+		return;
 	}
 	
 	// Check validity of start address.
@@ -65,14 +66,36 @@ void CryMemoryDissectionNewWindow::OkButtonClicked()
 	if (sizeField.IsEmpty())
 	{
 		Prompt("Input Error", CtrlImg::error(), "Please enter a valid size parameter.", "OK");
-		return;		
+		return;
 	}
 	
+	SIZE_T newptr;
+	
+	// If the address input contains a plus, the input is a relative address.
+	const int plusIndex = addrField.Find("+");
+	if (plusIndex != -1)
+	{
+		// Parse the relative address into the new address table entry.
+		const Win32ModuleInformation* mod = mModuleManager->FindModule(addrField.Left(plusIndex));
+		if (!mod)
+		{
+			// If the module was not found in the loaded modules list, the relative address cannot be calculated.
+			Prompt("Input Error", CtrlImg::error(), "The typed module was not found!", "OK");
+			return;
+		}
+			
+		// Still here, so calculate the address.
+		newptr = mod->BaseAddress + ScanInt(addrField.Mid(plusIndex + 1), NULL, 16);
+	}
+	else
+	{
+		// Regularly parse the address. It is not a relative one.
 #ifdef _WIN64
-	const SIZE_T newptr = (SIZE_T)ScanInt64(addrField, NULL, 16);
+		newptr = ScanInt64(addrField, NULL, 16);
 #else
-	const SIZE_T newptr = (SIZE_T)ScanInt(addrField, NULL, 16);
+		newptr = ScanInt(addrField, NULL, 16);
 #endif
+	}
 	
 	const int sizeParam = StrInt(sizeField);
 	
@@ -87,14 +110,14 @@ void CryMemoryDissectionNewWindow::OkButtonClicked()
 	if (sizeParam == 0x80000000)
 	{
 		Prompt("Input Error", CtrlImg::error(), "The specified size parameter is incorrect. Please enter a valid decimal value.", "OK");
-		return;		
+		return;
 	}
 	
 	// The size parameter may not be smaller than zero.
 	if (sizeParam <= 0)
 	{
 		Prompt("Input Error", CtrlImg::error(), "The specified size parameter is incorrect. Please enter a value higher than zero.", "OK");
-		return;			
+		return;
 	}
 	
 	// Store values in new memory dissection entry.

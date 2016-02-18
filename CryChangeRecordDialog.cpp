@@ -28,7 +28,7 @@ CryChangeRecordDialog::CryChangeRecordDialog(AddressTable& addrTable, const int 
 		;
 		
 		this->Title("Change Description");
-		this->mFieldValue.SetText(this->mLoadedEntry->Description);		
+		this->mFieldValue.SetText(this->mLoadedEntry->Description);
 	}
 	else if (mode == CRDM_ADDRESS)
 	{
@@ -286,7 +286,7 @@ void CryChangeRecordDialog::DialogOkay()
 		else
 		{
 		
-			// Regularly parse the address. It is not a relative one.	
+			// Regularly parse the address. It is not a relative one.
 #ifdef _WIN64
 			tempAddress = ScanInt64(inputVal, NULL, 16);
 #else
