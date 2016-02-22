@@ -1687,6 +1687,7 @@ void CrySearchForm::ClearScanResults()
 		this->mScanResults.Clear();
 		mMemoryScanner->ClearSearchResults();
 		this->mSearchResultCount.SetLabel("Search Results: 0");
+		this->mToolStrip.Set(THISBACK(ToolStrip));
 	}
 }
 
@@ -1696,6 +1697,7 @@ void CrySearchForm::ClearScanResultsWithoutWarning()
 	mMemoryScanner->ClearSearchResults();
 	
 	this->mSearchResultCount.SetLabel("Search Results: 0");
+	this->mToolStrip.Set(THISBACK(ToolStrip));
 }
 
 bool CrySearchForm::InitializeProcessUI()

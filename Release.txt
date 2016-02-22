@@ -8,6 +8,7 @@ v2.02
 	- Fixed a bug where it was not possible to enter relative addresses in:
 		- The memory dissector component;
 		- The disassembler, to to address dialog.
+	- Fixed bug where clearing the scan results would not disable the next scan button accordingly;
 	- 
 
 v2.01

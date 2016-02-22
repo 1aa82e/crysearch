@@ -12,15 +12,14 @@ v2.x:
 	- Drop XP support, look for improved API's that are inside Windows XP+;
 	- Let's go with C++ 11?
 
-- saving search results with attached debugger, possible crash;
-
 - Multithread disassembler, Skype has rediculously big pages;
-
 - Improve SDK documentation, see learn_more's notes;
 - Post-dump (plugin operations) event in plugins!!!
 - Provide the output window / menu bar entry (PLUGIN_WANTS_OUTPUT_TAB);
 - Debugger window (stack / registers) resolve addresses to relative/apis;
 - More icons for actions in the designated toolbars!!!
+
+- yes yes, track control flow of entire process and build it a tree!
 
 - Debugger:
 	- Disabling bp's doesn't always work yet;
@@ -32,8 +31,6 @@ v2.x:
 	- type guessing;
 	- data schema (smth like xsd but for memory dissections);
 	- generate struct definition from selection;
-
-- Make code generator a modular component;
 
 - Identify static addresses:
 	- Generate C++ Fields / Struct / Union;
