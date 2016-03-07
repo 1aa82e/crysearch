@@ -8,16 +8,11 @@ Package:
 - Update wiki with changes for the release.
 ------------------------------------------------------------------
 
-v2.x:
-	- Drop XP support, look for improved API's that are inside Windows XP+;
-	- Let's go with C++ 11?
-
 - Multithread disassembler, Skype has rediculously big pages;
 - Improve SDK documentation, see learn_more's notes;
 - Post-dump (plugin operations) event in plugins!!!
 - Provide the output window / menu bar entry (PLUGIN_WANTS_OUTPUT_TAB);
 - Debugger window (stack / registers) resolve addresses to relative/apis;
-- More icons for actions in the designated toolbars!!!
 
 - yes yes, track control flow of entire process and build it a tree!
 

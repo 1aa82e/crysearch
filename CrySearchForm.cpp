@@ -10,6 +10,7 @@
 #include "CryMemoryDissectionWindow.h"
 #include "CryProcessEnvironmentBlockWindow.h"
 #include "CrySystemHandleInformationWindow.h"
+#include "CryHeapWalkDialog.h"
 #include "CryPluginsWindow.h"
 #include "ImlProvider.h"
 #include "UIUtilities.h"
@@ -573,6 +574,7 @@ void CrySearchForm::ToolsMenu(Bar& pBar)
 		pBar.Add("Allocate Memory", CrySearchIml::AllocateMemoryButton(), THISBACK(AllocateMemoryButtonClicked));
 		pBar.Add("Fill Memory", THISBACK(FillMemoryButtonClicked));
 		pBar.Add("Memory Dissection", CrySearchIml::MemoryDissection(), THISBACK(MemoryDissectionButtonClicked));
+		pBar.Add("View Heap Information", CrySearchIml::HeapWalkSmall(), THISBACK(HeapWalkMenuClicked));
 		pBar.Separator();
 		pBar.Add((this->mUserAddressList.GetCount() > 0), "Code Generation", CrySearchIml::CodeGenerationButton(), THISBACK(CodeGenerationButtonClicked));
 		pBar.Separator();
@@ -758,6 +760,13 @@ void CrySearchForm::RandomizeWindowTitle()
 	
 	this->mMenuStrip.Set(THISBACK(MainMenu));
 	this->wndTitleRandomized = !this->wndTitleRandomized;
+}
+
+void CrySearchForm::HeapWalkMenuClicked()
+{
+	CryHeapWalkDialog* chwd = new CryHeapWalkDialog(CrySearchIml::HeapWalkSmall());
+	chwd->Execute();
+	delete chwd;
 }
 
 void CrySearchForm::SetDataBreakpointMenu(Bar& pBar)

@@ -23,7 +23,7 @@ private:
 	void ToolStrip(Bar& pBar);
 	
 	void ModulesDropped();
-	void ModulesSelected();	
+	void ModulesSelected();
 	void DataRetrievalDone();
 	
 	void RefreshImports();

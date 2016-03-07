@@ -69,7 +69,7 @@ struct DbgBreakpoint : Moveable<DbgBreakpoint>
 			CONTEXT Context64;
 #else
 			CONTEXT Context86;
-#endif	
+#endif
 		};
 		
 		// Contains the call stack at the moment of breakpoint hit.

@@ -72,7 +72,7 @@ String GetThreadStartAddress(const int index)
 			}
 #else
 			return Format("%s!%lX", modName, (int)addr);
-#endif			
+#endif
 		}
 	}
 	else
@@ -185,7 +185,7 @@ void CryThreadWindow::AttemptResumeAllThreads()
 	}
 	
 	// Refresh the thread list to review the suspended thread.
-	this->LoadThreads();	
+	this->LoadThreads();
 }
 
 void CryThreadWindow::CreateExternalThread()

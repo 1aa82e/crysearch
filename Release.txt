@@ -9,7 +9,10 @@ v2.02
 		- The memory dissector component;
 		- The disassembler, to to address dialog.
 	- Fixed bug where clearing the scan results would not disable the next scan button accordingly;
-	- 
+	- Made some changes to toolbars and menu bars:
+		- Moved heap walk from disassembly window button to Tools menu bar;
+		- Added signature and byte array generation buttons to disassembly window toolbar as well;
+		- Added page size indicator in the disassembly window toolbar, on the right.
 
 v2.01
 	- Fixed bug in disassembler where going to an address from a search result may crash the application;

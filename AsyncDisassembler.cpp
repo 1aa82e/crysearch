@@ -8,13 +8,17 @@ Vector<LONG_PTR> DisasmVisibleLines;
 Vector<MemoryRegion> mExecutablePagesList;
 
 // Retrieves the correct page index in the list by passing an address inside it.
-const int GetPageIndexFromAddress(const SIZE_T address)
+const int GetPageIndexFromAddress(const SIZE_T address, SIZE_T* const sizePtr)
 {
 	for (int i = 0; i < mExecutablePagesList.GetCount(); ++i)
 	{
 		const MemoryRegion& mem = mExecutablePagesList[i];
 		if (address >= mem.BaseAddress && address < mem.BaseAddress + mem.MemorySize)
 		{
+			if (sizePtr)
+			{
+				*sizePtr = mem.MemorySize;
+			}
 			return i;
 		}
 	}

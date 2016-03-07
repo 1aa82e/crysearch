@@ -18,6 +18,7 @@ private:
 	// Toolbar ctrls
 	Label mExecutablePagesDescriptor;
 	VirtualDropList mExecutablePages;
+	Label mPageSizeInDisasm;
 	
 	void ExecutablePagesDropped();
 	void ExecutablePageSelected();

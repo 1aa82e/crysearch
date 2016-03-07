@@ -17,7 +17,7 @@ private:
 	typedef CryHeapWalkDialog CLASSNAME;
 public:
 	CryHeapWalkDialog(const Image& icon);
-	~CryHeapWalkDialog();	
+	~CryHeapWalkDialog();
 };
 
 #endif

@@ -3,7 +3,6 @@
 #include "CryByteArrayGenerationWindow.h"
 #include "CryDisasmGoToAddressDialog.h"
 #include "UIUtilities.h"
-#include "CryHeapWalkDialog.h"
 #include "FrontendGlobalDef.h"
 #include "BackendGlobalDef.h"
 #include "ImlProvider.h"
@@ -114,7 +113,10 @@ void CryDisasmCtrl::ToolStrip(Bar& pBar)
 	pBar.Add(this->mExecutablePagesDescriptor.SetLabel("Page: "));
 	pBar.Add(this->mExecutablePages, 200);
 	pBar.Separator();
-	pBar.Add("Heap Walk", CrySearchIml::HeapWalkSmall(), THISBACK(HeapWalkMenuClicked));
+	pBar.Add("Signature", CrySearchIml::GenerateSignatureButton(), THISBACK(GenerateSignatureButtonClicked));
+	pBar.Add("Byte-array", CrySearchIml::GenerateByteArrayButton(), THISBACK(GenerateByteArrayButtonClicked));
+	pBar.ToolGapRight();
+	pBar.Add(this->mPageSizeInDisasm.SetLabel("Page Size: 0").SetAlign(ALIGN_RIGHT), 150);
 }
 
 void CryDisasmCtrl::DisassemblyRightClick(Bar& pBar)
@@ -204,13 +206,6 @@ void CryDisasmCtrl::GenerateByteArrayButtonClicked()
 	delete cbagw;
 }
 
-void CryDisasmCtrl::HeapWalkMenuClicked()
-{
-	CryHeapWalkDialog* chwd = new CryHeapWalkDialog(CrySearchIml::HeapWalkSmall());
-	chwd->Execute();
-	delete chwd;
-}
-
 void CryDisasmCtrl::RemoveBreakpointButtonClicked()
 {
 	mCrySearchWindowManager->GetDebuggerWindow()->Cleanup();
@@ -290,13 +285,13 @@ void CryDisasmCtrl::ExecutablePagesDropped()
 
 // Executed when a new item is selected in the virtual pages drop list.
 void CryDisasmCtrl::ExecutablePageSelected()
-{	
+{
 	const int cursor = this->mExecutablePages.GetIndex();
 	if (cursor >= 0 && mExecutablePagesList.GetCount() > 0)
 	{
 		const MemoryRegion& found = mExecutablePagesList[cursor];
 		this->disasmDisplay.Clear();
-		this->mAsyncHelper->Start(found.BaseAddress);	
+		this->mAsyncHelper->Start(found.BaseAddress);
 	}
 }
 
@@ -338,7 +333,8 @@ void CryDisasmCtrl::AsyncDisasmCompletedThreadSafe(const SIZE_T address)
 	// Update controls to fit core application process results.
 	this->disasmDisplay.SetVirtualCount(DisasmVisibleLines.GetCount());
 	
-	const int index = GetPageIndexFromAddress(address);
+	SIZE_T size = 0;
+	const int index = GetPageIndexFromAddress(address, &size);
 	if (index >= 0 && index < mExecutablePagesList.GetCount())
 	{
 		this->mExecutablePages.SetIndex(index);
@@ -348,6 +344,7 @@ void CryDisasmCtrl::AsyncDisasmCompletedThreadSafe(const SIZE_T address)
 	const int newRow = GetDisasmLineIndexFromAddress(address);
 	this->disasmDisplay.ScrollInto(newRow + 5 > DisasmVisibleLines.GetCount() ? newRow : newRow + 5);
 	this->disasmDisplay.Select(newRow);
+	this->mPageSizeInDisasm.SetLabel(Format("Page Size: %s", FormatInt64HexUpper(size)));
 }
 
 // Initializes the control state to entrypoint disassembly view.

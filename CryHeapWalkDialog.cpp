@@ -4,7 +4,7 @@
 
 CryHeapWalkDialog::CryHeapWalkDialog(const Image& icon) : CryDialogTemplate(icon)
 {
-	this->Title("Heap Walk").Sizeable().SetRect(0, 0, 550, 200);
+	this->Title("View Heap Information").Sizeable().SetRect(0, 0, 550, 200);
 	
 	this->mHeapList.CryAddColumn("Virtual address", 28);
 	this->mHeapList.CryAddColumn("Committed size", 22);

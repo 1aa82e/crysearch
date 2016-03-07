@@ -149,7 +149,7 @@ void CryImportsWindow::PlaceHookOnIATFunction()
 	const char* param = NULL;
 	CryPlaceIATHookWindow* cpthw = NULL;
 	SIZE_T newAddress;
-	const bool wasOrdinal = (entry.Ordinal != 0);	
+	const bool wasOrdinal = (entry.Ordinal != 0);
 
 	// Check for the EAT address associated to the function. If the EAT address is not found, the address cannot be restored later.
 	if (entry.Flag == IAT_FLAG_NOT_FOUND && !Prompt("I need your confirmation", CtrlImg::exclamation(),
