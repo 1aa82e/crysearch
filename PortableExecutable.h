@@ -148,7 +148,7 @@ public:
 	virtual void GetExecutablePeInformation() const = 0;
 	virtual void GetImportAddressTable() const = 0;
 	virtual bool PlaceIATHook(const Win32ModuleInformation* modBase, const char* NameOrdinal, const SIZE_T newAddress, bool IsOrdinal) const = 0;
-	virtual bool RestorePEHeaderFromFile(const String& fileName, const Win32ModuleInformation& module) const = 0;	
+	virtual bool RestorePEHeaderFromFile(const String& fileName, const Win32ModuleInformation& module) const = 0;
 	virtual bool HideModuleFromProcess(const Win32ModuleInformation& module) const = 0;
 	virtual bool DumpProcessSection(const String& fileName, const SIZE_T address, const SIZE_T size) const = 0;
 	virtual bool LoadLibraryExternal(const String& library) const = 0;

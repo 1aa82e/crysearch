@@ -54,7 +54,7 @@ struct Win32HandleInformation : Moveable<Win32HandleInformation>
 	String ObjectType;
 	String ObjectName;
 	LONG ReferenceCount;
-	LONG Access;	
+	LONG Access;
 };
 
 void EnumerateHandles(const int processId, Vector<Win32HandleInformation>& handles);

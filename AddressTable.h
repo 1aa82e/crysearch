@@ -40,7 +40,7 @@ struct AddressTableEntry : Moveable<AddressTableEntry>
 	// This field is considered leading information for a great part of the address table behavior.
 	Vector<int> OffsetsList;
 	
-	// Represents the value type of the address table entry. This field is trivial and 
+	// Represents the value type of the address table entry. This field is trivial and
 	// is considered leading information for a great part of the address table behavior.
 	CCryDataType ValueType;
 	
@@ -133,7 +133,7 @@ struct MemoryDissectionEntry : Moveable<MemoryDissectionEntry>
 		this->FriendlyName = pFriendlyName;
 		this->AssociatedDissector.SetBaseAddress(baseAddress);
 		this->AssociatedDissector.SetRegionSize(memorySize);
-	};	
+	};
 	
 	// XML serialization logic function.
 	void Xmlize(XmlIO& s)

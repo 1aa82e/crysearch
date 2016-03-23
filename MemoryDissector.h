@@ -21,7 +21,7 @@ struct DissectionRowEntry : Moveable<DissectionRowEntry>
 	{
 		this->RowOffset = 0;
 		this->RowType = 0;
-		this->DataLength = 0;		
+		this->DataLength = 0;
 	};
 	
 	// Default constructor to add new entry straight to vector.
@@ -40,7 +40,7 @@ struct DissectionRowEntry : Moveable<DissectionRowEntry>
 			("RowType", this->RowType)
 			("DataLength", this->DataLength)
 		;
-	};	
+	};
 };
 
 // Represents a memory dissector. Keeps track of dissected entries and applies operations on it.
