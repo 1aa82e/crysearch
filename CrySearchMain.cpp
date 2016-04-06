@@ -282,7 +282,10 @@ GUI_APP_MAIN
 					// Try to open a process by using a PID or create one using the filename specified by a command line parameter.
 					if (cmdParser.GetProcessId())
 					{
-						if (mMemoryScanner->InitializeExistingProcess(cmdParser.GetProcessId(), ""))
+						// In addition to opening the process using the memory scanner, we need to explicitly check
+						// whether the process is still active (f.e. not a zombie). OpenProcess will succeed even if
+						// the process has already closed, until the last handle to it has been closed.
+						if (mMemoryScanner->InitializeExistingProcess(cmdParser.GetProcessId(), NULL) && IsProcessActive(mMemoryScanner->GetHandle()))
 						{
 #ifdef _WIN64
 							if (mMemoryScanner->IsX86Process())
@@ -300,6 +303,7 @@ GUI_APP_MAIN
 						else
 						{
 							MessageBox(NULL, "Failed to initialize the process!", "Fatal Error", MB_ICONERROR);
+							outputStream << "Failed to initialize the process!";
 						}
 					}
 					else if (!cmdParser.GetFilePath().IsEmpty())
@@ -322,6 +326,7 @@ GUI_APP_MAIN
 						else
 						{
 							MessageBox(NULL, "Failed to initialize the process!", "Fatal Error", MB_ICONERROR);
+							outputStream << "Failed to initialize the process!";
 						}
 					}
 					else

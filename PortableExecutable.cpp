@@ -425,8 +425,12 @@ const Win32ModuleInformation* PortableExecutable::GetResolvedModule(const Byte* 
 	}
 
 	const int dotIndex = forwardedModName.Find('.');
-	forwardedModName.Remove(dotIndex, forwardedModName.GetLength() - dotIndex);
-	forwardedModName += ".dll";
+	if (dotIndex >= 0)
+	{
+		forwardedModName.Remove(dotIndex, forwardedModName.GetLength() - dotIndex);
+		forwardedModName += ".dll";
+	}
+
 	return mModuleManager->FindModule(forwardedModName);
 }
 

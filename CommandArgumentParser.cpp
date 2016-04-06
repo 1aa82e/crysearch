@@ -22,7 +22,7 @@ CommandArgumentParser::~CommandArgumentParser()
 void CommandArgumentParser::Parse(const Vector<String>& args)
 {
 	// Check whether CrySearch was started using a shell execution from an associated file extension.
-	const int argc = args.GetCount();
+	const int argc = this->parameterCount;
 	if (argc > 0 && FileExists(args[0]))
 	{
 		this->wasShellExec = true;

@@ -324,7 +324,7 @@ public:
 		return &instance;
 	}
 
-	bool InitializeExistingProcess(const int processId, const String& exeTitle);
+	bool InitializeExistingProcess(const int processId, const char* exeTitle);
 	bool InitializeNewProcess(const char* exetitle, const DWORD flags, const char* args, int* const pProcessId);
 	
 	void CloseProcess();

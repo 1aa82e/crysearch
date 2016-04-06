@@ -25,7 +25,7 @@ private:
 	
 	typedef ProcessSelectionDragArea CLASSNAME;
 public:
-	ProcessSelectionDragArea();	
+	ProcessSelectionDragArea();
 	~ProcessSelectionDragArea() { }
 	
 	Callback1<HWND> DragCompleted;

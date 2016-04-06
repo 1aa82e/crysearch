@@ -1834,7 +1834,7 @@ void CrySearchForm::WhenProcessOpened(Win32ProcessInformation* pProc)
 	else
 	{
 		// Use process ID to open an existing process.
-		if (mMemoryScanner->InitializeExistingProcess(pProc->ProcessId, pProc->ExeTitle))
+		if (mMemoryScanner->InitializeExistingProcess(pProc->ProcessId, NULL))
 		{
 			if (!this->InitializeProcessUI())
 			{

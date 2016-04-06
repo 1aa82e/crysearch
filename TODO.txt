@@ -8,6 +8,9 @@ Package:
 - Update wiki with changes for the release.
 ------------------------------------------------------------------
 
+- bug opening cue splitter - imports are totally fucked;
+- Read-only option, to make CrySearch work without PROCESS_VM_WRITE;
+
 - Multithread disassembler, Skype has rediculously big pages;
 - Improve SDK documentation, see learn_more's notes;
 - Post-dump (plugin operations) event in plugins!!!

@@ -1,7 +1,6 @@
 #include "MemoryScanner.h"
 #include "BackendGlobalDef.h"
 #include "UIUtilities.h"
-#include <plugin/lz4/lz4.h>
 
 #include <Psapi.h>
 
@@ -85,6 +84,7 @@ MemoryScanner::MemoryScanner()
 	this->mScanResultCount = 0;
 	this->threadCount = CPU_Cores();
 	this->mProcessSuspended = false;
+	this->mOpenedProcessHandle = NULL;
 	
 	// Adjust CrySearch process token for it to be able to debug protected processes and load drivers.
 	HANDLE hToken = NULL;
@@ -154,14 +154,16 @@ const int MemoryScanner::GetSystemThreadCount() const
 
 // Open an existing process by process ID.
 // Returns true if the process succesfully opened and false if it did not.
-bool MemoryScanner::InitializeExistingProcess(const int processId, const String& exeTitle)
+bool MemoryScanner::InitializeExistingProcess(const int processId, const char* exeTitle)
 {
 	switch (this->mSettingsInstance->GetOpenProcessRoutine())
 	{
+		// Use the default kernel32.dll OpenProcess function to obtain a process handle.
 		case ROUTINE_OPENPROCESS:
 			this->mOpenedProcessHandle = OpenProcess(PROCESS_VM_OPERATION | PROCESS_VM_READ | PROCESS_VM_WRITE
 				| PROCESS_QUERY_INFORMATION | PROCESS_CREATE_THREAD | PROCESS_DUP_HANDLE, FALSE, processId);
 			break;
+		// Use the ntdll.dll NtOpenProcess function to obtain a process handle.
 		case ROUTINE_NTOPENPROCESS:
 			CLIENT_ID cid;
 			cid.UniqueThread = 0;
@@ -192,11 +194,11 @@ bool MemoryScanner::InitializeExistingProcess(const int processId, const String&
 	this->isX86Process = IsI386Process(this->mOpenedProcessHandle);
 
 	// If a process was opened by dragging the cursor onto another window, the process name is empty from the start.
-	if (exeTitle.IsEmpty())
+	if (!exeTitle)
 	{
 		char procTitle[MAX_PATH];
 		GetProcessImageFileName(this->mOpenedProcessHandle, procTitle, MAX_PATH);
-		this->mProcessName = GetFileName(procTitle);			
+		this->mProcessName = GetFileName(procTitle);
 	}
 	else
 	{

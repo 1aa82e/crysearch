@@ -3,6 +3,7 @@ CrySearch Memory Scanner
 evolution536, www.unknowncheats.me
 
 v2.03
+	- Fixed a bug where a zombie process would still be succesfully opened for automated analysis using command line options;
 	- 
 
 v2.02
