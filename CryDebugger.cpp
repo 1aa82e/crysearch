@@ -174,7 +174,7 @@ const int CryDebugger::GetBreakpointCount() const
 // Sets the internal debugger event lock to support the processing of debugger events on the user interface side.
 void CryDebugger::SetDebuggerEventLockProcessed()
 {
-	_InterlockedCompareExchange(&this->mDebuggerEventLockVariable, PROCESSING_COMPLETED, WAITING_FOR_EVENT);
+	_InterlockedExchange(&this->mDebuggerEventLockVariable, PROCESSING_COMPLETED);
 }
 
 // The debugger's thread that runs until it is detached. This function is also called to
@@ -1112,7 +1112,7 @@ void CryDebugger32::HandleSoftwareBreakpoint(const DWORD threadId, const int bpI
 	
 	// Send trigger to user interface and wait for the event to complete.
 	this->DebuggerEventOccured(DBG_EVENT_BREAKPOINT_HIT, (void*)bpIndex);
-	_InterlockedCompareExchange(&this->mDebuggerEventLockVariable, WAITING_FOR_EVENT, NO_EVENT);
+	_InterlockedExchange(&this->mDebuggerEventLockVariable, WAITING_FOR_EVENT);
 }
 
 // Takes care of a hardware breakpoint the moment it is hit.
@@ -1163,7 +1163,7 @@ void CryDebugger32::HandleHardwareBreakpoint(const DWORD threadId, const int bpI
 	CrySetBits((DWORD_PTR*)&ctx.Dr7, hwbp.DebugRegister * 2, 1, 0);
 	ctx.ContextFlags = WOW64_CONTEXT_CONTROL | WOW64_CONTEXT_DEBUG_REGISTERS;
 	Wow64SetThreadContext(hThread, &ctx);
-	memcpy(&hwbp.BreakpointSnapshot.Wow64Context, &ctx, sizeof(WOW64_CONTEXT));	
+	memcpy(&hwbp.BreakpointSnapshot.Wow64Context, &ctx, sizeof(WOW64_CONTEXT));
 #else
 	CrySetBits(&ctx.Dr7, hwbp.DebugRegister * 2, 1, 0);
 	ctx.ContextFlags = CONTEXT_CONTROL | CONTEXT_DEBUG_REGISTERS;
@@ -1182,7 +1182,7 @@ void CryDebugger32::HandleHardwareBreakpoint(const DWORD threadId, const int bpI
 	
 	// Send trigger to user interface and wait for the event to complete.
 	this->DebuggerEventOccured(DBG_EVENT_BREAKPOINT_HIT, (void*)bpIndex);
-	_InterlockedCompareExchange(&this->mDebuggerEventLockVariable, WAITING_FOR_EVENT, NO_EVENT);
+	_InterlockedExchange(&this->mDebuggerEventLockVariable, WAITING_FOR_EVENT);
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -1331,7 +1331,7 @@ void CryDebugger32::HandleHardwareBreakpoint(const DWORD threadId, const int bpI
 			
 		// Send trigger to user interface and wait for the event to complete.
 		this->DebuggerEventOccured(DBG_EVENT_BREAKPOINT_HIT, (void*)bpIndex);
-		_InterlockedCompareExchange(&this->mDebuggerEventLockVariable, WAITING_FOR_EVENT, NO_EVENT);
+		_InterlockedExchange(&this->mDebuggerEventLockVariable, WAITING_FOR_EVENT);
 	}
 	
 	// Takes care of a hardware breakpoint the moment it is hit.
@@ -1392,7 +1392,7 @@ void CryDebugger32::HandleHardwareBreakpoint(const DWORD threadId, const int bpI
 		
 		// Send trigger to user interface and wait for the event to complete.
 		this->DebuggerEventOccured(DBG_EVENT_BREAKPOINT_HIT, (void*)bpIndex);
-		_InterlockedCompareExchange(&this->mDebuggerEventLockVariable, WAITING_FOR_EVENT, NO_EVENT);
+		_InterlockedExchange(&this->mDebuggerEventLockVariable, WAITING_FOR_EVENT);
 	}
 	
 	// Hardware breakpoint routine

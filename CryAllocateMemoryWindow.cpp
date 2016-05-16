@@ -12,12 +12,12 @@ CryAllocateMemoryWindow::CryAllocateMemoryWindow(AllocateMemoryDataStruct* dataS
 	this->mCancel <<= THISBACK(CancelButton);
 	
 	*this
-		<< this->mOk.Ok().SetLabel("OK").RightPosZ(5, 60).BottomPosZ(5, 20)
-		<< this->mCancel.SetLabel("Cancel").RightPosZ(70, 60).BottomPosZ(5, 20)
-		<< this->mMemorySizeDescriptor.SetLabel("Memory Size:").HSizePos(5, 100).TopPos(5, 20)
-		<< this->mMemorySize.HSizePos(110, 5).TopPos(5, 20)
-		<< this->mProtectionFieldDescriptor.SetLabel("Protection:").HSizePos(5, 100).TopPos(30, 20)
-		<< this->mProtectionSelector.Add("Read-only").Add("Read-Write").HSizePos(110, 5).TopPos(30, 20)
+		<< this->mOk.Ok().SetLabel("OK").RightPos(5, 60).BottomPos(5, 25)
+		<< this->mCancel.SetLabel("Cancel").RightPos(70, 60).BottomPos(5, 25)
+		<< this->mMemorySizeDescriptor.SetLabel("Memory Size:").HSizePos(5, 100).TopPos(5, 25)
+		<< this->mMemorySize.HSizePos(110, 5).TopPos(5, 25)
+		<< this->mProtectionFieldDescriptor.SetLabel("Protection:").HSizePos(5, 100).TopPos(35, 25)
+		<< this->mProtectionSelector.Add("Read-only").Add("Read-Write").HSizePos(110, 5).TopPos(35, 25)
 	;
 	
 	this->mMemorySize.SetText("4096");

@@ -10,10 +10,10 @@ CryPlaceIATHookWindow::CryPlaceIATHookWindow(SIZE_T* const pAddress, const Image
 	this->mCancel <<= THISBACK(DialogCancel);
 	
 	*this
-		<< this->mAddressDescription.SetLabel("Detour Address:").HSizePos(5, 5).TopPos(5, 20)
-		<< this->mAddressInput.HSizePos(130, 5).TopPos(5, 20)
-		<< this->mOk.Ok().SetLabel("OK").RightPos(5, 60).BottomPos(5, 20)
-		<< this->mCancel.SetLabel("Cancel").RightPos(70, 60).BottomPos(5, 20)
+		<< this->mAddressDescription.SetLabel("Detour Address:").HSizePos(5, 5).TopPos(5, 25)
+		<< this->mAddressInput.HSizePos(130, 5).TopPos(5, 25)
+		<< this->mOk.Ok().SetLabel("OK").RightPos(5, 60).BottomPos(5, 25)
+		<< this->mCancel.SetLabel("Cancel").RightPos(70, 60).BottomPos(5, 25)
 	;
 }
 

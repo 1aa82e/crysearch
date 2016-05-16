@@ -13,9 +13,9 @@ CryThreadChangePriorityWindow::CryThreadChangePriorityWindow(const int threadId,
 	*this
 		<< this->mCancel.SetLabel("Cancel").HSizePos(80, 65).BottomPos(5, 25)
 		<< this->mOK.Ok().SetLabel("OK").HSizePos(140, 5).BottomPos(5, 25)
-		<< this->priorDesc.SetLabel("Select Priority:").HSizePos(5, 5).TopPos(5, 20)
+		<< this->priorDesc.SetLabel("Select Priority:").HSizePos(5, 5).TopPos(5, 25)
 		<< this->priorSelect.Add("Lowest").Add("Below Normal").Add("Normal").Add("Idle").Add("Above Normal").Add("Highest")
-			.Add("Realtime").HSizePos(5, 5).TopPos(30, 20)
+			.Add("Realtime").HSizePos(5, 5).TopPos(30, 25)
 	;
 	
 	this->priorSelect.SetIndex(current);

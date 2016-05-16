@@ -6,8 +6,8 @@ CrySystemHandleAccessMaskWindow::CrySystemHandleAccessMaskWindow(const String& t
 	this->Title("Access Mask").SetRect(0, 0, 300, 200);
 
 	*this
-		<< this->mAccessConstants.HSizePos(5, 5).VSizePos(5, 30)
-		<< this->mClose.SetLabel("Close").RightPos(5, 60).BottomPos(5, 20)
+		<< this->mAccessConstants.HSizePos(5, 5).VSizePos(5, 35)
+		<< this->mClose.SetLabel("Close").RightPos(5, 60).BottomPos(5, 25)
 	;
 	
 	this->mAccessConstants.CryAddColumn("Constant");

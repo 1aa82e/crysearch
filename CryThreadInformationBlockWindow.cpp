@@ -4,17 +4,17 @@
 
 CryThreadInformationBlockWindow::CryThreadInformationBlockWindow(const int threadId) : CryDialogTemplate(CrySearchIml::AboutButton())
 {
-	this->Title("Thread Information").Sizeable().SetRect(0, 0, 320, 300);
+	this->Title("Thread Information").Sizeable().SetRect(0, 0, 400, 300);
 	
 	this->mOk <<= THISBACK(DialogClose);
 	
 	*this
-		<< this->mThreadWindowDescription.SetLabel(Format("Viewing thread environment block for thread: %X", threadId)).HSizePos(5, 5).TopPos(5, 20)
-		<< this->mThreadInfo.HSizePos(5, 5).VSizePos(30, 30)
-		<< this->mOk.Ok().SetLabel("OK").RightPos(5, 60).BottomPos(5, 20)
+		<< this->mThreadWindowDescription.SetLabel(Format("Viewing thread environment block for thread: %X", threadId)).HSizePos(5, 5).TopPos(5, 25)
+		<< this->mThreadInfo.HSizePos(5, 5).VSizePos(35, 35)
+		<< this->mOk.Ok().SetLabel("OK").RightPos(5, 60).BottomPos(5, 25)
 	;
 	
-	// Start retrieving information from thread environment block.	
+	// Start retrieving information from thread environment block.
 	HANDLE hThread = OpenThread(THREAD_QUERY_INFORMATION, FALSE, threadId);
 
 	THREAD_BASIC_INFORMATION tInfo;

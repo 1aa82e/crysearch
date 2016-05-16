@@ -291,6 +291,9 @@ private:
 	CompareFunction* mCompareValues;
 	int threadCount;
 	
+	// Synchronization variables.
+	volatile Atomic threadIncrement;
+	
 	// Vector that contains the order of worker completions. Needed to ensure next scan accuracy.
 	Vector<WorkerRegionParameterData> mWorkerFileOrder;
 	
@@ -303,10 +306,10 @@ private:
 	typedef MemoryScanner CLASSNAME;
 
 	template <class T>
-	void FirstScanWorker(WorkerRegionParameterData& regionData, const T& value);
+	void FirstScanWorker(const WorkerRegionParameterData& regionData, const T& value);
 	
 	template <class T>
-	void NextScanWorker(WorkerRegionParameterData& regionData, const T& value);
+	void NextScanWorker(const WorkerRegionParameterData& regionData, const T& value);
 	
 	// Reallocation counter function as a workaround for the excessive buffer allocation problem on older systems.
 	inline void ReallocateMemoryScannerBufferCounter(unsigned int* const length);
@@ -359,7 +362,7 @@ public:
 	Callback1<int> ScanStarted;
 	Callback ScanCompleted;
 	Callback1<MemoryScannerError> ErrorOccured;
-	Callback1<Atomic> UpdateScanningProgress;
+	Callback1<int> UpdateScanningProgress;
 };
 
 // User interface would like access to the cache containers.

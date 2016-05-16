@@ -67,11 +67,11 @@ String GetDissectionAddress(const int index)
 		return Format("%llX - (%s)", (LONG_PTR)addr + entry->RowOffset, GetCrySearchDataTypeRepresentation(entry->RowType));
 #else
 		return Format("%lX - (%s)", (LONG_PTR)addr + entry->RowOffset, GetCrySearchDataTypeRepresentation(entry->RowType));
-#endif		
+#endif
 	}
 	else
 	{
-		return Format("%lX - (%s)", (LONG_PTR)entry->RowOffset, GetCrySearchDataTypeRepresentation(entry->RowType));	
+		return Format("%lX - (%s)", (LONG_PTR)entry->RowOffset, GetCrySearchDataTypeRepresentation(entry->RowType));
 	}
 }
 
@@ -324,7 +324,7 @@ void CryMemoryDissectionWindow::RefreshDissection()
 			{
 				// The memory dissection failed. Display error message and clear out user interface.
 				this->mDissection.Clear();
-				Prompt("Fatal Error", CtrlImg::error(), "Failed to read specified memory block!", "OK");	
+				Prompt("Fatal Error", CtrlImg::error(), "Failed to read specified memory block!", "OK");
 			}
 		}
 		else

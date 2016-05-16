@@ -75,24 +75,34 @@ String GetStackViewValue(const int index)
 
 String GetCallStackFunctionCall(const int index)
 {
-	const DWORD64 address = (*mDebugger)[BreakpointMasterIndex].BreakpointSnapshot.CallStackView[index];
-	const Win32ModuleInformation* mod = NULL;
-	if (mod = mModuleManager->GetModuleFromContainedAddress((SIZE_T)address))
+	// Due to synchronization problems that occur very rarely, we need to work around a possible
+	// race condition. To just ignore values that create a race condition, we fix this problem.
+	const Vector<DWORD64>& csView = (*mDebugger)[BreakpointMasterIndex].BreakpointSnapshot.CallStackView;
+	if (index >= 0 && index < csView.GetCount())
 	{
-		String modName = mModuleManager->GetModuleFilename(mod->BaseAddress);
-		char symbolName[MAX_PATH];
-		if (GetSingleSymbolName(mMemoryScanner->GetHandle(), (SIZE_T)address, symbolName, MAX_PATH))
+		const DWORD64 address = (*mDebugger)[BreakpointMasterIndex].BreakpointSnapshot.CallStackView[index];
+		const Win32ModuleInformation* mod = NULL;
+		if (mod = mModuleManager->GetModuleFromContainedAddress((SIZE_T)address))
 		{
-			return Format("%s!%s", modName, symbolName);
+			String modName = mModuleManager->GetModuleFilename(mod->BaseAddress);
+			char symbolName[MAX_PATH];
+			if (GetSingleSymbolName(mMemoryScanner->GetHandle(), (SIZE_T)address, symbolName, MAX_PATH))
+			{
+				return Format("%s!%s", modName, symbolName);
+			}
+			else
+			{
+				return Format("%s!%llX", modName, (LONG_PTR)address);
+			}
 		}
 		else
 		{
-			return Format("%s!%llX", modName, (LONG_PTR)address);
+			return FormatInt64HexUpper((LONG_PTR)address);
 		}
 	}
 	else
 	{
-		return FormatInt64HexUpper((LONG_PTR)address);
+		return "";
 	}
 }
 
@@ -165,7 +175,7 @@ void CryDebuggerWindow::BreakpointListRightClick(Bar& pBar)
 		if (cursor >= 0 && mDebugger->GetBreakpointCount() > 0)
 		{
 			pBar.Add(!(*mDebugger)[cursor].Disabled, "Disable", THISBACK(DisableBreakpointButtonClicked));
-			pBar.Add("Remove Breakpoint", CrySearchIml::DeleteButton(), THISBACK(RemoveBreakpointButtonClicked));	
+			pBar.Add("Remove Breakpoint", CrySearchIml::DeleteButton(), THISBACK(RemoveBreakpointButtonClicked));
 		}
 	}
 }
@@ -230,7 +240,7 @@ void CryDebuggerWindow::DynamicCreateStackView()
 		}
 #else
 		this->mStackView.SetVirtualCount(SettingsFile::GetInstance()->GetStackSnapshotLimit() / sizeof(DWORD));
-#endif	
+#endif
 	}
 }
 
@@ -240,7 +250,7 @@ void CryDebuggerWindow::DebuggerEventOccuredThreadsafe(DebugEvent event, void* p
 	{
 		case DBG_EVENT_ATTACH:
 			// Send debugger attached event to loaded plugins.
-			mPluginSystem->SendGlobalPluginEvent(CRYPLUGINEVENT_DEBUGGER_ATTACHED, NULL);			
+			mPluginSystem->SendGlobalPluginEvent(CRYPLUGINEVENT_DEBUGGER_ATTACHED, NULL);
 			break;
 		case DBG_EVENT_DETACH: // debugger was succesfully detached.
 			this->mBreakpointsHitList.Clear();
@@ -260,15 +270,15 @@ void CryDebuggerWindow::DebuggerEventOccuredThreadsafe(DebugEvent event, void* p
 			Prompt("Debug Error", CtrlImg::error(), "The debugger could not be succesfully detached!", "OK");
 			break;
 		case DBG_EVENT_BREAKPOINTS_CHANGED:
-				// Something changed in the breakpoint list, causing the user interface to need a refresh.
-				this->HandleBreakpointChanged((int)param);
+			// Something changed in the breakpoint list, causing the user interface to need a refresh.
+			this->HandleBreakpointChanged((int)param);
 			break;
 		case DBG_EVENT_UNCAUGHT_EXCEPTION:
-				// the debugger caught an exception in the opened process that cannot be handled.
-				this->HandleUnhandledException(reinterpret_cast<UnhandledExceptionData*>(param));
-				
-				// Free the memory pointed to by the parameter pointer.
-				delete param;
+			// the debugger caught an exception in the opened process that cannot be handled.
+			this->HandleUnhandledException(reinterpret_cast<UnhandledExceptionData*>(param));
+			
+			// Free the memory pointed to by the parameter pointer.
+			delete param;
 			break;
 		case DBG_EVENT_BREAKPOINT_HIT:
 			// Update the snapshot lists if the current breakpoint is selected. Prevents crashing with master index mismatch.
@@ -279,7 +289,6 @@ void CryDebuggerWindow::DebuggerEventOccuredThreadsafe(DebugEvent event, void* p
 				this->mDebuggerHitView.SetRegisterCount(bp.BreakpointSnapshot.RegisterFieldCount);
 				this->DynamicCreateStackView();
 				this->mCallStackView.SetVirtualCount(bp.BreakpointSnapshot.CallStackView.GetCount());
-				this->mCallStackView.Sync();
 			}
 			
 			// Hit count of breakpoint should have changed, so refresh the breakpoint list too.
@@ -301,35 +310,40 @@ void CryDebuggerWindow::HandleBreakpointChanged(const int bpIndex)
 	}
 	else
 	{
-		const int bpCount = mDebugger->GetBreakpointCount();
-		if (bpCount > 0 && bpIndex < bpCount)
+		// We need to check whether the debugger is still attached here, because we will get
+		// a race condition if it is not.
+		if (mDebugger)
 		{
-			BreakpointMasterIndex = bpIndex;
-			const DbgBreakpoint& bp = (*mDebugger)[bpIndex];
-			
-			// Update the snapshot lists.
-			this->mDebuggerHitView.SetInstructionString(bp.BreakpointSnapshot.DisassemblyAccessLine);
-			this->mDebuggerHitView.SetRegisterCount(bp.BreakpointSnapshot.RegisterFieldCount);
-			this->DynamicCreateStackView();
-			this->mCallStackView.SetVirtualCount(bp.BreakpointSnapshot.CallStackView.GetCount());
-			
-			// Recheck all breakpoints and reset display colors. This is the most stable way.
-			for (int i = 0; i < bpCount; ++i)
+			const int bpCount = mDebugger->GetBreakpointCount();
+			if (bpCount > 0 && bpIndex < bpCount)
 			{
-				this->mBreakpointsHitList.SetRowDisplay(i, (*mDebugger)[i].Disabled ? RedDisplayDrawInstance : StdDisplay());
+				BreakpointMasterIndex = bpIndex;
+				const DbgBreakpoint& bp = (*mDebugger)[bpIndex];
+				
+				// Update the snapshot lists.
+				this->mDebuggerHitView.SetInstructionString(bp.BreakpointSnapshot.DisassemblyAccessLine);
+				this->mDebuggerHitView.SetRegisterCount(bp.BreakpointSnapshot.RegisterFieldCount);
+				this->DynamicCreateStackView();
+				this->mCallStackView.SetVirtualCount(bp.BreakpointSnapshot.CallStackView.GetCount());
+				
+				// Recheck all breakpoints and reset display colors. This is the most stable way.
+				for (int i = 0; i < bpCount; ++i)
+				{
+					this->mBreakpointsHitList.SetRowDisplay(i, (*mDebugger)[i].Disabled ? RedDisplayDrawInstance : StdDisplay());
+				}
+				
+				// Set breakpoint count and redraw user interface. It seems that empty an data set keeps the UI from redrawing.
+				this->mBreakpointsHitList.SetVirtualCount(bpCount);
 			}
-			
-			// Set breakpoint count and redraw user interface. It seems that empty an data set keeps the UI from redrawing.
-			this->mBreakpointsHitList.SetVirtualCount(bpCount);
-		}
-		else
-		{
-			// If the last breakpoint was removed, clear every list in the window.
-			this->mDebuggerHitView.ClearInstructionString();
-			this->mDebuggerHitView.SetRegisterCount(0);
-			this->mStackView.Clear();
-			this->mCallStackView.Clear();
-			this->mBreakpointsHitList.Clear();
+			else
+			{
+				// If the last breakpoint was removed, clear every list in the window.
+				this->mDebuggerHitView.ClearInstructionString();
+				this->mDebuggerHitView.SetRegisterCount(0);
+				this->mStackView.Clear();
+				this->mCallStackView.Clear();
+				this->mBreakpointsHitList.Clear();
+			}
 		}
 	}
 }

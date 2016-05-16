@@ -11,12 +11,12 @@ CryCodeGenerationForm::CryCodeGenerationForm()
 	//this->mCreateExternalCode.WhenAction = THISBACK(ExternalCheckChanged);
 	
 	*this
-		<< this->mLanguageSelectorLabel.SetLabel("Language:").LeftPos(5, 100).TopPos(5, 20)
-		<< this->mLanguageSelector.Add("C++").LeftPos(80, 100).TopPos(5, 20)
-		<< this->mCreateExternalCode.SetLabel("Generate external code (Win32 API's)").HSizePos(5, 5).TopPos(30, 20)
-		<< this->mCodeField.HSizePos(5, 5).VSizePos(85, 30)
-		<< this->mGenerate.SetLabel("Generate").RightPos(5, 75).TopPos(60, 20)
-		<< this->mClose.SetLabel("Close").RightPos(5, 60).BottomPos(5, 20)
+		<< this->mLanguageSelectorLabel.SetLabel("Language:").LeftPos(5, 100).TopPos(5, 25)
+		<< this->mLanguageSelector.Add("C++").LeftPos(80, 100).TopPos(5, 25)
+		<< this->mCreateExternalCode.SetLabel("Generate external code (Win32 API's)").HSizePos(5, 5).TopPos(30, 25)
+		<< this->mCodeField.HSizePos(5, 5).VSizePos(90, 35)
+		<< this->mGenerate.SetLabel("Generate").RightPos(5, 75).TopPos(60, 25)
+		<< this->mClose.SetLabel("Close").RightPos(5, 60).BottomPos(5, 25)
 	;
 
 	this->mLanguageSelector.SetIndex(0);

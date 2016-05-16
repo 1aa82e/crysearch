@@ -66,6 +66,8 @@ private:
 	bool mScanMemImage;
 	bool mScanMemMapped;
 	
+	bool mEnableReadOnlyMode;
+	
 	int mOpenProcessRoutine;
 	int mReadMemoryRoutine;
 	int mWriteMemoryRoutine;
@@ -110,6 +112,7 @@ public:
 	const bool GetScanMemMapped() const							{ return this->mScanMemMapped; }
 	
 	const int GetScanThreadPriority() const						{ return this->mScanningThreadPriority; }
+	const bool GetEnableReadOnlyMode() const					{ return this->mEnableReadOnlyMode; }
 	
 	const int GetOpenProcessRoutine() const						{ return this->mOpenProcessRoutine; }
 	const int GetReadMemoryRoutine() const						{ return this->mReadMemoryRoutine; }
@@ -130,7 +133,7 @@ public:
 	const bool GetEnableDissectionTypeGuessing() const			{ return this->mEnableDissectionTypeGuessing; }
 	
 	// inline setters for settings variables
-	void SetFastScanByDefault(bool value = true)				{ this->mFastScanByDefault = value; }	
+	void SetFastScanByDefault(bool value = true)				{ this->mFastScanByDefault = value; }
 	
 	void SetScanWritableMemory(bool value = true)				{ this->mScanWritableMemory = value; }
 	void SetScanExecutableMemory(bool value = true)				{ this->mScanExecutableMemory = value; }
@@ -141,6 +144,7 @@ public:
 	void SetScanMemMapped(bool value = true)					{ this->mScanMemMapped = value; }
 	
 	void SetScanThreadPriority(int value = 2)					{ this->mScanningThreadPriority = value; }
+	void SetEnableReadOnlyMode(bool value = false)				{ this->mEnableReadOnlyMode = value; }
 	
 	void SetOpenProcessRoutine(int value = 0)					{ this->mOpenProcessRoutine = value; }
 	void SetReadMemoryRoutine(int value = 0)					{ this->mReadMemoryRoutine = value; }

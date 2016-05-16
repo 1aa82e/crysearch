@@ -17,6 +17,7 @@ void SettingsFile::Xmlize(XmlIO& pXml)
 		("ScanMemImage", this->mScanMemImage)
 		("ScanMemMapped", this->mScanMemMapped)
 		("ScanningThreadPriority", this->mScanningThreadPriority)
+		("EnableReadOnlyMode", this->mEnableReadOnlyMode)
 		("OpenProcessRoutine", this->mOpenProcessRoutine)
 		("ReadMemoryRoutine", this->mReadMemoryRoutine)
 		("WriteMemoryRoutine", this->mWriteMemoryRoutine)
@@ -133,9 +134,9 @@ CrySearchHotKey& SettingsFile::GetHotkey(const unsigned int index)
 // Adds a symbol path to the list of paths. Returns true if path did not yet exist and false if it did exist. If it existed, nothing is added.
 bool SettingsFile::AddSymbolPath(const String& path)
 {
-	for (int i = 0; i < this->mSymbolPaths.GetCount(); i++)
+	for (auto const& sp : this->mSymbolPaths)
 	{
-		if (this->mSymbolPaths[i] == path)
+		if (sp == path)
 		{
 			return false;
 		}

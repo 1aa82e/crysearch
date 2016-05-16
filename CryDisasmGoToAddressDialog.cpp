@@ -12,10 +12,10 @@ CryDisasmGoToAddressDialog::CryDisasmGoToAddressDialog(LONG_PTR* addr) : CryDial
 	this->mCancel <<= THISBACK(CancelButtonClicked);
 		
 	*this
-		<< this->mAddressDesc.SetLabel("Address:").LeftPos(5, 75).TopPos(5, 20)
-		<< this->mAddressInput.HSizePos(80, 5).TopPos(5, 20)
-		<< this->mOk.Ok().SetLabel("OK").BottomPos(5, 20).RightPos(5, 60)
-		<< this->mCancel.SetLabel("Cancel").BottomPos(5, 20).RightPos(70, 60)
+		<< this->mAddressDesc.SetLabel("Address:").LeftPos(5, 75).TopPos(5, 25)
+		<< this->mAddressInput.HSizePos(80, 5).TopPos(5, 25)
+		<< this->mOk.Ok().SetLabel("OK").BottomPos(5, 25).RightPos(5, 60)
+		<< this->mCancel.SetLabel("Cancel").BottomPos(5, 25).RightPos(70, 60)
 	;
 }
 

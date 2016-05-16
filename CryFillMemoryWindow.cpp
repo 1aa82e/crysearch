@@ -6,7 +6,7 @@ CryFillMemoryWindow::CryFillMemoryWindow(FillMemoryDataStruct* dataStruct) : Cry
 {
 	this->dataStruct = dataStruct;
 	
-	this->Title("Fill Memory").SetRect(0, 0, 250, 135);
+	this->Title("Fill Memory").SetRect(0, 0, 250, 145);
 	this->Rejector(mCancel, IDCANCEL);
 	
 	this->mOk <<= THISBACK(OkButton);
@@ -14,15 +14,15 @@ CryFillMemoryWindow::CryFillMemoryWindow(FillMemoryDataStruct* dataStruct) : Cry
 	this->mRandomizeValues.WhenAction = THISBACK(RandomizeValuesCheckedChanged);
 	
 	*this
-		<< this->mOk.Ok().SetLabel("OK").RightPosZ(5, 60).BottomPosZ(5, 20)
-		<< this->mCancel.SetLabel("Cancel").RightPosZ(70, 60).BottomPosZ(5, 20)
-		<< this->mAddressDescriptor.SetLabel("Address:").HSizePos(5, 100).TopPos(5, 20)
-		<< this->mAddress.HSizePos(110, 5).TopPos(5, 20)
-		<< this->mMemorySizeDescriptor.SetLabel("Memory Size:").HSizePos(5, 100).TopPos(30, 20)
-		<< this->mMemorySize.HSizePos(110, 5).TopPos(30, 20)
-		<< this->mValueDescriptor.SetLabel("Value:").HSizePos(5, 100).TopPos(55, 20)
-		<< this->mValueInput.HSizePos(110, 5).TopPos(55, 20)
-		<< this->mRandomizeValues.SetLabel("Randomize memory").HSizePos(5, 5).TopPos(80, 20)
+		<< this->mOk.Ok().SetLabel("OK").RightPos(5, 60).BottomPos(5, 25)
+		<< this->mCancel.SetLabel("Cancel").RightPos(70, 60).BottomPos(5, 25)
+		<< this->mAddressDescriptor.SetLabel("Address:").HSizePos(5, 100).TopPos(5, 25)
+		<< this->mAddress.HSizePos(110, 5).TopPos(5, 25)
+		<< this->mMemorySizeDescriptor.SetLabel("Memory Size:").HSizePos(5, 100).TopPos(35, 25)
+		<< this->mMemorySize.HSizePos(110, 5).TopPos(35, 25)
+		<< this->mValueDescriptor.SetLabel("Value:").HSizePos(5, 100).TopPos(65, 25)
+		<< this->mValueInput.HSizePos(110, 5).TopPos(65, 25)
+		<< this->mRandomizeValues.SetLabel("Randomize memory").HSizePos(5, 5).TopPos(90, 25)
 	;
 	
 	// Set default values for the fields in the dialog.

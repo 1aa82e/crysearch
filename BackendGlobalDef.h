@@ -100,7 +100,7 @@ private:
 	CryReadMemoryRoutineType ReadMemoryRoutine;
 	CryWriteMemoryRoutineType WriteMemoryRoutine;
 	CryProtectMemoryRoutineType ProtectMemoryRoutine;
-public:	
+public:
 	NtQuerySystemInformationPrototype NtQuerySystemInformation;
 	NtQueryInformationThreadPrototype NtQueryInformationThread;
 	NtQueryInformationProcessPrototype NtQueryInformationProcess;

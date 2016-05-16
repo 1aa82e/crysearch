@@ -40,6 +40,8 @@ private:
 	Label scanningThreadPriorityLabel;
 	DropList scanningThreadPriority;
 	
+	Option mCrySearchInReadOnlyMode;
+	
 	// Internals tab
 	LabelBox mAddressTableUpdaterIntervalBox;
 	Label mAddressTableUpdaterIntervalDescription;

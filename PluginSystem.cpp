@@ -44,11 +44,11 @@ const int PluginSystem::FindPlugin(const char* const pName) const
 // Returns the name of the plugin if it is loaded or NULL otherwise.
 const char* PluginSystem::IsPluginLoaded(HMODULE hModule) const
 {
-	for (int i = 0; i < this->mLoadedPlugins.GetCount(); ++i)
+	for (auto const& plugin : this->mLoadedPlugins)
 	{
-		if (this->mLoadedPlugins[i].BaseAddress == hModule)
+		if (plugin.BaseAddress == hModule)
 		{
-			return this->mLoadedPlugins[i].PluginHeader->PluginName;
+			return plugin.PluginHeader->PluginName;
 		}
 	}
 	
@@ -59,10 +59,8 @@ const char* PluginSystem::IsPluginLoaded(HMODULE hModule) const
 // The list that is used as parameter is not cleared. Items are appended.
 void PluginSystem::GetPluginsByType(const DWORD type, Vector<CrySearchPlugin>& outPlugins) const
 {
-	const int count = this->mLoadedPlugins.GetCount();
-	for (int i = 0; i < count; ++i)
+	for (auto const& plugin : this->mLoadedPlugins)
 	{
-		const CrySearchPlugin& plugin = this->mLoadedPlugins[i];
 		if (plugin.PluginHeader->PluginFeatures & type)
 		{
 			outPlugins.Add(plugin);
@@ -74,11 +72,10 @@ void PluginSystem::GetPluginsByType(const DWORD type, Vector<CrySearchPlugin>& o
 // specified through the parameters. The parameter pointer memory is not being managed!
 void PluginSystem::SendGlobalPluginEvent(CCryPluginEvent evt, void* const data)
 {
-	const int count = this->mLoadedPlugins.GetCount();
-	for (int i = 0; i < count; ++i)
+	for (auto const& plugin : this->mLoadedPlugins)
 	{
 		// Retrieve a pointer to the event procedure of the current iterated plugin.
-		CryProcessPluginEventProc eventProc = (CryProcessPluginEventProc)GetProcAddress(this->mLoadedPlugins[i].BaseAddress, "CryProcessPluginEvent");
+		CryProcessPluginEventProc eventProc = (CryProcessPluginEventProc)GetProcAddress(plugin.BaseAddress, "CryProcessPluginEvent");
 		if (eventProc)
 		{
 			// Execute the procedure.
@@ -92,10 +89,8 @@ void PluginSystem::SendGlobalPluginEvent(CCryPluginEvent evt, void* const data)
 HMODULE PluginSystem::GetDefaultDumperEnginePlugin() const
 {
 	HMODULE tempretifno = NULL;
-	const int pCount = this->mLoadedPlugins.GetCount();
-	for (int i = 0; i < pCount; ++i)
+	for (auto const& plugin : this->mLoadedPlugins)
 	{
-		const CrySearchPlugin& plugin = this->mLoadedPlugins[i];
 		if (plugin.PluginHeader->PluginFeatures & CRYPLUGIN_DUMPER)
 		{
 			tempretifno = plugin.BaseAddress;
@@ -112,9 +107,9 @@ HMODULE PluginSystem::GetDefaultDumperEnginePlugin() const
 // Attempts to unload all plugins that are loaded.
 void PluginSystem::UnloadAllPlugins()
 {
-	for (int i = 0; i < this->mLoadedPlugins.GetCount(); ++i)
+	for (auto const& plugin : this->mLoadedPlugins)
 	{
-		this->UnloadPlugin(this->mLoadedPlugins[i].PluginHeader->PluginName);
+		this->UnloadPlugin(plugin.PluginHeader->PluginName);
 	}
 }
 

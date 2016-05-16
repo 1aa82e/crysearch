@@ -28,7 +28,7 @@ String GetSymbolPathString(const int index)
 CrySearchSettingsDialog::CrySearchSettingsDialog()
 {
 	this->mSettingsInstance = SettingsFile::GetInstance();
-	this->Title("Settings").Icon(CrySearchIml::SettingsButton).SetRect(0, 0, 400, 310);
+	this->Title("Settings").Icon(CrySearchIml::SettingsButton).SetRect(0, 0, 420, 330);
 	
 	this->mOk <<= THISBACK(SettingsOk);
 	this->mCancel <<= THISBACK(SettingsCancel);
@@ -46,68 +46,69 @@ CrySearchSettingsDialog::CrySearchSettingsDialog()
 	
 	this->mScanningTab
 		<< this->fastScanByDefault.SetLabel("Use a fast scan by default").HSizePos(5, 5).TopPos(0, 20)
-		<< this->mScanProtectionTypes.SetLabel("Protected regions to scan").HSizePos(5, 5).TopPos(22, 75)
-		<< this->scanWritable.SetLabel("Writable").HSizePos(10, 10).TopPos(38, 20)
-		<< this->scanExecutable.SetLabel("Executable").HSizePos(10, 10).TopPos(58, 20)
-		<< this->scanCopyOnWrite.SetLabel("CopyOnWrite").HSizePos(10, 10).TopPos(76, 20)
-		<< this->mScanTypes.SetLabel("Region types to scan").HSizePos(5, 5).TopPos(100, 75)
-		<< this->memPrivate.SetLabel("MEM_PRIVATE").HSizePos(10, 10).TopPos(118, 20)
-		<< this->memImage.SetLabel("MEM_IMAGE").HSizePos(10, 10).TopPos(135, 20)
-		<< this->memMapped.SetLabel("MEM_MAPPED").HSizePos(10, 10).TopPos(152, 20)
-		<< this->mScanThreadProperties.SetLabel("Scanning thread properties").HSizePos(5, 5).TopPos(185, 50)
+		<< this->mScanProtectionTypes.SetLabel("Protected regions to scan").HSizePos(5, 5).TopPos(25, 45)
+		<< this->scanWritable.SetLabel("Writable").HSizePos(10, 300).TopPos(43, 20)
+		<< this->scanExecutable.SetLabel("Executable").HSizePos(150, 140).TopPos(43, 20)
+		<< this->scanCopyOnWrite.SetLabel("CopyOnWrite").HSizePos(270, 10).TopPos(43, 20)
+		<< this->mScanTypes.SetLabel("Region types to scan").HSizePos(5, 5).TopPos(70, 80)
+		<< this->memPrivate.SetLabel("MEM_PRIVATE").HSizePos(10, 10).TopPos(87, 20)
+		<< this->memImage.SetLabel("MEM_IMAGE").HSizePos(10, 10).TopPos(107, 20)
+		<< this->memMapped.SetLabel("MEM_MAPPED").HSizePos(10, 10).TopPos(127, 20)
+		<< this->mScanThreadProperties.SetLabel("Scanning thread properties").HSizePos(5, 5).TopPos(153, 50)
 		<< this->scanningThreadPriorityLabel.SetLabel("Scan worker thread priority:").HSizePos(10, 160)
-			.TopPos(200, 20)
+			.TopPos(170, 25)
 		<< this->scanningThreadPriority.Add("Lowest").Add("Below Normal").Add("Normal").Add("Above Normal")
-			.Add("Highest").HSizePos(210, 10).TopPos(200, 20)
+			.Add("Highest").HSizePos(210, 10).TopPos(170, 25)
+		<< this->mCrySearchInReadOnlyMode.SetLabel("Enable read-only mode").TopPos(210, 22).HSizePos(10, 10)
 	;
 	
 	this->mInternalsTab
-		<< this->mAddressTableUpdaterIntervalBox.SetLabel("Address table updater").HSizePos(5, 5).TopPos(0, 45)
-		<< this->mAddressTableUpdaterIntervalDescription.SetLabel("Update Interval:").HSizePos(10, 120).TopPos(18, 20)
-		<< this->mAddressTableUpdaterIntervalEditField.HSizePos(150, 10).TopPos(18, 20)
-		<< this->mRoutinesBox.SetLabel("Routines").HSizePos(5, 5).VSizePos(48, 70)
-		<< this->mOpenProcRoutineSelectorLabel.SetLabel("Opening a process:").HSizePos(10, 90).TopPos(65, 20)
-		<< this->mOpenProcRoutineSelector.Add("OpenProcess (Default)").Add("NtOpenProcess").HSizePos(150, 10).TopPos(65, 20)
-		<< this->mReadMemoryProcRoutineSelectorLabel.SetLabel("Reading memory:").HSizePos(10, 90).TopPos(90, 20)
-		<< this->mReadMemoryProcRoutineSelector.Add("ReadProcessMemory (Default)").Add("NtReadVirtualMemory").HSizePos(150, 10).TopPos(90, 20)
-		<< this->mWriteMemoryProcRoutineSelectorLabel.SetLabel("Writing memory:").HSizePos(10, 90).TopPos(115, 20)
-		<< this->mWriteMemoryProcRoutineSelector.Add("WriteProcessMemory (Default)").Add("NtWriteVirtualMemory").HSizePos(150, 10).TopPos(115, 20)
-		<< this->mProtectMemoryProcRoutineSelectorLabel.SetLabel("Protecting memory:").HSizePos(10, 90).TopPos(140, 20)
-		<< this->mProtectMemoryProcRoutineSelector.Add("VirtualProtectEx (Default)").Add("NtProtectVirtualMemory").HSizePos(150, 10).TopPos(140, 20)
-		<< this->mInjectionBox.SetLabel("Library Injection").HSizePos(5, 5).VSizePos(170, 25)
-		<< this->mInjectionMethodDescriptor.SetLabel("Injection method:").HSizePos(10, 90).TopPos(185, 20)
-		<< this->mInjectionMethod.Add("CreateRemoteThread (Default)").Add("Hijack thread").HSizePos(150, 10).TopPos(185, 20)
-		<< this->mRegisterFileExtensionWithCrySearch.SetLabel("Associate address table files with CrySearch.").HSizePos(5, 5).BottomPos(0, 20)
+		<< this->mAddressTableUpdaterIntervalBox.SetLabel("Address table updater").HSizePos(5, 5).TopPos(0, 47)
+		<< this->mAddressTableUpdaterIntervalDescription.SetLabel("Update Interval:").HSizePos(10, 120).TopPos(18, 25)
+		<< this->mAddressTableUpdaterIntervalEditField.HSizePos(150, 10).TopPos(18, 25)
+		<< this->mRoutinesBox.SetLabel("Routines").HSizePos(5, 5).VSizePos(46, 67)
+		<< this->mOpenProcRoutineSelectorLabel.SetLabel("Opening a process:").HSizePos(10, 90).TopPos(61, 25)
+		<< this->mOpenProcRoutineSelector.Add("OpenProcess (Default)").Add("NtOpenProcess").HSizePos(150, 10).TopPos(61, 25)
+		<< this->mReadMemoryProcRoutineSelectorLabel.SetLabel("Reading memory:").HSizePos(10, 90).TopPos(89, 25)
+		<< this->mReadMemoryProcRoutineSelector.Add("ReadProcessMemory (Default)").Add("NtReadVirtualMemory").HSizePos(150, 10).TopPos(89, 25)
+		<< this->mWriteMemoryProcRoutineSelectorLabel.SetLabel("Writing memory:").HSizePos(10, 90).TopPos(117, 25)
+		<< this->mWriteMemoryProcRoutineSelector.Add("WriteProcessMemory (Default)").Add("NtWriteVirtualMemory").HSizePos(150, 10).TopPos(117, 25)
+		<< this->mProtectMemoryProcRoutineSelectorLabel.SetLabel("Protecting memory:").HSizePos(10, 90).TopPos(145, 25)
+		<< this->mProtectMemoryProcRoutineSelector.Add("VirtualProtectEx (Default)").Add("NtProtectVirtualMemory").HSizePos(150, 10).TopPos(145, 25)
+		<< this->mInjectionBox.SetLabel("Library Injection").HSizePos(5, 5).VSizePos(180, 25)
+		<< this->mInjectionMethodDescriptor.SetLabel("Injection method:").HSizePos(10, 90).TopPos(190, 25)
+		<< this->mInjectionMethod.Add("CreateRemoteThread (Default)").Add("Hijack thread").HSizePos(150, 10).TopPos(190, 25)
+		<< this->mRegisterFileExtensionWithCrySearch.SetLabel("Associate address table files with CrySearch.").HSizePos(5, 5).BottomPos(0, 25)
 	;
 	
 	this->mDebuggerTab
-		<< this->mStackSnapshotLimitDescriptor.SetLabel("Stack snapshot read limit:").LeftPos(5, 180).TopPos(5, 20)
-		<< this->mStackSnapshotLimitEdit.HSizePos(200, 5).TopPos(5, 20)
-		<< this->dbgAttemptHidePeb.SetLabel("Attempt to hide the debugger from PEB").HSizePos(5, 5).TopPos(28, 20)
-		<< this->dbgCatchAllExceptions.SetLabel("Catch all exceptions").HSizePos(5, 5).TopPos(48, 20)
-		<< this->dbgInvadeProcess.SetLabel("Attempt to load symbols for all modules").HSizePos(5, 5).TopPos(68, 20)
-		<< this->mSymbolPathsDescriptor.SetLabel("Symbol Paths:").HSizePos(5, 5).TopPos(110, 20)
-		<< this->mBrowseSymbolPath.SetLabel("Add").RightPos(5, 60).TopPos(110, 20)
-		<< this->mSymbolPathsList.HSizePos(5, 5).VSizePos(135, 5)
+		<< this->mStackSnapshotLimitDescriptor.SetLabel("Stack snapshot read limit:").LeftPos(5, 180).TopPos(5, 25)
+		<< this->mStackSnapshotLimitEdit.HSizePos(200, 5).TopPos(5, 25)
+		<< this->dbgAttemptHidePeb.SetLabel("Attempt to hide the debugger from PEB").HSizePos(5, 5).TopPos(35, 20)
+		<< this->dbgCatchAllExceptions.SetLabel("Catch all exceptions").HSizePos(5, 5).TopPos(60, 20)
+		<< this->dbgInvadeProcess.SetLabel("Attempt to load symbols for all modules").HSizePos(5, 5).TopPos(85, 20)
+		<< this->mSymbolPathsDescriptor.SetLabel("Symbol Paths:").HSizePos(5, 5).TopPos(110, 25)
+		<< this->mBrowseSymbolPath.SetLabel("Add").RightPos(5, 60).TopPos(110, 25)
+		<< this->mSymbolPathsList.HSizePos(5, 5).VSizePos(140, 5)
 	;
 	
 	this->mHotkeysTab
-		<< this->mHotkeysOption.SetLabel("Enable hotkeys").HSizePos(5, 5).TopPos(5, 20)
-		<< this->mAddHotkey.SetLabel("Add").RightPos(5, 60).TopPos(5, 20)
-		<< this->mHotkeysList.HSizePos(5, 5).VSizePos(30, 5)
+		<< this->mHotkeysOption.SetLabel("Enable hotkeys").HSizePos(5, 100).TopPos(5, 25)
+		<< this->mAddHotkey.SetLabel("Add").RightPos(5, 60).TopPos(5, 25)
+		<< this->mHotkeysList.HSizePos(5, 5).VSizePos(35, 5)
 	;
 	
 	*this
 		<< this->mainTabCtrl
 		<< this->mOk.Ok().SetLabel("OK").HSizePos(340, 5).BottomPos(5, 25)
-		<< this->mCancel.SetLabel("Cancel").HSizePos(280, 60).BottomPos(5, 25)
+		<< this->mCancel.SetLabel("Cancel").HSizePos(255, 85).BottomPos(5, 25)
 	;
 	
 	this->mainTabCtrl.Add(this->mScanningTab.SizePos(), "Scanning");
 	this->mainTabCtrl.Add(this->mInternalsTab.SizePos(), "Internals");
 	this->mainTabCtrl.Add(this->mDebuggerTab.SizePos(), "Debugger");
 	this->mainTabCtrl.Add(this->mHotkeysTab.SizePos(), "Hotkeys");
-	this->mainTabCtrl.SetRect(0, 0, 400, 275);
+	this->mainTabCtrl.SetRect(0, 0, 420, 280);
 	this->Add(mainTabCtrl);
 	
 	this->LoadSettings();
@@ -135,6 +136,7 @@ void CrySearchSettingsDialog::LoadSettings()
 	this->mHotkeysOption = this->mSettingsInstance->GetEnableHotkeys();
 	this->dbgInvadeProcess = this->mSettingsInstance->GetInvadeProcess();
 	this->dbgCatchAllExceptions = this->mSettingsInstance->GetCatchAllExceptions();
+	this->mCrySearchInReadOnlyMode = this->mSettingsInstance->GetEnableReadOnlyMode();
 	
 	// Based on the loaded settings, make sure the disable/enable options are set correctly.
 	this->InvadeProcessEnablerChanged();
@@ -149,7 +151,9 @@ void CrySearchSettingsDialog::LoadSettings()
 }
 
 void CrySearchSettingsDialog::SaveSettings()
-{	
+{
+	const DWORD appname[] = {0x53797243, 0x63726165, 0x68}; //"CrySearch"
+	
 	// Save static controls to settings file.
 	this->mSettingsInstance->SetFastScanByDefault(this->fastScanByDefault);
 	this->mSettingsInstance->SetScanWritableMemory(this->scanWritable);
@@ -161,7 +165,7 @@ void CrySearchSettingsDialog::SaveSettings()
 	this->mSettingsInstance->SetScanThreadPriority(this->scanningThreadPriority.GetIndex());
 	this->mSettingsInstance->SetOpenProcessRoutine(this->mOpenProcRoutineSelector.GetIndex());
 	this->mSettingsInstance->SetReadMemoryRoutine(this->mReadMemoryProcRoutineSelector.GetIndex());
-	this->mSettingsInstance->SetWriteMemoryRoutine(this->mWriteMemoryProcRoutineSelector.GetIndex());	
+	this->mSettingsInstance->SetWriteMemoryRoutine(this->mWriteMemoryProcRoutineSelector.GetIndex());
 	this->mSettingsInstance->SetProtectMemoryRoutine(this->mProtectMemoryProcRoutineSelector.GetIndex());
 	this->mSettingsInstance->SetLibraryInjectionMethod(this->mInjectionMethod.GetIndex());
 	this->mSettingsInstance->SetAttemptHideDebuggerFromPeb(this->dbgAttemptHidePeb);
@@ -169,11 +173,19 @@ void CrySearchSettingsDialog::SaveSettings()
 	this->mSettingsInstance->SetInvadeProcess(this->dbgInvadeProcess);
 	this->mSettingsInstance->SetCatchAllExceptions(this->dbgCatchAllExceptions);
 	
+	// Check if the read-only option for CrySearch was changed. If it was, inform the user that
+	// this will be applied when the process is closed and reopened.
+	if (!!this->mCrySearchInReadOnlyMode != this->mSettingsInstance->GetEnableReadOnlyMode() && mMemoryScanner->GetProcessId())
+	{
+		Prompt("Behavioral Warning", CtrlImg::exclamation(), "The read-only mode setting has changed. This change will be applied on process closing and reopening.", "OK");
+	}
+	
+	this->mSettingsInstance->SetEnableReadOnlyMode(this->mCrySearchInReadOnlyMode);
+	
 	// As a special case, update the search routine in this part of the program.
 	CrySearchRoutines.InitializeRoutines();
 	
 	// Attempt registering the CrySearch address table file extension with the currently started architecture of CrySearch.
-	const DWORD appname[] = {0x53797243, 0x63726165, 0x68}; //"CrySearch"
 	if (this->mRegisterFileExtensionWithCrySearch && !this->mStartCheckedExtensionState && !RegisterAddressTableExtension())
 	{
 		Prompt("Fatal Error", CtrlImg::error(), Format("Failed to register the file extension. Please run %s as Administrator.", (char*)appname), "OK");
@@ -241,7 +253,7 @@ void CrySearchSettingsDialog::DeleteHotkeyFromList()
 
 void CrySearchSettingsDialog::AddSymbolPathToList()
 {
-	FileSel* fs = new FileSel;
+	FileSel* fs = new FileSel();
 	if (fs->ExecuteSelectDir("Select Directory...") && !this->mSettingsInstance->AddSymbolPath(fs->Get()))
 	{
 		Prompt("Input Error", CtrlImg::error(), "The selected path was already added!", "OK");

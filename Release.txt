@@ -3,8 +3,17 @@ CrySearch Memory Scanner
 evolution536, www.unknowncheats.me
 
 v2.03
-	- Fixed a bug where a zombie process would still be succesfully opened for automated analysis using command line options;
-	- 
+	- Some changes were made to the command line process analysis automation:
+		- Fixed a bug where a zombie process would still be succesfully opened for automated analysis using command line options;
+		- Added the name of the containing module to the start address of outputted threads.
+	- Fixed a few small bugs in the debugger:
+		- Fixed a bug where the attached process crashing after setting a write breakpoint would also crash CrySearch;
+		- Fixed a bug where very frequent refreshes of the call stack on breakpoint hit would crash CrySearch.
+	- Added a read-only operation mode:
+		- Setting available from the Settings window;
+		- Behavioral warning when changing the setting while a process is opened;
+		- 
+	- Changed the size of most input fields and buttons. Some operating systems showed them to be too small;
 
 v2.02
 	- Added a view option to the right-click menu for search results to manually switch view of formatting to hexadecimal;

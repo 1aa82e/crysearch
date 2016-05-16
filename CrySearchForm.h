@@ -116,8 +116,8 @@ private:
 	void ScannerCompletedThreadSafe();
 	void ScannerErrorOccured(MemoryScannerError error);
 	void ScannerErrorOccuredThreadSafe(MemoryScannerError error);
-	void ScannerUserInterfaceUpdate(Atomic threadCount);
-	void ScannerUserInterfaceUpdateThreadSafe(Atomic threadCount);
+	void ScannerUserInterfaceUpdate(int threadCount);
+	void ScannerUserInterfaceUpdateThreadSafe(int threadCount);
 	void ScannerScanStarted(int threadCount);
 	void ScannerScanStartedThreadSafe(int threadCount);
 	

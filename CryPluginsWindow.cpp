@@ -34,9 +34,9 @@ CryPluginsWindow::CryPluginsWindow() : CryDialogTemplate(CrySearchIml::PluginsMe
 	this->mPluginsList.WhenBar = THISBACK(PluginRightClick);
 	
 	*this
-		<< this->mPluginsList.HSizePos(5, 5).VSizePos(5, 30)
-		<< this->mPluginCount.LeftPos(5, 150).BottomPos(5, 20)
-		<< this->mOK.Ok().SetLabel("Close").RightPos(5, 60).BottomPos(5, 20)
+		<< this->mPluginsList.HSizePos(5, 5).VSizePos(5, 35)
+		<< this->mPluginCount.LeftPos(5, 150).BottomPos(5, 25)
+		<< this->mOK.Ok().SetLabel("Close").RightPos(5, 60).BottomPos(5, 25)
 	;
 	
 	const int pCount = mPluginSystem->GetPluginCount();

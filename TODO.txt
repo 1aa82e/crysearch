@@ -8,7 +8,12 @@ Package:
 - Update wiki with changes for the release.
 ------------------------------------------------------------------
 
-- bug opening cue splitter - imports are totally fucked;
+- Follow pointer, many need it!
+- NOP out code in disassembler?
+- C++11 from upp still has bug in cowork I think;
+- let's build C++11/14 code from the current, and try to reduce the application size!
+
+- bug opening cue splitter - imports are totally fucked (UPX);
 - Read-only option, to make CrySearch work without PROCESS_VM_WRITE;
 
 - Multithread disassembler, Skype has rediculously big pages;
@@ -96,7 +101,7 @@ Add this to the CoWork class:
 
 	void SetThreadPriority(const int Priority)
 	{
-		Array<Thread>& thpPool = this->pool().threads;
+		Array<Thread>& thpPool = this->pool->threads;
 		
 		switch (Priority)
 		{	

@@ -46,25 +46,25 @@ CryNewScanForm::CryNewScanForm(bool FirstScan, const Image& icon) : CryDialogTem
 {
 	this->mNextScan = !FirstScan;
 	
-	this->Title(FirstScan ? "New Scan" : "Next Scan").SetRect(0, 0, 275, 130);
+	this->Title(FirstScan ? "New Scan" : "Next Scan").SetRect(0, 0, 275, 155);
 	
 	this->mOk <<= THISBACK(OkButtonClicked);
 	this->Rejector(this->mCancel, IDCANCEL);
 	
 	*this
-		<< this->mValueInfoLabel.SetLabel("Value:").LeftPos(5, 75).TopPos(5, 20)
-		<< this->mValueIsHex.SetLabel("Hex").LeftPos(75, 50).TopPos(5, 20)
-		<< this->mValueToSearchFor.HSizePos(130, 5).TopPos(5, 20)
-		<< this->mBlockSizeSelectorLabel.SetLabel("Size:").LeftPos(5, 75).TopPos(30, 20)
+		<< this->mValueInfoLabel.SetLabel("Value:").LeftPos(5, 75).TopPos(5, 25)
+		<< this->mValueIsHex.SetLabel("Hex").LeftPos(75, 50).TopPos(5, 25)
+		<< this->mValueToSearchFor.HSizePos(130, 5).TopPos(5, 25)
+		<< this->mBlockSizeSelectorLabel.SetLabel("Size:").LeftPos(5, 75).TopPos(35, 25)
 		<< this->mBlockSizeSelector.Add("Byte").Add("Short (2 Bytes)").Add("Integer (4 Bytes)")
 			.Add("Long (8 Bytes)").Add("Float (4 Bytes)").Add("Double (8 Bytes)").Add("Array of Bytes")
-			.Add("String (Slower scan, be patient)").HSizePos(75, 5).TopPos(30, 20)
-		<< this->mScanTypeSelectorLabel.SetLabel("Type:").LeftPos(5, 75).TopPos(55, 20)
-		<< this->mScanTypeSelector.Add("Exact Value").Add("Smaller Than").Add("Greater Than").HSizePos(75, 5).TopPos(55, 20)
+			.Add("String (Slower scan, be patient)").HSizePos(75, 5).TopPos(35, 25)
+		<< this->mScanTypeSelectorLabel.SetLabel("Type:").LeftPos(5, 75).TopPos(65, 25)
+		<< this->mScanTypeSelector.Add("Exact Value").Add("Smaller Than").Add("Greater Than").HSizePos(75, 5).TopPos(65, 25)
 		<< this->useFastScan.Set(SettingsFile::GetInstance()->GetFastScanByDefault()).SetLabel("Fast Scan")
-			.LeftPos(5, 75).TopPos(75, 25)
-		<< this->stringUnicode.SetLabel("Unicode").RightPos(5, 75).TopPos(75, 25)
-		<< this->stringUntilNull.SetLabel("Match until null").HSizePos(80, 80).TopPos(75, 25)
+			.LeftPos(5, 100).BottomPos(35, 25)
+		<< this->stringUnicode.SetLabel("Unicode").RightPos(5, 75).BottomPos(35, 25)
+		<< this->stringUntilNull.SetLabel("Match until null").HSizePos(80, 80).BottomPos(35, 25)
 		<< this->mOk.Ok().SetLabel("OK").RightPos(85, 75).BottomPos(5, 25)
 		<< this->mCancel.SetLabel("Cancel").RightPos(5, 75).BottomPos(5, 25)
 	;

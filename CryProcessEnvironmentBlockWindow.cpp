@@ -9,10 +9,10 @@ CryProcessEnvironmentBlockWindow::CryProcessEnvironmentBlockWindow(const Image& 
 	this->mResetDebugFlag <<= THISBACK(ResetDebugFlag);
 	
 	*this
-		<< this->mPEBWindowDescription.SetLabel("Viewing Process environment block").HSizePos(5, 5).TopPos(5, 20)
-		<< this->mPEBInfo.HSizePos(5, 5).VSizePos(30, 30)
-		<< this->mOk.Ok().SetLabel("OK").RightPos(5, 60).BottomPos(5, 20)
-		<< this->mResetDebugFlag.SetLabel("Reset debug flag").LeftPos(5, 125).BottomPos(5, 20)
+		<< this->mPEBWindowDescription.SetLabel("Viewing Process environment block").HSizePos(5, 5).TopPos(5, 25)
+		<< this->mPEBInfo.HSizePos(5, 5).VSizePos(35, 35)
+		<< this->mOk.Ok().SetLabel("OK").RightPos(5, 60).BottomPos(5, 25)
+		<< this->mResetDebugFlag.SetLabel("Reset debug flag").LeftPos(5, 125).BottomPos(5, 25)
 	;
 	
 	// Retrieve fields and build up window contents.

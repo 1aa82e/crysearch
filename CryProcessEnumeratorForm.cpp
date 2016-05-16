@@ -61,8 +61,6 @@ void ProcessSelectionDragArea::LeftUp(Point p, dword keyflags)
 	}
 }
 
-// ---------------------------------------------------------------------------------------------
-
 CryProcessEnumeratorForm::CryProcessEnumeratorForm(const Image& icon) : CryDialogTemplate(icon)
 {
 	this->Title("Select Process").SetRect(0, 0, 340, 360);
@@ -86,8 +84,8 @@ CryProcessEnumeratorForm::CryProcessEnumeratorForm(const Image& icon) : CryDialo
 	this->mDragArea.DragCompleted = THISBACK(DragFromCtrlCompleted);
 	
 	*this
-		<< this->mInfoAboutDialog.SetText("Search for process:").HSizePos(5, 5).TopPos(5, 20)
-		<< this->mSearchBox.HSizePos(150, 5).TopPos(5, 20)
+		<< this->mInfoAboutDialog.SetText("Search for process:").HSizePos(5, 5).TopPos(5, 25)
+		<< this->mSearchBox.HSizePos(150, 5).TopPos(5, 25)
 		<< this->mHideWindowLessProcesses.SetLabel("Hide processes with no window").HSizePos(5, 30).TopPos(30, 25)
 		<< this->mDragArea.RightPos(5, 20).TopPos(35, 20)
 		<< this->mProcessList.HSizePos(5, 5).VSizePos(60, 35)

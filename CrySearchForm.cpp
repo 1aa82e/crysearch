@@ -747,7 +747,8 @@ void CrySearchForm::RandomizeWindowTitle()
 	if (this->wndTitleRandomized)
 	{
 		DWORD wndTitle[] = {0x53797243, 0x63726165, 0x654d2068, 0x79726f6d, 0x61635320, 0x72656e6e, 0x0}; //"CrySearch Memory Scanner"
-		this->Title(this->processLoaded ? Format("%s - (%i) %s", (char*)wndTitle, mMemoryScanner->GetProcessId(), mMemoryScanner->GetProcessName()) : (char*)wndTitle);
+		String windowTitle = this->processLoaded ? Format("%s - (%i) %s", (char*)wndTitle, mMemoryScanner->GetProcessId(), mMemoryScanner->GetProcessName()) : (char*)wndTitle;
+		this->Title(SettingsFile::GetInstance()->GetEnableReadOnlyMode() ? Format("%s - (Read-Only)", windowTitle) : windowTitle);
 		this->mOpenedProcess.SetLabel("");
 	}
 	else
@@ -862,7 +863,7 @@ void CrySearchForm::OpenFileMenu()
 		String filename = fs->Get();
 		if (!filename.IsEmpty())
 		{
-			AddressTable::CreateAddressTableFromFile(loadedTable, filename);	
+			AddressTable::CreateAddressTableFromFile(loadedTable, filename);
 			this->mUserAddressList.SetVirtualCount(loadedTable.GetCount());
 		}
 	}
@@ -881,7 +882,7 @@ void CrySearchForm::UserDefinedEntryWhenDoubleClicked()
 		{
 #ifdef _WIN64
 			case 0: // description
-				CryChangeRecordDialog(loadedTable, row, CRDM_DESCRIPTION).Execute();				
+				CryChangeRecordDialog(loadedTable, row, CRDM_DESCRIPTION).Execute();
 				break;
 			case 1: // address
 				CryChangeRecordDialog(loadedTable, row, CRDM_ADDRESS).Execute();
@@ -894,7 +895,7 @@ void CrySearchForm::UserDefinedEntryWhenDoubleClicked()
 				break;
 #else
 			case 0: // description
-				CryChangeRecordDialog(loadedTable, row, CRDM_DESCRIPTION).Execute();				
+				CryChangeRecordDialog(loadedTable, row, CRDM_DESCRIPTION).Execute();
 				break;
 			case 1: // address
 				CryChangeRecordDialog(loadedTable, row, CRDM_ADDRESS).Execute();
@@ -1801,12 +1802,13 @@ void CrySearchForm::WhenProcessOpened(Win32ProcessInformation* pProc)
 				else
 				{
 					DWORD wndTitle[] = {0x53797243, 0x63726165, 0x654d2068, 0x79726f6d, 0x61635320, 0x72656e6e, 0x0}; //"CrySearch Memory Scanner"
-					this->Title(Format("%s - (%i) %s", (char*)wndTitle, pProc->ProcessId, mMemoryScanner->GetProcessName()));
+					String windowTitle = Format("%s - (%i) %s", (char*)wndTitle, pProc->ProcessId, mMemoryScanner->GetProcessName());
+					this->Title(SettingsFile::GetInstance()->GetEnableReadOnlyMode() ? Format("%s - (Read-Only)", windowTitle) : windowTitle);
 					this->mOpenedProcess.SetLabel("");
 				}
 				
 				this->mMenuStrip.Set(THISBACK(MainMenu));
-					
+				
 				this->mTabbedDataWindows.Add(this->mWindowManager.GetPEWindow()->SizePos(), "General");
 				this->mTabbedDataWindows.Add(this->mWindowManager.GetDisasmWindow()->SizePos(), "Disassembly");
 				this->mTabbedDataWindows.Add(this->mWindowManager.GetImportsWindow()->SizePos(), "Imports");
@@ -1848,7 +1850,8 @@ void CrySearchForm::WhenProcessOpened(Win32ProcessInformation* pProc)
 			else
 			{
 				DWORD wndTitle[] = {0x53797243, 0x63726165, 0x654d2068, 0x79726f6d, 0x61635320, 0x72656e6e, 0x0}; //"CrySearch Memory Scanner"
-				this->Title(Format("%s - (%i) %s", (char*)wndTitle, pProc->ProcessId, mMemoryScanner->GetProcessName()));
+				String windowTitle = Format("%s - (%i) %s", (char*)wndTitle, pProc->ProcessId, mMemoryScanner->GetProcessName());
+				this->Title(SettingsFile::GetInstance()->GetEnableReadOnlyMode() ? Format("%s - (Read-Only)", windowTitle) : windowTitle);
 				this->mOpenedProcess.SetLabel("");
 			}
 			
@@ -1888,13 +1891,13 @@ void CrySearchForm::ScannerScanStartedThreadSafe(int threadCount)
 }
 
 // Executed asynchronously when the memory scanner updates its status.
-void CrySearchForm::ScannerUserInterfaceUpdate(Atomic threadCount)
+void CrySearchForm::ScannerUserInterfaceUpdate(int threadCount)
 {
 	PostCallback(THISBACK1(ScannerUserInterfaceUpdateThreadSafe, threadCount));
 }
 
 // Executed synchronously when the memory scanner updates its status. This function may alter UI components.
-void CrySearchForm::ScannerUserInterfaceUpdateThreadSafe(Atomic threadCount)
+void CrySearchForm::ScannerUserInterfaceUpdateThreadSafe(int threadCount)
 {
 	this->mScanningProgress.Set(threadCount);
 }

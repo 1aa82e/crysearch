@@ -8,19 +8,19 @@ extern Vector<LONG_PTR> DisasmVisibleLines;
 
 CrySignatureGenerationWindow::CrySignatureGenerationWindow(const Vector<int>& rows) : CryDialogTemplate(CrySearchIml::GenerateSignatureButton())
 {
-	this->Title("Generate Signature").SetRect(0, 0, 300, 150);
+	this->Title("Generate Signature").SetRect(0, 0, 300, 175);
 	
 	this->mClose <<= THISBACK(CloseWindow);
 	
 	*this
-		<< this->mStringStyleSection.SetLabel("String style").HSizePos(5, 5).TopPos(5, 65)
-		<< this->mStringStyle.SetLabel("Signature:").LeftPos(10, 80).TopPos(20, 20)
-		<< this->mStringStyleSig.SetEditable(false).HSizePos(90, 10).TopPos(20, 20)
-		<< this->mStringMask.SetLabel("Mask:").LeftPos(10, 80).TopPos(45, 20)
-		<< this->mStringMaskSig.HSizePos(90, 10).TopPos(45, 20)
-		<< this->mBytesStyleSection.SetLabel("Bytes style").HSizePos(5, 5).TopPos(70, 40)
-		<< this->mBytesStyle.SetLabel("Signature:").LeftPos(10, 80).TopPos(85, 20)
-		<< this->mBytesStyleSig.SetEditable(false).HSizePos(90, 10).TopPos(85, 20)
+		<< this->mStringStyleSection.SetLabel("String style").HSizePos(5, 5).TopPos(5, 85)
+		<< this->mStringStyle.SetLabel("Signature:").LeftPos(10, 80).TopPos(25, 25)
+		<< this->mStringStyleSig.SetEditable(false).HSizePos(90, 10).TopPos(25, 25)
+		<< this->mStringMask.SetLabel("Mask:").LeftPos(10, 80).TopPos(55, 25)
+		<< this->mStringMaskSig.HSizePos(90, 10).TopPos(55, 25)
+		<< this->mBytesStyleSection.SetLabel("Bytes style").HSizePos(5, 5).TopPos(90, 50)
+		<< this->mBytesStyle.SetLabel("Signature:").LeftPos(10, 80).TopPos(110, 25)
+		<< this->mBytesStyleSig.SetEditable(false).HSizePos(90, 10).TopPos(110, 25)
 		<< this->mClose.SetLabel("Close").RightPos(5, 60).BottomPos(5, 25)
 	;
 	

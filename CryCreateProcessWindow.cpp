@@ -4,21 +4,21 @@
 CryCreateProcessWindow::CryCreateProcessWindow(Win32ProcessInformation* const pProc) : CryDialogTemplate(CrySearchIml::AttachToProcessMenu())
 {
 	this->mProc = pProc;
-	this->Title("Create Process").SetRect(0, 0, 300, 105);
+	this->Title("Create Process").SetRect(0, 0, 300, 120);
 	
 	this->mBrowseProcess <<= THISBACK(BrowseForProcessButtonClicked);
 	this->mCreate <<= THISBACK(CreateProcessButtonClicked);
 	this->mCancel <<= THISBACK(CancelButtonClicked);
 	
 	*this
-		<< this->mProcessDescriptor.SetLabel("Path:").LeftPos(5, 75).TopPos(5, 20)
-		<< this->mProcessPath.HSizePos(80, 5).TopPos(5, 20)
-		<< this->mArgumentsDescriptor.SetLabel("Arguments:").LeftPos(5, 75).TopPos(30, 20)
-		<< this->mArguments.HSizePos(80, 5).TopPos(30, 20)
-		<< this->mCreateSuspended.SetLabel("Create suspended process").HSizePos(5, 5).TopPos(55, 20)
-		<< this->mBrowseProcess.SetLabel("Browse").LeftPos(5, 90).BottomPos(5, 20)
-		<< this->mCreate.Ok().SetLabel("Create Process").RightPos(70, 130).BottomPos(5, 20)
-		<< this->mCancel.SetLabel("Cancel").RightPos(5, 60).BottomPos(5, 20)
+		<< this->mProcessDescriptor.SetLabel("Path:").LeftPos(5, 75).TopPos(5, 25)
+		<< this->mProcessPath.HSizePos(90, 5).TopPos(5, 25)
+		<< this->mArgumentsDescriptor.SetLabel("Arguments:").LeftPos(5, 75).TopPos(35, 25)
+		<< this->mArguments.HSizePos(90, 5).TopPos(35, 25)
+		<< this->mCreateSuspended.SetLabel("Create suspended process").HSizePos(5, 5).TopPos(65, 25)
+		<< this->mBrowseProcess.SetLabel("Browse").LeftPos(5, 90).BottomPos(5, 25)
+		<< this->mCreate.Ok().SetLabel("Create Process").RightPos(70, 130).BottomPos(5, 25)
+		<< this->mCancel.SetLabel("Cancel").RightPos(5, 60).BottomPos(5, 25)
 	;
 }
 

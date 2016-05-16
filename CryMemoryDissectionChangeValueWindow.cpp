@@ -17,8 +17,8 @@ CryMemoryDissectionChangeValueWindow::CryMemoryDissectionChangeValueWindow(SIZE_
 	*this
 		<< this->mCancel.SetLabel("Cancel").HSizePos(190, 5).BottomPos(5, 25)
 		<< this->mOk.Ok().SetLabel("OK").HSizePos(130, 60).BottomPos(5, 25)
-		<< this->mFieldDescription.SetLabel("Value:").HSizePos(5, 100).TopPos(5, 20)
-		<< this->mFieldValue.HSizePos(110, 5).TopPos(5, 20)
+		<< this->mFieldDescription.SetLabel("Value:").HSizePos(5, 100).TopPos(5, 25)
+		<< this->mFieldValue.HSizePos(110, 5).TopPos(5, 25)
 	;
 	
 	if (this->rowType == CRYDATATYPE_BYTE || this->rowType == CRYDATATYPE_2BYTES ||

@@ -22,7 +22,7 @@ private:
 	CrySearchArrayCtrl mCallStackView;
 	
 	// For the thread safety of the debugger's operations, we need two semaphores.
-	Semaphore mDebuggerEventLock;	
+	Semaphore mDebuggerEventLock;
 	
 	void ToolStrip(Bar& pBar);
 	void BreakpointListRightClick(Bar& pBar);

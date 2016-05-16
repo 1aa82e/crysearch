@@ -8,17 +8,17 @@ extern Vector<LONG_PTR> DisasmVisibleLines;
 
 CryByteArrayGenerationWindow::CryByteArrayGenerationWindow(const Vector<int>& rows) : CryDialogTemplate(CrySearchIml::GenerateByteArrayButton())
 {
-	this->Title("Generate Byte-array").SetRect(0, 0, 300, 130);
+	this->Title("Generate Byte-array").SetRect(0, 0, 300, 140);
 	
 	this->mClose <<= THISBACK(CloseWindow);
 	
 	*this
-		<< this->mCPPStyleSection.SetLabel("C++").HSizePos(5, 5).TopPos(5, 40)
-		<< this->mCPPStyle.SetLabel("Byte-array:").LeftPos(10, 80).TopPos(20, 20)
-		<< this->mCPPStyleSig.SetEditable(false).HSizePos(90, 10).TopPos(20, 20)
-		<< this->mCSharpStyleSection.SetLabel("C#").HSizePos(5, 5).TopPos(50, 40)
-		<< this->mCSharpStyle.SetLabel("Byte-array:").LeftPos(10, 80).TopPos(65, 20)
-		<< this->mCSharpStyleSig.SetEditable(false).HSizePos(90, 10).TopPos(65, 20)
+		<< this->mCPPStyleSection.SetLabel("C++").HSizePos(5, 5).TopPos(5, 45)
+		<< this->mCPPStyle.SetLabel("Byte-array:").LeftPos(10, 80).TopPos(20, 25)
+		<< this->mCPPStyleSig.SetEditable(false).HSizePos(90, 10).TopPos(20, 25)
+		<< this->mCSharpStyleSection.SetLabel("C#").HSizePos(5, 5).TopPos(55, 45)
+		<< this->mCSharpStyle.SetLabel("Byte-array:").LeftPos(10, 80).TopPos(70, 25)
+		<< this->mCSharpStyleSig.SetEditable(false).HSizePos(90, 10).TopPos(70, 25)
 		<< this->mClose.SetLabel("Close").RightPos(5, 60).BottomPos(5, 25)
 	;
 	

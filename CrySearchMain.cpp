@@ -29,6 +29,45 @@ void FinalizeApplication()
 	DeleteTemporaryFiles();
 }
 
+// Creates an output format for a thread, outputting a function name where possible.
+String FormatThreadEntryOutput(const SIZE_T address)
+{
+	// Check whether the thread address is inside an existing module.
+	const Win32ModuleInformation* mod = NULL;
+	if (mod = mModuleManager->GetModuleFromContainedAddress(address))
+	{
+		String modName = mModuleManager->GetModuleFilename(mod->BaseAddress);
+#ifdef _WIN64
+		if (mMemoryScanner->IsX86Process())
+		{
+			return Format("%s!%lX", modName, (int)address);
+		}
+		else
+		{
+			return Format("%s!%llX", modName, (__int64)address);
+		}
+#else
+		return Format("%s!%lX", modName, (int)address);
+#endif
+	}
+	else
+	{
+		// No module information could be found, just output the start address.
+#ifdef _WIN64
+		if (mMemoryScanner->IsX86Process())
+		{
+			return FormatHexadecimalIntSpecial((int)address);
+		}
+		else
+		{
+			return FormatInt64HexUpper((__int64)address);
+		}
+#else
+		return FormatHexadecimalIntSpecial((int)address);
+#endif
+	}
+}
+
 // Parses argument options and dispatches tasks accordingly. This function is for 32-bit processes.
 void DispatchOptionsOperation32(const DWORD options, FileOut& outStream)
 {
@@ -105,7 +144,7 @@ void DispatchOptionsOperation32(const DWORD options, FileOut& outStream)
 		for (int i = 0; i < threadCount; ++i)
 		{
 			const Win32ThreadInformation& curThread = mThreadsList[i];
-			outStream << Format("Start Address: %lX, Thread ID: %i\r\n", (LONG_PTR)curThread.StartAddress, curThread.ThreadIdentifier);
+			outStream << Format("Start Address: %s, Thread ID: %i\r\n", FormatThreadEntryOutput(curThread.StartAddress), curThread.ThreadIdentifier);
 		}
 	}
 	if (options & CRYSEARCH_COMMAND_OPTION_MODULES)
@@ -200,7 +239,7 @@ void DispatchOptionsOperation32(const DWORD options, FileOut& outStream)
 			for (int i = 0; i < threadCount; ++i)
 			{
 				const Win32ThreadInformation& curThread = mThreadsList[i];
-				outStream << Format("Start Address: %llX, Thread ID: %i\r\n", (LONG_PTR)curThread.StartAddress, curThread.ThreadIdentifier);
+				outStream << Format("Start Address: %s, Thread ID: %i\r\n", FormatThreadEntryOutput(curThread.StartAddress), curThread.ThreadIdentifier);
 			}
 		}
 		if (options & CRYSEARCH_COMMAND_OPTION_MODULES)

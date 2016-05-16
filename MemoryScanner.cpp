@@ -10,7 +10,6 @@ volatile Atomic RegionFinishCount;
 // The memory scanner thread pool and synchronisation primitives.
 CoWork threadPool;
 StaticMutex CacheMutex;
-volatile Atomic threadIncrement = 0;
 
 // Globally used scanning variables. Declared globally to speed up calls and variable access.
 ScanParameterBase* GlobalScanParameter;
@@ -85,6 +84,7 @@ MemoryScanner::MemoryScanner()
 	this->threadCount = CPU_Cores();
 	this->mProcessSuspended = false;
 	this->mOpenedProcessHandle = NULL;
+	this->threadIncrement = 0;
 	
 	// Adjust CrySearch process token for it to be able to debug protected processes and load drivers.
 	HANDLE hToken = NULL;
@@ -427,13 +427,13 @@ void MemoryScanner::ClearSearchResults()
 // Scanning functions
 
 template <>
-void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const double& value)
+void MemoryScanner::FirstScanWorker(const WorkerRegionParameterData& regionData, const double& value)
 {
 	FileOut addressesFile(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.temp", regionData.WorkerIdentifier)));
 	FileOut valFile(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Values%i.temp", regionData.WorkerIdentifier)));
 	
 	const int fastScanAlignSize = GlobalScanParameter->CurrentScanFastScan ? sizeof(int) : 1;
-	unsigned int fileIndex = 0;	
+	unsigned int fileIndex = 0;
 	const unsigned int forLoopLength = regionData.OriginalStartIndex + regionData.Length;
 	
 	for (unsigned int i = regionData.OriginalStartIndex; i < forLoopLength; ++i)
@@ -490,7 +490,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 		
 		if (arrayIndex > 0)
 		{
-			AtomicXAdd(this->mScanResultCount, arrayIndex);
+			this->mScanResultCount += arrayIndex;
 			
 			if (CachedAddresses.GetCount() < MEMORYSCANNER_CACHE_LIMIT)
 			{
@@ -508,7 +508,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 			if (localAddresses)
 			{
 				delete[] localAddresses;
-				delete[] localValues;				
+				delete[] localValues;
 			}
 		}
 		
@@ -519,7 +519,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 	addressesFile.Close();
 	valFile.Close();
 	
-	if (AtomicInc(threadIncrement) >= threadCount)
+	if (AtomicInc(this->threadIncrement) >= threadCount)
 	{
 		delete this->mCompareValues;
 		this->mCompareValues = NULL;
@@ -530,11 +530,11 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 }
 
 template <>
-void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const ArrayOfBytes& value)
+void MemoryScanner::FirstScanWorker(const WorkerRegionParameterData& regionData, const ArrayOfBytes& value)
 {
 	FileOut addressesFile(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.temp", regionData.WorkerIdentifier)));
 	
-	unsigned int fileIndex = 0;	
+	unsigned int fileIndex = 0;
 	const Byte* const inputData = value.Data;
 	const int inputLength = value.Size;
 	const unsigned int forLoopLength = regionData.OriginalStartIndex + regionData.Length;
@@ -582,7 +582,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 	
 		if (arrayIndex > 0)
 		{
-			AtomicXAdd(this->mScanResultCount, arrayIndex);
+			this->mScanResultCount += arrayIndex;
 			
 			if (CachedAddresses.GetCount() < MEMORYSCANNER_CACHE_LIMIT)
 			{
@@ -608,7 +608,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 	
 	addressesFile.Close();
 	
-	if (AtomicInc(threadIncrement) >= threadCount)
+	if (AtomicInc(this->threadIncrement) >= threadCount)
 	{
 		delete this->mCompareValues;
 		this->mCompareValues = NULL;
@@ -619,7 +619,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 }
 
 template <>
-void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const WString& value)
+void MemoryScanner::FirstScanWorker(const WorkerRegionParameterData& regionData, const WString& value)
 {
 	FileOut addressesFile(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.temp", regionData.WorkerIdentifier)));
 	
@@ -643,7 +643,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 		
 		Byte* buffer = new Byte[currentRegion.MemorySize];
 		if (CrySearchRoutines.CryReadMemoryRoutine(this->mOpenedProcessHandle, (void*)currentRegion.BaseAddress, buffer, currentRegion.MemorySize, NULL))
-		{			
+		{
 			for (SIZE_T i = 0; i < regionSize; ++i)
 			{
 				const wchar* strPtr = (wchar*)&(buffer[i]);
@@ -682,7 +682,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 		
 		if (arrayIndex > 0)
 		{
-			AtomicXAdd(this->mScanResultCount, arrayIndex);
+			this->mScanResultCount += arrayIndex;
 			
 			if (CachedAddresses.GetCount() < MEMORYSCANNER_CACHE_LIMIT)
 			{
@@ -706,7 +706,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 	
 	addressesFile.Close();
 	
-	if (AtomicInc(threadIncrement) >= threadCount)
+	if (AtomicInc(this->threadIncrement) >= threadCount)
 	{
 		delete this->mCompareValues;
 		this->mCompareValues = NULL;
@@ -717,7 +717,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 }
 
 template <>
-void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const String& value)
+void MemoryScanner::FirstScanWorker(const WorkerRegionParameterData& regionData, const String& value)
 {
 	FileOut addressesFile(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.temp", regionData.WorkerIdentifier)));
 	
@@ -778,7 +778,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 		
 		if (arrayIndex > 0)
 		{
-			AtomicXAdd(this->mScanResultCount, arrayIndex);
+			this->mScanResultCount += arrayIndex;
 			
 			if (CachedAddresses.GetCount() < MEMORYSCANNER_CACHE_LIMIT)
 			{
@@ -802,7 +802,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 	
 	addressesFile.Close();
 	
-	if (AtomicInc(threadIncrement) >= threadCount)
+	if (AtomicInc(this->threadIncrement) >= threadCount)
 	{
 		delete this->mCompareValues;
 		this->mCompareValues = NULL;
@@ -815,7 +815,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 // Represents the default template worker function for the set of workers including specialized ones.
 // This set of workers run the first scan sequence.
 template <class T>
-void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const T& value)
+void MemoryScanner::FirstScanWorker(const WorkerRegionParameterData& regionData, const T& value)
 {
 	FileOut addressesFile(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.temp", regionData.WorkerIdentifier)));
 	FileOut valFile(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Values%i.temp", regionData.WorkerIdentifier)));
@@ -884,7 +884,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 		
 		if (arrayIndex > 0)
 		{
-			AtomicXAdd(this->mScanResultCount, arrayIndex);
+			this->mScanResultCount += arrayIndex;
 			
 			if (CachedAddresses.GetCount() < MEMORYSCANNER_CACHE_LIMIT)
 			{
@@ -913,7 +913,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData& regionData, const
 	addressesFile.Close();
 	valFile.Close();
 	
-	if (AtomicInc(threadIncrement) >= threadCount)
+	if (AtomicInc(this->threadIncrement) >= threadCount)
 	{
 		delete this->mCompareValues;
 		this->mCompareValues = NULL;
@@ -984,7 +984,7 @@ void MemoryScanner::FirstScan()
 	
 	// Set thread finish count to 0. This is needed to restart progress indication.
 	RegionFinishCount = 0;
-	threadIncrement = 0;
+	this->threadIncrement = 0;
 	
 	// Check for sets of regions and append overlapping regions to reduce the number of regions needed to read.
 	for (int i = 0; i < this->memRegions.GetCount(); i++)
@@ -1057,7 +1057,7 @@ void MemoryScanner::FirstScan()
 }
 
 template <>
-void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const ArrayOfBytes& value)
+void MemoryScanner::NextScanWorker(const WorkerRegionParameterData& regionData, const ArrayOfBytes& value)
 {
 	const String addrFileOld = AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.tempSCANNING", regionData.WorkerIdentifier));
 	FileOut addressesFile(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.temp", regionData.WorkerIdentifier)));
@@ -1118,7 +1118,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 
 			if (arrayIndex > 0)
 			{
-				AtomicXAdd(this->mScanResultCount, arrayIndex);
+				this->mScanResultCount += arrayIndex;
 				
 				if (CachedAddresses.GetCount() < MEMORYSCANNER_CACHE_LIMIT)
 				{
@@ -1149,7 +1149,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 	
 	FileDelete(addrFileOld);
 	
-	if (AtomicInc(threadIncrement) >= threadCount)
+	if (AtomicInc(this->threadIncrement) >= threadCount)
 	{
 		delete this->mCompareValues;
 		this->mCompareValues = NULL;
@@ -1160,7 +1160,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 }
 
 template <>
-void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const WString& value)
+void MemoryScanner::NextScanWorker(const WorkerRegionParameterData& regionData, const WString& value)
 {
 	const String addrFileOld = AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.tempSCANNING", regionData.WorkerIdentifier));
 	FileOut addressesFile(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.temp", regionData.WorkerIdentifier)));
@@ -1231,7 +1231,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 
 			if (arrayIndex > 0)
 			{
-				AtomicXAdd(this->mScanResultCount, arrayIndex);
+				this->mScanResultCount += arrayIndex;
 				
 				if (CachedAddresses.GetCount() < MEMORYSCANNER_CACHE_LIMIT)
 				{
@@ -1260,7 +1260,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 	
 	FileDelete(addrFileOld);
 	
-	if (AtomicInc(threadIncrement) >= threadCount)
+	if (AtomicInc(this->threadIncrement) >= threadCount)
 	{
 		delete this->mCompareValues;
 		this->mCompareValues = NULL;
@@ -1271,7 +1271,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 }
 
 template <>
-void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const String& value)
+void MemoryScanner::NextScanWorker(const WorkerRegionParameterData& regionData, const String& value)
 {
 	const String addrFileOld = AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.tempSCANNING", regionData.WorkerIdentifier));
 	FileOut addressesFile(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.temp", regionData.WorkerIdentifier)));
@@ -1340,7 +1340,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 
 			if (arrayIndex > 0)
 			{
-				AtomicXAdd(this->mScanResultCount, arrayIndex);
+				this->mScanResultCount += arrayIndex;
 				
 				if (CachedAddresses.GetCount() < MEMORYSCANNER_CACHE_LIMIT)
 				{
@@ -1369,7 +1369,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 	
 	FileDelete(addrFileOld);
 	
-	if (AtomicInc(threadIncrement) >= threadCount)
+	if (AtomicInc(this->threadIncrement) >= threadCount)
 	{
 		delete this->mCompareValues;
 		this->mCompareValues = NULL;
@@ -1381,7 +1381,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 
 // This function is the default template for the set of specialized workers for the next scan.
 template <class T>
-void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const T& value)
+void MemoryScanner::NextScanWorker(const WorkerRegionParameterData& regionData, const T& value)
 {
 	const String addrFileOld = AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.tempSCANNING", regionData.WorkerIdentifier));
 	const String valuesFileOld = AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Values%i.tempSCANNING", regionData.WorkerIdentifier));
@@ -1492,7 +1492,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 
 			if (arrayIndex > 0)
 			{
-				AtomicXAdd(this->mScanResultCount, arrayIndex);
+				this->mScanResultCount += arrayIndex;
 				
 				if (CachedAddresses.GetCount() < MEMORYSCANNER_CACHE_LIMIT)
 				{
@@ -1533,7 +1533,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData& regionData, const 
 	FileDelete(addrFileOld);
 	FileDelete(valuesFileOld);
 
-	if (AtomicInc(threadIncrement) >= threadCount)
+	if (AtomicInc(this->threadIncrement) >= threadCount)
 	{
 		delete this->mCompareValues;
 		this->mCompareValues = NULL;
@@ -1595,7 +1595,7 @@ void MemoryScanner::NextScan()
 	
 	// Reset progress indication bar in the GUI.
 	RegionFinishCount = 0;
-	threadIncrement = 0;
+	this->threadIncrement = 0;
 	this->ScanStarted(this->memRegions.GetCount());
 	
 	// Assign compare function accordingly
