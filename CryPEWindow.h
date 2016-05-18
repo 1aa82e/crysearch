@@ -37,6 +37,7 @@ public:
 	
 	void Initialize();
 	void ClearList();
+	void UpdateToolbar();
 };
 
 #endif

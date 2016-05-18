@@ -12,8 +12,9 @@ v2.03
 	- Added a read-only operation mode:
 		- Setting available from the Settings window;
 		- Behavioral warning when changing the setting while a process is opened;
-		- 
+		- Every component that writes to the opened process or requires writing permissions is disabled at user interface level.
 	- Changed the size of most input fields and buttons. Some operating systems showed them to be too small;
+	- Fixed a bug in the new scan window where selecting unknown initial value followed by string or array of bytes would render the window unusable.
 
 v2.02
 	- Added a view option to the right-click menu for search results to manually switch view of formatting to hexadecimal;

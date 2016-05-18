@@ -249,7 +249,7 @@ void EnumerateHandles(const int processId, Vector<Win32HandleInformation>& handl
 						String objName = GetObjectNameByType(hDup, objInfo->TypeName.Buffer, objInfo->TypeName.Length + 1);
 						if (!objName.IsEmpty())
 						{
-							Win32HandleInformation& newHandle = handles.Add();							
+							Win32HandleInformation& newHandle = handles.Add();
 							newHandle.Handle = curHandle->HandleValue;
 							newHandle.Access = curHandle->GrantedAccess;
 							newHandle.ObjectType = WString(objInfo->TypeName.Buffer, objInfo->TypeName.Length).ToString();

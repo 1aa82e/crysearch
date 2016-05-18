@@ -37,6 +37,7 @@ public:
 	
 	void ClearWindows();
 	void SetParentWindow(CrySearchForm* pParent);
+	void UpdateLowerPaneWindowsToolbars();
 };
 
 #endif

@@ -266,13 +266,13 @@ public:
 class CryDebugger32 : public CryDebugger
 {
 private:
-	virtual void HideDebuggerFromPeb() const;
-	virtual bool BreakpointRoutine(HardwareBreakpoint* pHwbp, const DWORD threadId) const;
-	virtual void HandleSoftwareBreakpoint(const DWORD threadId, const int bpIndex);
-	virtual void HandleHardwareBreakpoint(const DWORD threadId, const int bpIndex);
-	virtual void RemoveSingleStepFromBreakpoint(const DWORD threadId);
-	virtual const int CheckHardwareBreakpointRegisters(const DWORD threadId) const;
-	virtual const SIZE_T GetDisasmLine(const SIZE_T address, bool prev) const;
+	virtual void HideDebuggerFromPeb() const override final;
+	virtual bool BreakpointRoutine(HardwareBreakpoint* pHwbp, const DWORD threadId) const override final;
+	virtual void HandleSoftwareBreakpoint(const DWORD threadId, const int bpIndex) override final;
+	virtual void HandleHardwareBreakpoint(const DWORD threadId, const int bpIndex) override final;
+	virtual void RemoveSingleStepFromBreakpoint(const DWORD threadId) override final;
+	virtual const int CheckHardwareBreakpointRegisters(const DWORD threadId) const override final;
+	virtual const SIZE_T GetDisasmLine(const SIZE_T address, bool prev) const override final;
 	
 	typedef CryDebugger32 CLASSNAME;
 protected:
@@ -287,13 +287,13 @@ public:
 	class CryDebugger64 : public CryDebugger
 	{
 	private:
-		virtual void HideDebuggerFromPeb() const;
-		virtual bool BreakpointRoutine(HardwareBreakpoint* pHwbp, const DWORD threadId) const;
-		virtual void RemoveSingleStepFromBreakpoint(const DWORD threadId);
-		virtual void HandleSoftwareBreakpoint(const DWORD threadId, const int bpIndex);
-		virtual void HandleHardwareBreakpoint(const DWORD threadId, const int bpIndex);
-		virtual const int CheckHardwareBreakpointRegisters(const DWORD threadId) const;
-		virtual const SIZE_T GetDisasmLine(const SIZE_T address, bool prev) const;
+		virtual void HideDebuggerFromPeb() const override final;
+		virtual bool BreakpointRoutine(HardwareBreakpoint* pHwbp, const DWORD threadId) const override final;
+		virtual void RemoveSingleStepFromBreakpoint(const DWORD threadId) override final;
+		virtual void HandleSoftwareBreakpoint(const DWORD threadId, const int bpIndex) override final;
+		virtual void HandleHardwareBreakpoint(const DWORD threadId, const int bpIndex) override final;
+		virtual const int CheckHardwareBreakpointRegisters(const DWORD threadId) const override final;
+		virtual const SIZE_T GetDisasmLine(const SIZE_T address, bool prev) const override final;
 		
 		typedef CryDebugger64 CLASSNAME;
 	protected:

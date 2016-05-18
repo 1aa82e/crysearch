@@ -281,15 +281,19 @@ struct ValueComparator : public CompareFunction
 class MemoryScanner
 {
 private:
+	// Information about the opened process.
 	HANDLE mOpenedProcessHandle;
 	int mLoadedProcessId;
 	String mProcessName;
 	bool isX86Process;
 	bool mProcessSuspended;
+	
+	// Memory scanner control variables.
 	bool ScanRunning;
 	SettingsFile* mSettingsInstance;
 	CompareFunction* mCompareValues;
 	int threadCount;
+	bool mReadOnly;
 	
 	// Synchronization variables.
 	volatile Atomic threadIncrement;
@@ -327,7 +331,7 @@ public:
 		return &instance;
 	}
 
-	bool InitializeExistingProcess(const int processId, const char* exeTitle);
+	bool InitializeExistingProcess(const int processId, const char* exeTitle, const bool readOnly);
 	bool InitializeNewProcess(const char* exetitle, const DWORD flags, const char* args, int* const pProcessId);
 	
 	void CloseProcess();
@@ -354,10 +358,10 @@ public:
 	const int GetProcessId() const;
 	HANDLE GetHandle() const;
 	bool IsScanRunning() const;
-	const Vector<WorkerRegionParameterData>& QueryWorkerData() const;
 	const int GetScanResultCount() const;
 	const char* GetTempFolderPath() const;
 	const int GetSystemThreadCount() const;
+	const bool IsReadOnlyOperationMode() const;
 	
 	Callback1<int> ScanStarted;
 	Callback ScanCompleted;

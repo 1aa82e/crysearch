@@ -382,3 +382,9 @@ void CryDebuggerWindow::DebuggerClearBreakpoints()
 		this->HandleBreakpointChanged(0);
 	}
 }
+
+// Updates the toolbar inside this lower pane window instance.
+void CryDebuggerWindow::UpdateToolbar()
+{
+	this->mToolStrip.Set(THISBACK(ToolStrip));
+}

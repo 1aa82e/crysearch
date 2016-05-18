@@ -11,7 +11,7 @@
 
 // WOW64 debugging definitions.
 #define STATUS_WX86_UNSIMULATE				0x4000001C
-#define STATUS_WX86_SINGLE_STEP 			0x4000001E
+#define STATUS_WX86_SINGLE_STEP				0x4000001E
 #define STATUS_WX86_BREAKPOINT				0x4000001F
 
 // Hardware Breakpoint EFLAGS constants.
@@ -74,6 +74,8 @@
 
 // ---------------------------------------------------------------------------------------------
 
+// Represents the debugger event processing state. It is used to indicate the status of an
+// internal event like setting and removing a breakpoint.
 enum CryDebuggerEventProcessingState
 {
 	NO_EVENT,

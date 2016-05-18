@@ -306,6 +306,12 @@ void CrySearchForm::SearchResultListUpdater()
 
 void CrySearchForm::AddressValuesUpdater()
 {
+	// If CrySearch is operating in read only mode, nothing may be written to the target process.
+	if (mMemoryScanner->IsReadOnlyOperationMode())
+	{
+		return;
+	}
+	
 	// Handle frozen addresses
 	const int addrTableCount = loadedTable.GetCount();
 	for (int i = 0; i < addrTableCount; ++i)
@@ -569,10 +575,10 @@ void CrySearchForm::ToolsMenu(Bar& pBar)
 	if (this->processLoaded)
 	{
 		pBar.Add("View PEB", CrySearchIml::AboutButton(), THISBACK(ViewPEBButtonClicked));
-		pBar.Add("View Handles", CrySearchIml::ViewHandlesButton(), THISBACK(ViewSystemHandlesButtonClicked));
+		pBar.Add(!mMemoryScanner->IsReadOnlyOperationMode(), "View Handles", CrySearchIml::ViewHandlesButton(), THISBACK(ViewSystemHandlesButtonClicked));
 		pBar.Separator();
-		pBar.Add("Allocate Memory", CrySearchIml::AllocateMemoryButton(), THISBACK(AllocateMemoryButtonClicked));
-		pBar.Add("Fill Memory", THISBACK(FillMemoryButtonClicked));
+		pBar.Add(!mMemoryScanner->IsReadOnlyOperationMode(), "Allocate Memory", CrySearchIml::AllocateMemoryButton(), THISBACK(AllocateMemoryButtonClicked));
+		pBar.Add(!mMemoryScanner->IsReadOnlyOperationMode(), "Fill Memory", THISBACK(FillMemoryButtonClicked));
 		pBar.Add("Memory Dissection", CrySearchIml::MemoryDissection(), THISBACK(MemoryDissectionButtonClicked));
 		pBar.Add("View Heap Information", CrySearchIml::HeapWalkSmall(), THISBACK(HeapWalkMenuClicked));
 		pBar.Separator();
@@ -588,8 +594,9 @@ void CrySearchForm::DebuggerMenu(Bar& pBar)
 	if (this->processLoaded)
 	{
 		const bool isAttached = mDebugger->IsDebuggerAttached();
+		const bool isReadOnly = mMemoryScanner->IsReadOnlyOperationMode();
 		
-		pBar.Add(!isAttached, "Attach", CrySearchIml::DebuggerAttach(), THISBACK(DebuggerAttachMenu));
+		pBar.Add(!isAttached && !isReadOnly, "Attach", CrySearchIml::DebuggerAttach(), THISBACK(DebuggerAttachMenu));
 		pBar.Add(isAttached, "Detach", THISBACK(DebuggerDetachMenu));
 	}
 }
@@ -672,7 +679,7 @@ void CrySearchForm::ChangeRecordSubMenu(Bar& pBar)
 {
 	pBar.Add("Description", THISBACK1(AddressListChangeProperty, CRDM_DESCRIPTION));
 	pBar.Add("Address", THISBACK1(AddressListChangeProperty, CRDM_ADDRESS));
-	pBar.Add("Value", THISBACK1(AddressListChangeProperty, CRDM_VALUE));
+	pBar.Add(!mMemoryScanner->IsReadOnlyOperationMode(), "Value", THISBACK1(AddressListChangeProperty, CRDM_VALUE));
 	pBar.Add("Type", THISBACK1(AddressListChangeProperty, CRDM_TYPE));
 }
 
@@ -688,11 +695,11 @@ void CrySearchForm::UserDefinedEntryWhenBar(Bar& pBar)
 		
 		if (loadedTable[row]->Frozen)
 		{
-			pBar.Add("Thaw", CrySearchIml::ThawIconSmall(), THISBACK(ToggleAddressTableFreezeThaw));
+			pBar.Add(!mMemoryScanner->IsReadOnlyOperationMode(), "Thaw", CrySearchIml::ThawIconSmall(), THISBACK(ToggleAddressTableFreezeThaw));
 		}
 		else
 		{
-			pBar.Add("Freeze", CrySearchIml::FreezeAddressSmall(), THISBACK(ToggleAddressTableFreezeThaw));
+			pBar.Add(!mMemoryScanner->IsReadOnlyOperationMode(), "Freeze", CrySearchIml::FreezeAddressSmall(), THISBACK(ToggleAddressTableFreezeThaw));
 		}
 		
 		// Add decimal/hexadecimal toggle button.
@@ -888,7 +895,7 @@ void CrySearchForm::UserDefinedEntryWhenDoubleClicked()
 				CryChangeRecordDialog(loadedTable, row, CRDM_ADDRESS).Execute();
 				break;
 			case 2: // value
-				CryChangeRecordDialog(loadedTable, row, CRDM_VALUE).Execute();
+				CryChangeRecordDialog(loadedTable, row, mMemoryScanner->IsReadOnlyOperationMode() ? CRDM_DESCRIPTION : CRDM_VALUE).Execute();
 				break;
 			case 3: // type
 				CryChangeRecordDialog(loadedTable, row, CRDM_TYPE).Execute();
@@ -901,14 +908,14 @@ void CrySearchForm::UserDefinedEntryWhenDoubleClicked()
 				CryChangeRecordDialog(loadedTable, row, CRDM_ADDRESS).Execute();
 				break;
 			case 2: // value
-				CryChangeRecordDialog(loadedTable, row, CRDM_VALUE).Execute();
+				CryChangeRecordDialog(loadedTable, row, mMemoryScanner->IsReadOnlyOperationMode() ? CRDM_DESCRIPTION : CRDM_VALUE).Execute();
 				break;
 			case 3: // type
 				CryChangeRecordDialog(loadedTable, row, CRDM_TYPE).Execute();
 				break;
 #endif
 			default:
-				// Compiles cannot know what value GetCursor() returns, so we need to give it the assumption that it won't exceed the cases.
+				// Compiler cannot know what value GetCursor() returns, so we need to give it the assumption that it won't exceed the cases.
 				__assume(0);
 		}
 	}
@@ -1836,7 +1843,7 @@ void CrySearchForm::WhenProcessOpened(Win32ProcessInformation* pProc)
 	else
 	{
 		// Use process ID to open an existing process.
-		if (mMemoryScanner->InitializeExistingProcess(pProc->ProcessId, NULL))
+		if (mMemoryScanner->InitializeExistingProcess(pProc->ProcessId, NULL, SettingsFile::GetInstance()->GetEnableReadOnlyMode()))
 		{
 			if (!this->InitializeProcessUI())
 			{
@@ -1868,6 +1875,9 @@ void CrySearchForm::WhenProcessOpened(Win32ProcessInformation* pProc)
 			SetTimeCallback(250, THISBACK(CheckProcessTermination), 30);
 		}
 	}
+	
+	// Update toolbars in different lower-pane windows to enforce read-only mode.
+	this->mWindowManager.UpdateLowerPaneWindowsToolbars();
 	
 	// Resolve relative addresses. An address table may be loaded before the process was loaded, hence the entries weren't yet resolved.
 	AddressTable::ResolveRelativeEntries(loadedTable);

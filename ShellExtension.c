@@ -18,7 +18,7 @@ void CreatePathCommand(const char* const extension, const char* const action, ch
 	
 	// Set the subkey.
 	curStringLength = strlen(subStr);
-	memcpy(outString + index, subStr, curStringLength);	
+	memcpy(outString + index, subStr, curStringLength);
 	index += curStringLength;
 	
 	// Set the action.
@@ -54,7 +54,7 @@ const BOOL RegisterAddressTableExtension()
 			strcat_s(action, 20, (char*)appname);
 		}
 		
-		CreatePathCommand(extension, action, pathCommand);	
+		CreatePathCommand(extension, action, pathCommand);
 		
 		RegSetValueEx(key, NULL, 0, REG_SZ, (char*)fileDesc, (DWORD)strlen((char*)fileDesc));
 		RegCloseKey(key);

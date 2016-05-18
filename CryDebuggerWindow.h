@@ -46,6 +46,7 @@ public:
 	
 	void Initialize();
 	void Cleanup();
+	void UpdateToolbar();
 	
 	Callback DebugErrorOccured;
 };

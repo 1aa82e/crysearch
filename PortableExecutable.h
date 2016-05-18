@@ -183,17 +183,17 @@ class PortableExecutable32 : public PortableExecutable
 protected:
 	virtual const char* GetOrdinalFunctionNameFromExportTable(const AddrStruct* addr, const WORD ordinal) const;
 public:
-	virtual void GetExecutablePeInformation() const;
-	virtual void GetImportAddressTable() const;
-	virtual bool PlaceIATHook(const Win32ModuleInformation* modBase, const char* NameOrdinal, const SIZE_T newAddress, bool IsOrdinal) const;
-	virtual bool RestorePEHeaderFromFile(const String& fileName, const Win32ModuleInformation& module) const;
-	virtual bool HideModuleFromProcess(const Win32ModuleInformation& module) const;
-	virtual bool DumpProcessSection(const String& fileName, const SIZE_T address, const SIZE_T size) const;
-	virtual bool LoadLibraryExternal(const String& library) const;
-	virtual bool LoadLibraryExternalHijack(const String& library, HANDLE hThread) const;
-	virtual void UnloadLibraryExternal(const SIZE_T module) const;
-	virtual void RestoreExportTableAddressImport(const Win32ModuleInformation* modBase, const SIZE_T baseAddress, const char* NameOrdinal, bool IsOrdinal) const;
-	virtual SIZE_T GetAddressFromExportTable(const AddrStruct* addr, const char* NameOrdinal, bool IsOrdinal) const;
+	virtual void GetExecutablePeInformation() const override final;
+	virtual void GetImportAddressTable() const override final;
+	virtual bool PlaceIATHook(const Win32ModuleInformation* modBase, const char* NameOrdinal, const SIZE_T newAddress, bool IsOrdinal) const override final;
+	virtual bool RestorePEHeaderFromFile(const String& fileName, const Win32ModuleInformation& module) const override final;
+	virtual bool HideModuleFromProcess(const Win32ModuleInformation& module) const override final;
+	virtual bool DumpProcessSection(const String& fileName, const SIZE_T address, const SIZE_T size) const override final;
+	virtual bool LoadLibraryExternal(const String& library) const override final;
+	virtual bool LoadLibraryExternalHijack(const String& library, HANDLE hThread) const override final;
+	virtual void UnloadLibraryExternal(const SIZE_T module) const override final;
+	virtual void RestoreExportTableAddressImport(const Win32ModuleInformation* modBase, const SIZE_T baseAddress, const char* NameOrdinal, bool IsOrdinal) const override final;
+	virtual SIZE_T GetAddressFromExportTable(const AddrStruct* addr, const char* NameOrdinal, bool IsOrdinal) const override final;
 	
 	PortableExecutable32() : PortableExecutable() { }
 	~PortableExecutable32();
@@ -206,17 +206,17 @@ public:
 	protected:
 		virtual const char* GetOrdinalFunctionNameFromExportTable(const AddrStruct* addr, const WORD ordinal) const;
 	public:
-		virtual void GetExecutablePeInformation() const;
-		virtual void GetImportAddressTable() const;
-		virtual bool PlaceIATHook(const Win32ModuleInformation* modBase, const char* NameOrdinal, const SIZE_T newAddress, bool IsOrdinal) const;
-		virtual bool RestorePEHeaderFromFile(const String& fileName, const Win32ModuleInformation& module) const;
-		virtual bool HideModuleFromProcess(const Win32ModuleInformation& module) const;
-		virtual bool DumpProcessSection(const String& fileName, const SIZE_T address, const SIZE_T size) const;
-		virtual bool LoadLibraryExternal(const String& library) const;
-		virtual bool LoadLibraryExternalHijack(const String& library, HANDLE hThread) const;
-		virtual void UnloadLibraryExternal(const SIZE_T module) const;
-		virtual void RestoreExportTableAddressImport(const Win32ModuleInformation* modBase, const SIZE_T baseAddress, const char* NameOrdinal, bool IsOrdinal) const;
-		virtual SIZE_T GetAddressFromExportTable(const AddrStruct* addr, const char* NameOrdinal, bool IsOrdinal) const;
+		virtual void GetExecutablePeInformation() const override final;
+		virtual void GetImportAddressTable() const override final;
+		virtual bool PlaceIATHook(const Win32ModuleInformation* modBase, const char* NameOrdinal, const SIZE_T newAddress, bool IsOrdinal) const override final;
+		virtual bool RestorePEHeaderFromFile(const String& fileName, const Win32ModuleInformation& module) const override final;
+		virtual bool HideModuleFromProcess(const Win32ModuleInformation& module) const override final;
+		virtual bool DumpProcessSection(const String& fileName, const SIZE_T address, const SIZE_T size) const override final;
+		virtual bool LoadLibraryExternal(const String& library) const override final;
+		virtual bool LoadLibraryExternalHijack(const String& library, HANDLE hThread) const override final;
+		virtual void UnloadLibraryExternal(const SIZE_T module) const override final;
+		virtual void RestoreExportTableAddressImport(const Win32ModuleInformation* modBase, const SIZE_T baseAddress, const char* NameOrdinal, bool IsOrdinal) const override final;
+		virtual SIZE_T GetAddressFromExportTable(const AddrStruct* addr, const char* NameOrdinal, bool IsOrdinal) const override final;
 		
 		PortableExecutable64() : PortableExecutable() { }
 		~PortableExecutable64();

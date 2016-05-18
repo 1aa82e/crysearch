@@ -541,7 +541,7 @@ SIZE_T PortableExecutable32::GetAddressFromExportTable(const AddrStruct* addr, c
 				// Compare ordinal values without magic bitoperations!
 				if ((addr->ExportDirectory->Base + *ordValue) == *reinterpret_cast<WORD*>(&NameOrdinal))
 				{
-					funcAddrPtr = (DWORD*)((addr->BufferBaseAddress + addr->ExportDirectory->AddressOfFunctions) + (sizeof(DWORD) * *ordValue));					
+					funcAddrPtr = (DWORD*)((addr->BufferBaseAddress + addr->ExportDirectory->AddressOfFunctions) + (sizeof(DWORD) * *ordValue));
 					found = true;
 				}
 				
@@ -591,7 +591,7 @@ SIZE_T PortableExecutable32::GetAddressFromExportTable(const AddrStruct* addr, c
 				const size_t strlength = strlen(NameOrdinal);
 				if ((functionName > (char*)addr->BufferBaseAddress + addr->DirectoryAddress->VirtualAddress && (functionName + strlength + 1) < (char*)addr->BufferEndAddress) && memcmp(NameOrdinal, functionName, strlength) == 0)
 				{
-					funcAddrPtr = (DWORD*)((addr->BufferBaseAddress + addr->ExportDirectory->AddressOfFunctions) + (sizeof(DWORD) * *ordValue));	
+					funcAddrPtr = (DWORD*)((addr->BufferBaseAddress + addr->ExportDirectory->AddressOfFunctions) + (sizeof(DWORD) * *ordValue));
 					if (*funcAddrPtr > addr->DirectoryAddress->VirtualAddress && *funcAddrPtr < (addr->DirectoryAddress->VirtualAddress + addr->DirectoryAddress->Size))
 					{
 						const Win32ModuleInformation* modBaseAddr = this->GetResolvedModule(addr->BufferBaseAddress, &ResurseDotIndex, funcAddrPtr, NameOrdinal);
@@ -846,7 +846,7 @@ bool PortableExecutable32::PlaceIATHook(const Win32ModuleInformation* modBase, c
 	
 			do
 			{
-				thunk = (IMAGE_THUNK_DATA32*)(moduleBuffer + pDesc->OriginalFirstThunk + count * sizeof(DWORD));	
+				thunk = (IMAGE_THUNK_DATA32*)(moduleBuffer + pDesc->OriginalFirstThunk + count * sizeof(DWORD));
 				void* const AddressAddr = (void*)(this->mBaseAddress + pDesc->FirstThunk + count++ * sizeof(DWORD));
 	
 				if (IsOrdinal)
@@ -890,7 +890,7 @@ bool PortableExecutable32::PlaceIATHook(const Win32ModuleInformation* modBase, c
 			while (thunk->u1.AddressOfData);
 			
 			++pDesc;
-		}		
+		}
 	}
 	
 	// Success, free used buffers and return.
@@ -1025,8 +1025,8 @@ bool PortableExecutable32::HideModuleFromProcess(const Win32ModuleInformation& m
 				        
 						if (!localRes)
 				        {
-				        	found = false;
-				        	break;
+							found = false;
+							break;
 				        }
 				        
 						const DWORD nextItemAddr = current.Flink;
@@ -1088,7 +1088,7 @@ bool PortableExecutable32::DumpProcessSection(const String& fileName, const SIZE
 	{
 		DeleteFile(fileName);
 		result = false;
-	}	
+	}
 	
 	// All succeeded, free resources and return.
 	CloseHandle(hFile);
@@ -1277,7 +1277,7 @@ void PortableExecutable32::UnloadLibraryExternal(const SIZE_T module) const
 	HANDLE hThread = CreateRemoteThread(this->mProcessHandle, NULL, NULL, (LPTHREAD_START_ROUTINE)freeAddr, (void*)module, NULL, NULL);
 #endif
 	
-	// Succesfully created thread, wait for it to complete and free resources after.	
+	// Succesfully created thread, wait for it to complete and free resources after.
 	if (hThread && hThread != INVALID_HANDLE_VALUE)
 	{
 		WaitForSingleObject(hThread, 5000);
@@ -1406,7 +1406,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 					// Compare ordinal values without magic bitoperations!
 					if ((addr->ExportDirectory->Base + *ordValue) == *reinterpret_cast<WORD*>(&NameOrdinal))
 					{
-						funcAddrPtr = (DWORD*)(addr->BufferBaseAddress + addr->ExportDirectory->AddressOfFunctions + (sizeof(DWORD) * *ordValue));					
+						funcAddrPtr = (DWORD*)(addr->BufferBaseAddress + addr->ExportDirectory->AddressOfFunctions + (sizeof(DWORD) * *ordValue));
 						found = true;
 					}
 					
@@ -1418,7 +1418,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 
 					if (*funcAddrPtr > addr->DirectoryAddress->VirtualAddress && *funcAddrPtr < addr->DirectoryAddress->VirtualAddress + addr->DirectoryAddress->Size)
 					{
-						const Win32ModuleInformation* modBaseAddr = this->GetResolvedModule(addr->BufferBaseAddress, &RecurseDotIndex, funcAddrPtr, NameOrdinal);	
+						const Win32ModuleInformation* modBaseAddr = this->GetResolvedModule(addr->BufferBaseAddress, &RecurseDotIndex, funcAddrPtr, NameOrdinal);
 						if (!modBaseAddr || (SIZE_T)addr->BaseAddress == modBaseAddr->BaseAddress)
 						{
 							return EAT_ADDRESS_NOT_FOUND;
@@ -1454,7 +1454,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 					const size_t strlength = strlen(NameOrdinal);
 					if ((functionName > (char*)addr->BufferBaseAddress + addr->DirectoryAddress->VirtualAddress && (functionName + strlength + 1) < (char*)addr->BufferEndAddress) && memcmp(NameOrdinal, functionName, strlength) == 0)
 					{
-						funcAddrPtr = (DWORD*)(addr->BufferBaseAddress + addr->ExportDirectory->AddressOfFunctions + (sizeof(DWORD) * *ordValue));	
+						funcAddrPtr = (DWORD*)(addr->BufferBaseAddress + addr->ExportDirectory->AddressOfFunctions + (sizeof(DWORD) * *ordValue));
 						if (*funcAddrPtr > addr->DirectoryAddress->VirtualAddress && *funcAddrPtr < addr->DirectoryAddress->VirtualAddress + addr->DirectoryAddress->Size)
 						{
 							const Win32ModuleInformation* modBaseAddr = this->GetResolvedModule(addr->BufferBaseAddress, &RecurseDotIndex, funcAddrPtr, NameOrdinal);
@@ -1502,7 +1502,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 		{
 			if ((addr->ExportDirectory->Base + ordinals[i]) == ordinal)
 			{
-				const DWORD* const stringPtr = (DWORD*)(addr->BufferBaseAddress + addr->ExportDirectory->AddressOfNames + i * sizeof(DWORD));				
+				const DWORD* const stringPtr = (DWORD*)(addr->BufferBaseAddress + addr->ExportDirectory->AddressOfNames + i * sizeof(DWORD));
 				const Byte* const absStringPtr = (Byte*)(addr->BufferBaseAddress + *stringPtr);
 				
 				// Make sure the string points inside of the buffer. Scrambled EAT would crash the application.
@@ -1591,7 +1591,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 				AddrStruct addrStruct((Byte*)modBaseAddr->BaseAddress, (exportDirectoryBuffer - dataDir.VirtualAddress), bufBase + dataDir.VirtualAddress + dataDir.Size
 					, &dataDir, (IMAGE_EXPORT_DIRECTORY*)exportDirectoryBuffer);
 	        
-	        	IMAGE_THUNK_DATA thunk;
+				IMAGE_THUNK_DATA thunk;
 		        unsigned int count = 0;
 	        
 				do
@@ -1726,7 +1726,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 								break;
 							}
 						}
-					}	
+					}
 					else
 					{
 						// If the current import is not a named one, move over to the next.
@@ -1879,8 +1879,8 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 					        
 					        if (!localRes)
 					        {
-					        	found = false;
-					        	break;
+								found = false;
+								break;
 					        }
 					        
 							const unsigned __int64 nextItemAddr = (unsigned __int64)current.Flink;
@@ -1937,7 +1937,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 		{
 			DeleteFile(fileName);
 			result = false;
-		}	
+		}
 		
 		// All succeeded, free resources and return.
 		CloseHandle(hFile);
@@ -1954,7 +1954,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 		SIZE_T bytesWritten;
 		
 		// Write path to library into the newly allocated memory.
-		CrySearchRoutines.CryWriteMemoryRoutine(this->mProcessHandle, lpRemoteAddress, library, library.GetLength(), &bytesWritten);	
+		CrySearchRoutines.CryWriteMemoryRoutine(this->mProcessHandle, lpRemoteAddress, library, library.GetLength(), &bytesWritten);
 		if (bytesWritten != library.GetLength())
 		{
 			VirtualFreeEx(this->mProcessHandle, lpRemoteAddress, 0, MEM_RELEASE);

@@ -52,6 +52,7 @@ public:
 	void ClearList();
 	
 	void MoveToAddress(const SIZE_T address);
+	void UpdateToolbar();
 };
 
 // The debugger needs this function to retrieve the correct breakpoint after a single step has been made. (INT3)

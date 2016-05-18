@@ -208,6 +208,7 @@ void CryNewScanForm::BlockSizeSelected()
 	const String& selected = this->mBlockSizeSelector.GetValue();
 	if (selected == "String (Slower scan, be patient)")
 	{
+		this->mValueToSearchFor.Enable();
 		this->mValueIsHex.Disable();
 		this->useFastScan.Disable();
 		this->mScanTypeSelector.SetIndex(0);
@@ -218,6 +219,7 @@ void CryNewScanForm::BlockSizeSelected()
 	}
 	else if (selected == "Array of Bytes")
 	{
+		this->mValueToSearchFor.Enable();
 		this->mValueIsHex.Disable();
 		this->useFastScan.Disable();
 		this->mScanTypeSelector.SetIndex(0);
@@ -228,7 +230,7 @@ void CryNewScanForm::BlockSizeSelected()
 	}
 	else
 	{
-		this->mValueIsHex.Enable(selected != "Float (4 Bytes)" && selected != "Double (8 Bytes)");		
+		this->mValueIsHex.Enable(selected != "Float (4 Bytes)" && selected != "Double (8 Bytes)");
 		this->useFastScan.Enable();
 		this->mScanTypeSelector.Enable();
 		this->mScanTypeSelectorLabel.Enable();

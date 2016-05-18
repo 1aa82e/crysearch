@@ -111,11 +111,11 @@ void CryImportsWindow::FunctionListRightClick(Bar& pBar)
 	{
 		if (LoadedProcessPEInformation.ImportAddressTable[MasterIndex].FunctionList[this->mFunctionsList.GetCursor()].Flag == IAT_FLAG_HOOKED)
 		{
-			pBar.Add("Restore Address", THISBACK(RestoreIATFunction));
+			pBar.Add(!mMemoryScanner->IsReadOnlyOperationMode(), "Restore Address", THISBACK(RestoreIATFunction));
 		}
 		else
 		{
-			pBar.Add("Place Hook", CrySearchIml::PlaceHookSmall(), THISBACK(PlaceHookOnIATFunction));
+			pBar.Add(!mMemoryScanner->IsReadOnlyOperationMode(), "Place Hook", CrySearchIml::PlaceHookSmall(), THISBACK(PlaceHookOnIATFunction));
 		}
 	}
 }
@@ -299,4 +299,10 @@ void CryImportsWindow::ClearList()
 	this->mFunctionsList.SetVirtualCount(0);
 	this->mModulesDropList.SetCount(0);
 	LoadedProcessPEInformation.ClearImportTable();
+}
+
+// Updates the toolbar inside this lower pane window instance.
+void CryImportsWindow::UpdateToolbar()
+{
+	this->mToolStrip.Set(THISBACK(ToolStrip));
 }

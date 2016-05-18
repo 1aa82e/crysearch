@@ -40,6 +40,7 @@ public:
 	void Initialize();
 	void ClearList();
 	void ModuleRedraw();
+	void UpdateToolbar();
 };
 
 #endif

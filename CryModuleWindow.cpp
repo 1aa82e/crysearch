@@ -56,7 +56,7 @@ void CryModuleWindow::ToolBar(Bar& pBar)
 	pBar.Add("Refresh module list", CrySearchIml::RefreshButtonSmall(), THISBACK(RefreshModulesList));
 	pBar.Separator();
 	pBar.Add("Dump all modules", CrySearchIml::DumpAllModulesSmall(), THISBACK(DumpAllModulesButton));
-	pBar.Add("Load Library", CrySearchIml::LoadLibrarySmall(), THISBACK(LoadLibraryButtonClicked));
+	pBar.Add(!mMemoryScanner->IsReadOnlyOperationMode(), "Load Library", CrySearchIml::LoadLibrarySmall(), THISBACK(LoadLibraryButtonClicked));
 	pBar.ToolGapRight();
 	pBar.Add(this->mModulesCount.SetAlign(ALIGN_RIGHT), 150);
 }
@@ -68,11 +68,11 @@ void CryModuleWindow::ModuleListRightClick(Bar& pBar)
 	if (modRow >= 0 && modCount > 0)
 	{
 		pBar.Add("Dump module", CrySearchIml::DumpModuleSmall(), THISBACK(DumpModuleSubMenu));
-		pBar.Add("Restore Headers", CrySearchIml::RestorePEHeadersSmall(), THISBACK(RestorePEHeader));
+		pBar.Add(!mMemoryScanner->IsReadOnlyOperationMode(), "Restore Headers", CrySearchIml::RestorePEHeadersSmall(), THISBACK(RestorePEHeader));
 		pBar.Add("View in Explorer", THISBACK(OpenModulePathInExplorer));
 		pBar.Separator();
-		pBar.Add("Hide module", THISBACK(HideModule));
-		pBar.Add("Unload module", THISBACK(UnloadModule));
+		pBar.Add(!mMemoryScanner->IsReadOnlyOperationMode(), "Hide module", THISBACK(HideModule));
+		pBar.Add(!mMemoryScanner->IsReadOnlyOperationMode(), "Unload module", THISBACK(UnloadModule));
 	}
 }
 
@@ -444,4 +444,10 @@ void CryModuleWindow::ClearList()
 {
 	mModuleManager->ClearModules();
 	this->mModules.SetVirtualCount(0);
+}
+
+// Updates the toolbar inside this lower pane window instance.
+void CryModuleWindow::UpdateToolbar()
+{
+	this->tBar.Set(THISBACK(ToolBar));
 }

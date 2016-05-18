@@ -72,3 +72,14 @@ void CrySearchWindowManager::SetParentWindow(CrySearchForm* pParent)
 {
 	this->mParentWindow = pParent;
 }
+
+// Updates all lower pane windows' toolbars to enforce read-only operation mode.
+void CrySearchWindowManager::UpdateLowerPaneWindowsToolbars()
+{
+	this->mImportsWindow.UpdateToolbar();
+	this->mPEWindow.UpdateToolbar();
+	this->mThreadList.UpdateToolbar();
+	this->mModuleList.UpdateToolbar();
+	this->mDisasmWindow.UpdateToolbar();
+	this->mDbgWindow.UpdateToolbar();
+}

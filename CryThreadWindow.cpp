@@ -119,10 +119,10 @@ void CryThreadWindow::Initialize()
 void CryThreadWindow::ToolBar(Bar& pBar)
 {
 	pBar.Add("Refresh thread list", CrySearchIml::RefreshButtonSmall(), THISBACK(LoadThreads));
-	pBar.Add("Create thread in loaded process", CrySearchIml::AddToAddressList(), THISBACK(CreateExternalThread));
+	pBar.Add(!mMemoryScanner->IsReadOnlyOperationMode(), "Create thread in loaded process", CrySearchIml::AddToAddressList(), THISBACK(CreateExternalThread));
 	pBar.Separator();
-	pBar.Add("Attempt to suspend all threads", CrySearchIml::SuspendAllThreadsSmall(), THISBACK(AttemptSuspendAllThreads));
-	pBar.Add("Attempt to resume all threads", CrySearchIml::ResumeAllThreadsSmall(), THISBACK(AttemptResumeAllThreads));
+	pBar.Add(!mMemoryScanner->IsReadOnlyOperationMode(), "Attempt to suspend all threads", CrySearchIml::SuspendAllThreadsSmall(), THISBACK(AttemptSuspendAllThreads));
+	pBar.Add(!mMemoryScanner->IsReadOnlyOperationMode(), "Attempt to resume all threads", CrySearchIml::ResumeAllThreadsSmall(), THISBACK(AttemptResumeAllThreads));
 	pBar.ToolGapRight();
 	pBar.Add(this->mThreadCount.SetAlign(ALIGN_RIGHT), 150);
 }
@@ -135,11 +135,11 @@ void CryThreadWindow::ThreadListRightClick(Bar& pBar)
 		pBar.Add("View thread info", CrySearchIml::AboutButton(), THISBACK(ShowThreadInformationWindow));
 		pBar.Add("Snap Context", CrySearchIml::SnapContextSmall(), THISBACK(SnapContextButtonClicked));
 		pBar.Separator();
-		pBar.Add("Suspend", CrySearchIml::SuspendButtonSmall(), THISBACK(SuspendThread));
-		pBar.Add("Resume", CrySearchIml::ResumeButtonSmall(), THISBACK(ResumeThread));
-		pBar.Add("Kill", CrySearchIml::DeleteButton(), THISBACK(TerminateThread));
+		pBar.Add(!mMemoryScanner->IsReadOnlyOperationMode(), "Suspend", CrySearchIml::SuspendButtonSmall(), THISBACK(SuspendThread));
+		pBar.Add(!mMemoryScanner->IsReadOnlyOperationMode(), "Resume", CrySearchIml::ResumeButtonSmall(), THISBACK(ResumeThread));
+		pBar.Add(!mMemoryScanner->IsReadOnlyOperationMode(), "Kill", CrySearchIml::DeleteButton(), THISBACK(TerminateThread));
 		pBar.Separator();
-		pBar.Add("Change Priority", CrySearchIml::ChangePrioritySmall(), THISBACK(ChangePriority));
+		pBar.Add(!mMemoryScanner->IsReadOnlyOperationMode(), "Change Priority", CrySearchIml::ChangePrioritySmall(), THISBACK(ChangePriority));
 	}
 }
 
@@ -336,4 +336,10 @@ void CryThreadWindow::SnapContextButtonClicked()
 	CryThreadContextSnapWindow* ctcsw = new CryThreadContextSnapWindow(CrySearchIml::SnapContextSmall(), mThreadsList[this->mThreads.GetCursor()].ThreadIdentifier);
 	ctcsw->Execute();
 	delete ctcsw;
+}
+
+// Updates the toolbar inside this lower pane window instance.
+void CryThreadWindow::UpdateToolbar()
+{
+	this->tBar.Set(THISBACK(ToolBar));
 }

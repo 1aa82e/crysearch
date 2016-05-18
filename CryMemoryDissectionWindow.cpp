@@ -209,7 +209,7 @@ void CryMemoryDissectionWindow::DissectionRightClick(Bar& pBar)
 	const int cursor = this->mDissection.GetCursor();
 	if (cursor >= 0 && loadedTable.GetDissection(MemoryDissectionMasterIndex))
 	{
-		pBar.Add("Change Value", CrySearchIml::ChangeRecordIcon(), THISBACK(ChangeRowValue));
+		pBar.Add(!mMemoryScanner->IsReadOnlyOperationMode(), "Change Value", CrySearchIml::ChangeRecordIcon(), THISBACK(ChangeRowValue));
 		pBar.Add("Change Type", THISBACK(ChangeRowOffsetMenu));
 		pBar.Separator();
 		pBar.Add("Add to address list", CrySearchIml::AddToAddressList(), THISBACK(AddRowToAddressList));

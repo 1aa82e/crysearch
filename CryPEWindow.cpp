@@ -225,3 +225,9 @@ void CryPEWindow::DumpDotNetSection()
 		delete fs;
 	}
 }
+
+// Updates the toolbar inside this lower pane window instance.
+void CryPEWindow::UpdateToolbar()
+{
+	this->mToolStrip.Set(THISBACK(ToolBar));
+}

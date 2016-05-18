@@ -15,6 +15,9 @@ CryProcessEnvironmentBlockWindow::CryProcessEnvironmentBlockWindow(const Image& 
 		<< this->mResetDebugFlag.SetLabel("Reset debug flag").LeftPos(5, 125).BottomPos(5, 25)
 	;
 	
+	// If CrySearch currently operates in read only mode, we must disable this button.
+	this->mResetDebugFlag.Enable(!mMemoryScanner->IsReadOnlyOperationMode());
+	
 	// Retrieve fields and build up window contents.
 	this->Initialize();
 }

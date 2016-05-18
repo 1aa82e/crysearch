@@ -85,6 +85,7 @@ MemoryScanner::MemoryScanner()
 	this->mProcessSuspended = false;
 	this->mOpenedProcessHandle = NULL;
 	this->threadIncrement = 0;
+	this->mReadOnly = false;
 	
 	// Adjust CrySearch process token for it to be able to debug protected processes and load drivers.
 	HANDLE hToken = NULL;
@@ -154,20 +155,25 @@ const int MemoryScanner::GetSystemThreadCount() const
 
 // Open an existing process by process ID.
 // Returns true if the process succesfully opened and false if it did not.
-bool MemoryScanner::InitializeExistingProcess(const int processId, const char* exeTitle)
+bool MemoryScanner::InitializeExistingProcess(const int processId, const char* exeTitle, const bool readOnly)
 {
+	// Construct process open flags based on the selected operation mode.
+	DWORD openFlags = PROCESS_VM_READ | PROCESS_QUERY_INFORMATION;
+	if (!readOnly)
+	{
+		openFlags |= PROCESS_VM_OPERATION | PROCESS_VM_WRITE | PROCESS_CREATE_THREAD | PROCESS_DUP_HANDLE;
+	}
+	
+	// Select the configured routine for opening the process and execute it.
 	switch (this->mSettingsInstance->GetOpenProcessRoutine())
 	{
 		// Use the default kernel32.dll OpenProcess function to obtain a process handle.
 		case ROUTINE_OPENPROCESS:
-			this->mOpenedProcessHandle = OpenProcess(PROCESS_VM_OPERATION | PROCESS_VM_READ | PROCESS_VM_WRITE
-				| PROCESS_QUERY_INFORMATION | PROCESS_CREATE_THREAD | PROCESS_DUP_HANDLE, FALSE, processId);
+			this->mOpenedProcessHandle = OpenProcess(openFlags, FALSE, processId);
 			break;
 		// Use the ntdll.dll NtOpenProcess function to obtain a process handle.
 		case ROUTINE_NTOPENPROCESS:
-			CLIENT_ID cid;
-			cid.UniqueThread = 0;
-			cid.UniqueProcess = (HANDLE)processId;
+			CLIENT_ID cid = { (HANDLE)processId, 0 };
 			
 			OBJECT_ATTRIBUTES objAttr;
 			InitializeObjectAttributes(&objAttr, NULL, 0, 0, NULL);
@@ -178,8 +184,7 @@ bool MemoryScanner::InitializeExistingProcess(const int processId, const char* e
 				return false;
 			}
 			
-			CrySearchRoutines.NtOpenProcess(&this->mOpenedProcessHandle, PROCESS_VM_OPERATION | PROCESS_VM_READ | PROCESS_VM_WRITE
-				| PROCESS_QUERY_INFORMATION | PROCESS_CREATE_THREAD | PROCESS_DUP_HANDLE, &objAttr, &cid);
+			CrySearchRoutines.NtOpenProcess(&this->mOpenedProcessHandle, openFlags, &objAttr, &cid);
 			break;
 	}
 	
@@ -192,6 +197,7 @@ bool MemoryScanner::InitializeExistingProcess(const int processId, const char* e
 	// Process succesfully loaded, set identifiers and return.
 	this->mLoadedProcessId = processId;
 	this->isX86Process = IsI386Process(this->mOpenedProcessHandle);
+	this->mReadOnly = readOnly;
 
 	// If a process was opened by dragging the cursor onto another window, the process name is empty from the start.
 	if (!exeTitle)
@@ -292,10 +298,10 @@ const int MemoryScanner::GetScanResultCount() const
 	return this->mScanResultCount;
 }
 
-// Returns the reference to the internal worker parameter data.
-const Vector<WorkerRegionParameterData>& MemoryScanner::QueryWorkerData() const
+// Returns whether the memory scanner is operating in read-only mode.
+const bool MemoryScanner::IsReadOnlyOperationMode() const
 {
-	return this->mWorkerFileOrder;
+	return this->mReadOnly;
 }
 
 // Compare functions

@@ -90,7 +90,7 @@ void CrySystemHandleInformationWindow::CloseRemoteHandleClicked()
 }
 
 void CrySystemHandleInformationWindow::ViewAccessButtonClicked()
-{	
+{
 	const int row = this->mOpenHandles.GetCursor();
 	CrySystemHandleAccessMaskWindow* cshamw = new CrySystemHandleAccessMaskWindow(mHandleCollection[row].ObjectType, mHandleCollection[row].Access, CrySearchIml::ViewHandlesButton());
 	cshamw->Execute();

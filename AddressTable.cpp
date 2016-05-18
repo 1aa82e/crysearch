@@ -172,7 +172,7 @@ const bool AddressTable::GetRelativeDisplayString(const AddressTableEntry* entry
 			if (this->mEntries[i].Address == address && this->mEntries[i].ValueType == valueType)
 			{
 				this->mEntries.Remove(i);
-				break;	
+				break;
 			}
 		}
 	}
@@ -209,7 +209,7 @@ const bool AddressTable::GetRelativeDisplayString(const AddressTableEntry* entry
 			if (this->mEntries[i].Address == address && this->mEntries[i].ValueType == valueType)
 			{
 				this->mEntries.Remove(i);
-				break;	
+				break;
 			}
 		}
 	}

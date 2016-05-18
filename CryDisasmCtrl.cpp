@@ -374,3 +374,9 @@ void CryDisasmCtrl::Initialize()
 	// Initialize UI-seperate on another thread to speed up the process.
 	this->mAsyncHelper->Start(epAddress);
 }
+
+// Updates the toolbar inside this lower pane window instance.
+void CryDisasmCtrl::UpdateToolbar()
+{
+	this->mToolStrip.Set(THISBACK(ToolStrip));
+}

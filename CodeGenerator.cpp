@@ -106,7 +106,7 @@ String CodeGenerator::GenerateInternalEntry(const AddressTableEntry* entry, cons
 	else
 	{
 		taskOutput += Format("%s* %s = (%s*)0x%llX;\r\n", fieldType, description.IsEmpty() ? Format("__unknown%i", number)
-			: description, fieldType, entry->Address);		
+			: description, fieldType, entry->Address);
 	}
 
 	return taskOutput;
@@ -184,6 +184,6 @@ void CodeGenerator::Generate(String& codenz)
 		for (int i = 0; i < this->mTable->GetCount(); i++)
 		{
 			codenz += this->GenerateInternalEntry((*this->mTable)[i], i);
-		}	
+		}
 	}
 }

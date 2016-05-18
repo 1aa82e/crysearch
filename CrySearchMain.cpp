@@ -324,7 +324,7 @@ GUI_APP_MAIN
 						// In addition to opening the process using the memory scanner, we need to explicitly check
 						// whether the process is still active (f.e. not a zombie). OpenProcess will succeed even if
 						// the process has already closed, until the last handle to it has been closed.
-						if (mMemoryScanner->InitializeExistingProcess(cmdParser.GetProcessId(), NULL) && IsProcessActive(mMemoryScanner->GetHandle()))
+						if (mMemoryScanner->InitializeExistingProcess(cmdParser.GetProcessId(), NULL, false) && IsProcessActive(mMemoryScanner->GetHandle()))
 						{
 #ifdef _WIN64
 							if (mMemoryScanner->IsX86Process())
