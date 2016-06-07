@@ -2,6 +2,11 @@ CrySearch Memory Scanner
 
 evolution536, www.unknowncheats.me
 
+v2.04:
+	- Added feature to NOP out selected rows using right-click menu in the disassembly window;
+	- Fixed a bug in the PE window where the image base of an x64 process would be truncated to 32-bits;
+	- 
+
 v2.03
 	- Some changes were made to the command line process analysis automation:
 		- Fixed a bug where a zombie process would still be succesfully opened for automated analysis using command line options;

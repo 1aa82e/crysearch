@@ -1351,22 +1351,22 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 		LoadedProcessPEInformation.PEFields.Add("Size of optional header", Format("%X", pFileHeader->SizeOfOptionalHeader));
 		LoadedProcessPEInformation.PEFields.Add("Pointer to symbol table", (int)pFileHeader->PointerToSymbolTable);
 		LoadedProcessPEInformation.PEFields.Add("Number of symbols", (int)pFileHeader->NumberOfSymbols);
-		LoadedProcessPEInformation.PEFields.Add("Image base", Format("%lX", (int)pOptionalHeader->ImageBase));
-		LoadedProcessPEInformation.PEFields.Add("Base of code", Format("%lX", (int)pOptionalHeader->BaseOfCode));
-		LoadedProcessPEInformation.PEFields.Add("Address of entrypoint", Format("%lX", (int)pOptionalHeader->AddressOfEntryPoint));
-		LoadedProcessPEInformation.PEFields.Add("Size of code", Format("%lX", (int)pOptionalHeader->SizeOfCode));
-		LoadedProcessPEInformation.PEFields.Add("Size of initialized data", Format("%lX", (int)pOptionalHeader->SizeOfInitializedData));
-		LoadedProcessPEInformation.PEFields.Add("Size of uninitialized data", Format("%lX", (int)pOptionalHeader->SizeOfUninitializedData));
-		LoadedProcessPEInformation.PEFields.Add("Section alignment", Format("%lX", (int)pOptionalHeader->SectionAlignment));
-		LoadedProcessPEInformation.PEFields.Add("File alignment", Format("%lX", (int)pOptionalHeader->FileAlignment));
-		LoadedProcessPEInformation.PEFields.Add("Size of image", Format("%lX", (int)pOptionalHeader->SizeOfImage));
-		LoadedProcessPEInformation.PEFields.Add("Size of headers", Format("%lX", (int)pOptionalHeader->SizeOfHeaders));
-		LoadedProcessPEInformation.PEFields.Add("Checksum", Format("%lX", (int)pOptionalHeader->CheckSum));
+		LoadedProcessPEInformation.PEFields.Add("Image base", Format("%llX", (__int64)pOptionalHeader->ImageBase));
+		LoadedProcessPEInformation.PEFields.Add("Base of code", Format("%llX", (__int64)pOptionalHeader->BaseOfCode));
+		LoadedProcessPEInformation.PEFields.Add("Address of entrypoint", Format("%llX", (__int64)pOptionalHeader->AddressOfEntryPoint));
+		LoadedProcessPEInformation.PEFields.Add("Size of code", Format("%llX", (__int64)pOptionalHeader->SizeOfCode));
+		LoadedProcessPEInformation.PEFields.Add("Size of initialized data", Format("%llX", (__int64)pOptionalHeader->SizeOfInitializedData));
+		LoadedProcessPEInformation.PEFields.Add("Size of uninitialized data", Format("%llX", (__int64)pOptionalHeader->SizeOfUninitializedData));
+		LoadedProcessPEInformation.PEFields.Add("Section alignment", Format("%llX", (__int64)pOptionalHeader->SectionAlignment));
+		LoadedProcessPEInformation.PEFields.Add("File alignment", Format("%llX", (__int64)pOptionalHeader->FileAlignment));
+		LoadedProcessPEInformation.PEFields.Add("Size of image", Format("%llX", (__int64)pOptionalHeader->SizeOfImage));
+		LoadedProcessPEInformation.PEFields.Add("Size of headers", Format("%llX", (__int64)pOptionalHeader->SizeOfHeaders));
+		LoadedProcessPEInformation.PEFields.Add("Checksum", Format("%llX", (__int64)pOptionalHeader->CheckSum));
 		LoadedProcessPEInformation.PEFields.Add("Linker version", Format("%i.%i", pOptionalHeader->MajorLinkerVersion, pOptionalHeader->MinorLinkerVersion));
 		LoadedProcessPEInformation.PEFields.Add("OS version", Format("%i.%i", pOptionalHeader->MajorOperatingSystemVersion, pOptionalHeader->MinorOperatingSystemVersion));
 		LoadedProcessPEInformation.PEFields.Add("Image version", Format("%i.%i", pOptionalHeader->MajorImageVersion, pOptionalHeader->MinorImageVersion));
 		LoadedProcessPEInformation.PEFields.Add("Subsystem version", Format("%i.%i", pOptionalHeader->MajorSubsystemVersion, pOptionalHeader->MinorSubsystemVersion));
-		LoadedProcessPEInformation.PEFields.Add("Number of data directories", Format("%lX", (int)pOptionalHeader->NumberOfRvaAndSizes));
+		LoadedProcessPEInformation.PEFields.Add("Number of data directories", Format("%llX", (__int64)pOptionalHeader->NumberOfRvaAndSizes));
 		
 		// Parse the last general property value of the PE header, save the section values and destroy the buffer.
 		this->ParseSubsystemValue(pOptionalHeader->Subsystem);

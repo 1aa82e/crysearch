@@ -144,6 +144,7 @@ void CryDisasmCtrl::DisassemblyRightClick(Bar& pBar)
 		
 		// Below the single selection menu items, this item should go for both, even though it should be located below.
 		pBar.Separator();
+		pBar.Add("NOP Selected", THISBACK(NopSelectedCode));
 		pBar.Add("Generate", THISBACK(DisasmGenerateSubmenu));
 	}
 }
@@ -168,6 +169,42 @@ bool CryDisasmCtrl::Key(dword key, int count)
 	}
 	
 	return false;
+}
+
+void CryDisasmCtrl::NopSelectedCode()
+{
+	SIZE_T first_address = 0;
+	bool first_selected = false;
+	
+	// Loop through the rows to see which are selected.
+	for (int i = 0; i < this->disasmDisplay.GetCount(); ++i)
+	{
+		if (this->disasmDisplay.IsSelected(i))
+		{
+			// Save the address of the row that was first selected as address to move the cursor to after NOPing.
+			const SIZE_T address = DisasmVisibleLines[i];
+			if (!first_selected)
+			{
+				first_address = address;
+				first_selected = true;
+			}
+			
+			// Disassemble the instruction bytes at the selected address to see how many bytes need to be NOPed.
+			ArrayOfBytes disLineBytes;
+#ifdef _WIN64
+			DisasmGetLine(address, mMemoryScanner->IsX86Process() ? ARCH_X86 : ARCH_X64, &disLineBytes);
+#else
+			DisasmGetLine(address, ARCH_X86, &disLineBytes);
+#endif
+			
+			// Write NOP instructions to the selected memory location.
+			memset(disLineBytes.Data, 0x90, disLineBytes.Size);
+			mMemoryScanner->Poke(address, disLineBytes);
+		}
+	}
+	
+	// Redo the disassembly for the page the selected address is in and move to this address again.
+	this->MoveToAddress(first_address);
 }
 
 void CryDisasmCtrl::GenerateSignatureButtonClicked()

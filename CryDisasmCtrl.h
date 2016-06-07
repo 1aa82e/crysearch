@@ -36,6 +36,7 @@ private:
 	void CopyCursorLineToClipboard();
 	void GenerateSignatureButtonClicked();
 	void GenerateByteArrayButtonClicked();
+	void NopSelectedCode();
 	
 	void AsyncDisasmStarted();
 	void AsyncDisasmCompleted(SIZE_T address);
