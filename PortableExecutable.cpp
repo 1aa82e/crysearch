@@ -576,7 +576,7 @@ SIZE_T PortableExecutable32::GetAddressFromExportTable(const AddrStruct* addr, c
 					AddrStruct addrStruct((Byte*)modBaseAddr->BaseAddress, (exportDirectoryBuffer - dataDir.VirtualAddress), bufBase + dataDir.VirtualAddress + dataDir.Size
 						, &dataDir, (IMAGE_EXPORT_DIRECTORY*)exportDirectoryBuffer);
 			            
-					SIZE_T forwardedAddress = this->GetAddressFromExportTable(&addrStruct, (char*)ScanInt((char*)(addr->BufferBaseAddress + *funcAddrPtr + ResurseDotIndex + 2), NULL, 10), true);
+					SIZE_T forwardedAddress = this->GetAddressFromExportTable(&addrStruct, (char*)(SIZE_T)ScanInt((char*)(addr->BufferBaseAddress + *funcAddrPtr + ResurseDotIndex + 2), NULL, 10), true);
 					delete[] exportDirectoryBuffer;
 					return forwardedAddress;
 				}
@@ -854,7 +854,7 @@ bool PortableExecutable32::PlaceIATHook(const Win32ModuleInformation* modBase, c
 					if (thunk->u1.Ordinal & IMAGE_ORDINAL_FLAG32)
 					{
 						// Ordinal import detected, check whether ordinal matches input value.
-						if (IMAGE_ORDINAL32(thunk->u1.Ordinal) == (DWORD)NameOrdinal)
+						if (IMAGE_ORDINAL32(thunk->u1.Ordinal) == (SIZE_T)NameOrdinal)
 						{
 							DWORD dwOldProtect;
 							CrySearchRoutines.CryProtectMemoryRoutine(this->mProcessHandle, AddressAddr, sizeof(DWORD), PAGE_READWRITE, &dwOldProtect);
@@ -975,7 +975,7 @@ bool PortableExecutable32::HideModuleFromProcess(const Win32ModuleInformation& m
 	}
 	
 	PEB_LDR_DATA32 peb;
-	DWORD pebPtr;
+	SIZE_T pebPtr;
 
 	// Read process environment block and loader data from the process memory.
 #ifdef _WIN64
@@ -990,8 +990,8 @@ bool PortableExecutable32::HideModuleFromProcess(const Win32ModuleInformation& m
 	unsigned int retryCount = 0;
 	int moduleCount = 0;
 
-    DWORD Head = peb.InMemoryOrderModuleList.Flink;
-    DWORD Node = Head;
+    SIZE_T Head = peb.InMemoryOrderModuleList.Flink;
+    SIZE_T Node = Head;
 
     do
     {
@@ -1029,8 +1029,8 @@ bool PortableExecutable32::HideModuleFromProcess(const Win32ModuleInformation& m
 							break;
 				        }
 				        
-						const DWORD nextItemAddr = current.Flink;
-						const DWORD prevItemAddr = current.Blink;
+						const SIZE_T nextItemAddr = current.Flink;
+						const SIZE_T prevItemAddr = current.Blink;
 						
 						// Overwrite the pointers of the previous and next list entry so the current one is effectively hidden.
 						localRes = CrySearchRoutines.CryWriteMemoryRoutine(this->mProcessHandle, (void*)current.Blink, &nextItemAddr, sizeof(DWORD), NULL);
@@ -1179,7 +1179,7 @@ bool PortableExecutable32::LoadLibraryExternalHijack(const String& library, HAND
 	
 	// Allocate executable block of memory for the shellcode.
 	void* const lpShellCode = VirtualAllocEx(this->mProcessHandle, NULL, 1024, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
-	const DWORD flagAddress = (DWORD)lpShellCode + 0x100;
+	const SIZE_T flagAddress = (SIZE_T)lpShellCode + 0x100;
 	
 	// Suspend the thread and back up the context.
 #ifdef _WIN64

@@ -177,7 +177,8 @@ void CryDisasmCtrl::NopSelectedCode()
 	bool first_selected = false;
 	
 	// Loop through the rows to see which are selected.
-	for (int i = 0; i < this->disasmDisplay.GetCount(); ++i)
+	const int count = this->disasmDisplay.GetCount();
+	for (int i = 0; i < count; ++i)
 	{
 		if (this->disasmDisplay.IsSelected(i))
 		{
@@ -210,7 +211,8 @@ void CryDisasmCtrl::NopSelectedCode()
 void CryDisasmCtrl::GenerateSignatureButtonClicked()
 {
 	Vector<int> selectedRows;
-	for (int i = 0; i < this->disasmDisplay.GetCount(); ++i)
+	const int count = this->disasmDisplay.GetCount();
+	for (int i = 0; i < count; ++i)
 	{
 		// Check which rows are selected for the signature generation.
 		if (this->disasmDisplay.IsSelected(i))
@@ -228,7 +230,8 @@ void CryDisasmCtrl::GenerateSignatureButtonClicked()
 void CryDisasmCtrl::GenerateByteArrayButtonClicked()
 {
 	Vector<int> selectedRows;
-	for (int i = 0; i < this->disasmDisplay.GetCount(); ++i)
+	const int count = this->disasmDisplay.GetCount();
+	for (int i = 0; i < count; ++i)
 	{
 		// Check which rows are selected for the signature generation.
 		if (this->disasmDisplay.IsSelected(i))
