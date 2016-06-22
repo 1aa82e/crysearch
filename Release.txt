@@ -6,6 +6,7 @@ v2.04:
 	- Added feature to NOP out selected rows using right-click menu in the disassembly window;
 	- Fixed a bug in the PE window where the image base of an x64 process would be truncated to 32-bits;
 	- Fixed a bug where freezing and thawing addresses in the address table would not work properly anymore;
+	- Added the possibility to edit multiple selected address table entries at the same time, only by right-clicking and excluding editing the address;
 	- 
 
 v2.03

@@ -2,12 +2,14 @@
 #include "ImlProvider.h"
 #include "BackendGlobalDef.h"
 
-CryChangeRecordDialog::CryChangeRecordDialog(AddressTable& addrTable, const int row, ChangeRecordDialogMode mode) : CryDialogTemplate(CrySearchIml::ChangeRecordIcon())
+// Default constructor for CryChangeRecordDialog.
+CryChangeRecordDialog::CryChangeRecordDialog(AddressTable& addrTable, const Vector<int>& rows, ChangeRecordDialogMode mode) : CryDialogTemplate(CrySearchIml::ChangeRecordIcon())
 {
 	this->mMode = mode;
 	this->mLoadedTable = &addrTable;
-	this->mLoadedEntry = (mode == CRDM_MANUALNEW) ? NULL : const_cast<AddressTableEntry*>(addrTable[row]);
-
+	this->mLoadedEntry = (mode == CRDM_MANUALNEW) ? NULL : const_cast<AddressTableEntry*>(addrTable[rows[0]]);
+	this->mRowArray = &rows;
+	
 	this->SetRect(0, 0, 250, 120);
 	
 	this->mCancel <<= THISBACK(CancelDialog);
@@ -139,11 +141,13 @@ CryChangeRecordDialog::CryChangeRecordDialog(AddressTable& addrTable, const int 
 	}
 }
 
+// Default destructor for CryChangeRecordDialog.
 CryChangeRecordDialog::~CryChangeRecordDialog()
 {
 	
 }
 
+// Executed when the user changes the view mode from decimal to hexadecimal and the other way around.
 void CryChangeRecordDialog::ValueModeHexOptionChanged()
 {
 	if (this->mValueIsHex)
@@ -163,7 +167,7 @@ void CryChangeRecordDialog::ValueModeHexOptionChanged()
 			short v = ScanInt(this->mFieldValue.GetText().ToString());
 			char text[64];
 			sprintf_s(text, 64, "%hX", v);
-			this->mFieldValue.SetText(text);	
+			this->mFieldValue.SetText(text);
 		}
 		else if (this->mLoadedEntry->ValueType == CRYDATATYPE_BYTE)
 		{
@@ -198,10 +202,11 @@ void CryChangeRecordDialog::ValueModeHexOptionChanged()
 			char text[64];
 			sprintf_s(text, 64, "%hhi", v);
 			this->mFieldValue.SetText(text);
-		}		
+		}
 	}
 }
 
+// Executed when the user changes the blocksize (data type size) of the entry.
 void CryChangeRecordDialog::BlockSizeSelected()
 {
 	// If the data type 'String' is selected, the option to select Unicode should become visible.
@@ -209,7 +214,7 @@ void CryChangeRecordDialog::BlockSizeSelected()
 	{
 		this->mUnicodeString.Hide();
 		this->mTypeLengthDescription.Show();
-		this->mTypeLength.Show();		
+		this->mTypeLength.Show();
 	}
 	else if (this->mTypeSelector.GetIndex() == 7)
 	{
@@ -225,6 +230,7 @@ void CryChangeRecordDialog::BlockSizeSelected()
 	}
 }
 
+// Executed when the user cancels dialog input.
 void CryChangeRecordDialog::CancelDialog()
 {
 	this->Close();
@@ -244,6 +250,7 @@ void CryChangeRecordDialog::AlterSearchResult(const SIZE_T address, const int si
 	}
 }
 
+// Executed when the user accepts the dialog input.
 void CryChangeRecordDialog::DialogOkay()
 {
 	// Temporarely save the edited values locally to avoid race conditions.
@@ -253,19 +260,19 @@ void CryChangeRecordDialog::DialogOkay()
 	// Globally save input value for every type.
 	const String& inputVal = this->mFieldValue.GetText().ToString();
 	
-	// Apply appropriate change to addresstable instance.
+	// A new entry should be manually added.
 	if (this->mMode == CRDM_MANUALNEW)
 	{
 		LONG_PTR tempAddress;
 		bool relative = false;
-		
+
 		// Check for empty input value.
 		if (inputVal.IsEmpty())
 		{
 			Prompt("Input Error", CtrlImg::error(), "Please enter an address.", "OK");
 			return;
 		}
-		
+
 		// If the address input contains a plus, the input is a relative address.
 		const int plusIndex = inputVal.Find("+");
 		if (plusIndex != -1)
@@ -278,14 +285,14 @@ void CryChangeRecordDialog::DialogOkay()
 				Prompt("Input Error", CtrlImg::error(), "The typed module was not found!", "OK");
 				return;
 			}
-			
+
 			// Still here, so calculate the address.
 			tempAddress = mod->BaseAddress + ScanInt(inputVal.Mid(plusIndex + 1), NULL, 16);
 			relative = true;
 		}
 		else
 		{
-		
+
 			// Regularly parse the address. It is not a relative one.
 #ifdef _WIN64
 			tempAddress = ScanInt64(inputVal, NULL, 16);
@@ -322,180 +329,192 @@ void CryChangeRecordDialog::DialogOkay()
 		const AddressTableEntry* newEntry = this->mLoadedTable->Add("", tempAddress, relative, tempType);
 		newEntry->Size = optionalSize;
 	}
-	else if (this->mMode == CRDM_VALUE)
-	{
-		// Check for empty input value.
-		if (inputVal.IsEmpty())
-		{
-			Prompt("Input Error", CtrlImg::error(), "Please enter a value.", "OK");
-			return;
-		}
-		
-		// Value is not managed by address table itself, so WPM.
-		if (this->mLoadedEntry->ValueType == CRYDATATYPE_BYTE)
-		{
-			if (this->mValueIsHex)
-			{
-				mMemoryScanner->Poke(this->mLoadedEntry->Address, (Byte)ScanInt(inputVal, NULL, 16));
-			}
-			else
-			{
-				mMemoryScanner->Poke(this->mLoadedEntry->Address, (Byte)ScanInt(inputVal));
-			}
-		}
-		else if (this->mLoadedEntry->ValueType == CRYDATATYPE_2BYTES)
-		{
-			if (this->mValueIsHex)
-			{
-				mMemoryScanner->Poke(this->mLoadedEntry->Address, (short)ScanInt(inputVal, NULL, 16));
-			}
-			else
-			{
-				mMemoryScanner->Poke(this->mLoadedEntry->Address, (short)ScanInt(inputVal));
-			}
-		}
-		else if (this->mLoadedEntry->ValueType == CRYDATATYPE_4BYTES)
-		{
-			if (this->mValueIsHex)
-			{
-				mMemoryScanner->Poke(this->mLoadedEntry->Address, ScanInt(inputVal, NULL, 16));
-			}
-			else
-			{
-				mMemoryScanner->Poke(this->mLoadedEntry->Address, ScanInt(inputVal));
-			}
-		}
-		else if (this->mLoadedEntry->ValueType == CRYDATATYPE_8BYTES)
-		{
-			if (this->mValueIsHex)
-			{
-				mMemoryScanner->Poke(this->mLoadedEntry->Address, ScanInt64(inputVal, NULL, 16));
-			}
-			else
-			{
-				mMemoryScanner->Poke(this->mLoadedEntry->Address, ScanInt64(inputVal));
-			}
-		}
-		else if (this->mLoadedEntry->ValueType == CRYDATATYPE_FLOAT)
-		{
-			mMemoryScanner->Poke(this->mLoadedEntry->Address, (float)ScanDouble(inputVal, NULL, true));
-		}
-		else if (this->mLoadedEntry->ValueType == CRYDATATYPE_DOUBLE)
-		{
-			mMemoryScanner->Poke(this->mLoadedEntry->Address, ScanDouble(inputVal, NULL, true));
-		}
-		else if (this->mLoadedEntry->ValueType == CRYDATATYPE_STRING)
-		{
-			mMemoryScanner->Poke(this->mLoadedEntry->Address, inputVal);
-			this->mLoadedEntry->Size = this->mFieldValue.GetLength();
-			this->AlterSearchResult(this->mLoadedEntry->Address, this->mLoadedEntry->Size);
-		}
-		else if (this->mLoadedEntry->ValueType == CRYDATATYPE_WSTRING)
-		{
-			mMemoryScanner->Poke(this->mLoadedEntry->Address, this->mFieldValue.GetText());
-			this->mLoadedEntry->Size = this->mFieldValue.GetLength();
-			this->AlterSearchResult(this->mLoadedEntry->Address, this->mLoadedEntry->Size);
-		}
-		else if (this->mLoadedEntry->ValueType == CRYDATATYPE_AOB)
-		{
-			ArrayOfBytes aob = StringToBytes(inputVal);	
-			mMemoryScanner->Poke(this->mLoadedEntry->Address, aob);
-			this->mLoadedEntry->Size = aob.Size;
-			this->AlterSearchResult(this->mLoadedEntry->Address, this->mLoadedEntry->Size);
-		}
-	}
-	else if (this->mMode == CRDM_TYPE)
-	{
-		// Assign proper value type including size parameter.
-		const int newindex = this->mTypeSelector.GetIndex();
-		if (newindex == 6)
-		{
-			tempType = newindex;
-			optionalSize = this->mTypeLength;
-		}
-		else if (this->mTypeSelector.GetIndex() == 7)
-		{
-			tempType = this->mUnicodeString ? CRYDATATYPE_WSTRING : CRYDATATYPE_STRING;
-			optionalSize = this->mTypeLength;
-		}
-		else
-		{
-			optionalSize = -1;
-			tempType = newindex;
-		}
 
-		// Make sure the address combined with the selected data type isn't already present in the address table.
-		const int oldIndex = this->mLoadedTable->Find(this->mLoadedEntry->Address, tempType);
-		if ((oldIndex != -1) && ((*this->mLoadedTable)[oldIndex] != this->mLoadedEntry))
-		{
-			Prompt("Input Error", CtrlImg::error(), "The selected address is already added to the table.", "OK");
-			return;
-		}
-		
-		// Finally, pass temporary values through to address table entry.
-		this->mLoadedEntry->ValueType = tempType;
-		this->mLoadedEntry->Size = optionalSize != -1 ? optionalSize : 0;
-	}
-	else if (this->mMode == CRDM_DESCRIPTION)
+	// Make changes to every selected entry.
+	for (int r : *this->mRowArray)
 	{
-		this->mLoadedEntry->Description = this->mFieldValue.GetText().ToString();
-	}
-	else if (this->mMode == CRDM_ADDRESS)
-	{
-		const String& inputVal = this->mFieldValue.GetText().ToString();
-		// Check for empty input value.
-		if (inputVal.IsEmpty())
-		{
-			Prompt("Input Error", CtrlImg::error(), "Please enter an address.", "OK");
-			return;
-		}
-
-		LONG_PTR tempAddress;
-		bool relative = false;
+		// Retrieve a pointer to the entry that must be edited next.
+		this->mLoadedEntry = (*this->mLoadedTable)[r];
 		
-		// If the address input contains a plus, the input is a relative address.
-		const int plusIndex = inputVal.Find("+");
-		if (plusIndex != -1)
+		// Edit the value of the selected entry.
+		if (this->mMode == CRDM_VALUE)
 		{
-			// Parse the relative address into the existing address table entry.
-			const Win32ModuleInformation* mod = mModuleManager->FindModule(inputVal.Left(plusIndex));
-			if (!mod)
+			// Check for empty input value.
+			if (inputVal.IsEmpty())
 			{
-				// If the module was not found in the loaded modules list, the relative address cannot be calculated.
-				Prompt("Input Error", CtrlImg::error(), "The typed module was not found!", "OK");
+				Prompt("Input Error", CtrlImg::error(), "Please enter a value.", "OK");
 				return;
 			}
 			
-			// Still here, so calculate the address.
-			tempAddress = mod->BaseAddress + ScanInt(inputVal.Mid(plusIndex + 1), NULL, 16);
-			relative = true;
+			// Value is not managed by address table itself, so WPM.
+			if (this->mLoadedEntry->ValueType == CRYDATATYPE_BYTE)
+			{
+				if (this->mValueIsHex)
+				{
+					mMemoryScanner->Poke(this->mLoadedEntry->Address, (Byte)ScanInt(inputVal, NULL, 16));
+				}
+				else
+				{
+					mMemoryScanner->Poke(this->mLoadedEntry->Address, (Byte)ScanInt(inputVal));
+				}
+			}
+			else if (this->mLoadedEntry->ValueType == CRYDATATYPE_2BYTES)
+			{
+				if (this->mValueIsHex)
+				{
+					mMemoryScanner->Poke(this->mLoadedEntry->Address, (short)ScanInt(inputVal, NULL, 16));
+				}
+				else
+				{
+					mMemoryScanner->Poke(this->mLoadedEntry->Address, (short)ScanInt(inputVal));
+				}
+			}
+			else if (this->mLoadedEntry->ValueType == CRYDATATYPE_4BYTES)
+			{
+				if (this->mValueIsHex)
+				{
+					mMemoryScanner->Poke(this->mLoadedEntry->Address, ScanInt(inputVal, NULL, 16));
+				}
+				else
+				{
+					mMemoryScanner->Poke(this->mLoadedEntry->Address, ScanInt(inputVal));
+				}
+			}
+			else if (this->mLoadedEntry->ValueType == CRYDATATYPE_8BYTES)
+			{
+				if (this->mValueIsHex)
+				{
+					mMemoryScanner->Poke(this->mLoadedEntry->Address, ScanInt64(inputVal, NULL, 16));
+				}
+				else
+				{
+					mMemoryScanner->Poke(this->mLoadedEntry->Address, ScanInt64(inputVal));
+				}
+			}
+			else if (this->mLoadedEntry->ValueType == CRYDATATYPE_FLOAT)
+			{
+				mMemoryScanner->Poke(this->mLoadedEntry->Address, (float)ScanDouble(inputVal, NULL, true));
+			}
+			else if (this->mLoadedEntry->ValueType == CRYDATATYPE_DOUBLE)
+			{
+				mMemoryScanner->Poke(this->mLoadedEntry->Address, ScanDouble(inputVal, NULL, true));
+			}
+			else if (this->mLoadedEntry->ValueType == CRYDATATYPE_STRING)
+			{
+				mMemoryScanner->Poke(this->mLoadedEntry->Address, inputVal);
+				this->mLoadedEntry->Size = this->mFieldValue.GetLength();
+				this->AlterSearchResult(this->mLoadedEntry->Address, this->mLoadedEntry->Size);
+			}
+			else if (this->mLoadedEntry->ValueType == CRYDATATYPE_WSTRING)
+			{
+				mMemoryScanner->Poke(this->mLoadedEntry->Address, this->mFieldValue.GetText());
+				this->mLoadedEntry->Size = this->mFieldValue.GetLength();
+				this->AlterSearchResult(this->mLoadedEntry->Address, this->mLoadedEntry->Size);
+			}
+			else if (this->mLoadedEntry->ValueType == CRYDATATYPE_AOB)
+			{
+				ArrayOfBytes aob = StringToBytes(inputVal);
+				mMemoryScanner->Poke(this->mLoadedEntry->Address, aob);
+				this->mLoadedEntry->Size = aob.Size;
+				this->AlterSearchResult(this->mLoadedEntry->Address, this->mLoadedEntry->Size);
+			}
 		}
-		else
+		// Edit the type of the selected entry.
+		else if (this->mMode == CRDM_TYPE)
 		{
-		
-			// Regularly parse the address. It is not a relative one.	
+			// Assign proper value type including size parameter.
+			const int newindex = this->mTypeSelector.GetIndex();
+			if (newindex == 6)
+			{
+				tempType = newindex;
+				optionalSize = this->mTypeLength;
+			}
+			else if (this->mTypeSelector.GetIndex() == 7)
+			{
+				tempType = this->mUnicodeString ? CRYDATATYPE_WSTRING : CRYDATATYPE_STRING;
+				optionalSize = this->mTypeLength;
+			}
+			else
+			{
+				optionalSize = -1;
+				tempType = newindex;
+			}
+	
+			// Make sure the address combined with the selected data type isn't already present in the address table.
+			const int oldIndex = this->mLoadedTable->Find(this->mLoadedEntry->Address, tempType);
+			if ((oldIndex != -1) && ((*this->mLoadedTable)[oldIndex] != this->mLoadedEntry))
+			{
+				Prompt("Input Error", CtrlImg::error(), "The selected address is already added to the table.", "OK");
+				return;
+			}
+			
+			// Finally, pass temporary values through to address table entry.
+			this->mLoadedEntry->ValueType = tempType;
+			this->mLoadedEntry->Size = optionalSize != -1 ? optionalSize : 0;
+		}
+		// Edit the description of the selected entry.
+		else if (this->mMode == CRDM_DESCRIPTION)
+		{
+			this->mLoadedEntry->Description = this->mFieldValue.GetText().ToString();
+		}
+		// Edit the address of the selected entry. This mode is only available if just one entry is selected.
+		else if (this->mMode == CRDM_ADDRESS)
+		{
+			const String& inputVal = this->mFieldValue.GetText().ToString();
+			// Check for empty input value.
+			if (inputVal.IsEmpty())
+			{
+				Prompt("Input Error", CtrlImg::error(), "Please enter an address.", "OK");
+				return;
+			}
+	
+			LONG_PTR tempAddress;
+			bool relative = false;
+			
+			// If the address input contains a plus, the input is a relative address.
+			const int plusIndex = inputVal.Find("+");
+			if (plusIndex != -1)
+			{
+				// Parse the relative address into the existing address table entry.
+				const Win32ModuleInformation* mod = mModuleManager->FindModule(inputVal.Left(plusIndex));
+				if (!mod)
+				{
+					// If the module was not found in the loaded modules list, the relative address cannot be calculated.
+					Prompt("Input Error", CtrlImg::error(), "The typed module was not found!", "OK");
+					return;
+				}
+				
+				// Still here, so calculate the address.
+				tempAddress = mod->BaseAddress + ScanInt(inputVal.Mid(plusIndex + 1), NULL, 16);
+				relative = true;
+			}
+			else
+			{
+			
+				// Regularly parse the address. It is not a relative one.
 #ifdef _WIN64
-			tempAddress = ScanInt64(inputVal, NULL, 16);
+				tempAddress = ScanInt64(inputVal, NULL, 16);
 #else
-			tempAddress = ScanInt(inputVal, NULL, 16);
+				tempAddress = ScanInt(inputVal, NULL, 16);
 #endif
-		}
-		
-		// Make sure the address combined with the selected data type isn't already present in the address table.
-		const int oldIndex = this->mLoadedTable->Find(tempAddress, this->mLoadedEntry->ValueType);
-		if ((oldIndex != -1) && ((*this->mLoadedTable)[oldIndex] != this->mLoadedEntry))
-		{
-			Prompt("Input Error", CtrlImg::error(), "The selected address is already added to the table.", "OK");
-			return;
-		}
-		
-		this->mLoadedEntry->Address = tempAddress;
-		this->mLoadedEntry->IsRelative = relative;
-		
-		// If the module changed, it should be changed in the address table entry as well.
-		if (relative)
-		{
-			this->mLoadedEntry->ModuleName = mModuleManager->GetModuleFilename(tempAddress);
+			}
+			
+			// Make sure the address combined with the selected data type isn't already present in the address table.
+			const int oldIndex = this->mLoadedTable->Find(tempAddress, this->mLoadedEntry->ValueType);
+			if ((oldIndex != -1) && ((*this->mLoadedTable)[oldIndex] != this->mLoadedEntry))
+			{
+				Prompt("Input Error", CtrlImg::error(), "The selected address is already added to the table.", "OK");
+				return;
+			}
+			
+			this->mLoadedEntry->Address = tempAddress;
+			this->mLoadedEntry->IsRelative = relative;
+			
+			// If the module changed, it should be changed in the address table entry as well.
+			if (relative)
+			{
+				this->mLoadedEntry->ModuleName = mModuleManager->GetModuleFilename(tempAddress);
+			}
 		}
 	}
 	

@@ -8,7 +8,7 @@ Package:
 - Update wiki with changes for the release.
 ------------------------------------------------------------------
 
-- Edit multiple values at the same time;
+- Check the correctness of the window-icon searcher again;
 - masking for signature generator, mask out parameters like addresses;
 - Follow pointer, many need it!
 - C++11 from upp still has bug in cowork I think;

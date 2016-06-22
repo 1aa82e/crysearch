@@ -308,6 +308,7 @@ void CrySearchForm::CheckKeyPresses()
 
 // ---------------------------------------------------------------------------------------------
 
+// Called regularly to update the search results currently visible.
 void CrySearchForm::SearchResultListUpdater()
 {
 	// Refresh the address table ArrayCtrl to force updating of the values.
@@ -317,6 +318,7 @@ void CrySearchForm::SearchResultListUpdater()
 	SetTimeCallback(1000, THISBACK(SearchResultListUpdater), 21);
 }
 
+// Called regularly to update entries currently in the address table.
 void CrySearchForm::AddressValuesUpdater()
 {
 	// If CrySearch is operating in read only mode, nothing may be written to the target process.
@@ -517,6 +519,7 @@ CrySearchForm::CrySearchForm(const char* fn)
 	}
 }
 
+// The main window destructor.
 CrySearchForm::~CrySearchForm()
 {
 	// Stop the timer callbacks that are running.
@@ -525,6 +528,7 @@ CrySearchForm::~CrySearchForm()
 	KillTimeCallback(30);
 }
 
+// Populates the main application window menu strip.
 void CrySearchForm::MainMenu(Bar& pBar)
 {
 	pBar.Add("File", THISBACK(FileMenu));
@@ -544,6 +548,7 @@ void CrySearchForm::MainMenu(Bar& pBar)
 	pBar.Add(this->mOpenedProcess.SetAlign(ALIGN_RIGHT), 200);
 }
 
+// Populates the main application window toolstrip.
 void CrySearchForm::ToolStrip(Bar& pBar)
 {
 	pBar.Add("Open Process", CrySearchIml::AttachToProcessMenu(), THISBACK(OpenProcessMenu));
@@ -551,6 +556,7 @@ void CrySearchForm::ToolStrip(Bar& pBar)
 	pBar.Add(this->processLoaded && !mMemoryScanner->IsScanRunning() && mScanResults.GetCount() > 0, "Refresh search results", CrySearchIml::NextScanMenu(), THISBACK(RefreshSearchResults));
 }
 
+// Populates the file menu bar.
 void CrySearchForm::FileMenu(Bar& pBar)
 {
 	pBar.Add("Open Process", CrySearchIml::AttachToProcessMenu(), THISBACK(OpenProcessMenu));
@@ -574,6 +580,7 @@ void CrySearchForm::FileMenu(Bar& pBar)
 	pBar.Add("Exit", CrySearchIml::ExitApplication(), THISBACK(ExitApplication));
 }
 
+// Populates the menu bar for data editing operations.
 void CrySearchForm::EditMenu(Bar& pBar)
 {
 	pBar.Add((this->mScanResults.GetCount() > 0), "Clear Scan Results", THISBACK(ClearScanResultsWithoutWarning));
@@ -583,6 +590,7 @@ void CrySearchForm::EditMenu(Bar& pBar)
 	pBar.Add("Settings", CrySearchIml::SettingsButton(), THISBACK(SettingsButtonClicked));
 }
 
+// Populates the menu bar for tools.
 void CrySearchForm::ToolsMenu(Bar& pBar)
 {
 	if (this->processLoaded)
@@ -602,6 +610,7 @@ void CrySearchForm::ToolsMenu(Bar& pBar)
 	pBar.Add("Plugins", CrySearchIml::PluginsMenuSmall(), THISBACK(PluginsMenuClicked));
 }
 
+// // Populates the menu bar for debugger settings.
 void CrySearchForm::DebuggerMenu(Bar& pBar)
 {
 	if (this->processLoaded)
@@ -614,6 +623,7 @@ void CrySearchForm::DebuggerMenu(Bar& pBar)
 	}
 }
 
+// Populates the menu bar for window visibility settings.
 void CrySearchForm::WindowMenu(Bar& pBar)
 {
 	pBar.Add("Always on top", THISBACK(ToggleAlwaysOnTop)).Check(this->IsTopMost());
@@ -631,6 +641,7 @@ void CrySearchForm::WindowMenu(Bar& pBar)
 	}
 }
 
+// Populates the help menu bar.
 void CrySearchForm::HelpMenu(Bar& pBar)
 {
 	pBar.Add("About", CrySearchIml::AboutButton(), THISBACK(AboutCrySearch));
@@ -655,6 +666,7 @@ void CrySearchForm::AddressTableRemovalRoutine(const Vector<int>& items)
 	this->mUserAddressList.SetVirtualCount(loadedTable.GetCount());
 }
 
+// Hides or shows the lower window pane.
 void CrySearchForm::HideLowerPaneButtonClicked()
 {
 	Rect r = this->GetRect();
@@ -681,6 +693,7 @@ void CrySearchForm::HideLowerPaneButtonClicked()
 	this->lowerPaneHidden = !this->lowerPaneHidden;
 }
 
+// Adjusts the position of the main window splitter control.
 void CrySearchForm::SetMainSplitterPosition()
 {
 	const Rect r = this->mMainSplitter.GetRect();
@@ -688,14 +701,16 @@ void CrySearchForm::SetMainSplitterPosition()
 	this->mMainSplitter.SetPos(((total / 2) * 10000 / total) - 600);
 }
 
+// // Populates the menu bar for changing properties of address table entries.
 void CrySearchForm::ChangeRecordSubMenu(Bar& pBar)
 {
 	pBar.Add("Description", THISBACK1(AddressListChangeProperty, CRDM_DESCRIPTION));
-	pBar.Add("Address", THISBACK1(AddressListChangeProperty, CRDM_ADDRESS));
+	pBar.Add(this->mUserAddressList.GetSelectCount() == 1, "Address", THISBACK1(AddressListChangeProperty, CRDM_ADDRESS));
 	pBar.Add(!mMemoryScanner->IsReadOnlyOperationMode(), "Value", THISBACK1(AddressListChangeProperty, CRDM_VALUE));
 	pBar.Add("Type", THISBACK1(AddressListChangeProperty, CRDM_TYPE));
 }
 
+// Executed when the user right-clicks an address in the address table.
 void CrySearchForm::UserDefinedEntryWhenBar(Bar& pBar)
 {
 	pBar.Add("Manually add address", CrySearchIml::AddToAddressList(), THISBACK(ManuallyAddAddressToTable));
@@ -718,7 +733,7 @@ void CrySearchForm::UserDefinedEntryWhenBar(Bar& pBar)
 		// Add decimal/hexadecimal toggle button.
 		pBar.Add(viewAddressTableValueHex ? "View as decimal" : "View as hexadecimal", THISBACK(ToggleAddressTableValueView)).Check(viewAddressTableValueHex);
 		
-		const bool canDbg = (mDebugger && mDebugger->IsDebuggerAttached());
+		const bool canDbg = (mDebugger && mDebugger->IsDebuggerAttached()) && this->mUserAddressList.GetSelectCount() == 1;
 		if (mDebugger && mDebugger->FindBreakpoint(loadedTable[row]->Address) == -1)
 		{
 			pBar.Add(canDbg, "Set Breakpoint", CrySearchIml::SetBreakpoint(), THISBACK(SetDataBreakpointMenu));
@@ -752,6 +767,8 @@ void CrySearchForm::ToggleAlwaysOnTop()
 	this->TopMost(!this->IsTopMost());
 }
 
+// Executed when the tab window currently active has changed. This situation needs to be
+// handled separately because the imports window needs redrawal.
 void CrySearchForm::ActiveTabWindowChanged()
 {
 	const int index = ~this->mTabbedDataWindows;
@@ -783,6 +800,7 @@ void CrySearchForm::RandomizeWindowTitle()
 	this->wndTitleRandomized = !this->wndTitleRandomized;
 }
 
+// Executes the heap walk dialog.
 void CrySearchForm::HeapWalkMenuClicked()
 {
 	CryHeapWalkDialog* chwd = new CryHeapWalkDialog(CrySearchIml::HeapWalkSmall());
@@ -790,6 +808,7 @@ void CrySearchForm::HeapWalkMenuClicked()
 	delete chwd;
 }
 
+// Populates the menu bar for setting breakpoints.
 void CrySearchForm::SetDataBreakpointMenu(Bar& pBar)
 {
 	pBar.Add("Read", THISBACK(SetDataBreakpointOnRead));
@@ -797,6 +816,7 @@ void CrySearchForm::SetDataBreakpointMenu(Bar& pBar)
 	pBar.Add("Execute", THISBACK(SetDataBreakpointOnExecute));
 }
 
+// Executed when the user right-clicks a search result.
 void CrySearchForm::SearchResultWhenBar(Bar& pBar)
 {
 	if (this->mScanResults.GetCursor() >= 0 && mMemoryScanner->GetScanResultCount() > 0)
@@ -806,6 +826,7 @@ void CrySearchForm::SearchResultWhenBar(Bar& pBar)
 	}
 }
 
+// Sets a hardware breakpoint on an address.
 void CrySearchForm::SetBreakpointMenuFunction(const HWBP_TYPE type)
 {
 	const int cursor = this->mUserAddressList.GetCursor();
@@ -836,27 +857,32 @@ void CrySearchForm::SetBreakpointMenuFunction(const HWBP_TYPE type)
 	mDebugger->SetHardwareBreakpoint(mThreadsList, loadedTable[cursor]->Address, size, type);
 }
 
+// Sets a read breakpoint on the selected data address (in the address table).
 void CrySearchForm::SetDataBreakpointOnRead()
 {
 	this->SetBreakpointMenuFunction(HWBP_TYPE_READWRITE);
 }
 
+// Sets a read/write breakpoint on the selected data address (in the address table).
 void CrySearchForm::SetDataBreakpointOnReadWrite()
 {
 	this->SetBreakpointMenuFunction(HWBP_TYPE_WRITE);
 }
 
+// Sets a breakpoint on the selected address.
 void CrySearchForm::SetDataBreakpointOnExecute()
 {
 	this->SetBreakpointMenuFunction(HWBP_TYPE_EXECUTE);
 }
 
+// Removes a breakpoint from the selected address.
 void CrySearchForm::RemoveBreakpointMenu()
 {
 	this->mWindowManager.GetDebuggerWindow()->Cleanup();
 	mDebugger->RemoveBreakpoint(loadedTable[this->mUserAddressList.GetCursor()]->Address);
 }
 
+// Executes the plugins window.
 void CrySearchForm::PluginsMenuClicked()
 {
 	CryPluginsWindow* cpw = new CryPluginsWindow();
@@ -864,6 +890,7 @@ void CrySearchForm::PluginsMenuClicked()
 	delete cpw;
 }
 
+// Opens an address table file to be loaded into memory.
 void CrySearchForm::OpenFileMenu()
 {
 	const DWORD appname[] = {0x53797243, 0x63726165, 0x68}; //"CrySearch"
@@ -891,6 +918,7 @@ void CrySearchForm::OpenFileMenu()
 	delete fs;
 }
 
+// Executed when the user double clicks an address table entry.
 void CrySearchForm::UserDefinedEntryWhenDoubleClicked()
 {
 	const int row = this->mUserAddressList.GetCursor();
@@ -898,33 +926,34 @@ void CrySearchForm::UserDefinedEntryWhenDoubleClicked()
 	
 	if (row >= 0 && loadedTable.GetCount() > 0)
 	{
+		Vector<int> singleRowInput = { row };
 		switch (column)
 		{
 #ifdef _WIN64
 			case 0: // description
-				CryChangeRecordDialog(loadedTable, row, CRDM_DESCRIPTION).Execute();
+				CryChangeRecordDialog(loadedTable, singleRowInput, CRDM_DESCRIPTION).Execute();
 				break;
 			case 1: // address
-				CryChangeRecordDialog(loadedTable, row, CRDM_ADDRESS).Execute();
+				CryChangeRecordDialog(loadedTable, singleRowInput, CRDM_ADDRESS).Execute();
 				break;
 			case 2: // value
-				CryChangeRecordDialog(loadedTable, row, mMemoryScanner->IsReadOnlyOperationMode() ? CRDM_DESCRIPTION : CRDM_VALUE).Execute();
+				CryChangeRecordDialog(loadedTable, singleRowInput, mMemoryScanner->IsReadOnlyOperationMode() ? CRDM_DESCRIPTION : CRDM_VALUE).Execute();
 				break;
 			case 3: // type
-				CryChangeRecordDialog(loadedTable, row, CRDM_TYPE).Execute();
+				CryChangeRecordDialog(loadedTable, singleRowInput, CRDM_TYPE).Execute();
 				break;
 #else
 			case 0: // description
-				CryChangeRecordDialog(loadedTable, row, CRDM_DESCRIPTION).Execute();
+				CryChangeRecordDialog(loadedTable, singleRowInput, CRDM_DESCRIPTION).Execute();
 				break;
 			case 1: // address
-				CryChangeRecordDialog(loadedTable, row, CRDM_ADDRESS).Execute();
+				CryChangeRecordDialog(loadedTable, singleRowInput, CRDM_ADDRESS).Execute();
 				break;
 			case 2: // value
-				CryChangeRecordDialog(loadedTable, row, mMemoryScanner->IsReadOnlyOperationMode() ? CRDM_DESCRIPTION : CRDM_VALUE).Execute();
+				CryChangeRecordDialog(loadedTable, singleRowInput, mMemoryScanner->IsReadOnlyOperationMode() ? CRDM_DESCRIPTION : CRDM_VALUE).Execute();
 				break;
 			case 3: // type
-				CryChangeRecordDialog(loadedTable, row, CRDM_TYPE).Execute();
+				CryChangeRecordDialog(loadedTable, singleRowInput, CRDM_TYPE).Execute();
 				break;
 #endif
 			default:
@@ -934,60 +963,77 @@ void CrySearchForm::UserDefinedEntryWhenDoubleClicked()
 	}
 }
 
+// Freezes addresses that are thawn and thaws frozen addresses.
 void CrySearchForm::ToggleAddressTableFreezeThaw()
 {
 	loadedTable[this->mUserAddressList.GetCursor()]->Frozen = !loadedTable[this->mUserAddressList.GetCursor()]->Frozen;
 }
 
+// Toggles whether entries in the address table are currently shown in hexadecimal format or decimal format.
 void CrySearchForm::ToggleAddressTableValueView()
 {
 	viewAddressTableValueHex = !viewAddressTableValueHex;
 }
 
+// Toggles whether the search results are currently shown in hexadecimal format or decimal format.
 void CrySearchForm::ToggleSearchResultViewAs()
 {
 	GlobalScanParameter->CurrentScanHexValues = !GlobalScanParameter->CurrentScanHexValues;
 }
 
+// Open a dialog to enable the user to manually add an address to the address table.
 void CrySearchForm::ManuallyAddAddressToTable()
 {
-	CryChangeRecordDialog(loadedTable, 0, CRDM_MANUALNEW).Execute();
+	CryChangeRecordDialog(loadedTable, Vector<int>(), CRDM_MANUALNEW).Execute();
 	this->mUserAddressList.SetVirtualCount(loadedTable.GetCount());
 }
 
+// Change a property of a selected address table entry (address, description, value or type).
 void CrySearchForm::AddressListChangeProperty(ChangeRecordDialogMode mode)
 {
 	const int row = this->mUserAddressList.GetCursor();
-	if (row >= 0 && loadedTable.GetCount() > 0)
+	const int totalCount = loadedTable.GetCount();
+	if (row >= 0 && totalCount > 0)
 	{
+		// Get selected rows.
+		Vector<int> selectedRows;
+		for (int r = 0; r < totalCount; ++r)
+		{
+			if (this->mUserAddressList.IsSelected(r))
+			{
+				selectedRows << r;
+			}
+		}
+		
+		// Open the record changing dialog corresponding to the selected mode.
 		switch (mode)
 		{
 			case CRDM_DESCRIPTION:
 #ifdef _WIN64
-				CryChangeRecordDialog(loadedTable, row, CRDM_DESCRIPTION).Execute();
+				CryChangeRecordDialog(loadedTable, selectedRows, CRDM_DESCRIPTION).Execute();
 #else
-				CryChangeRecordDialog(loadedTable, row, CRDM_DESCRIPTION).Execute();
+				CryChangeRecordDialog(loadedTable, selectedRows, CRDM_DESCRIPTION).Execute();
 #endif
 				break;
 			case CRDM_ADDRESS:
 #ifdef _WIN64
-				CryChangeRecordDialog(loadedTable, row, CRDM_ADDRESS).Execute();
+				CryChangeRecordDialog(loadedTable, selectedRows, CRDM_ADDRESS).Execute();
 #else
-				CryChangeRecordDialog(loadedTable, row, CRDM_ADDRESS).Execute();
+				CryChangeRecordDialog(loadedTable, selectedRows, CRDM_ADDRESS).Execute();
 #endif
 				break;
 			case CRDM_VALUE:
 #ifdef _WIN64
-				CryChangeRecordDialog(loadedTable, row, CRDM_VALUE).Execute();
+				CryChangeRecordDialog(loadedTable, selectedRows, CRDM_VALUE).Execute();
 #else
-				CryChangeRecordDialog(loadedTable, row, CRDM_VALUE).Execute();
+				CryChangeRecordDialog(loadedTable, selectedRows, CRDM_VALUE).Execute();
 #endif
 				break;
 			case CRDM_TYPE:
 #ifdef _WIN64
-				CryChangeRecordDialog(loadedTable, row, CRDM_TYPE).Execute();
+				CryChangeRecordDialog(loadedTable, selectedRows, CRDM_TYPE).Execute();
 #else
-				CryChangeRecordDialog(loadedTable, row, CRDM_TYPE).Execute();
+				CryChangeRecordDialog(loadedTable, selectedRows, CRDM_TYPE).Execute();
 #endif
 				break;
 			default:
@@ -997,6 +1043,7 @@ void CrySearchForm::AddressListChangeProperty(ChangeRecordDialogMode mode)
 	}
 }
 
+// Saves the currently loaded address table to a file.
 void CrySearchForm::SaveFileMenu()
 {
 	if (!loadedTable.GetFileName().IsEmpty())
@@ -1005,6 +1052,7 @@ void CrySearchForm::SaveFileMenu()
 	}
 }
 
+// Execute a save as dialog on the currently loaded address table.
 void CrySearchForm::SaveFileAsMenu()
 {
 	FileSel* fs = new FileSel();
@@ -1022,6 +1070,7 @@ void CrySearchForm::SaveFileAsMenu()
 	delete fs;
 }
 
+// Shows the disassembly window if it is currently hidden, or hides it if it is currently shown.
 void CrySearchForm::ShowHideDisasmWindow()
 {
 	// Attempt to close the tab if it is opened in the TabCtrl.
@@ -1040,6 +1089,7 @@ void CrySearchForm::ShowHideDisasmWindow()
 	this->mTabbedDataWindows.Set(*mDisasmCtrl);
 }
 
+// Deletes a specific address in the address table.
 void CrySearchForm::DeleteUserDefinedAddress()
 {
 	const int totalCount = loadedTable.GetCount();
@@ -1070,6 +1120,7 @@ void CrySearchForm::DeleteUserDefinedAddress()
 	}
 }
 
+// Clears the address table.
 void CrySearchForm::ClearAddressList()
 {
 	if (Prompt("I need your confirmation", CtrlImg::exclamation(), "Are you sure you want to clear the address list?", "Yes", "No"))
@@ -1089,6 +1140,7 @@ void CrySearchForm::ClearAddressList()
 	}
 }
 
+// Occurs when a search result is double clicked.
 void CrySearchForm::SearchResultDoubleClicked()
 {
 	if (this->mScanResults.GetCursor() < 0 || mMemoryScanner->GetScanResultCount() <= 0)
@@ -1191,6 +1243,7 @@ void CrySearchForm::SearchResultDoubleClicked()
 	this->mUserAddressList.SetVirtualCount(loadedTable.GetCount());
 }
 
+// Executes a first memory search.
 void CrySearchForm::MemorySearch()
 {
 	if (!this->processLoaded)
@@ -1216,6 +1269,7 @@ void CrySearchForm::MemorySearch()
 #endif
 }
 
+// Executes a refreshment scan, searching for existing search results.
 void CrySearchForm::RefreshSearchResults()
 {
 	if (!this->processLoaded)
@@ -1251,6 +1305,7 @@ void CrySearchForm::StartNextScanHotkey()
 #endif
 }
 
+// Starts a memory search on a separate thread.
 void CrySearchForm::StartMemoryScanReliefGUI(bool FirstScan)
 {
 	switch (GlobalScanParameter->GlobalScanValueType)
@@ -1348,6 +1403,7 @@ void CrySearchForm::StartMemoryScanReliefGUI(bool FirstScan)
 	}
 }
 
+// Executes the open process window.
 void CrySearchForm::OpenProcessMenu()
 {
 	CryProcessEnumeratorForm* cpef = new CryProcessEnumeratorForm(CrySearchIml::AttachToProcessMenu());
@@ -1359,6 +1415,7 @@ void CrySearchForm::OpenProcessMenu()
 	delete cpef;
 }
 
+// Closes the currently opened process.
 void CrySearchForm::CloseProcessMenu()
 {
 	if (this->CloseProcess())
@@ -1368,6 +1425,7 @@ void CrySearchForm::CloseProcessMenu()
 	}
 }
 
+// Routine that is executed on the closure of an opened process.
 bool CrySearchForm::CloseProcess()
 {
 	if (mMemoryScanner->IsScanRunning())
@@ -1433,11 +1491,13 @@ bool CrySearchForm::CloseProcess()
 	return true;
 }
 
+// Exits CrySearch, initiating the cleanup procedure.
 void CrySearchForm::ExitApplication()
 {
 	this->Close();
 }
 
+// Executes the settings window.
 void CrySearchForm::SettingsButtonClicked()
 {
 	CrySearchSettingsDialog* cssd = new CrySearchSettingsDialog();
@@ -1454,23 +1514,27 @@ void CrySearchForm::SettingsButtonClicked()
 	}
 }
 
+// Attaches the debugger to the opened process and shows the debugger window.
 void CrySearchForm::DebuggerAttachMenu()
 {
 	mDebugger->Start();
 	this->ToggleDebuggerWindow();
 }
 
+// Detaches the debugger from the opened process and hides the debugger window.
 void CrySearchForm::DebuggerDetachMenu()
 {
 	mDebugger->Stop();
 	this->ToggleDebuggerWindow();
 }
 
+// If the debugger threw an internal error, the debugger window should be hidden.
 void CrySearchForm::DebugWindowErrorOccured()
 {
 	this->ToggleDebuggerWindow();
 }
 
+// Executes the code generation window.
 void CrySearchForm::CodeGenerationButtonClicked()
 {
 	CryCodeGenerationForm* ccgf = new CryCodeGenerationForm();
@@ -1478,6 +1542,7 @@ void CrySearchForm::CodeGenerationButtonClicked()
 	delete ccgf;
 }
 
+// Executes the memory dissection window.
 void CrySearchForm::MemoryDissectionButtonClicked()
 {
 	CryMemoryDissectionWindow* cmdw = new CryMemoryDissectionWindow(NULL);
@@ -1488,6 +1553,7 @@ void CrySearchForm::MemoryDissectionButtonClicked()
 	this->mUserAddressList.SetVirtualCount(loadedTable.GetCount());
 }
 
+// Executes the system handle view window.
 void CrySearchForm::ViewSystemHandlesButtonClicked()
 {
 	CrySystemHandleInformationWindow* cshiw = new CrySystemHandleInformationWindow(CrySearchIml::ViewHandlesButton());
@@ -1495,6 +1561,7 @@ void CrySearchForm::ViewSystemHandlesButtonClicked()
 	delete cshiw;
 }
 
+// Executes the PEB (Process Environment Block) window.
 void CrySearchForm::ViewPEBButtonClicked()
 {
 	CryProcessEnvironmentBlockWindow* cpebw = new CryProcessEnvironmentBlockWindow(CrySearchIml::AboutButton());
@@ -1600,6 +1667,7 @@ void CrySearchForm::FillMemoryButtonClicked()
 	}
 }
 
+// Shows the threads window if it is not shown yet, or hides if it is currently shown.
 void CrySearchForm::ViewThreadsButtonClicked()
 {
 	// Attempt to close the tab if it is opened in the TabCtrl.
@@ -1617,6 +1685,7 @@ void CrySearchForm::ViewThreadsButtonClicked()
 	this->mTabbedDataWindows.Set(*threadWindow);
 }
 
+// Shows the modules window if it is not shown yet, or hides if it is currently shown.
 void CrySearchForm::ViewModulesButtonClicked()
 {
 	// Attempt to close the tab if it is opened in the TabCtrl.
@@ -1634,6 +1703,7 @@ void CrySearchForm::ViewModulesButtonClicked()
 	this->mTabbedDataWindows.Set(*moduleWindow);
 }
 
+// Shows the pe information window if it is not shown yet, or hides if it is currently shown.
 void CrySearchForm::ViewGeneralButtonClicked()
 {
 	// Attempt to close the tab if it is opened in the TabCtrl.
@@ -1651,6 +1721,7 @@ void CrySearchForm::ViewGeneralButtonClicked()
 	this->mTabbedDataWindows.Set(*peWindow);
 }
 
+// Shows the imports window if it is not shown yet, or hides if it is currently shown.
 void CrySearchForm::ViewImportsButtonClicked()
 {
 	// Attempt to close the tab if it is opened in the TabCtrl.
@@ -1669,6 +1740,7 @@ void CrySearchForm::ViewImportsButtonClicked()
 	this->mTabbedDataWindows.Set(*importsWindow);
 }
 
+// Shows the debugger window if it is not shown yet, or hides if it is currently shown.
 void CrySearchForm::ToggleDebuggerWindow()
 {
 	// Attempt to close the tab if it is opened in the TabCtrl.
@@ -1686,6 +1758,8 @@ void CrySearchForm::ToggleDebuggerWindow()
 	this->mTabbedDataWindows.Set(*debuggerWindow);
 }
 
+// In case an exception occured in CrySearch while executing another thread, the window
+// execution needs to deferred to the UI thread.
 void CrySearchForm::ExecuteCrashHandlerWindow(const String& msg)
 {
 	volatile bool comp = false;
@@ -1696,6 +1770,7 @@ void CrySearchForm::ExecuteCrashHandlerWindow(const String& msg)
 	}
 }
 
+// Executes the crash handler window on the UI thread.
 void CrySearchForm::ExecuteCrashHandlerWindowSafe(const String& msg, volatile bool* const comp)
 {
 	CryCrashHandlerWindow* cchw = new CryCrashHandlerWindow(msg);
@@ -1704,11 +1779,13 @@ void CrySearchForm::ExecuteCrashHandlerWindowSafe(const String& msg, volatile bo
 	*comp = true;
 }
 
+// Executes the CrySearch about dialog.
 void CrySearchForm::AboutCrySearch()
 {
 	CrySearchAboutDialog().Execute();
 }
 
+// Prompts the user to clear the search results.
 void CrySearchForm::ClearScanResults()
 {
 	if (this->mScanResults.GetCount() > 0 && !Prompt("I need your confirmation", CtrlImg::exclamation()
@@ -1721,6 +1798,7 @@ void CrySearchForm::ClearScanResults()
 	}
 }
 
+// Clears the search results without prompting the user.
 void CrySearchForm::ClearScanResultsWithoutWarning()
 {
 	this->mScanResults.Clear();
@@ -1815,6 +1893,7 @@ void CrySearchForm::WhenProcessOpened(Win32ProcessInformation* pProc)
 					return;
 				}
 				
+				// If the window title should be randomized, the opened process indicator should be added to the window itself.
 				if (this->wndTitleRandomized)
 				{
 					this->mOpenedProcess.SetLabel(Format("(%i) %s ", mMemoryScanner->GetProcessId(), mMemoryScanner->GetProcessName()));
@@ -1862,7 +1941,8 @@ void CrySearchForm::WhenProcessOpened(Win32ProcessInformation* pProc)
 			{
 				return;
 			}
-					
+			
+			// If the window title should be randomized, the opened process indicator should be added to the window itself.
 			if (this->wndTitleRandomized)
 			{
 				this->mOpenedProcess.SetLabel(Format("(%i) %s ", mMemoryScanner->GetProcessId(), mMemoryScanner->GetProcessName()));

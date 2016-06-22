@@ -22,7 +22,8 @@ private:
 	ChangeRecordDialogMode mMode;
 	AddressTableEntry* mLoadedEntry;
 	AddressTable* mLoadedTable;
-
+	const Vector<int>* mRowArray;
+	
 	Button mCancel;
 	Button mOk;
 	Label mFieldDescription;
@@ -43,7 +44,7 @@ private:
 	
 	typedef CryChangeRecordDialog CLASSNAME;
 public:
-	CryChangeRecordDialog(AddressTable& addrTable, const int row, ChangeRecordDialogMode mode);
+	CryChangeRecordDialog(AddressTable& addrTable, const Vector<int>& rows, ChangeRecordDialogMode mode);
 	~CryChangeRecordDialog();
 };
 
