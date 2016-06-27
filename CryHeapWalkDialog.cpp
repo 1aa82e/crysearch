@@ -2,6 +2,7 @@
 #include "ProcessUtil.h"
 #include "UIUtilities.h"
 
+// The CryHeapWalkDialog default constructor.
 CryHeapWalkDialog::CryHeapWalkDialog(const Image& icon) : CryDialogTemplate(icon)
 {
 	this->Title("View Heap Information").Sizeable().SetRect(0, 0, 550, 200);
@@ -39,11 +40,13 @@ CryHeapWalkDialog::CryHeapWalkDialog(const Image& icon) : CryDialogTemplate(icon
 	this->mHeapCount.SetLabel(Format("Total %i heaps", heaps.GetCount()));
 }
 
+// The CryHeapWalkDialog default destructor.
 CryHeapWalkDialog::~CryHeapWalkDialog()
 {
 	
 }
 
+// Executed when the dialog is closed.
 void CryHeapWalkDialog::CloseDialog()
 {
 	this->Close();

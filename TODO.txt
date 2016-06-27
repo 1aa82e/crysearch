@@ -8,7 +8,9 @@ Package:
 - Update wiki with changes for the release.
 ------------------------------------------------------------------
 
-- Check the correctness of the window-icon searcher again;
+- Slack eats CPU and RAM when loaded into CrySearch!
+- Resolve to relative offsets too?
+
 - masking for signature generator, mask out parameters like addresses;
 - Follow pointer, many need it!
 - C++11 from upp still has bug in cowork I think;
@@ -43,7 +45,6 @@ Package:
 - Scan for value in between;
 
 - Disassembler:
-	- Resolve function calls in disasm to IAT functions;
 	- Follow unconditional jumps (draw arrow to the left of the disasm if in same page);
 
 - Plugin system:

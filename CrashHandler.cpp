@@ -7,6 +7,7 @@
 
 // ---------------------------------------------------------------------------------------------
 
+// The CryCrashHandlerWindow default constructor.
 CryCrashHandlerWindow::CryCrashHandlerWindow(const String& excMsg)
 {
 	this->Title("Crash Report").Sizeable().SetRect(0, 0, 600, 300);
@@ -29,21 +30,25 @@ CryCrashHandlerWindow::CryCrashHandlerWindow(const String& excMsg)
 	BeepExclamation();
 }
 
+// The CryCrashHandlerWindow default destructor.
 CryCrashHandlerWindow::~CryCrashHandlerWindow()
 {
 	
 }
 
+// Copies the content of the crash report.
 void CryCrashHandlerWindow::CopyCrashReport()
 {
 	WriteClipboardText(this->mCrashReport.Get());
 }
 
+// Executed when the crash handler window is closed.
 void CryCrashHandlerWindow::CloseWindow()
 {
 	this->Close();
 }
 
+// Finds information about a loaded module by its address.
 const Win32ModuleInformation* FindLocalModuleAddress(const Vector<Win32ModuleInformation>& mods, const SIZE_T current)
 {
 	const int modCount = mods.GetCount();
@@ -56,6 +61,7 @@ const Win32ModuleInformation* FindLocalModuleAddress(const Vector<Win32ModuleInf
 		}
 	}
 	
+	// The module was not found, so no information is returned.
 	return NULL;
 }
 
@@ -186,7 +192,7 @@ LONG __stdcall CrashHandler(PEXCEPTION_POINTERS ExceptionInfo)
 	}
 	else
 	{
-		// It was not the main thread that caused the exception. Dispatch the handling of it to 
+		// It was not the main thread that caused the exception. Dispatch the handling of it to
 		// the main thread and wait for it to complete.
 		mCrySearchWindowManager->GetParentWindow()->ExecuteCrashHandlerWindow(excMsg);
 	}

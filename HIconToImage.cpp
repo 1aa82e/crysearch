@@ -1,6 +1,6 @@
 #include "HIconToImage.h"
 
-#define HICON_MESSAGE_TIMEOUT 500
+#define HICON_MESSAGE_TIMEOUT 100
 
 // The process window may have been closed during a timeout operation. Kill operation after timeout using this variable.
 extern bool ProcWndClosed;

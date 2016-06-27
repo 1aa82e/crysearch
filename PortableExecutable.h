@@ -59,6 +59,10 @@ struct ImportAddressTableEntry : Moveable<ImportAddressTableEntry>
 	
 	// Flag field can be either 0, IAT_FLAG_HOOKED.
 	Byte Flag;
+	
+	// We want to resolve intermodular calls to imported functions. To do so, we need the
+	// address of the thunk table of imported functions as well.
+	SIZE_T ThunkAddress;
 };
 
 // Represents an import table descriptor item, identifying a module with functions.
@@ -96,6 +100,7 @@ struct Win32PEInformation
 	Vector<Win32PESectionInformation> ImageSections;
 	Vector<ImportTableDescriptor> ImportAddressTable;
 	
+	// Clears everything except the import address table in this instance.
 	void Reset()
 	{
 		this->PEFields.Clear();
@@ -103,9 +108,32 @@ struct Win32PEInformation
 		this->DotNetInformation.DotNetSections.Clear();
 	};
 	
+	// Clears the import address table in this instance.
 	void ClearImportTable()
 	{
 		this->ImportAddressTable.Clear();
+	};
+	
+	// Looks for an imported function at a specified address.
+	const bool FindImportedFunctionAddress(const SIZE_T address, String& function) const
+	{
+		// Walk through the import table descriptors.
+		for (auto const& iat : this->ImportAddressTable)
+		{
+			// Walk through the functions in this descriptor.
+			for (auto const& f : iat.FunctionList)
+			{
+				// Check whether a function in the function list matches the specified address.
+				if (f.ThunkAddress == address)
+				{
+					function = iat.ModuleName + "!" + f.FunctionName;
+					return true;
+				}
+			}
+		}
+		
+		// No function was found at the specified address.
+		return false;
 	};
 };
 

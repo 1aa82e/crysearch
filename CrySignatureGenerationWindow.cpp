@@ -6,6 +6,7 @@
 // This window needs access to the visible disassembly lines.
 extern Vector<LONG_PTR> DisasmVisibleLines;
 
+// The CrySignatureGenerationWindow default constructor, accepting a number of selected rows.
 CrySignatureGenerationWindow::CrySignatureGenerationWindow(const Vector<int>& rows) : CryDialogTemplate(CrySearchIml::GenerateSignatureButton())
 {
 	this->Title("Generate Signature").SetRect(0, 0, 300, 175);
@@ -45,11 +46,13 @@ CrySignatureGenerationWindow::CrySignatureGenerationWindow(const Vector<int>& ro
 	this->GenerateStringStyle(byteSets);
 }
 
+// The CrySignatureGenerationWindow default destructor.
 CrySignatureGenerationWindow::~CrySignatureGenerationWindow()
 {
 	
 }
 
+// Generates a byte-style (evo-style) signature, that looks like an IDA Pro style signature.
 void CrySignatureGenerationWindow::GenerateEvoStyle(const Vector<Byte>& aobs)
 {
 	// Manually concatenate the bytes into one string.
@@ -59,6 +62,7 @@ void CrySignatureGenerationWindow::GenerateEvoStyle(const Vector<Byte>& aobs)
 	this->mBytesStyleSig.SetText(uiText);
 }
 
+// Generates a conventional signature, including a mask.
 void CrySignatureGenerationWindow::GenerateStringStyle(const Vector<Byte>& aobs)
 {
 	// Set generated signature inside top textbox.
@@ -69,6 +73,7 @@ void CrySignatureGenerationWindow::GenerateStringStyle(const Vector<Byte>& aobs)
 	this->mStringMaskSig.SetText(String(0x78, maskLength));
 }
 
+// Executed when the dialog is closed.
 void CrySignatureGenerationWindow::CloseWindow()
 {
 	this->Close();

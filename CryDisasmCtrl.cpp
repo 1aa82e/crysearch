@@ -17,6 +17,7 @@ const int GetDisasmLineIndexFromAddress(const SIZE_T address)
 	const LONG_PTR* next = NULL;
 	const int count = DisasmVisibleLines.GetCount();
 	
+	// Loop the addresses inside the currently disassembled area.
 	for (int i = 0; i < count; ++i)
 	{
 		const int nextIndex = i + 1;
@@ -28,7 +29,7 @@ const int GetDisasmLineIndexFromAddress(const SIZE_T address)
 		{
 			next = NULL;
 		}
-
+		
 		const LONG_PTR signedAddr = address;
 		if (DisasmVisibleLines[i] >= signedAddr && (next && (*next && signedAddr < *next)))
 		{
@@ -39,7 +40,7 @@ const int GetDisasmLineIndexFromAddress(const SIZE_T address)
 	return 0;
 }
 
-// Virtual column retrieval functions for the disassembler.
+// Creates a string representation for the instruction addresses currently visible.
 String GetDisasmAddress(const int index)
 {
 #ifdef _WIN64
@@ -49,27 +50,30 @@ String GetDisasmAddress(const int index)
 #endif
 }
 
+// Creates a string representation for the instruction bytes currently visible.
 String GetDisasmBytes(const int index)
 {
 	ArrayOfBytes disLineBytes;
 #ifdef _WIN64
-	DisasmGetLine(DisasmVisibleLines[index], mMemoryScanner->IsX86Process() ? ARCH_X86 : ARCH_X64, &disLineBytes);
+	DisasmForBytes(DisasmVisibleLines[index], mMemoryScanner->IsX86Process() ? ARCH_X86 : ARCH_X64, &disLineBytes);
 #else
-	DisasmGetLine(DisasmVisibleLines[index], ARCH_X86, &disLineBytes);
+	DisasmForBytes(DisasmVisibleLines[index], ARCH_X86, &disLineBytes);
 #endif
 	
 	return BytesToString(disLineBytes.Data, disLineBytes.Size);
 }
 
+// Creates a string representation for the instructions currently visible.
 String GetDisasmInstructionLine(const int index)
 {
 #ifdef _WIN64
-	return DisasmGetLine(DisasmVisibleLines[index], mMemoryScanner->IsX86Process() ? ARCH_X86 : ARCH_X64, NULL);
+	return DisasmGetLineEx(DisasmVisibleLines[index], mMemoryScanner->IsX86Process() ? ARCH_X86 : ARCH_X64, NULL);
 #else
-	return DisasmGetLine(DisasmVisibleLines[index], ARCH_X86, NULL);
+	return DisasmGetLineEx(DisasmVisibleLines[index], ARCH_X86, NULL);
 #endif
 }
 
+// Creates a string representation for the memory page currently selected for disassembly.
 String GetMemoryPageForDropList(const int index)
 {
 #ifdef _WIN64
@@ -81,6 +85,7 @@ String GetMemoryPageForDropList(const int index)
 
 // ---------------------------------------------------------------------------------------------
 
+// Default CryDisasmCtrl constructor.
 CryDisasmCtrl::CryDisasmCtrl()
 {
 	this->AddFrame(mToolStrip);
@@ -103,15 +108,19 @@ CryDisasmCtrl::CryDisasmCtrl()
 	this->mAsyncHelper = NULL;
 }
 
+// Default CryDisasmCtrl destructor.
 CryDisasmCtrl::~CryDisasmCtrl()
 {
 	
 }
 
+// Populates the toolstrip inside the disassembler window.
 void CryDisasmCtrl::ToolStrip(Bar& pBar)
 {
 	pBar.Add(this->mExecutablePagesDescriptor.SetLabel("Page: "));
 	pBar.Add(this->mExecutablePages, 200);
+	pBar.Separator();
+	pBar.Add("Go to entrypoint", CrySearchIml::EntryPointIcon(), THISBACK(GoToEntryPointClicked));
 	pBar.Separator();
 	pBar.Add("Signature", CrySearchIml::GenerateSignatureButton(), THISBACK(GenerateSignatureButtonClicked));
 	pBar.Add("Byte-array", CrySearchIml::GenerateByteArrayButton(), THISBACK(GenerateByteArrayButtonClicked));
@@ -119,6 +128,7 @@ void CryDisasmCtrl::ToolStrip(Bar& pBar)
 	pBar.Add(this->mPageSizeInDisasm.SetLabel("Page Size: 0").SetAlign(ALIGN_RIGHT), 150);
 }
 
+// Executed when the user right-clicks the disassembly region in the user interface.
 void CryDisasmCtrl::DisassemblyRightClick(Bar& pBar)
 {
 	// Whether an item is selected or not, these items should be always added to the menu.
@@ -146,15 +156,19 @@ void CryDisasmCtrl::DisassemblyRightClick(Bar& pBar)
 		pBar.Separator();
 		pBar.Add("NOP Selected", THISBACK(NopSelectedCode));
 		pBar.Add("Generate", THISBACK(DisasmGenerateSubmenu));
+		pBar.Separator();
+		pBar.Add("Go to entrypoint", CrySearchIml::EntryPointIcon(), THISBACK(GoToEntryPointClicked));
 	}
 }
 
+// Populates the generation submenu for the disassembly right-click menu.
 void CryDisasmCtrl::DisasmGenerateSubmenu(Bar& pBar)
 {
 	pBar.Add("Signature", CrySearchIml::GenerateSignatureButton(), THISBACK(GenerateSignatureButtonClicked));
 	pBar.Add("Byte-array", CrySearchIml::GenerateByteArrayButton(), THISBACK(GenerateByteArrayButtonClicked));
 }
 
+// Handles keyboard shortcut combinations (Copy / Go-to-address).
 bool CryDisasmCtrl::Key(dword key, int count)
 {
 	if (key == K_CTRL_G)
@@ -171,6 +185,7 @@ bool CryDisasmCtrl::Key(dword key, int count)
 	return false;
 }
 
+// Replaces a sequence of instructions with NOP (0x90) instructions.
 void CryDisasmCtrl::NopSelectedCode()
 {
 	SIZE_T first_address = 0;
@@ -208,6 +223,28 @@ void CryDisasmCtrl::NopSelectedCode()
 	this->MoveToAddress(first_address);
 }
 
+// Moves the selection to the entrypoint of the opened process.
+void CryDisasmCtrl::GoToEntryPointClicked()
+{
+	// Get the entrypoint address.
+#ifdef _WIN64
+	SIZE_T epAddress = LoadedProcessPEInformation.PEFields.GetCount() > 0 ? (*mModuleManager)[0].BaseAddress + ScanInt64(LoadedProcessPEInformation.PEFields.Get("Address of entrypoint").ToString(), NULL, 16) : 0;
+#else
+	SIZE_T epAddress = LoadedProcessPEInformation.PEFields.GetCount() > 0 ? (*mModuleManager)[0].BaseAddress + ScanInt(LoadedProcessPEInformation.PEFields.Get("Address of entrypoint").ToString(), NULL, 16) : 0;
+#endif
+
+	// Move to the entrypoint address.
+	if (epAddress)
+	{
+		this->MoveToAddress(epAddress);
+	}
+	else
+	{
+		Prompt("Fatal Error", CtrlImg::error(), "The entrypoint could not be retrieved!", "OK");
+	}
+}
+
+// Executes a new window that generates a signature from the selected instructions.
 void CryDisasmCtrl::GenerateSignatureButtonClicked()
 {
 	Vector<int> selectedRows;
@@ -227,6 +264,7 @@ void CryDisasmCtrl::GenerateSignatureButtonClicked()
 	delete csgw;
 }
 
+// Executes a new window that generates a byte array from the selected instructions.
 void CryDisasmCtrl::GenerateByteArrayButtonClicked()
 {
 	Vector<int> selectedRows;
@@ -246,18 +284,21 @@ void CryDisasmCtrl::GenerateByteArrayButtonClicked()
 	delete cbagw;
 }
 
+// Removes a breakpoint from the selected address.
 void CryDisasmCtrl::RemoveBreakpointButtonClicked()
 {
 	mCrySearchWindowManager->GetDebuggerWindow()->Cleanup();
 	mDebugger->RemoveBreakpoint(DisasmVisibleLines[this->disasmDisplay.GetCursor()]);
 }
 
+// Populates the breakpoint submenu of the right click menu.
 void CryDisasmCtrl::SetBreakpointMenu(Bar& pBar)
 {
 	pBar.Add("Software Breakpoint", THISBACK(SetSoftwareBreakpoint));
 	pBar.Add("Hardware Breakpoint", THISBACK(SetHardwareBreakpoint));
 }
 
+// Sets a software breakpoint on the selected address.
 void CryDisasmCtrl::SetSoftwareBreakpoint()
 {
 	// If a breakpoint is already set, the function will return true after it detected an existing software breakpoint.
@@ -268,6 +309,7 @@ void CryDisasmCtrl::SetSoftwareBreakpoint()
 	}
 }
 
+// Sets a hardware breakpoint on the selected address.
 void CryDisasmCtrl::SetHardwareBreakpoint()
 {
 	const int cursor = this->disasmDisplay.GetCursor();
@@ -364,6 +406,7 @@ void CryDisasmCtrl::AsyncDisasmCompleted(SIZE_T address)
 	PostCallback(THISBACK1(AsyncDisasmCompletedThreadSafe, address));
 }
 
+// Preparation completed event on the user interface thread.
 void CryDisasmCtrl::AsyncDisasmCompletedThreadSafe(const SIZE_T address)
 {
 	// Re-enable controls that were blocked for stability reasons.

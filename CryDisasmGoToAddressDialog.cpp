@@ -2,6 +2,7 @@
 #include "ImlProvider.h"
 #include "BackendGlobalDef.h"
 
+// Default constructor of the CryDisasmGoToAddressDialog, accepting a pointer to data the user needs.
 CryDisasmGoToAddressDialog::CryDisasmGoToAddressDialog(LONG_PTR* addr) : CryDialogTemplate(CrySearchIml::CrySearch())
 {
 	this->addrPtr = addr;
@@ -19,11 +20,13 @@ CryDisasmGoToAddressDialog::CryDisasmGoToAddressDialog(LONG_PTR* addr) : CryDial
 	;
 }
 
+// Default destructor of the CryDisasmGoToAddressDialog.
 CryDisasmGoToAddressDialog::~CryDisasmGoToAddressDialog()
 {
 	
 }
 
+// Executed when the user accepts the dialog.
 void CryDisasmGoToAddressDialog::OkButtonClicked()
 {
 	// Check if a valid address was entered.
@@ -63,6 +66,7 @@ void CryDisasmGoToAddressDialog::OkButtonClicked()
 	this->AcceptBreak(10);
 }
 
+// Executed when the user cancels the dialog.
 void CryDisasmGoToAddressDialog::CancelButtonClicked()
 {
 	*this->addrPtr = -1;

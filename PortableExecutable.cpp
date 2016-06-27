@@ -783,9 +783,12 @@ void PortableExecutable32::GetImportAddressTable() const
 					funcEntry.FunctionName = Format("%s.%i", localModName, funcEntry.Ordinal);
 				}
 				
+				// Save the thunk address of the function.
+				funcEntry.ThunkAddress = this->mBaseAddress + pDesc.FirstThunk + count++ * sizeof(DWORD);
+				
 				// Read function address from thunk data and increment function iteration counter.
 				DWORD funcAddress;
-				CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(this->mBaseAddress + pDesc.FirstThunk + count++ * sizeof(DWORD)), &funcAddress, sizeof(DWORD), NULL);
+				CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)funcEntry.ThunkAddress, &funcAddress, sizeof(DWORD), NULL);
 	
 				if (!funcAddress)
 				{
@@ -1643,9 +1646,12 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 						funcEntry.FunctionName = Format("%s.%i", localModName, funcEntry.Ordinal);
 					}
 					
+					// Save the thunk address of the function.
+					funcEntry.ThunkAddress = this->mBaseAddress + pDesc.FirstThunk + count++ * sizeof(SIZE_T);
+
 					// Read function address from thunk data and increment function iteration counter.
 					SIZE_T funcAddress;
-					CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(this->mBaseAddress + pDesc.FirstThunk + count++ * sizeof(SIZE_T)), &funcAddress, sizeof(SIZE_T), NULL);
+					CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)funcEntry.ThunkAddress, &funcAddress, sizeof(SIZE_T), NULL);
 	
 					if (!funcAddress)
 					{

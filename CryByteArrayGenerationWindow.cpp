@@ -6,6 +6,7 @@
 // This window needs access to the visible disassembly lines.
 extern Vector<LONG_PTR> DisasmVisibleLines;
 
+// The CryByteArrayGenerationWindow default constructor, accepting a number of selected rows.
 CryByteArrayGenerationWindow::CryByteArrayGenerationWindow(const Vector<int>& rows) : CryDialogTemplate(CrySearchIml::GenerateByteArrayButton())
 {
 	this->Title("Generate Byte-array").SetRect(0, 0, 300, 140);
@@ -43,23 +44,27 @@ CryByteArrayGenerationWindow::CryByteArrayGenerationWindow(const Vector<int>& ro
 	this->GenerateCSharpStyle(byteSets);
 }
 
+// The CryByteArrayGenerationWindow default destructor.
 CryByteArrayGenerationWindow::~CryByteArrayGenerationWindow()
 {
 	
 }
 
+// Generates a C++-style byte array.
 void CryByteArrayGenerationWindow::GenerateCPPStyle(const Vector<Byte>& aobs)
 {
 	// Set the string in the user interface controls.
 	this->mCPPStyleSig.SetText(GenerateByteArray(aobs, ARRAYTYPE_CPP));
 }
 
+// Generates a C#-style byte array.
 void CryByteArrayGenerationWindow::GenerateCSharpStyle(const Vector<Byte>& aobs)
 {
 	// Set generated signature inside top textbox.
 	this->mCSharpStyleSig.SetText(GenerateByteArray(aobs, ARRAYTYPE_CSHARP));
 }
 
+// Executed when the dialog is closed.
 void CryByteArrayGenerationWindow::CloseWindow()
 {
 	this->Close();

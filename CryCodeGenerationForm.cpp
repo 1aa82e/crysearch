@@ -1,6 +1,7 @@
 #include "CryCodeGenerationForm.h"
 #include "ImlProvider.h"
 
+// The CryCodeGenerationForm default constructor.
 CryCodeGenerationForm::CryCodeGenerationForm()
 {
 	this->Title("Generate Code").Icon(CrySearchIml::CodeGenerationButton()).Sizeable().SetRect(0, 0, 550, 400);
@@ -25,11 +26,13 @@ CryCodeGenerationForm::CryCodeGenerationForm()
 	this->mCodeGen = new CodeGenerator();
 }
 
+// The CryCodeGenerationForm default destructor.
 CryCodeGenerationForm::~CryCodeGenerationForm()
 {
 	delete this->mCodeGen;
 }
 
+// Generates code from the underlying address table.
 void CryCodeGenerationForm::GenerateButtonClicked()
 {
 	// Set internal/external switch for code generation.
@@ -43,6 +46,7 @@ void CryCodeGenerationForm::GenerateButtonClicked()
 	this->mCodeField.Set(codenz);
 }
 
+// Executed when the dialog is closed.
 void CryCodeGenerationForm::CloseForm()
 {
 	this->Close();

@@ -461,6 +461,7 @@ CrySearchForm::CrySearchForm(const char* fn)
 			, this->mTabbedDataWindows.SizePos())
 	;
 	
+	// Sets the position and resize thresholds for the main window splitting controls.
 	this->SetMainSplitterPosition();
 	this->mMainSplitter.SetMinPixels(0, 100);
 	this->mMainSplitter.SetMinPixels(1, 100);
@@ -468,7 +469,7 @@ CrySearchForm::CrySearchForm(const char* fn)
 	this->mInputScanSplitter.SetMinPixels(1, 250);
 	
 	// If settings configuration file is not found, create a new one using default settings.
-	if (!ConfigFileExists() || !SettingsFile::GetInstance()->Initialize())
+	if (!SettingsFile::ConfigFileExists() || !SettingsFile::GetInstance()->Initialize())
 	{
 		//Prompt("Settings Error", CtrlImg::exclamation(), "The settings file was not found or corrupt, and has been overwritten with the defaults. If this is your first run, you can ignore this warning.", "OK");
 		SettingsFile::GetInstance()->DefaultSettings();

@@ -37,6 +37,7 @@ private:
 	void GenerateSignatureButtonClicked();
 	void GenerateByteArrayButtonClicked();
 	void NopSelectedCode();
+	void GoToEntryPointClicked();
 	
 	void AsyncDisasmStarted();
 	void AsyncDisasmCompleted(SIZE_T address);

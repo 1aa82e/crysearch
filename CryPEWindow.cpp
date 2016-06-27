@@ -143,7 +143,7 @@ void CryPEWindow::ResumeSuspendedProcess()
 	mCrySearchWindowManager->GetThreadWindow()->Initialize();
 	mCrySearchWindowManager->GetImportsWindow()->Initialize();
 	mCrySearchWindowManager->GetDisasmWindow()->Initialize();
-	mCrySearchWindowManager->GetPEWindow()->Initialize();	
+	mCrySearchWindowManager->GetPEWindow()->Initialize();
 }
 
 void CryPEWindow::Initialize()
@@ -163,7 +163,7 @@ void CryPEWindow::Initialize()
 	
 	// Depending on the type of file, the lower right pane may or may not be visible.
 	*this
-		<< this->mSplitter.Horz(this->mPeInformationCtrl.SizePos(), LoadedProcessPEInformation.DotNetInformation.DotNetSections.GetCount() > 0 ? 
+		<< this->mSplitter.Horz(this->mPeInformationCtrl.SizePos(), LoadedProcessPEInformation.DotNetInformation.DotNetSections.GetCount() > 0 ?
 			this->mRightPaneSplitter.Vert(this->mSections.SizePos(), this->mDotNetInformation.SizePos()) : this->mSections.SizePos())
 	;
 }

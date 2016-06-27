@@ -74,7 +74,7 @@ CryMemoryDissectionChangeValueWindow::CryMemoryDissectionChangeValueWindow(SIZE_
 		ArrayOfBytes value;
 		mMemoryScanner->Peek(this->address, *this->size, &value);
 		this->mFieldValue.SetText(BytesToString(value.Data, value.Size));
-	}	
+	}
 	else if (this->rowType == CRYDATATYPE_STRING)
 	{
 		String value;
@@ -113,7 +113,7 @@ void CryMemoryDissectionChangeValueWindow::ValueModeHexOptionChanged()
 			short v = ScanInt(this->mFieldValue.GetText().ToString());
 			char text[64];
 			sprintf_s(text, 64, "%hX", v);
-			this->mFieldValue.SetText(text);	
+			this->mFieldValue.SetText(text);
 		}
 		else if (this->rowType == CRYDATATYPE_BYTE)
 		{
@@ -148,7 +148,7 @@ void CryMemoryDissectionChangeValueWindow::ValueModeHexOptionChanged()
 			char text[64];
 			sprintf_s(text, 64, "%hhi", v);
 			this->mFieldValue.SetText(text);
-		}		
+		}
 	}
 }
 
@@ -232,7 +232,7 @@ void CryMemoryDissectionChangeValueWindow::DialogOkay()
 	}
 	else if (this->rowType == CRYDATATYPE_AOB)
 	{
-		ArrayOfBytes aob = StringToBytes(inputVal);	
+		ArrayOfBytes aob = StringToBytes(inputVal);
 		mMemoryScanner->Poke(this->address, aob);
 		*this->size = aob.Size;
 	}

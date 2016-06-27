@@ -23,7 +23,7 @@ extern "C"
 {
 #endif
 
-int __stdcall CryDisasm(LPDISASM lpDisasm);
+const int __stdcall CryDisasm(LPDISASM lpDisasm);
 
 #ifdef _cplusplus
 }
@@ -42,8 +42,19 @@ enum ArchitectureDefinitions
 	ARCH_X64 = 64
 };
 
+// Refreshes the pages that may contain code to be disassembled.
 void RefreshExecutablePages(Vector<MemoryRegion>& pages);
-String DisasmGetLine(const SIZE_T address, ArchitectureDefinitions architecture, ArrayOfBytes* const outAob);
+
+// Retrieves an instruction that precedes that one at the specified address.
 const SIZE_T DisasmGetPreviousLine(const SIZE_T address, ArchitectureDefinitions architecture, ArrayOfBytes* const outAob);
+
+// Retrieves an instruction at the specified address.
+String DisasmGetLine(const SIZE_T address, ArchitectureDefinitions architecture, ArrayOfBytes* const outAob);
+
+// Retrieves only the instruction bytes at the specified address.
+void DisasmForBytes(const SIZE_T address, ArchitectureDefinitions architecture, ArrayOfBytes* const outAob);
+
+// Retrieves an instruction at the specified address, also resolving intermodular calls.
+String DisasmGetLineEx(const SIZE_T address, ArchitectureDefinitions architecture, ArrayOfBytes* const outAob);
 
 #endif

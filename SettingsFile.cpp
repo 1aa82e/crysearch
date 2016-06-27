@@ -1,11 +1,12 @@
 #include "SettingsFile.h"
 
 // Checks whether the settings configuration file exists.
-bool ConfigFileExists()
+const bool SettingsFile::ConfigFileExists()
 {
 	return FileExists(ConfigFile(SettingsFile::GetInstance()->GetSettingsFilename()));
 };
 
+// Procedure that converts settings to XML and back.
 void SettingsFile::Xmlize(XmlIO& pXml)
 {
 	pXml
@@ -37,6 +38,7 @@ void SettingsFile::Xmlize(XmlIO& pXml)
 	;
 }
 
+// Default settings file constructor.
 SettingsFile::SettingsFile()
 {
 	this->obfuscation[0] = 0x53797243;
@@ -45,6 +47,7 @@ SettingsFile::SettingsFile()
 	this->obfuscation[3] = 0x6c;
 }
 
+// Default settings file destructor.
 SettingsFile::~SettingsFile()
 {
 	
@@ -113,6 +116,7 @@ void SettingsFile::Save()
 	}
 }
 
+// Adds a hotkey to the settings file object.
 void SettingsFile::AddHotkey(const String& description, unsigned int key)
 {
 	CrySearchHotKey _key;
@@ -121,11 +125,13 @@ void SettingsFile::AddHotkey(const String& description, unsigned int key)
 	this->hotkeys.Add(_key);
 }
 
+// Deletes a hotkey from the settings file object.
 void SettingsFile::DeleteHotKey(const unsigned int index)
 {
 	this->hotkeys.Remove(index);
 }
 
+// Retrieves a hotkey information structure from the settings file object.
 CrySearchHotKey& SettingsFile::GetHotkey(const unsigned int index)
 {
 	return this->hotkeys[index];
@@ -146,6 +152,7 @@ bool SettingsFile::AddSymbolPath(const String& path)
 	return true;
 }
 
+// Deletes a symbol path from the settings file object.
 void SettingsFile::DeleteSymbolPath(const int index)
 {
 	this->mSymbolPaths.Remove(index);

@@ -1,7 +1,7 @@
 #include "CryAddHotkeyWindow.h"
 
 // The lookup table, allocated once at runtime. This table is used to convert hotkey fields from and to user interface views.
-const HotkeyLookupTableEntry HotkeyLookupTable[] = 
+const HotkeyLookupTableEntry HotkeyLookupTable[] =
 {
 	{ VK_F1, "F1" },
 	{ VK_F2, "F2" },
@@ -27,6 +27,7 @@ const HotkeyLookupTableEntry HotkeyLookupTable[] =
 	{ VK_NUMPAD9, "Numpad 9" }
 };
 
+// Retrieves the string representation of a specified hotkey.
 const char* HotkeyToString(const unsigned int hotkey)
 {
 	for (unsigned int i = 0; i < sizeof(HotkeyLookupTable) / sizeof(HotkeyLookupTable[0]); i++)
@@ -41,6 +42,7 @@ const char* HotkeyToString(const unsigned int hotkey)
 	__assume(0);
 }
 
+// Retrieves the keycode of a specified hotkey string representation.
 unsigned int KeycodeFromString(const String& stringRepresentation)
 {
 	for (unsigned int i = 0; i < sizeof(HotkeyLookupTable) / sizeof(HotkeyLookupTable[0]); i++)
@@ -55,6 +57,7 @@ unsigned int KeycodeFromString(const String& stringRepresentation)
 	__assume(0);
 }
 
+// The CryAddHotkeyWindow default constructor.
 CryAddHotkeyWindow::CryAddHotkeyWindow(CrySearchHotKey* entry, const Image& icon) : CryDialogTemplate(icon)
 {
 	// If the dialog was created with a valid pointer, edit mode should be enabled.
@@ -92,11 +95,13 @@ CryAddHotkeyWindow::CryAddHotkeyWindow(CrySearchHotKey* entry, const Image& icon
 	}
 }
 
+// The CryAddHotkeyWindow default destructor.
 CryAddHotkeyWindow::~CryAddHotkeyWindow()
 {
 	
 }
 
+// Executed when the user accepts the dialog.
 void CryAddHotkeyWindow::DialogOkay()
 {
 	// Collect user inputted data.
@@ -130,6 +135,7 @@ void CryAddHotkeyWindow::DialogOkay()
 	this->Close();
 }
 
+// Executed when the dialog is closed.
 void CryAddHotkeyWindow::DialogCancel()
 {
 	this->Close();

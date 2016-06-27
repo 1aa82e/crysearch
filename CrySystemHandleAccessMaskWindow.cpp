@@ -1,6 +1,7 @@
 #include "CrySystemHandleAccessMaskWindow.h"
 #include "CrySearchLibrary/SDK/CrySearch.h"
 
+// The CrySystemHandleAccessMaskWindow default constructor.
 CrySystemHandleAccessMaskWindow::CrySystemHandleAccessMaskWindow(const String& type, const DWORD mask, const Image& icon) : CryDialogTemplate(icon)
 {
 	this->Title("Access Mask").SetRect(0, 0, 300, 200);
@@ -53,11 +54,13 @@ CrySystemHandleAccessMaskWindow::CrySystemHandleAccessMaskWindow(const String& t
 	}
 }
 
+// The CrySystemHandleAccessMaskWindow default destructor.
 CrySystemHandleAccessMaskWindow::~CrySystemHandleAccessMaskWindow()
 {
 	
 }
 
+// Executed when the dialog is closed.
 void CrySystemHandleAccessMaskWindow::FormClose()
 {
 	this->Close();

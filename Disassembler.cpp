@@ -3,14 +3,14 @@
 #include "UIUtilities.h"
 
 // Stub functions are needed to avoid linker errors from multiple usage of the Disasm functions.
-int __stdcall CryDisasm(LPDISASM lpDisasm)
+const int __stdcall CryDisasm(LPDISASM lpDisasm)
 {
 	return Disasm(lpDisasm);
 }
 
 // ---------------------------------------------------------------------------------------------
 
-// Retrieves the line of disassembly at the specified address. The return value is the string 
+// Retrieves the line of disassembly at the specified address. The return value is the string
 // representation of the disassembled line. A pointer to receive the bytes can be specified.
 String DisasmGetLine(const SIZE_T address, ArchitectureDefinitions architecture, ArrayOfBytes* const outAob)
 {
@@ -62,6 +62,176 @@ String DisasmGetLine(const SIZE_T address, ArchitectureDefinitions architecture,
 		
 		delete[] buffer;
 		return disasm.CompleteInstr;
+	}
+	
+	delete[] buffer;
+	return "";
+}
+
+// Retrieves only the instruction bytes at the specified address.
+void DisasmForBytes(const SIZE_T address, ArchitectureDefinitions architecture, ArrayOfBytes* const outAob)
+{
+	const DWORD bufferLength = architecture == ARCH_X64 ? 20 : 16;
+	DISASM disasm;
+	memset(&disasm, 0, sizeof(DISASM));
+	
+	// Query virtual pages inside target process.
+    Byte* const buffer = new Byte[bufferLength];
+    CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), (void*)address, buffer, bufferLength, NULL);
+    
+    // Set EIP, correct architecture and security block to prevent access violations.
+	disasm.EIP = (UIntPtr)buffer;
+	disasm.Archi = architecture;
+	disasm.VirtualAddr = (UInt64)address;
+
+	const UInt64 codePageEnd = ((UInt64)buffer + bufferLength);
+	
+#ifdef _WIN64
+	disasm.SecurityBlock = (UInt32)(bufferLength);
+#else
+	disasm.SecurityBlock = (UIntPtr)(bufferLength);
+#endif
+
+	int len = CryDisasm(&disasm);
+	if (len == UNKNOWN_OPCODE)
+	{
+		const Byte value = *buffer;
+
+		// Even if the instruction was not recognized, place the byte into the output array if it was specified.
+		if (outAob)
+		{
+			outAob->Allocate(sizeof(Byte));
+			*outAob->Data = value;
+		}
+	}
+	else if (len > 0)
+	{
+		// Place the disassembled byte sequence in the output parameter if it was specified.
+		if (outAob)
+		{
+			outAob->Allocate(len);
+			memcpy(outAob->Data, (Byte*)disasm.EIP, len);
+		}
+	}
+	
+	delete[] buffer;
+}
+
+// Retrieves an instruction at the specified address, also resolving intermodular calls.
+String DisasmGetLineEx(const SIZE_T address, ArchitectureDefinitions architecture, ArrayOfBytes* const outAob)
+{
+	const DWORD bufferLength = architecture == ARCH_X64 ? 20 : 16;
+	DISASM disasm;
+	memset(&disasm, 0, sizeof(DISASM));
+	
+	// We make the buffer twice as large in this function, because we possibly need to disassemble a thunk too.
+    Byte* const buffer = new Byte[bufferLength * 2];
+    CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), (void*)address, buffer, bufferLength, NULL);
+    
+    // Set EIP, correct architecture and security block to prevent access violations.
+	disasm.EIP = (UIntPtr)buffer;
+	disasm.Archi = architecture;
+	disasm.VirtualAddr = (UInt64)address;
+
+	const UInt64 codePageEnd = ((UInt64)buffer + bufferLength);
+	
+#ifdef _WIN64
+	disasm.SecurityBlock = (UInt32)(bufferLength);
+#else
+	disasm.SecurityBlock = (UIntPtr)(bufferLength);
+#endif
+
+	int len = CryDisasm(&disasm);
+	if (len == UNKNOWN_OPCODE)
+	{
+		const Byte value = *buffer;
+		delete[] buffer;
+
+		// Even if the instruction was not recognized, place the byte into the output array if it was specified.
+		if (outAob)
+		{
+			outAob->Allocate(sizeof(Byte));
+			*outAob->Data = value;
+		}
+
+		// Just return a 'defined byte' description to identify an unknown instruction.
+		return "db " + FormatHexadecimalIntSpecial(value);
+	}
+	else if (len > 0)
+	{
+		// Place the disassembled byte sequence in the output parameter if it was specified.
+		if (outAob)
+		{
+			outAob->Allocate(len);
+			memcpy(outAob->Data, (Byte*)disasm.EIP, len);
+		}
+		
+		StringBuffer outBuf(MAX_PATH + sizeof(disasm.CompleteInstr));
+		String functionName;
+
+		// If the address value of this instruction contains something, it may refer to a function in the import address table.
+		if (disasm.Instruction.BranchType == CallType)
+		{
+			// Does the displacement value of the call argument refer to a thunk?
+			if ((disasm.Argument1.Memory.Displacement && LoadedProcessPEInformation.FindImportedFunctionAddress((SIZE_T)disasm.Argument1.Memory.Displacement, functionName))
+				|| (disasm.Instruction.AddrValue && LoadedProcessPEInformation.FindImportedFunctionAddress((SIZE_T)disasm.Instruction.AddrValue, functionName)))
+			{
+				// The instruction refers to an imported function.
+				const unsigned int mnemonicLength = (unsigned int)strlen(disasm.Instruction.Mnemonic);
+				char* outIterator = outBuf.Begin();
+				memcpy(outIterator, disasm.Instruction.Mnemonic, mnemonicLength);
+				outIterator += mnemonicLength;
+				const unsigned int nameLen = functionName.GetLength();
+				memcpy(outIterator, functionName, nameLen);
+				outIterator += nameLen;
+				*outIterator = 0x0;
+
+				// Clean up and return the instruction string.
+				outBuf.Strlen();
+				delete[] buffer;
+				return outBuf;
+			}
+			else
+			{
+				// Disassemble the instruction at the argument address to find out whether it actually is a thunk.
+				CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), (void*)disasm.Instruction.AddrValue, buffer + bufferLength, bufferLength, NULL);
+				DISASM thunk;
+				thunk.EIP = (UIntPtr)buffer + bufferLength;
+				thunk.Archi = architecture;
+				thunk.VirtualAddr = (UInt64)disasm.Instruction.AddrValue;
+				len = CryDisasm(&thunk);
+
+				// Is the instruction actually an unconditional jump? If so, match the address to thunk addresses in the import table.
+				if (thunk.Instruction.BranchType == JmpType)
+				{
+					if (LoadedProcessPEInformation.FindImportedFunctionAddress((SIZE_T)thunk.Argument1.Memory.Displacement, functionName))
+					{
+						// The instruction refers to an imported function.
+						const unsigned int mnemonicLength = (unsigned int)strlen(disasm.Instruction.Mnemonic);
+						char* outIterator = outBuf.Begin();
+						memcpy(outIterator, disasm.Instruction.Mnemonic, mnemonicLength);
+						outIterator += mnemonicLength;
+						const unsigned int nameLen = functionName.GetLength();
+						memcpy(outIterator, functionName, nameLen);
+						outIterator += nameLen;
+						*outIterator = 0x0;
+
+						// Clean up and return the instruction string.
+						outBuf.Strlen();
+						delete[] buffer;
+						return outBuf;
+					}
+				}
+			}
+		}
+		
+		// No function call had to be resolved.
+		memcpy(outBuf.Begin(), disasm.CompleteInstr, strlen(disasm.CompleteInstr) + 1);
+		
+		// Clean up and return the instruction string.
+		outBuf.Strlen();
+		delete[] buffer;
+		return outBuf;
 	}
 	
 	delete[] buffer;
@@ -121,7 +291,7 @@ const SIZE_T DisasmGetPreviousLine(const SIZE_T address, ArchitectureDefinitions
 			}
 		}
 		
-		delete[] buffer;	
+		delete[] buffer;
 	}
 	
 	return outputVal;

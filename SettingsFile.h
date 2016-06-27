@@ -29,9 +29,6 @@ using namespace Upp;
 #define INJECTION_METHOD_CRT			0
 #define INJECTION_METHOD_HIJACKTHREAD	1
 
-// Checks wether the application settings file exists or not
-bool ConfigFileExists();
-
 // Represents a hotkey that can be used to shorten up actions in CrySearch.
 struct CrySearchHotKey : Moveable<CrySearchHotKey>
 {
@@ -183,6 +180,9 @@ public:
 	
 	void DefaultSettings();
 	const char* const GetSettingsFilename() const				{ return (char*)this->obfuscation; }
+	
+	// Checks wether the application settings file exists or not
+	static const bool ConfigFileExists();
 };
 
 #endif

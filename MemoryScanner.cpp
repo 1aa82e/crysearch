@@ -823,6 +823,20 @@ void MemoryScanner::FirstScanWorker(const WorkerRegionParameterData& regionData,
 template <class T>
 void MemoryScanner::FirstScanWorker(const WorkerRegionParameterData& regionData, const T& value)
 {
+#ifdef _DEBUG
+	LARGE_INTEGER frequency;
+	LARGE_INTEGER t1;
+	LARGE_INTEGER t2;
+	
+	// Get the amount of ticks per second.
+	QueryPerformanceFrequency(&frequency);
+
+	// Start the timer.
+	QueryPerformanceCounter(&t1);
+#endif
+
+	// -------------------------------------------------
+	
 	FileOut addressesFile(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.temp", regionData.WorkerIdentifier)));
 	FileOut valFile(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Values%i.temp", regionData.WorkerIdentifier)));
 	
@@ -927,6 +941,14 @@ void MemoryScanner::FirstScanWorker(const WorkerRegionParameterData& regionData,
 		this->ScanRunning = false;
 		this->ScanCompleted();
 	}
+	
+	// -------------------------------------------------
+
+#ifdef _DEBUG
+	// Stop the timer.
+	QueryPerformanceCounter(&t2);
+	OutputDebugString(Format("Worker %i took %f ms\r\n", regionData.WorkerIdentifier, (t2.QuadPart - t1.QuadPart) * 1000.0 / frequency.QuadPart));
+#endif
 }
 
 // Initializes the first scan sequence. Call this function from the user interface.
@@ -965,7 +987,7 @@ void MemoryScanner::FirstScan()
 		        memReg.BaseAddress = (SIZE_T)block.BaseAddress;
 			    memReg.MemorySize = block.RegionSize;
 			    this->memRegions << memReg;
-	     	}
+			}
 	    }
 	
 		const SIZE_T oldIncAddress = incAddress;
