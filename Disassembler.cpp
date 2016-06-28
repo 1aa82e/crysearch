@@ -19,7 +19,7 @@ String DisasmGetLine(const SIZE_T address, ArchitectureDefinitions architecture,
 	memset(&disasm, 0, sizeof(DISASM));
 	
 	// Query virtual pages inside target process.
-    Byte* const buffer = new Byte[bufferLength];
+    Byte buffer[20];
     CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), (void*)address, buffer, bufferLength, NULL);
     
     // Set EIP, correct architecture and security block to prevent access violations.
@@ -38,8 +38,7 @@ String DisasmGetLine(const SIZE_T address, ArchitectureDefinitions architecture,
 	int len = CryDisasm(&disasm);
 	if (len == UNKNOWN_OPCODE)
 	{
-		const Byte value = *buffer;
-		delete[] buffer;
+		const Byte value = buffer[0];
 
 		// Even if the instruction was not recognized, place the byte into the output array if it was specified.
 		if (outAob)
@@ -60,11 +59,9 @@ String DisasmGetLine(const SIZE_T address, ArchitectureDefinitions architecture,
 			memcpy(outAob->Data, (Byte*)disasm.EIP, len);
 		}
 		
-		delete[] buffer;
 		return disasm.CompleteInstr;
 	}
 	
-	delete[] buffer;
 	return "";
 }
 
@@ -76,7 +73,7 @@ void DisasmForBytes(const SIZE_T address, ArchitectureDefinitions architecture, 
 	memset(&disasm, 0, sizeof(DISASM));
 	
 	// Query virtual pages inside target process.
-    Byte* const buffer = new Byte[bufferLength];
+    Byte buffer[20];
     CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), (void*)address, buffer, bufferLength, NULL);
     
     // Set EIP, correct architecture and security block to prevent access violations.
@@ -95,7 +92,7 @@ void DisasmForBytes(const SIZE_T address, ArchitectureDefinitions architecture, 
 	int len = CryDisasm(&disasm);
 	if (len == UNKNOWN_OPCODE)
 	{
-		const Byte value = *buffer;
+		const Byte value = buffer[0];
 
 		// Even if the instruction was not recognized, place the byte into the output array if it was specified.
 		if (outAob)
@@ -113,8 +110,6 @@ void DisasmForBytes(const SIZE_T address, ArchitectureDefinitions architecture, 
 			memcpy(outAob->Data, (Byte*)disasm.EIP, len);
 		}
 	}
-	
-	delete[] buffer;
 }
 
 // Retrieves an instruction at the specified address, also resolving intermodular calls.
@@ -125,7 +120,7 @@ String DisasmGetLineEx(const SIZE_T address, ArchitectureDefinitions architectur
 	memset(&disasm, 0, sizeof(DISASM));
 	
 	// We make the buffer twice as large in this function, because we possibly need to disassemble a thunk too.
-    Byte* const buffer = new Byte[bufferLength * 2];
+    Byte buffer[20 * 2];
     CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), (void*)address, buffer, bufferLength, NULL);
     
     // Set EIP, correct architecture and security block to prevent access violations.
@@ -144,8 +139,7 @@ String DisasmGetLineEx(const SIZE_T address, ArchitectureDefinitions architectur
 	int len = CryDisasm(&disasm);
 	if (len == UNKNOWN_OPCODE)
 	{
-		const Byte value = *buffer;
-		delete[] buffer;
+		const Byte value = buffer[0];
 
 		// Even if the instruction was not recognized, place the byte into the output array if it was specified.
 		if (outAob)
@@ -188,7 +182,6 @@ String DisasmGetLineEx(const SIZE_T address, ArchitectureDefinitions architectur
 
 				// Clean up and return the instruction string.
 				outBuf.Strlen();
-				delete[] buffer;
 				return outBuf;
 			}
 			else
@@ -218,7 +211,6 @@ String DisasmGetLineEx(const SIZE_T address, ArchitectureDefinitions architectur
 
 						// Clean up and return the instruction string.
 						outBuf.Strlen();
-						delete[] buffer;
 						return outBuf;
 					}
 				}
@@ -230,11 +222,9 @@ String DisasmGetLineEx(const SIZE_T address, ArchitectureDefinitions architectur
 		
 		// Clean up and return the instruction string.
 		outBuf.Strlen();
-		delete[] buffer;
 		return outBuf;
 	}
 	
-	delete[] buffer;
 	return "";
 }
 
@@ -298,7 +288,7 @@ const SIZE_T DisasmGetPreviousLine(const SIZE_T address, ArchitectureDefinitions
 }
 
 // Retrieves all executable pages in the target process and puts them in the vector passed as parameter.
-void RefreshExecutablePages(Vector<MemoryRegion>& pages)
+void RefreshExecutablePages(Vector<DisasmMemoryRegion>& pages)
 {
 	// Clear list first.
 	pages.Clear();
@@ -316,7 +306,7 @@ void RefreshExecutablePages(Vector<MemoryRegion>& pages)
 	     	if (((block.Protect & MEM_EXECUTABLE) != 0) || ((block.Protect & MEM_WRITABLE) != 0))
 	     	{
 	     		// Memory region is valid for scanning, add it to the region list.
-		        MemoryRegion memReg;
+		        DisasmMemoryRegion memReg;
 		        memReg.BaseAddress = (SIZE_T)block.BaseAddress;
 			    memReg.MemorySize = block.RegionSize;
 			    pages << memReg;

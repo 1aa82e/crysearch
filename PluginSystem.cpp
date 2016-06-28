@@ -2,6 +2,7 @@
 
 // ---------------------------------------------------------------------------------------------
 
+// Default PluginSystem constructor.
 PluginSystem::PluginSystem()
 {
 	// If the directory plugins is not present, it should be created.
@@ -13,6 +14,7 @@ PluginSystem::PluginSystem()
 #endif
 }
 
+// Default PluginSystem destructor.
 PluginSystem::~PluginSystem()
 {
 	this->UnloadAllPlugins();

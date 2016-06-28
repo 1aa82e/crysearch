@@ -486,7 +486,6 @@ CrySearchForm::CrySearchForm(const char* fn)
 	
 	// Initiate the memory scanner class, the most important part of CrySearch.
 	mMemoryScanner->ErrorOccured = THISBACK(ScannerErrorOccured);
-	mMemoryScanner->ScanCompleted = THISBACK(ScannerCompletedScan);
 	mMemoryScanner->UpdateScanningProgress = THISBACK(ScannerUserInterfaceUpdate);
 	mMemoryScanner->ScanStarted = THISBACK(ScannerScanStarted);
 	
@@ -1989,9 +1988,13 @@ void CrySearchForm::ScannerScanStarted(int threadCount)
 // Executed synchronously when the memory scanner has started a scan. This function may alter UI components.
 void CrySearchForm::ScannerScanStartedThreadSafe(int threadCount)
 {
+	// Update the user interface to make a new scan visible.
 	this->mToolStrip.Set(THISBACK(ToolStrip));
 	this->mScanningProgress.Show();
 	this->mScanningProgress.Set(0, threadCount);
+	
+	// Schedule a callback to periodically check for memory scanner completion.
+	SetTimeCallback(10, THISBACK(ScannerPeekCompletion), 5);
 }
 
 // Executed asynchronously when the memory scanner updates its status.
@@ -2043,45 +2046,57 @@ void CrySearchForm::ScannerErrorOccuredThreadSafe(MemoryScannerError error)
 			Prompt("Scanning Error", CtrlImg::error(), "The location of the native procedure could not be retrieved from ntdll.dll.", "OK");
 			break;
 	}
+
+	// In case of an error, erase the content of the user interface indicators.
+	this->mScanResults.Clear();
+	this->mSearchResultCount.SetLabel("Search Results: 0");
 }
 
-// Executed asynchronously when a memory scan is completed.
-void CrySearchForm::ScannerCompletedScan()
+// Peeks whether the memory scanner has completed its work or not.
+void CrySearchForm::ScannerPeekCompletion()
 {
-	PostCallback(THISBACK(ScannerCompletedThreadSafe));
-}
-
-// Executed synchronously when a memory scan is completed. This function may alter UI components.
-void CrySearchForm::ScannerCompletedThreadSafe()
-{
-	if (mMemoryScanner->GetScanResultCount() > MEMORYSCANNER_CACHE_LIMIT)
+	// Peek the memory scanner to see if it has completed its work yet.
+	if (mMemoryScanner->GetIsWorkCompleted())
 	{
-		this->mScanResults.SetVirtualCount(MEMORYSCANNER_CACHE_LIMIT);
-		this->mSearchResultCount.SetLabel(Format("Search Results: %i (100.000 results shown)", mMemoryScanner->GetScanResultCount()));
+		// The memory scan has completed. Tell the memory scanner to clean up its resources.
+		mMemoryScanner->SetWorkCompleted();
+		
+		// Update the result counter label to show the amount of search results the scan resulted in.
+		if (mMemoryScanner->GetScanResultCount() > MEMORYSCANNER_CACHE_LIMIT)
+		{
+			this->mScanResults.SetVirtualCount(MEMORYSCANNER_CACHE_LIMIT);
+			this->mSearchResultCount.SetLabel(Format("Search Results: %i (100.000 results shown)", mMemoryScanner->GetScanResultCount()));
+		}
+		else
+		{
+			this->mScanResults.SetVirtualCount(mMemoryScanner->GetScanResultCount());
+			this->mSearchResultCount.SetLabel(Format("Search Results: %i", mMemoryScanner->GetScanResultCount()));
+		}
+	
+		// Create distinction between relative and dynamic addresses.
+		CrySearchArrayCtrl* const ctrl = this->GetSearchResultCtrl();
+		const int aCount = CachedAddresses.GetCount();
+		for (int a = 0; a < aCount; ++a)
+		{
+			if (CachedAddresses[a].StaticAddress)
+			{
+				// Set green display color for relative addresses.
+				ctrl->SetRowDisplay(a, GreenDisplayDrawInstance);
+			}
+		}
+		
+		// Hide the scan progress indicator.
+		this->mScanningProgress.Hide();
+		this->mToolStrip.Set(THISBACK(ToolStrip));
+		
+		// Cheat Engine has this nice beep when a scan completes, why shouldn't I? :)
+		BeepExclamation();
 	}
 	else
 	{
-		this->mScanResults.SetVirtualCount(mMemoryScanner->GetScanResultCount());
-		this->mSearchResultCount.SetLabel(Format("Search Results: %i", mMemoryScanner->GetScanResultCount()));
+		// Schedule the next callback to periodically check for memory scanner completion.
+		SetTimeCallback(10, THISBACK(ScannerPeekCompletion), 5);
 	}
-	
-	// Create distinction between relative and dynamic addresses.
-	CrySearchArrayCtrl* const ctrl = this->GetSearchResultCtrl();
-	const int aCount = CachedAddresses.GetCount();
-	for (int a = 0; a < aCount; ++a)
-	{
-		if (CachedAddresses[a].StaticAddress)
-		{
-			// Set green display color for relative addresses.
-			ctrl->SetRowDisplay(a, GreenDisplayDrawInstance);
-		}
-	}
-	
-	this->mScanningProgress.Hide();
-	this->mToolStrip.Set(THISBACK(ToolStrip));
-	
-	// Cheat Engine has this nice beep when a scan completes, why shouldn't I? :)
-	BeepExclamation();
 }
 
 // ---------------------------------------------------------------------------------------------

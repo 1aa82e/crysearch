@@ -5,7 +5,7 @@
 #include "ProcessUtil.h"
 
 const int GetPageIndexFromAddress(const SIZE_T address, SIZE_T* const sizePtr);
-const MemoryRegion* GetPageFromAddress(const SIZE_T address);
+const DisasmMemoryRegion* GetPageFromAddress(const SIZE_T address);
 
 // Single helper class that allows the user interface of CrySearch to disassemble pages in a thread-safe way.
 class AsyncDisassembler

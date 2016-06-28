@@ -120,6 +120,7 @@ private:
 	void ScannerUserInterfaceUpdateThreadSafe(int threadCount);
 	void ScannerScanStarted(int threadCount);
 	void ScannerScanStartedThreadSafe(int threadCount);
+	void ScannerPeekCompletion();
 	
 	typedef CrySearchForm CLASSNAME;
 public:

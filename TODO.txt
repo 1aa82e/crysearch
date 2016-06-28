@@ -8,17 +8,20 @@ Package:
 - Update wiki with changes for the release.
 ------------------------------------------------------------------
 
+- Make ID defines for SetTimeCallback;
+
+- In disassembly, we can drastically reduce memory usage by only using byte offets to the previous disassembly entry:
+	- exponential time solution though!
+- Also let call stack resolve to intermodular calls / IAT?
 - Slack eats CPU and RAM when loaded into CrySearch!
 - Resolve to relative offsets too?
+- Multithread disassembler, Skype has rediculously big pages;
 
 - masking for signature generator, mask out parameters like addresses;
 - Follow pointer, many need it!
 - C++11 from upp still has bug in cowork I think;
 - let's build C++11/14 code from the current, and try to reduce the application size!
-
 - bug opening cue splitter - imports are totally fucked (UPX);
-
-- Multithread disassembler, Skype has rediculously big pages;
 - Improve SDK documentation, see learn_more's notes;
 - Post-dump (plugin operations) event in plugins!!!
 - Provide the output window / menu bar entry (PLUGIN_WANTS_OUTPUT_TAB);

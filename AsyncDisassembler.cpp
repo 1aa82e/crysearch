@@ -5,14 +5,14 @@
 Vector<LONG_PTR> DisasmVisibleLines;
 
 // Container of all executable memory pages in the target process.
-Vector<MemoryRegion> mExecutablePagesList;
+Vector<DisasmMemoryRegion> mExecutablePagesList;
 
 // Retrieves the correct page index in the list by passing an address inside it.
 const int GetPageIndexFromAddress(const SIZE_T address, SIZE_T* const sizePtr)
 {
 	for (int i = 0; i < mExecutablePagesList.GetCount(); ++i)
 	{
-		const MemoryRegion& mem = mExecutablePagesList[i];
+		const DisasmMemoryRegion& mem = mExecutablePagesList[i];
 		if (address >= mem.BaseAddress && address < mem.BaseAddress + mem.MemorySize)
 		{
 			if (sizePtr)
@@ -27,12 +27,12 @@ const int GetPageIndexFromAddress(const SIZE_T address, SIZE_T* const sizePtr)
 }
 
 // Retrieves the correct page by passing an address inside it.
-const MemoryRegion* GetPageFromAddress(const SIZE_T address)
+const DisasmMemoryRegion* GetPageFromAddress(const SIZE_T address)
 {
-	for (int i = 0; i < mExecutablePagesList.GetCount(); ++i)
+	for (auto& page : mExecutablePagesList)
 	{
 		// Loops until the memory region containing the specified address is found.
-		const MemoryRegion* mem = &mExecutablePagesList[i];
+		const DisasmMemoryRegion* mem = &page;
 		if (address >= mem->BaseAddress && address < mem->BaseAddress + mem->MemorySize)
 		{
 			return mem;
@@ -73,9 +73,9 @@ void AsyncDisassembler::RefreshDisasm(const SIZE_T addr, const SIZE_T size)
 void AsyncDisassembler::DoDisassembly(const SIZE_T address)
 {
 #ifdef _WIN64
-	const MemoryRegion* const entrypointPage = GetPageFromAddress(address);
+	const DisasmMemoryRegion* const entrypointPage = GetPageFromAddress(address);
 #else
-	const MemoryRegion* const entrypointPage = GetPageFromAddress(address);
+	const DisasmMemoryRegion* const entrypointPage = GetPageFromAddress(address);
 #endif
 
 	if (entrypointPage)

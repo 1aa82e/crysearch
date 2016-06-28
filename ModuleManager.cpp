@@ -30,6 +30,7 @@ const bool ModuleManager::EnumerateModules(const int procID, Vector<Win32ModuleI
 #endif
 	}
 	
+	// Failed to query module information properly.
 	if (result != STATUS_SUCCESS || !db->Modules)
 	{
 		CrySearchRoutines.RtlDestroyQueryDebugBuffer(db);
@@ -52,11 +53,13 @@ const bool ModuleManager::EnumerateModules(const int procID, Vector<Win32ModuleI
 	return true;
 }
 
+// Default ModuleManager constructor.
 ModuleManager::ModuleManager()
 {
 	
 }
 
+// Default ModuleManager destructor.
 ModuleManager::~ModuleManager()
 {
 	

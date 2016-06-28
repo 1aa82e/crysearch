@@ -21,6 +21,7 @@ CodeGenerator::~CodeGenerator()
 	
 }
 
+// Create credits inside generated code snippets.
 void CodeGenerator::CreateConstants()
 {
 	// "/**\r\n"\

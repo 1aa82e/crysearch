@@ -9,7 +9,7 @@
 
 // Extern declarations are needed here to prevent errors.
 extern Vector<LONG_PTR> DisasmVisibleLines;
-extern Vector<MemoryRegion> mExecutablePagesList;
+extern Vector<DisasmMemoryRegion> mExecutablePagesList;
 
 // Retrieves the disassembly line index by address.
 const int GetDisasmLineIndexFromAddress(const SIZE_T address)
@@ -371,7 +371,7 @@ void CryDisasmCtrl::ExecutablePageSelected()
 	const int cursor = this->mExecutablePages.GetIndex();
 	if (cursor >= 0 && mExecutablePagesList.GetCount() > 0)
 	{
-		const MemoryRegion& found = mExecutablePagesList[cursor];
+		const DisasmMemoryRegion& found = mExecutablePagesList[cursor];
 		this->disasmDisplay.Clear();
 		this->mAsyncHelper->Start(found.BaseAddress);
 	}

@@ -145,15 +145,24 @@ struct MemoryRegion : Moveable<MemoryRegion>
 // Defines a set of parameters needed for a new scan.
 struct WorkerRegionParameterData : Moveable<WorkerRegionParameterData>
 {
+	// Identifies the worker.
 	int WorkerIdentifier;
+	
+	// Indicates where the worker input starts in the memory page vector.
 	unsigned int OriginalStartIndex;
+	
+	// Indicates how long the input in the memory page vector is for this worker.
 	unsigned int Length;
+	
+	// Worker-wide variable that indicates whether it has completed.
+	bool FinishedWork;
 	
 	WorkerRegionParameterData()
 	{
 		this->WorkerIdentifier = 0;
 		this->OriginalStartIndex = 0;
 		this->Length = 0;
+		this->FinishedWork = false;
 	};
 };
 
@@ -295,9 +304,6 @@ private:
 	int threadCount;
 	bool mReadOnly;
 	
-	// Synchronization variables.
-	volatile Atomic threadIncrement;
-	
 	// Vector that contains the order of worker completions. Needed to ensure next scan accuracy.
 	Vector<WorkerRegionParameterData> mWorkerFileOrder;
 	
@@ -310,10 +316,10 @@ private:
 	typedef MemoryScanner CLASSNAME;
 
 	template <class T>
-	void FirstScanWorker(const WorkerRegionParameterData& regionData, const T& value);
+	void FirstScanWorker(WorkerRegionParameterData* const regionData, const T& value);
 	
 	template <class T>
-	void NextScanWorker(const WorkerRegionParameterData& regionData, const T& value);
+	void NextScanWorker(WorkerRegionParameterData* const regionData, const T& value);
 	
 	// Reallocation counter function as a workaround for the excessive buffer allocation problem on older systems.
 	inline void ReallocateMemoryScannerBufferCounter(unsigned int* const length);
@@ -363,8 +369,11 @@ public:
 	const int GetSystemThreadCount() const;
 	const bool IsReadOnlyOperationMode() const;
 	
+	// Workflow control functions for memory scanner synchronization.
+	const bool GetIsWorkCompleted() const;
+	void SetWorkCompleted();
+	
 	Callback1<int> ScanStarted;
-	Callback ScanCompleted;
 	Callback1<MemoryScannerError> ErrorOccured;
 	Callback1<int> UpdateScanningProgress;
 };

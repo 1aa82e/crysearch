@@ -12,6 +12,7 @@ v2.04:
 		- Added an option to go back to the entrypoint in the toolstrip and the right-click menu;
 		- Added resolving of intermodular function calls to functions in the import address table;
 		- 
+	- Changes to memscan???
 
 v2.03
 	- Some changes were made to the command line process analysis automation:
