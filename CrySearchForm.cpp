@@ -20,6 +20,13 @@
 #define IMAGEFILE "CrySearch.iml"
 #include <Draw/iml_source.h>
 
+// Time callback type definitions.
+#define MEMORY_SCANNER_COMPLETION_TIMECALLBACK	5
+#define ADDRESS_TABLE_UPDATE_TIMECALLBACK		10
+#define HOTKEY_TIMECALLBACK						20
+#define UPDATE_RESULTS_TIMECALLBACK				21
+#define PROCESS_TERMINATION_TIMECALLBACK		30
+
 // ---------------------------------------------------------------------------------------------
 
 // Global declaration of the memory scanner class instance which technically runs the application.
@@ -51,6 +58,7 @@ CrySearchWindowManager* mCrySearchWindowManager;
 
 // ---------------------------------------------------------------------------------------------
 
+// Gets the string representation of the address of a search result.
 String GetAddress(const int index)
 {
 #ifdef _WIN64
@@ -60,7 +68,7 @@ String GetAddress(const int index)
 #endif
 }
 
-// Virtual array control row accessors.
+// Gets the string representation of the value of a search result.
 String GetValue(const int index)
 {
 	if (!mMemoryScanner->IsScanRunning())
@@ -144,11 +152,13 @@ String GetValue(const int index)
 	return "???";
 }
 
+// Gets the description of an address table entry.
 String GetAddressTableDescription(const int index)
 {
 	return loadedTable[index]->Description;
 }
 
+// Gets the string representation of the address of an address table entry.
 String GetAddressTableAddress(const int index)
 {
 #ifdef _WIN64
@@ -158,6 +168,7 @@ String GetAddressTableAddress(const int index)
 #endif
 }
 
+// Gets the string representation of the value of an address table entry.
 String GetAddressTableValue(const int index)
 {
 	// Only read the value of address table entries if a process is opened.
@@ -252,6 +263,7 @@ String GetAddressTableValue(const int index)
 	return entry->Value;
 }
 
+// Gets the valuetype of an address table entry.
 String GetAddressTableValueType(const int index)
 {
 	return GetCrySearchDataTypeRepresentation(loadedTable[index]->ValueType);
@@ -303,7 +315,7 @@ void CrySearchForm::CheckKeyPresses()
 	}
 	
 	// Reinstate the callback for the next iteration.
-	SetTimeCallback(100, THISBACK(CheckKeyPresses), 20);
+	SetTimeCallback(100, THISBACK(CheckKeyPresses), HOTKEY_TIMECALLBACK);
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -315,7 +327,7 @@ void CrySearchForm::SearchResultListUpdater()
 	this->mScanResults.Refresh();
 	
 	// Reinstate the callback for the next iteration.
-	SetTimeCallback(1000, THISBACK(SearchResultListUpdater), 21);
+	SetTimeCallback(1000, THISBACK(SearchResultListUpdater), UPDATE_RESULTS_TIMECALLBACK);
 }
 
 // Called regularly to update entries currently in the address table.
@@ -379,7 +391,7 @@ void CrySearchForm::AddressValuesUpdater()
 	this->mUserAddressList.Refresh();
 	
 	// Reinstate timer queue callback to ensure timer keeps running.
-	SetTimeCallback(SettingsFile::GetInstance()->GetAddressTableUpdateInterval(), THISBACK(AddressValuesUpdater), 10);
+	SetTimeCallback(SettingsFile::GetInstance()->GetAddressTableUpdateInterval(), THISBACK(AddressValuesUpdater), ADDRESS_TABLE_UPDATE_TIMECALLBACK);
 }
 
 // This callback checks whether the process is still running, if one is opened.
@@ -394,11 +406,11 @@ void CrySearchForm::CheckProcessTermination()
 			this->ScannerErrorOccured(PROCESSWASTERMINATED);
 			
 			// Kill the callback, otherwise errors will keep coming.
-			KillTimeCallback(30);
+			KillTimeCallback(PROCESS_TERMINATION_TIMECALLBACK);
 		}
 	}
 	
-	SetTimeCallback(250, THISBACK(CheckProcessTermination), 30);
+	SetTimeCallback(250, THISBACK(CheckProcessTermination), PROCESS_TERMINATION_TIMECALLBACK);
 }
 
 // Link hotkeys to the correct callbacks according to the settings file.
@@ -497,13 +509,13 @@ CrySearchForm::CrySearchForm(const char* fn)
 	mPluginSystem->RetrieveAndLoadAllPlugins();
 	
 	// Set timer that runs keeping track of hotkeys.
-	SetTimeCallback(100, THISBACK(CheckKeyPresses), 20);
+	SetTimeCallback(100, THISBACK(CheckKeyPresses), HOTKEY_TIMECALLBACK);
 
 	// Set timer callback that runs the address list update sequence.
-	SetTimeCallback(SettingsFile::GetInstance()->GetAddressTableUpdateInterval(), THISBACK(AddressValuesUpdater), 10);
+	SetTimeCallback(SettingsFile::GetInstance()->GetAddressTableUpdateInterval(), THISBACK(AddressValuesUpdater), ADDRESS_TABLE_UPDATE_TIMECALLBACK);
 	
 	// Set timer callback that runs the search results update sequence.
-	SetTimeCallback(1000, THISBACK(SearchResultListUpdater), 21);
+	SetTimeCallback(1000, THISBACK(SearchResultListUpdater), UPDATE_RESULTS_TIMECALLBACK);
 	
 	// Assign proper callback functions to configured hotkeys.
 	this->LinkHotkeysToActions();
@@ -523,9 +535,9 @@ CrySearchForm::CrySearchForm(const char* fn)
 CrySearchForm::~CrySearchForm()
 {
 	// Stop the timer callbacks that are running.
-	KillTimeCallback(10);
-	KillTimeCallback(20);
-	KillTimeCallback(30);
+	KillTimeCallback(ADDRESS_TABLE_UPDATE_TIMECALLBACK);
+	KillTimeCallback(HOTKEY_TIMECALLBACK);
+	KillTimeCallback(PROCESS_TERMINATION_TIMECALLBACK);
 }
 
 // Populates the main application window menu strip.
@@ -1246,12 +1258,14 @@ void CrySearchForm::SearchResultDoubleClicked()
 // Executes a first memory search.
 void CrySearchForm::MemorySearch()
 {
+	// If no process is opened, a scan should not be started.
 	if (!this->processLoaded)
 	{
 		Prompt("Input Error", CtrlImg::error(), "There is no process opened. Please open a process first.", "OK");
 		return;
 	}
 	
+	// Open the new scan dialog to allow the user to select options.
 	CryNewScanForm* newScan = new CryNewScanForm(true, CrySearchIml::SearchMemoryMenu());
 	if (newScan->Execute() != 10)
 	{
@@ -1259,6 +1273,7 @@ void CrySearchForm::MemorySearch()
 		return;
 	}
 	
+	// Start a new memory scan asynchronously.
 	delete newScan;
 	this->ClearScanResultsWithoutWarning();
 
@@ -1306,100 +1321,85 @@ void CrySearchForm::StartNextScanHotkey()
 }
 
 // Starts a memory search on a separate thread.
-void CrySearchForm::StartMemoryScanReliefGUI(bool FirstScan)
+void CrySearchForm::StartMemoryScanReliefGUI(const bool FirstScan)
 {
-	switch (GlobalScanParameter->GlobalScanValueType)
+	if (FirstScan)
 	{
-		case VALUETYPE_BYTE:
-			if (FirstScan)
-			{
-				mMemoryScanner->FirstScan<Byte>();
-			}
-			else
-			{
-				mMemoryScanner->NextScan<Byte>();
-			}
-			break;
-		case VALUETYPE_2BYTE:
-			if (FirstScan)
-			{
-				mMemoryScanner->FirstScan<short>();
-			}
-			else
-			{
-				mMemoryScanner->NextScan<short>();
-			}
-			break;
-		case VALUETYPE_4BYTE:
-			if (FirstScan)
-			{
-				mMemoryScanner->FirstScan<int>();
-			}
-			else
-			{
-				mMemoryScanner->NextScan<int>();
-			}
-			break;
-		case VALUETYPE_8BYTE:
-			if (FirstScan)
-			{
-				mMemoryScanner->FirstScan<__int64>();
-			}
-			else
-			{
-				mMemoryScanner->NextScan<__int64>();
-			}
-			break;
-		case VALUETYPE_FLOAT:
-			if (FirstScan)
-			{
-				mMemoryScanner->FirstScan<float>();
-			}
-			else
-			{
-				mMemoryScanner->NextScan<float>();
-			}
-			break;
-		case VALUETYPE_DOUBLE:
-			if (FirstScan)
-			{
-				mMemoryScanner->FirstScan<double>();
-			}
-			else
-			{
-				mMemoryScanner->NextScan<double>();
-			}
-			break;
-		case VALUETYPE_STRING:
-			if (FirstScan)
-			{
-				mMemoryScanner->FirstScan<String>();
-			}
-			else
-			{
-				mMemoryScanner->NextScan<String>();
-			}
-			break;
-		case VALUETYPE_WSTRING:
-			if (FirstScan)
-			{
-				mMemoryScanner->FirstScan<WString>();
-			}
-			else
-			{
-				mMemoryScanner->NextScan<WString>();
-			}
-			break;
-		case VALUETYPE_AOB:
-			if (FirstScan)
-			{
-				mMemoryScanner->FirstScan<ArrayOfBytes>();
-			}
-			else
-			{
-				mMemoryScanner->NextScan<ArrayOfBytes>();
-			}
-			break;
+		if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_BYTE)
+		{
+			mMemoryScanner->FirstScan<Byte>();
+		}
+		else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_2BYTE)
+		{
+			mMemoryScanner->FirstScan<short>();
+		}
+		else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_4BYTE)
+		{
+			mMemoryScanner->FirstScan<int>();
+		}
+		else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_8BYTE)
+		{
+			mMemoryScanner->FirstScan<__int64>();
+		}
+		else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_FLOAT)
+		{
+			mMemoryScanner->FirstScan<float>();
+		}
+		else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_DOUBLE)
+		{
+			mMemoryScanner->FirstScan<double>();
+		}
+		else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_STRING)
+		{
+			mMemoryScanner->FirstScan<String>();
+		}
+		else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_WSTRING)
+		{
+			mMemoryScanner->FirstScan<WString>();
+		}
+		else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_AOB)
+		{
+			mMemoryScanner->FirstScan<ArrayOfBytes>();
+		}
+	}
+	else
+	{
+		if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_BYTE)
+		{
+			mMemoryScanner->NextScan<Byte>();
+		}
+		else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_2BYTE)
+		{
+			mMemoryScanner->NextScan<short>();
+		}
+		else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_4BYTE)
+		{
+			mMemoryScanner->NextScan<int>();
+		}
+		else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_8BYTE)
+		{
+			mMemoryScanner->NextScan<__int64>();
+		}
+		else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_FLOAT)
+		{
+			mMemoryScanner->NextScan<float>();
+		}
+		else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_DOUBLE)
+		{
+			mMemoryScanner->NextScan<double>();
+		}
+		else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_STRING)
+		{
+			mMemoryScanner->NextScan<String>();
+		}
+		else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_WSTRING)
+		{
+			mMemoryScanner->NextScan<WString>();
+		}
+		else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_AOB)
+		{
+			mMemoryScanner->NextScan<ArrayOfBytes>();
+		}
 	}
 }
 
@@ -1483,7 +1483,7 @@ bool CrySearchForm::CloseProcess()
 	this->mTabbedDataWindows.Reset();
 	
 	// Kill running timers.
-	KillTimeCallback(10);
+	KillTimeCallback(ADDRESS_TABLE_UPDATE_TIMECALLBACK);
 	
 	// Refresh address table for user interface.
 	this->mUserAddressList.SetVirtualCount(loadedTable.GetCount());
@@ -1509,8 +1509,8 @@ void CrySearchForm::SettingsButtonClicked()
 	// If the hotkeys are enabled, reinstate the callback for the next poll session.
 	if (SettingsFile::GetInstance()->GetEnableHotkeys())
 	{
-		KillTimeCallback(20);
-		SetTimeCallback(100, THISBACK(CheckKeyPresses), 20);
+		KillTimeCallback(HOTKEY_TIMECALLBACK);
+		SetTimeCallback(100, THISBACK(CheckKeyPresses), HOTKEY_TIMECALLBACK);
 	}
 }
 
@@ -1858,7 +1858,7 @@ bool CrySearchForm::InitializeProcessUI()
 	this->mToolStrip.Set(THISBACK(ToolStrip));
 
 	// Set timer callback that runs the address list update sequence.
-	SetTimeCallback(SettingsFile::GetInstance()->GetAddressTableUpdateInterval(), THISBACK(AddressValuesUpdater), 10);
+	SetTimeCallback(SettingsFile::GetInstance()->GetAddressTableUpdateInterval(), THISBACK(AddressValuesUpdater), ADDRESS_TABLE_UPDATE_TIMECALLBACK);
 	
 	// Succesfully initialized user interface.
 	return true;
@@ -1915,7 +1915,7 @@ void CrySearchForm::WhenProcessOpened(Win32ProcessInformation* pProc)
 				this->mTabbedDataWindows.Add(this->mWindowManager.GetModuleWindow()->SizePos(), "Modules");
 				
 				this->ProcessTerminated = false;
-				SetTimeCallback(250, THISBACK(CheckProcessTermination), 30);
+				SetTimeCallback(250, THISBACK(CheckProcessTermination), PROCESS_TERMINATION_TIMECALLBACK);
 			}
 			else
 			{
@@ -1965,7 +1965,7 @@ void CrySearchForm::WhenProcessOpened(Win32ProcessInformation* pProc)
 			this->mTabbedDataWindows.Add(this->mWindowManager.GetModuleWindow()->SizePos(), "Modules");
 			
 			this->ProcessTerminated = false;
-			SetTimeCallback(250, THISBACK(CheckProcessTermination), 30);
+			SetTimeCallback(250, THISBACK(CheckProcessTermination), PROCESS_TERMINATION_TIMECALLBACK);
 		}
 	}
 	
@@ -1994,7 +1994,7 @@ void CrySearchForm::ScannerScanStartedThreadSafe(int threadCount)
 	this->mScanningProgress.Set(0, threadCount);
 	
 	// Schedule a callback to periodically check for memory scanner completion.
-	SetTimeCallback(10, THISBACK(ScannerPeekCompletion), 5);
+	SetTimeCallback(10, THISBACK(ScannerPeekCompletion), MEMORY_SCANNER_COMPLETION_TIMECALLBACK);
 }
 
 // Executed asynchronously when the memory scanner updates its status.
@@ -2023,7 +2023,7 @@ void CrySearchForm::ScannerErrorOccuredThreadSafe(MemoryScannerError error)
 	{
 		case OPENPROCESSFAILED:
 			// Kill timer callback, otherwise two error messages will pop up.
-			KillTimeCallback(30);
+			KillTimeCallback(PROCESS_TERMINATION_TIMECALLBACK);
 			
 			Prompt("Process Error", CtrlImg::error(), Format("Could not open the selected process. The process is either protected or 64-bit."\
 				" To open a protected process, try running %s as Administrator.", (char*)appname), "OK");
@@ -2031,7 +2031,7 @@ void CrySearchForm::ScannerErrorOccuredThreadSafe(MemoryScannerError error)
 			break;
 		case PROCESSWASTERMINATED:
 			// Kill timer callback, otherwise the stack will overflow.
-			KillTimeCallback(30);
+			KillTimeCallback(PROCESS_TERMINATION_TIMECALLBACK);
 			
 			Prompt("Process Error", CtrlImg::error(), "It looks like the process has been terminated. The process will now be closed.", "OK");
 			this->CloseProcessMenu();
@@ -2095,7 +2095,7 @@ void CrySearchForm::ScannerPeekCompletion()
 	else
 	{
 		// Schedule the next callback to periodically check for memory scanner completion.
-		SetTimeCallback(10, THISBACK(ScannerPeekCompletion), 5);
+		SetTimeCallback(10, THISBACK(ScannerPeekCompletion), MEMORY_SCANNER_COMPLETION_TIMECALLBACK);
 	}
 }
 

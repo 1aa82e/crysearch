@@ -241,13 +241,13 @@ void CryNewScanForm::BlockSizeSelected()
 
 void CryNewScanForm::OkButtonClicked()
 {
-	if (((String)this->mValueToSearchFor).IsEmpty() && this->mScanTypeSelector.GetIndex() < 3)
+	if (this->mValueToSearchFor.GetText().IsEmpty() && this->mScanTypeSelector.GetIndex() < 3)
 	{
 		Prompt("Input Error", CtrlImg::error(), "The inserted value is invalid!", "OK");
 		return;
 	}
 	
-	if ((this->mBlockSizeSelector.GetIndex() == 6) && (this->mValueToSearchFor.GetLength() > 2 && ((String)this->mValueToSearchFor).Find(" ") == -1))
+	if ((this->mBlockSizeSelector.GetIndex() == 6) && (this->mValueToSearchFor.GetLength() > 2 && this->mValueToSearchFor.GetText().Find(" ") == -1))
 	{
 		Prompt("Input Error", CtrlImg::error(), "Please format array of bytes correctly!&&Example: 0A FF B3", "OK");
 		return;

@@ -32,7 +32,7 @@ void CryMemoryDissectionSettingsWindow::OkButtonClicked()
 {
 	// Check input values for possible errors.
 	const int interval = StrInt(this->mUpdateInterval.GetText().ToString());
-	if (((String)this->mUpdateInterval).IsEmpty() || interval <= 0)
+	if (this->mUpdateInterval.GetText().IsEmpty() || interval <= 0)
 	{
 		Prompt("Input Error", CtrlImg::error(), "The updater interval value is invalid.", "OK");
 		return;

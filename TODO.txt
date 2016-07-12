@@ -8,7 +8,9 @@ Package:
 - Update wiki with changes for the release.
 ------------------------------------------------------------------
 
-- Make ID defines for SetTimeCallback;
+- BUG STILL THERE, REPORT!
+
+- Bug in import table parser, x64, when switching from slack to winamp!
 
 - In disassembly, we can drastically reduce memory usage by only using byte offets to the previous disassembly entry:
 	- exponential time solution though!
@@ -19,7 +21,6 @@ Package:
 
 - masking for signature generator, mask out parameters like addresses;
 - Follow pointer, many need it!
-- C++11 from upp still has bug in cowork I think;
 - let's build C++11/14 code from the current, and try to reduce the application size!
 - bug opening cue splitter - imports are totally fucked (UPX);
 - Improve SDK documentation, see learn_more's notes;
@@ -105,10 +106,10 @@ Add this to the CoWork class:
 
 	void SetThreadPriority(const int Priority)
 	{
-		Array<Thread>& thpPool = this->pool->threads;
+		Array<Thread>& thpPool = this->GetPool().threads;
 		
 		switch (Priority)
-		{	
+		{
 			case 0:
 				for (int thCount = 0; thCount < thpPool.GetCount(); thCount++)
 				{

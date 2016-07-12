@@ -7,6 +7,8 @@
 #include "UIUtilities.h"
 #include "BackendGlobalDef.h"
 
+#define DISSECTION_UPDATE_TIMECALLBACK 10
+
 // ---------------------------------------------------------------------------------------------
 
 // Global variable to keep track of how addresses in the dissection should be displayed.
@@ -143,13 +145,13 @@ CryMemoryDissectionWindow::CryMemoryDissectionWindow(const AddressTableEntry* co
 	DissectionRowValueHexMode = SettingsFile::GetInstance()->GetDissectionHexadecimalView();
 	
 	// Install time interval callback to dynamically refresh dissection.
-	this->SetTimeCallback(SettingsFile::GetInstance()->GetDissectionUpdateInterval(), THISBACK(IntervalUpdateDissection), 10);
+	this->SetTimeCallback(SettingsFile::GetInstance()->GetDissectionUpdateInterval(), THISBACK(IntervalUpdateDissection), DISSECTION_UPDATE_TIMECALLBACK);
 }
 
 CryMemoryDissectionWindow::~CryMemoryDissectionWindow()
 {
 	// Kill running update callback before destroying the window.
-	KillTimeCallback(10);
+	KillTimeCallback(DISSECTION_UPDATE_TIMECALLBACK);
 }
 
 void CryMemoryDissectionWindow::WindowMenuBar(Bar& pBar)
@@ -284,7 +286,7 @@ void CryMemoryDissectionWindow::ChangeRowOffsetMenu(Bar& pBar)
 	if (row->RowType == CRYDATATYPE_AOB || row->RowType == CRYDATATYPE_STRING || row->RowType == CRYDATATYPE_WSTRING)
 	{
 		pBar.Separator();
-		pBar.Add("Set Length", this->mRowSizeControl.LeftPos(0, 130).TopPos(0));
+		pBar.Add(this->mRowSizeControl.LeftPos(0, 130).TopPos(0));
 		pBar.Separator();
 		this->mRowSizeControl.SetValueInt(row->DataLength);
 	}
@@ -299,7 +301,7 @@ void CryMemoryDissectionWindow::IntervalUpdateDissection()
 	this->mDissection.Refresh();
 	
 	// Reinstall time callback function for the next interval.
-	this->SetTimeCallback(SettingsFile::GetInstance()->GetDissectionUpdateInterval(), THISBACK(IntervalUpdateDissection), 10);
+	this->SetTimeCallback(SettingsFile::GetInstance()->GetDissectionUpdateInterval(), THISBACK(IntervalUpdateDissection), DISSECTION_UPDATE_TIMECALLBACK);
 }
 
 // Refreshes the dissection that is currently selected.

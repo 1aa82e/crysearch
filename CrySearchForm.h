@@ -111,7 +111,7 @@ private:
 	void MemorySearch();
 	void RefreshSearchResults();
 	void StartNextScanHotkey();
-	void StartMemoryScanReliefGUI(bool FirstScan);
+	void StartMemoryScanReliefGUI(const bool FirstScan);
 	void ScannerCompletedScan();
 	void ScannerCompletedThreadSafe();
 	void ScannerErrorOccured(MemoryScannerError error);

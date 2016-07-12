@@ -45,7 +45,10 @@ enum ArchitectureDefinitions
 // Represents a memory region solely for disassembler use.
 struct DisasmMemoryRegion : Moveable<DisasmMemoryRegion>
 {
+	// The base address of a block of memory.
 	SIZE_T BaseAddress;
+	
+	// The size of a block of memory.
 	SIZE_T MemorySize;
 };
 

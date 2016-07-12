@@ -10,7 +10,7 @@
 class CryDisasmCtrl : public ParentCtrl
 {
 private:
-	AsyncDisassembler* mAsyncHelper;
+	AsyncDisassembler mAsyncHelper;
 
 	ToolBar mToolStrip;
 	CrySearchArrayCtrl disasmDisplay;
@@ -38,10 +38,9 @@ private:
 	void GenerateByteArrayButtonClicked();
 	void NopSelectedCode();
 	void GoToEntryPointClicked();
+	void PeekDisasmCompletion();
 	
 	void AsyncDisasmStarted();
-	void AsyncDisasmCompleted(SIZE_T address);
-	void AsyncDisasmCompletedThreadSafe(const SIZE_T address);
 	
 	virtual bool Key(dword key, int count);
 	

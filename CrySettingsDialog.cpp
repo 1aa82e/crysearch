@@ -273,7 +273,7 @@ void CrySearchSettingsDialog::SettingsOk()
 {
 	// Check input values for possible errors.
 	const int interval = StrInt(this->mAddressTableUpdaterIntervalEditField.GetText().ToString());
-	if (((String)this->mAddressTableUpdaterIntervalEditField).IsEmpty() || interval <= 0)
+	if (this->mAddressTableUpdaterIntervalEditField.GetText().IsEmpty() || interval <= 0)
 	{
 		Prompt("Input Error", CtrlImg::error(), "The updater interval value is invalid.", "OK");
 		return;
@@ -284,7 +284,7 @@ void CrySearchSettingsDialog::SettingsOk()
 	}
 	
 	const int stackLimit = StrInt(this->mStackSnapshotLimitEdit.GetText().ToString());
-	if (((String)this->mStackSnapshotLimitEdit).IsEmpty() || stackLimit <= 0)
+	if (this->mStackSnapshotLimitEdit.GetText().IsEmpty() || stackLimit <= 0)
 	{
 		Prompt("Input Error", CtrlImg::error(), "The stack snapshot limit value is invalid.", "OK");
 		return;

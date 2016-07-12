@@ -78,11 +78,6 @@ struct ImportTableDescriptor : Moveable<ImportTableDescriptor>
 	{
 		return this->ModuleName.GetHashValue();
 	}
-	
-	bool operator ==(const ImportTableDescriptor& v) const
-	{
-		return this->ModuleName == v.ModuleName;
-	}
 };
 
 // Contains data about a .NET executable header and sections.

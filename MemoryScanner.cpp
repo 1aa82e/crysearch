@@ -7,8 +7,7 @@
 // Global synchronisation primitives to avoid unnessecary thread usage and speed up calls.
 volatile Atomic RegionFinishCount;
 
-// The memory scanner thread pool and synchronisation primitives.
-CoWork threadPool;
+// The synchronisation primitives.
 StaticMutex CacheMutex;
 
 // Globally used scanning variables. Declared globally to speed up calls and variable access.
@@ -301,6 +300,12 @@ const int MemoryScanner::GetScanResultCount() const
 const bool MemoryScanner::IsReadOnlyOperationMode() const
 {
 	return this->mReadOnly;
+}
+
+// Returns a reference to the thread pool object used internally.
+CoWork& MemoryScanner::GetThreadPoolReference()
+{
+	return this->mThreadPool;
 }
 
 // Checks whether all workers are done with scanning jobs.
@@ -1031,7 +1036,7 @@ void MemoryScanner::FirstScan()
 	
 	// Start worker threads using the regions that are found and readable.
 #ifdef _MULTITHREADED
-	threadPool.SetThreadPriority(this->mSettingsInstance->GetScanThreadPriority());
+	mMemoryScanner->GetThreadPoolReference().SetThreadPriority(this->mSettingsInstance->GetScanThreadPriority());
 #endif
 
 	// Signal user interface with a count to set progress indicator to ready state.
@@ -1073,7 +1078,7 @@ void MemoryScanner::FirstScan()
 	// Launch the workers.
 	for (auto& work : this->mWorkerFileOrder)
 	{
-		threadPool & THISBACK2(FirstScanWorker<T>, &work, ((T)(reinterpret_cast<ScanParameters<T>*>(GlobalScanParameter))->ScanValue));
+		mMemoryScanner->GetThreadPoolReference() & THISBACK2(FirstScanWorker<T>, &work, ((T)(reinterpret_cast<ScanParameters<T>*>(GlobalScanParameter))->ScanValue));
 	}
 }
 
@@ -1597,14 +1602,14 @@ void MemoryScanner::NextScan()
 	
 	// Set thread priority for the workers ran by this scan session.
 #ifdef _MULTITHREADED
-	threadPool.SetThreadPriority(this->mSettingsInstance->GetScanThreadPriority());
+	mMemoryScanner->GetThreadPoolReference().SetThreadPriority(this->mSettingsInstance->GetScanThreadPriority());
 #endif
 
 	// Start worker threads accordingly to previous scan.
 	for (auto& work : this->mWorkerFileOrder)
 	{
 		work.FinishedWork = false;
-		threadPool & THISBACK2(NextScanWorker<T>, &work, ((T)(reinterpret_cast<ScanParameters<T>*>(GlobalScanParameter))->ScanValue));
+		mMemoryScanner->GetThreadPoolReference() & THISBACK2(NextScanWorker<T>, &work, ((T)(reinterpret_cast<ScanParameters<T>*>(GlobalScanParameter))->ScanValue));
 	}
 }
 

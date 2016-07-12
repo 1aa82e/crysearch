@@ -11,10 +11,12 @@
 extern Vector<LONG_PTR> DisasmVisibleLines;
 extern Vector<DisasmMemoryRegion> mExecutablePagesList;
 
+#define DISASSEMBLER_PROGRESS_TIMECALLBACK		40
+
 // Retrieves the disassembly line index by address.
 const int GetDisasmLineIndexFromAddress(const SIZE_T address)
 {
-	const LONG_PTR* next = NULL;
+	const SIZE_T* next = NULL;
 	const int count = DisasmVisibleLines.GetCount();
 	
 	// Loop the addresses inside the currently disassembled area.
@@ -23,15 +25,14 @@ const int GetDisasmLineIndexFromAddress(const SIZE_T address)
 		const int nextIndex = i + 1;
 		if (nextIndex < count)
 		{
-			next = &DisasmVisibleLines[nextIndex];
+			next = (SIZE_T*)&DisasmVisibleLines[nextIndex];
 		}
 		else
 		{
 			next = NULL;
 		}
 		
-		const LONG_PTR signedAddr = address;
-		if (DisasmVisibleLines[i] >= signedAddr && (next && (*next && signedAddr < *next)))
+		if (((SIZE_T)DisasmVisibleLines[i]) >= address && (next && (*next && address < *next)))
 		{
 			return i;
 		}
@@ -105,7 +106,8 @@ CryDisasmCtrl::CryDisasmCtrl()
 	this->mExecutablePages.WhenDrop = THISBACK(ExecutablePagesDropped);
 	this->mExecutablePages.WhenAction = THISBACK(ExecutablePageSelected);
 	
-	this->mAsyncHelper = NULL;
+	// Initialize async helper to serve UI responsiveness for the newly opened process.
+	this->mAsyncHelper.DisasmStarted = THISBACK(AsyncDisasmStarted);
 }
 
 // Default CryDisasmCtrl destructor.
@@ -120,19 +122,25 @@ void CryDisasmCtrl::ToolStrip(Bar& pBar)
 	pBar.Add(this->mExecutablePagesDescriptor.SetLabel("Page: "));
 	pBar.Add(this->mExecutablePages, 200);
 	pBar.Separator();
-	pBar.Add("Go to entrypoint", CrySearchIml::EntryPointIcon(), THISBACK(GoToEntryPointClicked));
+	pBar.Add(!this->mAsyncHelper.IsRunning(), "Go to entrypoint", CrySearchIml::EntryPointIcon(), THISBACK(GoToEntryPointClicked));
 	pBar.Separator();
-	pBar.Add("Signature", CrySearchIml::GenerateSignatureButton(), THISBACK(GenerateSignatureButtonClicked));
-	pBar.Add("Byte-array", CrySearchIml::GenerateByteArrayButton(), THISBACK(GenerateByteArrayButtonClicked));
+	pBar.Add(!this->mAsyncHelper.IsRunning(), "Signature", CrySearchIml::GenerateSignatureButton(), THISBACK(GenerateSignatureButtonClicked));
+	pBar.Add(!this->mAsyncHelper.IsRunning(), "Byte-array", CrySearchIml::GenerateByteArrayButton(), THISBACK(GenerateByteArrayButtonClicked));
 	pBar.ToolGapRight();
-	pBar.Add(this->mPageSizeInDisasm.SetLabel("Page Size: 0").SetAlign(ALIGN_RIGHT), 150);
+	
+	// The contents of the page size label should be set according to the current state.
+#ifdef _WIN64
+	pBar.Add(this->mPageSizeInDisasm.SetLabel("Page Size: " + FormatInt64HexUpper(this->mAsyncHelper.GetCurrentPageSize())).SetAlign(ALIGN_RIGHT), 150);
+#else
+	pBar.Add(this->mPageSizeInDisasm.SetLabel("Page Size: " + FormatHexadecimalIntSpecial(this->mAsyncHelper.GetCurrentPageSize())).SetAlign(ALIGN_RIGHT), 150);
+#endif
 }
 
 // Executed when the user right-clicks the disassembly region in the user interface.
 void CryDisasmCtrl::DisassemblyRightClick(Bar& pBar)
 {
 	// Whether an item is selected or not, these items should be always added to the menu.
-	pBar.Add("Go to Address\tCTRL + G", THISBACK(GoToAddressButtonClicked));
+	pBar.Add(!this->mAsyncHelper.IsRunning(), "Go to Address\tCTRL + G", THISBACK(GoToAddressButtonClicked));
 	pBar.Separator();
 	
 	// One item must be always selected.
@@ -154,10 +162,10 @@ void CryDisasmCtrl::DisassemblyRightClick(Bar& pBar)
 		
 		// Below the single selection menu items, this item should go for both, even though it should be located below.
 		pBar.Separator();
-		pBar.Add("NOP Selected", THISBACK(NopSelectedCode));
-		pBar.Add("Generate", THISBACK(DisasmGenerateSubmenu));
+		pBar.Add(!this->mAsyncHelper.IsRunning(), "NOP Selected", THISBACK(NopSelectedCode));
+		pBar.Add(!this->mAsyncHelper.IsRunning(), "Generate", THISBACK(DisasmGenerateSubmenu));
 		pBar.Separator();
-		pBar.Add("Go to entrypoint", CrySearchIml::EntryPointIcon(), THISBACK(GoToEntryPointClicked));
+		pBar.Add(!this->mAsyncHelper.IsRunning(), "Go to entrypoint", CrySearchIml::EntryPointIcon(), THISBACK(GoToEntryPointClicked));
 	}
 }
 
@@ -326,9 +334,15 @@ void CryDisasmCtrl::MoveToAddress(const SIZE_T address)
 		return;
 	}
 	
-	// Still here, so start refreshing the disasm.
+	// Clean up the current set of disasm lines.
 	this->disasmDisplay.Clear();
-	this->mAsyncHelper->Start(address);
+	DisasmVisibleLines.Clear();
+	
+	// Still here, so start refreshing the disasm.
+	this->mAsyncHelper.Start(address);
+	
+	// Start polling the disassembler completion state.
+	SetTimeCallback(10, THISBACK(PeekDisasmCompletion), DISASSEMBLER_PROGRESS_TIMECALLBACK);
 }
 
 // Go to an address in the disassembly. This action disassembles the page in which the address
@@ -368,12 +382,22 @@ void CryDisasmCtrl::ExecutablePagesDropped()
 // Executed when a new item is selected in the virtual pages drop list.
 void CryDisasmCtrl::ExecutablePageSelected()
 {
+	// Make it fool-proof, this function can only be executed with a valid page index.
 	const int cursor = this->mExecutablePages.GetIndex();
 	if (cursor >= 0 && mExecutablePagesList.GetCount() > 0)
 	{
+		// Get the page from the page index.
 		const DisasmMemoryRegion& found = mExecutablePagesList[cursor];
+
+		// Clean up the existing set of lines.
 		this->disasmDisplay.Clear();
-		this->mAsyncHelper->Start(found.BaseAddress);
+		DisasmVisibleLines.Clear();
+
+		// Start the disassembly of the selected page.
+		this->mAsyncHelper.Start(found.BaseAddress);
+
+		// Start polling the disassembler completion state.
+		SetTimeCallback(10, THISBACK(PeekDisasmCompletion), DISASSEMBLER_PROGRESS_TIMECALLBACK);
 	}
 }
 
@@ -381,15 +405,18 @@ void CryDisasmCtrl::ExecutablePageSelected()
 void CryDisasmCtrl::ClearList()
 {
 	// Make sure the disassembler has been fully killed before closing the process.
-	this->mAsyncHelper->Kill();
-	delete this->mAsyncHelper;
+	this->mAsyncHelper.Kill();
+	
+	// Kill the progress callback.
+	KillTimeCallback(DISASSEMBLER_PROGRESS_TIMECALLBACK);
+	
+	// Clear the user interface controls before clearing the data.
+	this->mExecutablePages.SetCount(0);
+	this->disasmDisplay.Clear();
 	
 	// Clear the list of disassembly lines after the disassembler has been killed in order to prevent trouble.
 	DisasmVisibleLines.Clear();
 	mExecutablePagesList.Clear();
-	
-	this->mExecutablePages.SetCount(0);
-	this->disasmDisplay.Clear();
 }
 
 // Callback that executes when the asynchronous disassembly process was kicked off.
@@ -398,48 +425,53 @@ void CryDisasmCtrl::AsyncDisasmStarted()
 	// Block controls that can create a risk for application stability.
 	this->mExecutablePages.Disable();
 	this->disasmDisplay.Disable();
+	
+	// Update the toolbar to disable buttons during disassembly.
+	this->UpdateToolbar();
 }
 
-// Prepration completed event.
-void CryDisasmCtrl::AsyncDisasmCompleted(SIZE_T address)
+// Peeks the disassembler for its completion state.
+void CryDisasmCtrl::PeekDisasmCompletion()
 {
-	PostCallback(THISBACK1(AsyncDisasmCompletedThreadSafe, address));
-}
-
-// Preparation completed event on the user interface thread.
-void CryDisasmCtrl::AsyncDisasmCompletedThreadSafe(const SIZE_T address)
-{
-	// Re-enable controls that were blocked for stability reasons.
-	this->mExecutablePages.Enable();
-	this->disasmDisplay.Enable();
-	
-	// Update controls to fit core application process results.
-	this->disasmDisplay.SetVirtualCount(DisasmVisibleLines.GetCount());
-	
-	SIZE_T size = 0;
-	const int index = GetPageIndexFromAddress(address, &size);
-	if (index >= 0 && index < mExecutablePagesList.GetCount())
+	// Check whether the disassembler has completed.
+	SIZE_T address;
+	if (this->mAsyncHelper.PeekAndCopy(&address))
 	{
-		this->mExecutablePages.SetIndex(index);
+		// Re-enable controls that were blocked for stability reasons.
+		this->mExecutablePages.Enable();
+		this->disasmDisplay.Enable();
+		
+		// Update controls to fit core application process results.
+		this->disasmDisplay.SetVirtualCount(DisasmVisibleLines.GetCount());
+		
+		SIZE_T size = 0;
+		const int index = GetPageIndexFromAddress(address, &size);
+		if (index >= 0 && index < mExecutablePagesList.GetCount())
+		{
+			this->mExecutablePages.SetIndex(index);
+		}
+		
+		// Re-enable the disabled buttons in the toolbar.
+		this->UpdateToolbar();
+		
+		// Scroll down to the selected address.
+		const int newRow = GetDisasmLineIndexFromAddress(address);
+		this->disasmDisplay.ScrollInto(newRow + 5 > DisasmVisibleLines.GetCount() ? newRow : newRow + 5);
+		this->disasmDisplay.Select(newRow);
 	}
-	
-	// Scroll down to the selected address.
-	const int newRow = GetDisasmLineIndexFromAddress(address);
-	this->disasmDisplay.ScrollInto(newRow + 5 > DisasmVisibleLines.GetCount() ? newRow : newRow + 5);
-	this->disasmDisplay.Select(newRow);
-	this->mPageSizeInDisasm.SetLabel(Format("Page Size: %s", FormatInt64HexUpper(size)));
+	else
+	{
+		// Restart polling the disassembler completion state.
+		SetTimeCallback(10, THISBACK(PeekDisasmCompletion), DISASSEMBLER_PROGRESS_TIMECALLBACK);
+	}
 }
 
 // Initializes the control state to entrypoint disassembly view.
 void CryDisasmCtrl::Initialize()
 {
-	// (Re)initialize async helper to serve UI responsiveness for the newly opened process.
-	this->mAsyncHelper = new AsyncDisassembler();
-	this->mAsyncHelper->DisasmStarted = THISBACK(AsyncDisasmStarted);
-	this->mAsyncHelper->DisasmCompleted = THISBACK(AsyncDisasmCompleted);
-	
 	// Clear list to put new disassembly.
 	this->disasmDisplay.Clear();
+	DisasmVisibleLines.Clear();
 	
 	// Load pages into toolbar droplist for manual selection.
 	RefreshExecutablePages(mExecutablePagesList);
@@ -455,7 +487,10 @@ void CryDisasmCtrl::Initialize()
 #endif
 	
 	// Initialize UI-seperate on another thread to speed up the process.
-	this->mAsyncHelper->Start(epAddress);
+	this->mAsyncHelper.Start(epAddress);
+	
+	// Start polling the disassembler completion state.
+	SetTimeCallback(10, THISBACK(PeekDisasmCompletion), DISASSEMBLER_PROGRESS_TIMECALLBACK);
 }
 
 // Updates the toolbar inside this lower pane window instance.

@@ -304,6 +304,9 @@ private:
 	int threadCount;
 	bool mReadOnly;
 	
+	// The memory scanner object has the longest lifetime. It should take ownership of the thread pool.
+	CoWork mThreadPool;
+	
 	// Vector that contains the order of worker completions. Needed to ensure next scan accuracy.
 	Vector<WorkerRegionParameterData> mWorkerFileOrder;
 	
@@ -368,6 +371,7 @@ public:
 	const char* GetTempFolderPath() const;
 	const int GetSystemThreadCount() const;
 	const bool IsReadOnlyOperationMode() const;
+	CoWork& GetThreadPoolReference();
 	
 	// Workflow control functions for memory scanner synchronization.
 	const bool GetIsWorkCompleted() const;

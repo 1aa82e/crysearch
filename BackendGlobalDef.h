@@ -40,9 +40,6 @@ extern PortableExecutable* mPeInstance;
 extern ModuleManager* mModuleManager;
 extern Win32PEInformation LoadedProcessPEInformation;
 
-// The memory scanner translation unit keeps a thread pool available for the entire application.
-extern CoWork threadPool;
-
 // All features for proper destruction of objects is available but these are not always called on application shutdown.
 // When CrySearch shuts down every opened application state must be restored. Force destruction on shutdown.
 inline void CryGlobalDestruct()
