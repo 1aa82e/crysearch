@@ -2,6 +2,10 @@ CrySearch Memory Scanner
 
 evolution536, www.unknowncheats.me
 
+v2.05:
+	- Added the version number of the U++ trunk used to compile CrySearch to the about dialog;
+	- 
+
 v2.04:
 	- Added feature to NOP out selected rows using right-click menu in the disassembly window;
 	- Fixed a bug in the PE window where the image base of an x64 process would be truncated to 32-bits;
@@ -12,7 +16,8 @@ v2.04:
 		- Added an option to go back to the entrypoint in the toolstrip and the right-click menu;
 		- Added resolving of intermodular function calls to functions in the import address table;
 		- Added heavy parallellism to the disassembler, greatly increasing processing speeds.
-	- Changes to memscan???
+	- Added a threshold to the amount of rows that can be selected for signature or byte array generation. This threshold is set to 256;
+	- Partially added masking for signature generation in the disassembly window.
 
 v2.03
 	- Some changes were made to the command line process analysis automation:

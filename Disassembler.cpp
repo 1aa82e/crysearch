@@ -10,6 +10,8 @@ const int __stdcall CryDisasm(LPDISASM lpDisasm)
 
 // ---------------------------------------------------------------------------------------------
 
+#define BYTE_INDEX_NOT_FOUND	0xFFFFFFFF
+
 // Retrieves the line of disassembly at the specified address. The return value is the string
 // representation of the disassembled line. A pointer to receive the bytes can be specified.
 String DisasmGetLine(const SIZE_T address, ArchitectureDefinitions architecture, ArrayOfBytes* const outAob)
@@ -65,8 +67,41 @@ String DisasmGetLine(const SIZE_T address, ArchitectureDefinitions architecture,
 	return "";
 }
 
-// Retrieves only the instruction bytes at the specified address.
-void DisasmForBytes(const SIZE_T address, ArchitectureDefinitions architecture, ArrayOfBytes* const outAob)
+template <typename T>
+const unsigned int FindValueInBytes(const Byte* const bytes, const unsigned int length, const T value)
+{
+	// Walk the sequence of bytes.
+	for (unsigned int i = 0; i < length; ++i)
+	{
+		// Compare using type-based comparison.
+		if (*(T*)(bytes + i) == value)
+		{
+			return i;
+		}
+	}
+	
+	// Nothing was found!
+	return BYTE_INDEX_NOT_FOUND;
+}
+
+const unsigned int FindValueInBytes(const Byte* const bytes, const unsigned int length, const Byte* const value, const unsigned int valueLength)
+{
+	// Walk the sequence of bytes.
+	for (unsigned int i = 0; i < length; ++i)
+	{
+		// Compare memory using the input value size.
+		if (memcmp(bytes + i, value, valueLength) == 0)
+		{
+			return i;
+		}
+	}
+	
+	// Nothing was found!
+	return BYTE_INDEX_NOT_FOUND;
+}
+
+// Retrieves only the instruction bytes at the specified address. It's wise to input an array of 8 in size for the 'optOutMasking' parameter.
+void DisasmForBytes(const SIZE_T address, ArchitectureDefinitions architecture, ArrayOfBytes* const outAob, Vector<char>* const optOutMasking)
 {
 	const DWORD bufferLength = architecture == ARCH_X64 ? 20 : 16;
 	DISASM disasm;
@@ -108,6 +143,85 @@ void DisasmForBytes(const SIZE_T address, ArchitectureDefinitions architecture, 
 		{
 			outAob->Allocate(len);
 			memcpy(outAob->Data, (Byte*)disasm.EIP, len);
+		}
+		
+		// If the caller requested masking information, let's output it.
+		if (optOutMasking)
+		{
+			// First fill the output with x's. Further on, some may be replaced by ?'s.
+			optOutMasking->Set(0, 'x', len);
+			
+			// Let's find constants and their sizes and output them.
+			if (disasm.Instruction.AddrValue)
+			{
+				// Check whether the AddrValue can be found in the instruction bytes.
+				unsigned int index;
+				const unsigned int dataSize = architecture == ARCH_X64 ? sizeof(DWORD64) : sizeof(DWORD);
+				if (dataSize == sizeof(DWORD64))
+				{
+					index = FindValueInBytes((Byte*)disasm.EIP, len, disasm.Instruction.AddrValue);
+				}
+				else
+				{
+					index = FindValueInBytes((Byte*)disasm.EIP, len, (DWORD)disasm.Instruction.AddrValue);
+				}
+				
+				// Did we find the value in the instruction bytes?
+				if (index != BYTE_INDEX_NOT_FOUND)
+				{
+					optOutMasking->Set(index, '?', dataSize);
+				}
+			}
+			if (disasm.Instruction.Immediat)
+			{
+				// Check whether the Immediat value can be found in the instruction bytes.
+				unsigned int index;
+				const unsigned int dataSize = architecture == ARCH_X64 ? sizeof(DWORD64) : sizeof(DWORD);
+				if (dataSize == sizeof(DWORD64))
+				{
+					index = FindValueInBytes((Byte*)disasm.EIP, len, disasm.Instruction.AddrValue);
+				}
+				else
+				{
+					index = FindValueInBytes((Byte*)disasm.EIP, len, (DWORD)disasm.Instruction.AddrValue);
+				}
+				
+				// Did we find the value in the instruction bytes?
+				if (index != BYTE_INDEX_NOT_FOUND)
+				{
+					optOutMasking->Set(index, '?', dataSize);
+				}
+			}
+			if (disasm.Argument1.Memory.Displacement)
+			{
+				// Check whether the first argument value can be found in the instruction bytes.
+				const unsigned int dataSize = disasm.Argument1.ArgSize / 8;
+				const unsigned int index = FindValueInBytes((Byte*)disasm.EIP, len, (Byte*)&disasm.Argument1.Memory.Displacement, dataSize);
+				if (index != BYTE_INDEX_NOT_FOUND)
+				{
+					optOutMasking->Set(index, '?', dataSize);
+				}
+			}
+			if (disasm.Argument2.Memory.Displacement)
+			{
+				// Check whether the second argument value can be found in the instruction bytes.
+				const unsigned int dataSize = disasm.Argument2.ArgSize / 8;
+				const unsigned int index = FindValueInBytes((Byte*)disasm.EIP, len, (Byte*)&disasm.Argument2.Memory.Displacement, dataSize);
+				if (index != BYTE_INDEX_NOT_FOUND)
+				{
+					optOutMasking->Set(index, '?', dataSize);
+				}
+			}
+			if (disasm.Argument3.Memory.Displacement)
+			{
+				// Check whether the third argument value can be found in the instruction bytes.
+				const unsigned int dataSize = disasm.Argument3.ArgSize / 8;
+				const unsigned int index = FindValueInBytes((Byte*)disasm.EIP, len, (Byte*)&disasm.Argument3.Memory.Displacement, dataSize);
+				if (index != BYTE_INDEX_NOT_FOUND)
+				{
+					optOutMasking->Set(index, '?', dataSize);
+				}
+			}
 		}
 	}
 }

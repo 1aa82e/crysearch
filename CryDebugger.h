@@ -25,7 +25,7 @@ struct CryThreadContextBase
 };
 
 // A thread context type can be stored in this structure.
-template <class T>
+template <typename T>
 struct CryThreadContext : public CryThreadContextBase
 {
 	T ThreadContext;

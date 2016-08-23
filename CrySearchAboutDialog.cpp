@@ -1,5 +1,6 @@
 #include "CrySearchAboutDialog.h"
 #include "ImlProvider.h"
+#include <ide/version.h>
 
 // Because of the BeaEngine declaration the header should be loosely included here.
 #include "CrySearchLibrary/SDK/CrySearch.h"
@@ -86,6 +87,9 @@ CrySearchAboutDialog::CrySearchAboutDialog() : CryDialogTemplate(CrySearchIml::A
 	// Set up library runtime versions array control.
 	this->mLibraryVersions.CryAddColumn("Library");
 	this->mLibraryVersions.CryAddColumn("Version");
+	
+	// Add the revision (version) of U++ used to compile CrySearch to the versions control.
+	this->mLibraryVersions.Add("Ultimate++", IDE_VERSION);
 
 	// Add BeaEngine library version to the versions control.
 	this->mLibraryVersions.Add("BeaEngine", Format("%s rev %s", BeaEngineVersion(), BeaEngineRevision()));

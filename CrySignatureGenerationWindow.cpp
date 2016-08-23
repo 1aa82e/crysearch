@@ -1,6 +1,5 @@
 #include "CrySignatureGenerationWindow.h"
 #include "ImlProvider.h"
-#include "UIUtilities.h"
 #include "BackendGlobalDef.h"
 
 // This window needs access to the visible disassembly lines.
@@ -27,23 +26,37 @@ CrySignatureGenerationWindow::CrySignatureGenerationWindow(const Vector<int>& ro
 	
 	// Retrieve byte sets that are selected.
 	Vector<Byte> byteSets;
-	for (int i = 0; i < rows.GetCount(); ++i)
+	Vector<char> maskInfo;
+	const int count = rows.GetCount();
+	for (int i = 0; i < count; ++i)
 	{
+		// Get the bytes for the instruction at the current index.
 		ArrayOfBytes sequence;
+		Vector<char> localMask;
+		
+		// Disassemble the current line.
 #ifdef _WIN64
-		DisasmGetLine(DisasmVisibleLines[rows[i]], mMemoryScanner->IsX86Process() ? ARCH_X86 : ARCH_X64, &sequence);
+		DisasmForBytes(DisasmVisibleLines[rows[i]], mMemoryScanner->IsX86Process() ? ARCH_X86 : ARCH_X64, &sequence, &localMask);
 #else
-		DisasmGetLine(DisasmVisibleLines[rows[i]], ARCH_X86, &sequence);
+		DisasmForBytes(DisasmVisibleLines[rows[i]], ARCH_X86, &sequence, &localMask);
 #endif
+		
+		// Append the retrieved mask to the global mask.
+		maskInfo.Append(localMask);
+		
+		// Add the retrieved bytes to the internal byte set for generation.
 		for (int y = 0; y < sequence.Size; ++y)
 		{
 			byteSets << sequence.Data[y];
 		}
 	}
 	
+	// Terminate the mask string.
+	maskInfo << 0x0;
+	
 	// Generate signatures in all supported styles.
 	this->GenerateEvoStyle(byteSets);
-	this->GenerateStringStyle(byteSets);
+	this->GenerateStringStyle(byteSets, maskInfo);
 }
 
 // The CrySignatureGenerationWindow default destructor.
@@ -63,14 +76,13 @@ void CrySignatureGenerationWindow::GenerateEvoStyle(const Vector<Byte>& aobs)
 }
 
 // Generates a conventional signature, including a mask.
-void CrySignatureGenerationWindow::GenerateStringStyle(const Vector<Byte>& aobs)
+void CrySignatureGenerationWindow::GenerateStringStyle(const Vector<Byte>& aobs, const Vector<char>& mask)
 {
 	// Set generated signature inside top textbox.
-	DWORD maskLength;
-	this->mStringStyleSig.SetText(GenerateStringStyleSignature(aobs, &maskLength));
+	this->mStringStyleSig.SetText(GenerateStringStyleSignature(aobs));
 	
-	// Generate mask accordingly.
-	this->mStringMaskSig.SetText(String(0x78, maskLength));
+	// Set the mask string in the user interface.
+	this->mStringMaskSig.SetText(mask);
 }
 
 // Executed when the dialog is closed.

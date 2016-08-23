@@ -8,7 +8,9 @@ Package:
 - Update wiki with changes for the release.
 ------------------------------------------------------------------
 
-- BUG STILL THERE, REPORT!
+- Plugin to override ReadProcessMemory, WriteProcessMemory, VirtualProtectEx and OpenProcess;
+- Masking partially works, let's fix the rest in the next version!
+- CoWork for multi-threading of process enumeration (should greatly lower the waiting time);
 
 - Bug in import table parser, x64, when switching from slack to winamp!
 
@@ -17,9 +19,7 @@ Package:
 - Also let call stack resolve to intermodular calls / IAT?
 - Slack eats CPU and RAM when loaded into CrySearch!
 - Resolve to relative offsets too?
-- Multithread disassembler, Skype has rediculously big pages;
 
-- masking for signature generator, mask out parameters like addresses;
 - Follow pointer, many need it!
 - let's build C++11/14 code from the current, and try to reduce the application size!
 - bug opening cue splitter - imports are totally fucked (UPX);

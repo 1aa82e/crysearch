@@ -139,7 +139,7 @@ void CryModuleWindow::UnloadModule()
 	else
 	{
 		// Module was not a plugin, use default procedure.
-		mMemoryScanner->GetThreadPoolReference() & THISBACK1(UnloadModuleThread, oldBase);
+		Thread().Start(THISBACK1(UnloadModuleThread, oldBase));
 	}
 }
 
@@ -180,7 +180,7 @@ void CryModuleWindow::LoadLibraryButtonClicked()
 	if (fs->ExecuteOpen("Select library file..."))
 	{
 		// Execute the library injection asynchronously.
-		mMemoryScanner->GetThreadPoolReference() & THISBACK1(LoadLibraryThread, fs->Get());
+		Thread().Start(THISBACK1(LoadLibraryThread, fs->Get()));
 	}
 	
 	delete fs;

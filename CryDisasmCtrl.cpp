@@ -12,6 +12,7 @@ extern Vector<LONG_PTR> DisasmVisibleLines;
 extern Vector<DisasmMemoryRegion> mExecutablePagesList;
 
 #define DISASSEMBLER_PROGRESS_TIMECALLBACK		40
+#define SELECTCOUNT_THRESHOLD					256
 
 // Retrieves the disassembly line index by address.
 const int GetDisasmLineIndexFromAddress(const SIZE_T address)
@@ -56,9 +57,9 @@ String GetDisasmBytes(const int index)
 {
 	ArrayOfBytes disLineBytes;
 #ifdef _WIN64
-	DisasmForBytes(DisasmVisibleLines[index], mMemoryScanner->IsX86Process() ? ARCH_X86 : ARCH_X64, &disLineBytes);
+	DisasmForBytes(DisasmVisibleLines[index], mMemoryScanner->IsX86Process() ? ARCH_X86 : ARCH_X64, &disLineBytes, NULL);
 #else
-	DisasmForBytes(DisasmVisibleLines[index], ARCH_X86, &disLineBytes);
+	DisasmForBytes(DisasmVisibleLines[index], ARCH_X86, &disLineBytes, NULL);
 #endif
 	
 	return BytesToString(disLineBytes.Data, disLineBytes.Size);
@@ -255,6 +256,14 @@ void CryDisasmCtrl::GoToEntryPointClicked()
 // Executes a new window that generates a signature from the selected instructions.
 void CryDisasmCtrl::GenerateSignatureButtonClicked()
 {
+	// If the select count of a signature is more than a threshold value, we should block generation.
+	if (this->disasmDisplay.GetSelectCount() > SELECTCOUNT_THRESHOLD)
+	{
+		Prompt("Input Error", CtrlImg::error(), "You can select a maximum of 256 rows for generation!", "OK");
+		return;
+	}
+	
+	// Aggregate all selected rows in an input vector for the generation.
 	Vector<int> selectedRows;
 	const int count = this->disasmDisplay.GetCount();
 	for (int i = 0; i < count; ++i)
@@ -275,6 +284,14 @@ void CryDisasmCtrl::GenerateSignatureButtonClicked()
 // Executes a new window that generates a byte array from the selected instructions.
 void CryDisasmCtrl::GenerateByteArrayButtonClicked()
 {
+	// If the select count of a signature is more than a threshold value, we should block generation.
+	if (this->disasmDisplay.GetSelectCount() > SELECTCOUNT_THRESHOLD)
+	{
+		Prompt("Input Error", CtrlImg::error(), "You can select a maximum of 256 rows for generation!", "OK");
+		return;
+	}
+	
+	// Aggregate all selected rows in an input vector for the generation.
 	Vector<int> selectedRows;
 	const int count = this->disasmDisplay.GetCount();
 	for (int i = 0; i < count; ++i)

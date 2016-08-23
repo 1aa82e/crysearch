@@ -38,6 +38,7 @@ private:
 	volatile Atomic mCompletionCounter;
 	int mThreadCount;
 	Win32ProcessInformation tmpProc;
+	Thread mIconThread;
 	
 	Label mInfoAboutDialog;
 	EditField mSearchBox;
@@ -72,7 +73,7 @@ private:
 	typedef CryProcessEnumeratorForm CLASSNAME;
 public:
 	CryProcessEnumeratorForm(const Image& icon);
-	~CryProcessEnumeratorForm() { }
+	~CryProcessEnumeratorForm();
 	
 	Win32ProcessInformation* const GetSelectedProcess();
 	CryProcessEnumeratorForm* const GetPtr() const;

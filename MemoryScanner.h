@@ -71,7 +71,7 @@ struct ScanParameterBase
 };
 
 // Scan parameters given to a new scan.
-template <class T>
+template <typename T>
 struct ScanParameters : public ScanParameterBase
 {
 	T ScanValue;
@@ -157,6 +157,7 @@ struct WorkerRegionParameterData : Moveable<WorkerRegionParameterData>
 	// Worker-wide variable that indicates whether it has completed.
 	bool FinishedWork;
 	
+	// Default constructor, initializing all variables to defaults.
 	WorkerRegionParameterData()
 	{
 		this->WorkerIdentifier = 0;
@@ -221,16 +222,16 @@ private:
 	};
 };
 
-template <class T>
+template <typename T>
 bool __fastcall CompareEqual(const T& input, const T& expected);
 
-template <class T>
+template <typename T>
 bool __fastcall CompareSmaller(const T& input, const T& expected);
 
-template <class T>
+template <typename T>
 bool __fastcall CompareGreater(const T& input, const T& expected);
 
-template <class T>
+template <typename T>
 bool __fastcall CompareUnknownInitialValue(const T& input, const T& expected);
 
 #define STRING_MAX_UNTIL_NULL	0x100
@@ -241,7 +242,7 @@ bool __fastcall CompareStringNullCharW(const wchar* input, const int inputLength
 // Defines the compare function functor, customizable with template type and parameters using the constructor.
 struct CompareFunction { };
 
-template <class T>
+template <typename T>
 struct ValueComparator : public CompareFunction
 {
 	bool (__fastcall* function)(const T&, const T&);
@@ -316,12 +317,15 @@ private:
 	// Resultcount variable that contains the result count of the most recent memory scan.
 	volatile Atomic mScanResultCount;
 	
+	// Indicates how many regions have been processed.
+	volatile Atomic mRegionFinishCount;
+	
 	typedef MemoryScanner CLASSNAME;
 
-	template <class T>
+	template <typename T>
 	void FirstScanWorker(WorkerRegionParameterData* const regionData, const T& value);
 	
-	template <class T>
+	template <typename T>
 	void NextScanWorker(WorkerRegionParameterData* const regionData, const T& value);
 	
 	// Reallocation counter function as a workaround for the excessive buffer allocation problem on older systems.
@@ -346,17 +350,17 @@ public:
 	void CloseProcess();
 	void ClearSearchResults();
 	
-	template <class T>
+	template <typename T>
 	void FirstScan();
 	
-	template <class T>
+	template <typename T>
 	void NextScan();
 	
-	template <class T>
+	template <typename T>
 	void Poke(const SIZE_T address, const T& value);
 	
 	// Size parameter is optional. If AOB or String types are used, parameter is used, otherwise ignored.
-	template <class T>
+	template <typename T>
 	bool Peek(const SIZE_T address, const unsigned int size, T* outBuffer) const;
 	
 	const bool IsProcessSuspended() const;
@@ -371,7 +375,7 @@ public:
 	const char* GetTempFolderPath() const;
 	const int GetSystemThreadCount() const;
 	const bool IsReadOnlyOperationMode() const;
-	CoWork& GetThreadPoolReference();
+	const int GetRegionFinishedCount() const;
 	
 	// Workflow control functions for memory scanner synchronization.
 	const bool GetIsWorkCompleted() const;

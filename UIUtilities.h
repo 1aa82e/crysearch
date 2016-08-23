@@ -23,7 +23,7 @@ const int IsTabPageOpened(const TabCtrl& ctrl, const String& text);
 String GenerateRandomWindowTitle();
 
 // Generates a string-style signature of disassembly to be used in C or C++ code.
-String GenerateStringStyleSignature(const Vector<Byte>& byteArrays, DWORD* outSigLength);
+String GenerateStringStyleSignature(const Vector<Byte>& byteArrays);
 
 // Parses the input data as string representation for the input value type.
 String ValueAsStringInternal(const Byte* data, const CCryDataType type, const int size, const bool hex);

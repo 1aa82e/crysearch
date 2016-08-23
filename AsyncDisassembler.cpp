@@ -133,7 +133,7 @@ void AsyncDisassembler::Start(const SIZE_T address)
 	// Start the asynchronous disassembly process over multiple threads.
 	for (auto& info : this->mWorkerInformations)
 	{
-		mMemoryScanner->GetThreadPoolReference() & THISBACK1(DoDisassembly, &info);
+		this->mThreadPool & THISBACK1(DoDisassembly, &info);
 	}
 }
 
@@ -188,8 +188,11 @@ void AsyncDisassembler::Kill()
 {
 	this->mRunning = false;
 	
-	// Block the thread until the disassembler thread has been killed.
-	mMemoryScanner->GetThreadPoolReference().Finish();
+	// Block the thread until the disassembler threads has been killed.
+	while (!this->PeekIsFinished())
+	{
+		Sleep(10);
+	}
 }
 
 // Disassembles lineCount lines of assembly into MASM syntax OPCodes, starting from address.

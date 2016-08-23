@@ -62,7 +62,7 @@ const SIZE_T DisasmGetPreviousLine(const SIZE_T address, ArchitectureDefinitions
 String DisasmGetLine(const SIZE_T address, ArchitectureDefinitions architecture, ArrayOfBytes* const outAob);
 
 // Retrieves only the instruction bytes at the specified address.
-void DisasmForBytes(const SIZE_T address, ArchitectureDefinitions architecture, ArrayOfBytes* const outAob);
+void DisasmForBytes(const SIZE_T address, ArchitectureDefinitions architecture, ArrayOfBytes* const outAob, Vector<char>* const optOutMasking);
 
 // Retrieves an instruction at the specified address, also resolving intermodular calls.
 String DisasmGetLineEx(const SIZE_T address, ArchitectureDefinitions architecture, ArrayOfBytes* const outAob);

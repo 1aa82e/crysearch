@@ -113,10 +113,9 @@ String GenerateRandomWindowTitle()
 
 // Generates a string-style signature of disassembly to be used in C or C++ code.
 // Returns a string containing the signature. If the generation failed, the string is empty.
-String GenerateStringStyleSignature(const Vector<Byte>& bytes, DWORD* outSigLength)
+String GenerateStringStyleSignature(const Vector<Byte>& bytes)
 {
 	String retVal = BytesToString(bytes.Begin(), bytes.GetCount());
-	*outSigLength = bytes.GetCount();
 	
 	// Remove the spaces and put FindPattern seperators in its place.
 	retVal.Replace(" ", "");

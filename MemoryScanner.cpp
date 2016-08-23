@@ -4,9 +4,6 @@
 
 #include <Psapi.h>
 
-// Global synchronisation primitives to avoid unnessecary thread usage and speed up calls.
-volatile Atomic RegionFinishCount;
-
 // The synchronisation primitives.
 StaticMutex CacheMutex;
 
@@ -290,22 +287,22 @@ bool MemoryScanner::IsScanRunning() const
 	return this->ScanRunning;
 }
 
-// Returns the amount of scan results.
+// Returns the number of scan results.
 const int MemoryScanner::GetScanResultCount() const
 {
 	return this->mScanResultCount;
+}
+
+// Returns the number of finished regions.
+const int MemoryScanner::GetRegionFinishedCount() const
+{
+	return this->mRegionFinishCount;
 }
 
 // Returns whether the memory scanner is operating in read-only mode.
 const bool MemoryScanner::IsReadOnlyOperationMode() const
 {
 	return this->mReadOnly;
-}
-
-// Returns a reference to the thread pool object used internally.
-CoWork& MemoryScanner::GetThreadPoolReference()
-{
-	return this->mThreadPool;
 }
 
 // Checks whether all workers are done with scanning jobs.
@@ -344,7 +341,7 @@ bool __fastcall CompareGreater(const ArrayOfBytes& input, const ArrayOfBytes& ex
 	return false;
 }
 
-template <class T>
+template <typename T>
 bool __fastcall CompareGreater(const T& input, const T& expected)
 {
 	return (input > expected);
@@ -357,7 +354,7 @@ bool __fastcall CompareSmaller(const ArrayOfBytes& input, const ArrayOfBytes& ex
 	return false;
 }
 
-template <class T>
+template <typename T>
 bool __fastcall CompareSmaller(const T& input, const T& expected)
 {
 	return (input < expected);
@@ -381,13 +378,13 @@ bool __fastcall CompareEqual(const double& input, const double& expected)
 	return (((int)input) == ((int)expected));
 }
 
-template <class T>
+template <typename T>
 bool __fastcall CompareEqual(const T& input, const T& expected)
 {
 	return (input == expected);
 }
 
-template <class T>
+template <typename T>
 bool __fastcall CompareUnknownInitialValue(const T& input, const T& expected)
 {
 	// Unknown initial value should return everything that is found by the scanner.
@@ -550,7 +547,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData* const regionData,
 		}
 		
 		currentRegion.FileDataIndexes.ResultCount = arrayIndex;
-		this->UpdateScanningProgress(AtomicInc(RegionFinishCount));
+		this->UpdateScanningProgress(++this->mRegionFinishCount);
 	}
 	
 	addressesFile.Close();
@@ -634,7 +631,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData* const regionData,
 		delete[] buffer;
 		
 		currentRegion.FileDataIndexes.ResultCount = arrayIndex;
-		this->UpdateScanningProgress(AtomicInc(RegionFinishCount));
+		this->UpdateScanningProgress(++this->mRegionFinishCount);
 	}
 	
 	addressesFile.Close();
@@ -726,7 +723,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData* const regionData,
 		}
 		
 		currentRegion.FileDataIndexes.ResultCount = arrayIndex;
-		this->UpdateScanningProgress(AtomicInc(RegionFinishCount));
+		this->UpdateScanningProgress(++this->mRegionFinishCount);
 	}
 	
 	addressesFile.Close();
@@ -816,7 +813,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData* const regionData,
 		}
 		
 		currentRegion.FileDataIndexes.ResultCount = arrayIndex;
-		this->UpdateScanningProgress(AtomicInc(RegionFinishCount));
+		this->UpdateScanningProgress(++this->mRegionFinishCount);
 	}
 	
 	addressesFile.Close();
@@ -827,7 +824,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData* const regionData,
 
 // Represents the default template worker function for the set of workers including specialized ones.
 // This set of workers run the first scan sequence.
-template <class T>
+template <typename T>
 void MemoryScanner::FirstScanWorker(WorkerRegionParameterData* const regionData, const T& value)
 {
 #ifdef _DEBUG
@@ -856,6 +853,9 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData* const regionData,
 	unsigned int fileIndex = 0;
 	const unsigned int forLoopLength = regionData->OriginalStartIndex + regionData->Length;
 	
+	// Save the value on the stack locally for comparison.
+	const T localVal = value;
+	
 	for (unsigned int i = regionData->OriginalStartIndex; i < forLoopLength; ++i)
 	{
 		unsigned int arrayIndex = 0;
@@ -875,7 +875,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData* const regionData,
 			{
 				const T* tempStore = (T*)&(buffer[i]);
 
-				if ((*reinterpret_cast<ValueComparator<T>*>(this->mCompareValues))(*tempStore, value))
+				if ((*reinterpret_cast<ValueComparator<T>*>(this->mCompareValues))(*tempStore, localVal))
 				{
 					if (!localAddresses || !localValues)
 					{
@@ -934,7 +934,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData* const regionData,
 		}
 		
 		currentRegion.FileDataIndexes.ResultCount = arrayIndex;
-		this->UpdateScanningProgress(AtomicInc(RegionFinishCount));
+		this->UpdateScanningProgress(++this->mRegionFinishCount);
 	}
 
 	addressesFile.Close();
@@ -953,7 +953,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData* const regionData,
 }
 
 // Initializes the first scan sequence. Call this function from the user interface.
-template <class T>
+template <typename T>
 void MemoryScanner::FirstScan()
 {
 	// Clear last scan's results.
@@ -976,9 +976,9 @@ void MemoryScanner::FirstScan()
 			|| (this->mSettingsInstance->GetScanMemMapped() & (block.Type == MEM_MAPPED))))
 	    {
 	        // Check protection constants to see whether the region should be scanned or not.
-	     	if ((this->mSettingsInstance->GetScanWritableMemory() & ((block.Protect & MEM_WRITABLE) != 0))
-	     		|| (this->mSettingsInstance->GetScanExecutableMemory() & ((block.Protect & MEM_EXECUTABLE) != 0))
-	     		|| (this->mSettingsInstance->GetScanCopyOnWriteMemory() & ((block.Protect & MEM_COPYONWRITE) != 0)))
+	        if ((this->mSettingsInstance->GetScanWritableMemory() & ((block.Protect & MEM_WRITABLE) != 0))
+	        	|| (this->mSettingsInstance->GetScanExecutableMemory() & ((block.Protect & MEM_EXECUTABLE) != 0))
+	        	|| (this->mSettingsInstance->GetScanCopyOnWriteMemory() & ((block.Protect & MEM_COPYONWRITE) != 0)))
 	     	{
 	     		// Increment the total size of readable memory.
 	     		totalMemorySize += block.RegionSize;
@@ -1011,7 +1011,7 @@ void MemoryScanner::FirstScan()
 	}
 	
 	// Set thread finish count to 0. This is needed to restart progress indication.
-	RegionFinishCount = 0;
+	this->mRegionFinishCount = 0;
 	
 	// Check for sets of regions and append overlapping regions to reduce the number of regions needed to read.
 	for (int i = 0; i < this->memRegions.GetCount(); i++)
@@ -1036,7 +1036,7 @@ void MemoryScanner::FirstScan()
 	
 	// Start worker threads using the regions that are found and readable.
 #ifdef _MULTITHREADED
-	mMemoryScanner->GetThreadPoolReference().SetThreadPriority(this->mSettingsInstance->GetScanThreadPriority());
+	this->mThreadPool.SetThreadPriority(this->mSettingsInstance->GetScanThreadPriority());
 #endif
 
 	// Signal user interface with a count to set progress indicator to ready state.
@@ -1078,7 +1078,7 @@ void MemoryScanner::FirstScan()
 	// Launch the workers.
 	for (auto& work : this->mWorkerFileOrder)
 	{
-		mMemoryScanner->GetThreadPoolReference() & THISBACK2(FirstScanWorker<T>, &work, ((T)(reinterpret_cast<ScanParameters<T>*>(GlobalScanParameter))->ScanValue));
+		this->mThreadPool & THISBACK2(FirstScanWorker<T>, &work, ((T)(reinterpret_cast<ScanParameters<T>*>(GlobalScanParameter))->ScanValue));
 	}
 }
 
@@ -1167,7 +1167,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData* const regionData, 
 			currentRegion.FileDataIndexes.ResultCount = arrayIndex;
 		}
 
-		this->UpdateScanningProgress(AtomicInc(RegionFinishCount));
+		this->UpdateScanningProgress(++this->mRegionFinishCount);
 	}
 	
 	oldAddrFile.Close();
@@ -1272,7 +1272,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData* const regionData, 
 			currentRegion.FileDataIndexes.ResultCount = arrayIndex;
 		}
 
-		this->UpdateScanningProgress(AtomicInc(RegionFinishCount));
+		this->UpdateScanningProgress(++this->mRegionFinishCount);
 	}
 	
 	oldAddrFile.Close();
@@ -1375,7 +1375,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData* const regionData, 
 			currentRegion.FileDataIndexes.ResultCount = arrayIndex;
 		}
 
-		this->UpdateScanningProgress(AtomicInc(RegionFinishCount));
+		this->UpdateScanningProgress(++this->mRegionFinishCount);
 	}
 	
 	oldAddrFile.Close();
@@ -1388,7 +1388,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData* const regionData, 
 }
 
 // This function is the default template for the set of specialized workers for the next scan.
-template <class T>
+template <typename T>
 void MemoryScanner::NextScanWorker(WorkerRegionParameterData* const regionData, const T& value)
 {
 	const String addrFileOld = AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.tempSCANNING", regionData->WorkerIdentifier));
@@ -1525,7 +1525,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData* const regionData, 
 			currentRegion.FileDataIndexes.ResultCount = arrayIndex;
 		}
 
-		this->UpdateScanningProgress(AtomicInc(RegionFinishCount));
+		this->UpdateScanningProgress(++this->mRegionFinishCount);
 	}
 	
 	// If necessary, close the old values file.
@@ -1546,7 +1546,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData* const regionData, 
 }
 
 // Initializes the next scan sequence. Call this function from the user interface.
-template <class T>
+template <typename T>
 void MemoryScanner::NextScan()
 {
 	// Clear partial search results for next scanning.
@@ -1594,7 +1594,7 @@ void MemoryScanner::NextScan()
 	}
 	
 	// Reset progress indication bar in the GUI.
-	RegionFinishCount = 0;
+	this->mRegionFinishCount = 0;
 	this->ScanStarted(this->memRegions.GetCount());
 	
 	// Assign compare function accordingly
@@ -1602,14 +1602,14 @@ void MemoryScanner::NextScan()
 	
 	// Set thread priority for the workers ran by this scan session.
 #ifdef _MULTITHREADED
-	mMemoryScanner->GetThreadPoolReference().SetThreadPriority(this->mSettingsInstance->GetScanThreadPriority());
+	this->mThreadPool.SetThreadPriority(this->mSettingsInstance->GetScanThreadPriority());
 #endif
 
 	// Start worker threads accordingly to previous scan.
 	for (auto& work : this->mWorkerFileOrder)
 	{
 		work.FinishedWork = false;
-		mMemoryScanner->GetThreadPoolReference() & THISBACK2(NextScanWorker<T>, &work, ((T)(reinterpret_cast<ScanParameters<T>*>(GlobalScanParameter))->ScanValue));
+		this->mThreadPool & THISBACK2(NextScanWorker<T>, &work, ((T)(reinterpret_cast<ScanParameters<T>*>(GlobalScanParameter))->ScanValue));
 	}
 }
 
@@ -1635,7 +1635,7 @@ void MemoryScanner::Poke(const SIZE_T address, const String& value)
 }
 
 // Writes a T value with sizeof(T) size to the specified address.
-template <class T>
+template <typename T>
 void MemoryScanner::Poke(const SIZE_T address, const T& value)
 {
 	CrySearchRoutines.CryWriteMemoryRoutine(this->mOpenedProcessHandle, (void*)address, &value, sizeof(T), NULL);
@@ -1677,7 +1677,7 @@ bool MemoryScanner::Peek(const SIZE_T address, const unsigned int size, String* 
 }
 
 // Reads T value with sizeof(T) size from the specified address.
-template <class T>
+template <typename T>
 bool MemoryScanner::Peek(const SIZE_T address, const unsigned int size, T* outBuffer) const
 {
 	SIZE_T bytesRead;

@@ -2,6 +2,7 @@
 #define _CrySearch_CrySignatureGenerationWindow_h_
 
 #include "CryDialogTemplate.h"
+#include "UIUtilities.h"
 
 // When a process' code is disassembled, signatures can be generated from this window.
 class CrySignatureGenerationWindow : public CryDialogTemplate
@@ -20,7 +21,7 @@ private:
 	void CloseWindow();
 	
 	void GenerateEvoStyle(const Vector<Byte>& aobs);
-	void GenerateStringStyle(const Vector<Byte>& aobs);
+	void GenerateStringStyle(const Vector<Byte>& aobs, const Vector<char>& mask);
 	
 	typedef CrySignatureGenerationWindow CLASSNAME;
 public:

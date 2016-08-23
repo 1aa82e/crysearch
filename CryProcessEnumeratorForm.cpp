@@ -18,6 +18,7 @@ ProcessSelectionDragArea::ProcessSelectionDragArea()
 	this->prevCursor = NULL;
 }
 
+// Drag-drop event for when the mouse button is pressed.
 void ProcessSelectionDragArea::LeftDown(Point p, dword keyflags)
 {
 	this->mIsDragging = true;
@@ -25,6 +26,7 @@ void ProcessSelectionDragArea::LeftDown(Point p, dword keyflags)
 	SetCursor(this->dragCursor);
 }
 
+// Drag-drop event for when the mouse is moved.
 void ProcessSelectionDragArea::MouseMove(Point p, dword keyflags)
 {
 	if (this->mIsDragging)
@@ -39,6 +41,7 @@ void ProcessSelectionDragArea::MouseMove(Point p, dword keyflags)
 	}
 }
 
+// The drag-drop event when mouse button is released.
 void ProcessSelectionDragArea::LeftUp(Point p, dword keyflags)
 {
 	if (this->mIsDragging && this->HasCapture())
@@ -61,6 +64,7 @@ void ProcessSelectionDragArea::LeftUp(Point p, dword keyflags)
 	}
 }
 
+// Default CryProcessEnumeratorForm constructor.
 CryProcessEnumeratorForm::CryProcessEnumeratorForm(const Image& icon) : CryDialogTemplate(icon)
 {
 	this->Title("Select Process").SetRect(0, 0, 340, 360);
@@ -104,21 +108,31 @@ CryProcessEnumeratorForm::CryProcessEnumeratorForm(const Image& icon) : CryDialo
 	this->RefreshProcesses(false);
 }
 
+// Default CryProcessEnumeratorForm destructor.
+CryProcessEnumeratorForm::~CryProcessEnumeratorForm()
+{
+	
+}
+
+// Executed when the user clicks the column header of process id.
 void CryProcessEnumeratorForm::IdColumnHeaderClicked()
 {
 	this->mProcessList.SetSortColumn(1);
 }
 
+// Executed when the user clicks the column header of process name.
 void CryProcessEnumeratorForm::TitleColumnHeaderClicked()
 {
 	this->mProcessList.SetSortColumn(2);
 }
 
+// Executed when the window filter selection changes.
 void CryProcessEnumeratorForm::HideWindowsCheckedChanged()
 {
 	this->RefreshProcesses(this->mHideWindowLessProcesses);
 }
 
+// Executed when the user lets go of the mouse in a drag-drop session.
 void CryProcessEnumeratorForm::DragFromCtrlCompleted(HWND hwnd)
 {
 	DWORD pid;
@@ -128,6 +142,7 @@ void CryProcessEnumeratorForm::DragFromCtrlCompleted(HWND hwnd)
 	this->AcceptBreak(10);
 }
 
+// Opens an input dialog to create a new process from a command line string.
 void CryProcessEnumeratorForm::CreateProcessButtonClicked()
 {
 	CryCreateProcessWindow* ccpw = new CryCreateProcessWindow(&this->tmpProc);
@@ -138,16 +153,19 @@ void CryProcessEnumeratorForm::CreateProcessButtonClicked()
 	delete ccpw;
 }
 
+// Refreshes the process and window list by scanning for processes.
 void CryProcessEnumeratorForm::SearchProcess()
 {
 	this->RefreshProcesses(this->mHideWindowLessProcesses);
 }
 
+// Retrieves the process that is currently selected.
 Win32ProcessInformation* const CryProcessEnumeratorForm::GetSelectedProcess()
 {
 	return &this->tmpProc;
 }
 
+// Accepts the process selection dialog using the selected process as input.
 void CryProcessEnumeratorForm::OkButtonClicked()
 {
 	const int row = this->mProcessList.GetCursor();
@@ -164,11 +182,13 @@ void CryProcessEnumeratorForm::OkButtonClicked()
 	}
 }
 
+// Closes the process selection window.
 void CryProcessEnumeratorForm::CancelButtonClicked()
 {
 	this->Close();
 }
 
+// Refreshes the processes and windows in the list.
 void CryProcessEnumeratorForm::RefreshProcesses(bool less)
 {
 	// Clear the user interface and retrieve process list.
@@ -185,7 +205,7 @@ void CryProcessEnumeratorForm::RefreshProcesses(bool less)
 	for (int i = 0; i < this->mThreadCount; ++i)
 	{
 		// Start callbacks to asynchronously retrieve icons.
-		mMemoryScanner->GetThreadPoolReference() & PTEBACK2(ProcessWindowIconAsync, mProcesses[i], less);
+		this->mIconThread.Start(PTEBACK2(ProcessWindowIconAsync, mProcesses[i], less));
 	}
 }
 
@@ -221,6 +241,7 @@ void CryProcessEnumeratorForm::IconProcesWaitCompletedThreadSafe(HICON hIcon, Wi
 	}
 }
 
+// Adds filtered input of processes and windows to the process list.
 void CryProcessEnumeratorForm::AddToProcessListMoreLess(HICON hIcon, const Win32ProcessInformation& proc, bool less)
 {
 	// For unknown reasons, the process may sometimes be added more than once. The solution is lazy but easy.
@@ -248,6 +269,6 @@ void CryProcessEnumeratorForm::Close()
 {
 	ProcWndClosed = true;
 	WaitCursor waitcursor;
-	mMemoryScanner->GetThreadPoolReference().Finish();
+	this->mIconThread.Wait();
 	CryDialogTemplate::Close();
 }

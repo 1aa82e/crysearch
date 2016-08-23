@@ -48,6 +48,7 @@ private:
 	LONG_PTR mCurrentPageSize;
 	SIZE_T mLastDisasmAddress;
 	Vector<AsyncDisasmWorkerInformation> mWorkerInformations;
+	CoWork mThreadPool;
 	
 	void DoDisassembly(AsyncDisasmWorkerInformation* const pInformation);
 	void Disassemble(const SIZE_T address, const SIZE_T size, const ArchitectureDefinitions architecture, Vector<LONG_PTR>& outInstructions);
