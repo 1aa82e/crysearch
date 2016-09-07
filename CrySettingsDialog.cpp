@@ -111,6 +111,39 @@ CrySearchSettingsDialog::CrySearchSettingsDialog()
 	this->mainTabCtrl.SetRect(0, 0, 420, 280);
 	this->Add(mainTabCtrl);
 	
+	// Probe for routine plugins and add their functions to the options.
+	Vector<CrySearchPlugin> plugins;
+	mPluginSystem->GetPluginsByType(CRYPLUGIN_COREFUNC_OVERRIDE, plugins);
+	
+	// Walk the retrieved plugins.
+	for (auto const& p : plugins)
+	{
+		// Does it override the read function?
+		if (p.PluginHeader->Flags & PLUGIN_CORE_READ_PROCESS_MEMORY)
+		{
+			this->mReadMemoryProcRoutineSelector.Add(Format("%s - v%i.%i", p.PluginHeader->PluginName, p.PluginHeader->MajorVersion, p.PluginHeader->MinorVersion));
+		}
+		
+		// Does it override the write function?
+		if (p.PluginHeader->Flags & PLUGIN_CORE_WRITE_PROCESS_MEMORY)
+		{
+			this->mWriteMemoryProcRoutineSelector.Add(Format("%s - v%i.%i", p.PluginHeader->PluginName, p.PluginHeader->MajorVersion, p.PluginHeader->MinorVersion));
+		}
+		
+		// Does it override the protect function?
+		if (p.PluginHeader->Flags & PLUGIN_CORE_PROTECT_PROCESS_MEMORY)
+		{
+			this->mProtectMemoryProcRoutineSelector.Add(Format("%s - v%i.%i", p.PluginHeader->PluginName, p.PluginHeader->MajorVersion, p.PluginHeader->MinorVersion));
+		}
+		
+		// Does it override the open process function?
+		if (p.PluginHeader->Flags & PLUGIN_CORE_OPEN_PROCESS)
+		{
+			this->mOpenProcRoutineSelector.Add(Format("%s - v%i.%i", p.PluginHeader->PluginName, p.PluginHeader->MajorVersion, p.PluginHeader->MinorVersion));
+		}
+	}
+	
+	// Load current settings from settings file.
 	this->LoadSettings();
 }
 
@@ -163,24 +196,27 @@ void CrySearchSettingsDialog::SaveSettings()
 	this->mSettingsInstance->SetScanMemImage(this->memImage);
 	this->mSettingsInstance->SetScanMemMapped(this->memMapped);
 	this->mSettingsInstance->SetScanThreadPriority(this->scanningThreadPriority.GetIndex());
-	this->mSettingsInstance->SetOpenProcessRoutine(this->mOpenProcRoutineSelector.GetIndex());
-	this->mSettingsInstance->SetReadMemoryRoutine(this->mReadMemoryProcRoutineSelector.GetIndex());
-	this->mSettingsInstance->SetWriteMemoryRoutine(this->mWriteMemoryProcRoutineSelector.GetIndex());
-	this->mSettingsInstance->SetProtectMemoryRoutine(this->mProtectMemoryProcRoutineSelector.GetIndex());
 	this->mSettingsInstance->SetLibraryInjectionMethod(this->mInjectionMethod.GetIndex());
 	this->mSettingsInstance->SetAttemptHideDebuggerFromPeb(this->dbgAttemptHidePeb);
 	this->mSettingsInstance->SetEnableHotkeys(this->mHotkeysOption);
 	this->mSettingsInstance->SetInvadeProcess(this->dbgInvadeProcess);
 	this->mSettingsInstance->SetCatchAllExceptions(this->dbgCatchAllExceptions);
 	
-	// Check if the read-only option for CrySearch was changed. If it was, inform the user that
+	// Check if the read-only option for CrySearch was changed. If it was, inform the user about the fact that
 	// this will be applied when the process is closed and reopened.
 	if (!!this->mCrySearchInReadOnlyMode != this->mSettingsInstance->GetEnableReadOnlyMode() && mMemoryScanner->GetProcessId())
 	{
 		Prompt("Behavioral Warning", CtrlImg::exclamation(), "The read-only mode setting has changed. This change will be applied on process closing and reopening.", "OK");
 	}
 	
+	// Set the read-only mode.
 	this->mSettingsInstance->SetEnableReadOnlyMode(this->mCrySearchInReadOnlyMode);
+	
+	// Set the core routine indices.
+	this->mSettingsInstance->SetOpenProcessRoutine(this->mOpenProcRoutineSelector.GetIndex());
+	this->mSettingsInstance->SetReadMemoryRoutine(this->mReadMemoryProcRoutineSelector.GetIndex());
+	this->mSettingsInstance->SetWriteMemoryRoutine(this->mWriteMemoryProcRoutineSelector.GetIndex());
+	this->mSettingsInstance->SetProtectMemoryRoutine(this->mProtectMemoryProcRoutineSelector.GetIndex());
 	
 	// As a special case, update the search routine in this part of the program.
 	CrySearchRoutines.InitializeRoutines();
@@ -195,6 +231,7 @@ void CrySearchSettingsDialog::SaveSettings()
 		Prompt("Fatal Error", CtrlImg::error(), Format("Failed to delete the file extension from the registry. Please run %s as Administrator.", (char*)appname), "OK");
 	}
 	
+	// Save the settings to disk.
 	this->mSettingsInstance->Save();
 }
 

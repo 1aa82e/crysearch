@@ -99,11 +99,13 @@ CrySearchAboutDialog::CrySearchAboutDialog() : CryDialogTemplate(CrySearchIml::A
 	this->mUppLinkLabel.WhenLeftUp = callback1(LaunchWebBrowser, (char*)this->uppLink);
 }
 
+// About dialog destructor.
 CrySearchAboutDialog::~CrySearchAboutDialog()
 {
 	
 }
 
+// Closes the about dialog.
 void CrySearchAboutDialog::CloseAboutWindow()
 {
 	this->Close();

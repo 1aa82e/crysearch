@@ -68,10 +68,7 @@ struct IndexBasedValueConvert : public Convert
 
 // ---------------------------------------------------------------------------------------------
 
-// Type definition for memory reading function.
-typedef const bool (__stdcall* CryReadMemoryRoutineType)(HANDLE handle, LPCVOID addr, LPVOID buffer, SIZE_T size, SIZE_T* outSize);
-typedef const bool (__stdcall* CryWriteMemoryRoutineType)(HANDLE handle, LPVOID addr, LPCVOID buffer, SIZE_T size, SIZE_T* outSize);
-typedef const bool (__stdcall* CryProtectMemoryRoutineType)(HANDLE handle, LPVOID addr, SIZE_T size, ULONG newAccess, PULONG oldAccess);
+// The memory operation function prototypes for CrySearch are in Plugin.h.
 
 // CrySearch memory reading routines.
 extern const bool __stdcall CryReadMemoryRoutine32(HANDLE handle, LPCVOID addr, LPVOID buffer, SIZE_T size, SIZE_T* outSize);

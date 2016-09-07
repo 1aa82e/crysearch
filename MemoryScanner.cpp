@@ -160,29 +160,52 @@ bool MemoryScanner::InitializeExistingProcess(const int processId, const char* e
 	}
 	
 	// Select the configured routine for opening the process and execute it.
-	switch (this->mSettingsInstance->GetOpenProcessRoutine())
+	const int opr = this->mSettingsInstance->GetOpenProcessRoutine();
+	if (opr == ROUTINE_OPENPROCESS)
 	{
 		// Use the default kernel32.dll OpenProcess function to obtain a process handle.
-		case ROUTINE_OPENPROCESS:
-			this->mOpenedProcessHandle = OpenProcess(openFlags, FALSE, processId);
-			break;
+		this->mOpenedProcessHandle = OpenProcess(openFlags, FALSE, processId);
+	}
+	else if (opr == ROUTINE_NTOPENPROCESS)
+	{
 		// Use the ntdll.dll NtOpenProcess function to obtain a process handle.
-		case ROUTINE_NTOPENPROCESS:
-			CLIENT_ID cid = { (HANDLE)processId, 0 };
-			
-			OBJECT_ATTRIBUTES objAttr;
-			InitializeObjectAttributes(&objAttr, NULL, 0, 0, NULL);
-		    
-		    if (!CrySearchRoutines.NtOpenProcess)
+		CLIENT_ID cid = { (HANDLE)processId, 0 };
+		
+		OBJECT_ATTRIBUTES objAttr;
+		InitializeObjectAttributes(&objAttr, NULL, 0, 0, NULL);
+		   
+		if (!CrySearchRoutines.NtOpenProcess)
+		{
+			this->ErrorOccured(NATIVEROUTINEGETPROCFAILED);
+			return false;
+		}
+		
+		CrySearchRoutines.NtOpenProcess(&this->mOpenedProcessHandle, openFlags, &objAttr, &cid);
+	}
+	else if (opr > 1)
+	{
+		// Use plugin-defined routine to obtain process handle.
+		Vector<CrySearchPlugin> plugins;
+		mPluginSystem->GetPluginsByType(CRYPLUGIN_COREFUNC_OVERRIDE, plugins);
+		const int opr2 = opr - 2;
+		if (opr2 < plugins.GetCount())
+		{
+			// Retrieve pointer to the plugin routine.
+			CryOpenProcessRoutineType routine = (CryOpenProcessRoutineType)GetProcAddress(plugins[opr2].BaseAddress, "CryOpenProcessRoutine");
+			if (routine)
 			{
-				this->ErrorOccured(NATIVEROUTINEGETPROCFAILED);
+				// Routine is present, execute it.
+				this->mOpenedProcessHandle = routine(openFlags, FALSE, processId);
+			}
+			else
+			{
+				// Failed to retrieve a pointer to the routine.
 				return false;
 			}
-			
-			CrySearchRoutines.NtOpenProcess(&this->mOpenedProcessHandle, openFlags, &objAttr, &cid);
-			break;
+		}
 	}
 	
+	// Validate the handle and process handle before confirming.
 	if (!this->mOpenedProcessHandle || this->mOpenedProcessHandle == INVALID_HANDLE_VALUE)
 	{
 		this->ErrorOccured(OPENPROCESSFAILED);

@@ -7,22 +7,26 @@
 // The master index is the index of the selected module in the list of impor entries. Depending on this index, the functions are displayed.
 int MasterIndex;
 
+// Retrieves the name of a module by index.
 String GetModule(const int index)
 {
 	return LoadedProcessPEInformation.ImportAddressTable[index].ModuleName;
 }
 
+// Retrieves the name of a function inside a module by function index.
 String GetFunction(const int index)
 {
 	return LoadedProcessPEInformation.ImportAddressTable[MasterIndex].FunctionList[index].FunctionName;
 }
 
+// Retrieves the hint of a function (or ordinal) by index.
 String GetHint(const int index)
 {
 	const ImportAddressTableEntry& current = LoadedProcessPEInformation.ImportAddressTable[MasterIndex].FunctionList[index];
 	return current.Ordinal ? Format("Ord (%i)", (int)current.Ordinal) : Format("%X", current.Hint);
 }
 
+// Retrieves the start address of a function by index.
 String GetVirtualAddress(const int index)
 {
 #ifdef _WIN64
@@ -32,6 +36,7 @@ String GetVirtualAddress(const int index)
 #endif
 }
 
+// Retrieves the string representation of a module, consisting of name and its start address, by module index.
 String GetModuleStringRepresentation(const int index)
 {
 	const Win32ModuleInformation& mod = (*mModuleManager)[index];
@@ -42,6 +47,7 @@ String GetModuleStringRepresentation(const int index)
 #endif
 }
 
+// The CryImportsWindow default constructor.
 CryImportsWindow::CryImportsWindow()
 {
 	this->AddFrame(mToolStrip);
@@ -67,11 +73,13 @@ CryImportsWindow::CryImportsWindow()
 	this->mModulesDropList.WhenAction = THISBACK(ModulesSelected);
 }
 
+// The CryImportsWindow default destructor.
 CryImportsWindow::~CryImportsWindow()
 {
 	
 }
 
+// Populates the imports window tool strip.
 void CryImportsWindow::ToolStrip(Bar& pBar)
 {
 	pBar.Add(this->mModulesDescriptorLabel.SetLabel("Module: "));
@@ -82,6 +90,7 @@ void CryImportsWindow::ToolStrip(Bar& pBar)
 	pBar.Add(this->mFunctionCount.SetAlign(ALIGN_RIGHT), 150);
 }
 
+// Executed when the drop list containing modules is dropped; it populates the drop list before it becomes visible.
 void CryImportsWindow::ModulesDropped()
 {
 	// Refresh modules before dropping the list.
@@ -89,6 +98,7 @@ void CryImportsWindow::ModulesDropped()
 	this->mModulesDropList.SetCount(mModuleManager->GetModuleCount());
 }
 
+// Executed when the user has selected a module from the drop list.
 void CryImportsWindow::ModulesSelected()
 {
 	const int cursor = this->mModulesDropList.GetIndex();
@@ -105,6 +115,7 @@ void CryImportsWindow::ModulesSelected()
 	}
 }
 
+// Executed when the user right-clicks the list of functions.
 void CryImportsWindow::FunctionListRightClick(Bar& pBar)
 {
 	if (this->mFunctionsList.GetCount() > 0 && this->mFunctionsList.GetCursor() >= 0)
@@ -120,6 +131,7 @@ void CryImportsWindow::FunctionListRightClick(Bar& pBar)
 	}
 }
 
+// Restores the original address from a function in the import table, using the address from the designated export table.
 void CryImportsWindow::RestoreIATFunction()
 {
 	const ImportTableDescriptor& key = LoadedProcessPEInformation.ImportAddressTable[MasterIndex];
@@ -141,6 +153,7 @@ void CryImportsWindow::RestoreIATFunction()
 	this->RefreshImports();
 }
 
+// Replaces the address of a function in the import table with one that was given by the user.
 void CryImportsWindow::PlaceHookOnIATFunction()
 {
 	const ImportTableDescriptor& masterKey = LoadedProcessPEInformation.ImportAddressTable[MasterIndex];
@@ -193,6 +206,7 @@ void CryImportsWindow::PlaceHookOnIATFunction()
 	this->RefreshImports();
 }
 
+// Executed when the retrieval of data is done.
 void CryImportsWindow::DataRetrievalDone()
 {
 	if (mModuleManager->GetModuleCount() > 0)
@@ -205,11 +219,13 @@ void CryImportsWindow::DataRetrievalDone()
 	}
 }
 
+// Forces redraw of the function list; executed when the user selects a different module.
 void CryImportsWindow::ModuleRedraw()
 {
 	this->ModuleChanged();
 }
 
+// Executed when the selected module changes.
 void CryImportsWindow::ModuleChanged()
 {
 	MasterIndex = this->mModulesList.GetCursor();
@@ -241,6 +257,7 @@ void CryImportsWindow::ModuleChanged()
 	}
 }
 
+// Refreshes the list of functions inside the selected module's import table.
 void CryImportsWindow::RefreshImports()
 {
 	// If a module is selected, refresh the imports of this module. Otherwise refresh the exe imports.
@@ -258,6 +275,7 @@ void CryImportsWindow::RefreshImports()
 	this->Initialize();
 }
 
+// The imports window initialization function; populates the window.
 void CryImportsWindow::Initialize()
 {
 	const int modCount = mModuleManager->GetModuleCount();

@@ -4,6 +4,13 @@ evolution536, www.unknowncheats.me
 
 v2.05:
 	- Added the version number of the U++ trunk used to compile CrySearch to the about dialog;
+	- Fixed bug in the plugin system where loading a plugin with the same name would cause undefined behavior;
+	- Added support for plugin-defined core routines:
+		- Opening a process;
+		- Reading from process memory;
+		- Writing to process memory;
+		- Changing process memory protection constants.
+	- Fixed bug where the "NOP Selected" button in the disassembler window was visible in read-only mode;
 	- 
 
 v2.04:

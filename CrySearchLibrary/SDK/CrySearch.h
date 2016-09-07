@@ -21,7 +21,7 @@ extern "C"
 // If the 'inOutSize' parameter is a valid pointer that points to the value 0, the function will return FALSE and place the necessary
 // buffer size in the 'inOutSize' parameter. If the buffer is of sufficient size, the function will copy the about string to the buffer
 // and place the size of the buffer in the 'inOutSize' parameter. The function returns TRUE if function succeeded and FALSE otherwise.
-const BOOL __stdcall CrySearchGetVersion(char* const pStringBuffer, DWORD* const inOutSize);
+const bool __stdcall CrySearchGetVersion(char* const pStringBuffer, DWORD* const inOutSize);
 
 // Retrieves the major and minor version number for CrySearch. Both input parameters must be valid pointers.
 void __stdcall CrySearchGetMajorMinorVersion(WORD* const pMajor, WORD* const pMinor);

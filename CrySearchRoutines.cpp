@@ -62,7 +62,7 @@ _CrySearchRoutines::_CrySearchRoutines()
 	this->ProtectMemoryRoutine = NULL;
 }
 
-// It is possible that an error occured during the retrieval of one of the NTDLL functions. If 
+// It is possible that an error occured during the retrieval of one of the NTDLL functions. If
 // this is the case, the user should at least be notified about possible undefined behavior.
 const bool _CrySearchRoutines::ErrorOccured() const
 {
@@ -90,11 +90,13 @@ const bool _CrySearchRoutines::CryReadMemoryRoutine(HANDLE handle, LPCVOID addr,
 	return this->ReadMemoryRoutine(handle, addr, buffer, size, outSize);
 }
 
+// Executes the selected memory writing routine.
 const bool _CrySearchRoutines::CryWriteMemoryRoutine(HANDLE handle, LPVOID addr, LPCVOID buffer, SIZE_T size, SIZE_T* outSize) const
 {
 	return this->WriteMemoryRoutine(handle, addr, buffer, size, outSize);
 }
 
+// Executes the selected memory protection routine.
 const bool _CrySearchRoutines::CryProtectMemoryRoutine(HANDLE handle, LPVOID addr, SIZE_T size, ULONG newAccess, PULONG oldAccess) const
 {
 	return this->ProtectMemoryRoutine(handle, addr, size, newAccess, oldAccess);
@@ -104,35 +106,65 @@ void _CrySearchRoutines::InitializeRoutines()
 {
 	SettingsFile* const settings = SettingsFile::GetInstance();
 	// Assign correct memory reading routine.
-	switch (settings->GetReadMemoryRoutine())
+	const int rpm = settings->GetReadMemoryRoutine();
+	if (rpm == ROUTINE_READPROCESSMEMORY)
 	{
-		case ROUTINE_READPROCESSMEMORY:
-			this->SetCrySearchReadMemoryRoutine(CryReadMemoryRoutine32);
-			break;
-		case ROUTINE_NTREADVIRTUALMEMORY:
-			this->SetCrySearchReadMemoryRoutine(CryReadMemoryRoutineNt);
-			break;
+		this->SetCrySearchReadMemoryRoutine(CryReadMemoryRoutine32);
+	}
+	else if (rpm == ROUTINE_NTREADVIRTUALMEMORY)
+	{
+		this->SetCrySearchReadMemoryRoutine(CryReadMemoryRoutineNt);
+	}
+	else if (rpm > 1)
+	{
+		Vector<CrySearchPlugin> plugins;
+		mPluginSystem->GetPluginsByType(CRYPLUGIN_COREFUNC_OVERRIDE, plugins);
+		const int rpm2 = rpm - 2;
+		if (rpm2 < plugins.GetCount())
+		{
+			this->SetCrySearchReadMemoryRoutine((CryReadMemoryRoutineType)GetProcAddress(plugins[rpm2].BaseAddress, "CryReadMemoryRoutine"));
+		}
 	}
 	
 	// Assign the correct memory writing routine.
-	switch (settings->GetWriteMemoryRoutine())
+	const int wpm = settings->GetWriteMemoryRoutine();
+	if (wpm == ROUTINE_WRITEPROCESSMEMORY)
 	{
-		case ROUTINE_WRITEPROCESSMEMORY:
-			this->SetCrySearchWriteMemoryRoutine(CryWriteMemoryRoutine32);
-			break;
-		case ROUTINE_NTWRITEVIRTUALMEMORY:
-			this->SetCrySearchWriteMemoryRoutine(CryWriteMemoryRoutineNt);
-			break;
+		this->SetCrySearchWriteMemoryRoutine(CryWriteMemoryRoutine32);
+	}
+	else if (wpm == ROUTINE_NTWRITEVIRTUALMEMORY)
+	{
+		this->SetCrySearchWriteMemoryRoutine(CryWriteMemoryRoutineNt);
+	}
+	else if (wpm > 1)
+	{
+		Vector<CrySearchPlugin> plugins;
+		mPluginSystem->GetPluginsByType(CRYPLUGIN_COREFUNC_OVERRIDE, plugins);
+		const int wpm2 = wpm - 2;
+		if (wpm2 < plugins.GetCount())
+		{
+			this->SetCrySearchWriteMemoryRoutine((CryWriteMemoryRoutineType)GetProcAddress(plugins[wpm2].BaseAddress, "CryWriteMemoryRoutine"));
+		}
 	}
 	
 	// Assign the correct memory protection routine.
-	switch (settings->GetProtectMemoryRoutine())
+	const int pm = settings->GetProtectMemoryRoutine();
+	if (pm == ROUTINE_VIRTUALPROTECTEX)
 	{
-		case ROUTINE_VIRTUALPROTECTEX:
-			this->SetCrySearchProtectMemoryRoutine(CryProtectMemoryRoutine32);
-			break;
-		case ROUTINE_NTPROTECTVIRTUALMEMORY:
-			this->SetCrySearchProtectMemoryRoutine(CryProtectMemoryRoutineNt);
-			break;
+		this->SetCrySearchProtectMemoryRoutine(CryProtectMemoryRoutine32);
+	}
+	else if (pm == ROUTINE_NTPROTECTVIRTUALMEMORY)
+	{
+		this->SetCrySearchProtectMemoryRoutine(CryProtectMemoryRoutineNt);
+	}
+	else if (pm > 1)
+	{
+		Vector<CrySearchPlugin> plugins;
+		mPluginSystem->GetPluginsByType(CRYPLUGIN_COREFUNC_OVERRIDE, plugins);
+		const int pm2 = pm - 2;
+		if (pm2 < plugins.GetCount())
+		{
+			this->SetCrySearchProtectMemoryRoutine((CryProtectMemoryRoutineType)GetProcAddress(plugins[pm2].BaseAddress, "CryProtectMemoryRoutine"));
+		}
 	}
 }

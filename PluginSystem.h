@@ -39,6 +39,8 @@ private:
 	
 	PluginSystem(PluginSystem const&);
 	void operator=(PluginSystem const&);
+	
+	const bool IsCorePluginValid(const CrySearchPlugin& plugin) const;
 public:
 	static PluginSystem* GetInstance()
 	{

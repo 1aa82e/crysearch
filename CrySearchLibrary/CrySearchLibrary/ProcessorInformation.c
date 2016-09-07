@@ -2,11 +2,9 @@
 #include <stdio.h>
 #include <intrin.h>
 
-#pragma warning(disable : 4996)
-
 // Uses the cpuid instruction to retrieve information about the supported features by the processor.
 // The supported values are displayed in the about dialog.
-void GetProcessorSupportInformation(char pProcInformationString[128])
+void __stdcall GetProcessorSupportInformation(char pProcInformationString[128])
 {
 	BOOL sse;
 	BOOL sse2;

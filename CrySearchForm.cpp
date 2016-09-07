@@ -487,6 +487,53 @@ CrySearchForm::CrySearchForm(const char* fn)
 		SettingsFile::GetInstance()->DefaultSettings();
 	}
 	
+	// Initiate the memory scanner class, the most important part of CrySearch.
+	mMemoryScanner->ErrorOccured = THISBACK(ScannerErrorOccured);
+	mMemoryScanner->UpdateScanningProgress = THISBACK(ScannerUserInterfaceUpdate);
+	mMemoryScanner->ScanStarted = THISBACK(ScannerScanStarted);
+	
+	// Initialize the plugin system.
+	mPluginSystem = PluginSystem::GetInstance();
+	mPluginSystem->RetrieveAndLoadAllPlugins();
+	
+	// Validate plugin-defined routine indices and act accordingly.
+	const int opr = SettingsFile::GetInstance()->GetOpenProcessRoutine();
+	const int rpm = SettingsFile::GetInstance()->GetReadMemoryRoutine();
+	const int wpm = SettingsFile::GetInstance()->GetWriteMemoryRoutine();
+	const int pm = SettingsFile::GetInstance()->GetProtectMemoryRoutine();
+	const int pluginCount = mPluginSystem->GetPluginCount();
+	bool changed = false;
+	
+	// If the settings-saved routine index is out of the current bounds, a previously used routine-plugin
+	// may have failed at this moment. We take no chance and set the default routine for use.
+	if (opr > pluginCount + 2)
+	{
+		SettingsFile::GetInstance()->SetOpenProcessRoutine();
+		changed = true;
+	}
+	if (rpm > pluginCount + 2)
+	{
+		SettingsFile::GetInstance()->SetReadMemoryRoutine();
+		changed = true;
+	}
+	if (wpm > pluginCount + 2)
+	{
+		SettingsFile::GetInstance()->SetWriteMemoryRoutine();
+		changed = true;
+	}
+	if (pm > pluginCount + 2)
+	{
+		SettingsFile::GetInstance()->SetProtectMemoryRoutine();
+		changed = true;
+	}
+	
+	// If the value was changed, let the user know.
+	if (changed)
+	{
+		SettingsFile::GetInstance()->Save();
+		Prompt("Warning", CtrlImg::exclamation(), "The settings file contained core invalid routine indices. The invalid ones have been restored to default.", "OK");
+	}
+	
 	// The settings file saves some routines too. Set the correct routines.
 	CrySearchRoutines.InitializeRoutines();
 	
@@ -496,17 +543,8 @@ CrySearchForm::CrySearchForm(const char* fn)
 		Prompt("Behavioral Warning", CtrlImg::exclamation(), Format("One or more NTDLL functions were not retrieved succesfully. %s may behave unpredictable from here.", String((char*)wndTitle, 9)), "OK");
 	}
 	
-	// Initiate the memory scanner class, the most important part of CrySearch.
-	mMemoryScanner->ErrorOccured = THISBACK(ScannerErrorOccured);
-	mMemoryScanner->UpdateScanningProgress = THISBACK(ScannerUserInterfaceUpdate);
-	mMemoryScanner->ScanStarted = THISBACK(ScannerScanStarted);
-	
 	// Make sure the module manager is initialized.
 	mModuleManager = ModuleManager::GetInstance();
-	
-	// Initialize the plugin system.
-	mPluginSystem = PluginSystem::GetInstance();
-	mPluginSystem->RetrieveAndLoadAllPlugins();
 	
 	// Set timer that runs keeping track of hotkeys.
 	SetTimeCallback(100, THISBACK(CheckKeyPresses), HOTKEY_TIMECALLBACK);

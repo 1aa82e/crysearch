@@ -18,22 +18,22 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="UtilFunctions.c">
+    <ClCompile Include="CrySearchMain.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="CrySearchMain.c">
+    <ClCompile Include="HandlePermissions.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="HandlePermissions.c">
+    <ClCompile Include="PeUtil.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ProcessCore.c">
+    <ClCompile Include="ProcessCore.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="UtilFunctions.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ProcessorInformation.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="PeUtil.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

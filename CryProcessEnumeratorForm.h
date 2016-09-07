@@ -38,7 +38,7 @@ private:
 	volatile Atomic mCompletionCounter;
 	int mThreadCount;
 	Win32ProcessInformation tmpProc;
-	Thread mIconThread;
+	CoWork mIconThreadpool;
 	
 	Label mInfoAboutDialog;
 	EditField mSearchBox;

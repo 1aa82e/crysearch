@@ -41,7 +41,7 @@ extern "C"
 	void CrySetBits(DWORD_PTR* const dw, const int lowBit, const int bits, const int newValue);
 
 	// Checks whether the integer value 'intVal' is a multiple the 'mulVal' value.
-	const BOOL GetIsMultipleOf(const LONG_PTR intVal, const int mulVal);
+	const bool GetIsMultipleOf(const LONG_PTR intVal, const int mulVal);
 
 	// Parses an access mask value and returns the strings of the access constants it incoorporates.
 	// The caller must specify a buffer and is responsible for its allocation and deletion. The recommended
@@ -76,7 +76,7 @@ extern "C"
 	// Retrieves information about the processor in the system. The first parameter should be a buffer of 128 bytes
 	// that receives the processor information string. The string will contain information about supported machine
 	// language extensions.
-	void GetProcessorSupportInformation(char pProcInformationString[128]);
+	void __stdcall GetProcessorSupportInformation(char pProcInformationString[128]);
 
 #ifdef __cplusplus
 }

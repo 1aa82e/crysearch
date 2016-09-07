@@ -205,7 +205,7 @@ void CryProcessEnumeratorForm::RefreshProcesses(bool less)
 	for (int i = 0; i < this->mThreadCount; ++i)
 	{
 		// Start callbacks to asynchronously retrieve icons.
-		this->mIconThread.Start(PTEBACK2(ProcessWindowIconAsync, mProcesses[i], less));
+		this->mIconThreadpool & PTEBACK2(ProcessWindowIconAsync, mProcesses[i], less);
 	}
 }
 
@@ -269,6 +269,6 @@ void CryProcessEnumeratorForm::Close()
 {
 	ProcWndClosed = true;
 	WaitCursor waitcursor;
-	this->mIconThread.Wait();
+	this->mIconThreadpool.Finish();
 	CryDialogTemplate::Close();
 }

@@ -163,7 +163,7 @@ void CryDisasmCtrl::DisassemblyRightClick(Bar& pBar)
 		
 		// Below the single selection menu items, this item should go for both, even though it should be located below.
 		pBar.Separator();
-		pBar.Add(!this->mAsyncHelper.IsRunning(), "NOP Selected", THISBACK(NopSelectedCode));
+		pBar.Add(!mMemoryScanner->IsReadOnlyOperationMode() && !this->mAsyncHelper.IsRunning(), "NOP Selected", THISBACK(NopSelectedCode));
 		pBar.Add(!this->mAsyncHelper.IsRunning(), "Generate", THISBACK(DisasmGenerateSubmenu));
 		pBar.Separator();
 		pBar.Add(!this->mAsyncHelper.IsRunning(), "Go to entrypoint", CrySearchIml::EntryPointIcon(), THISBACK(GoToEntryPointClicked));

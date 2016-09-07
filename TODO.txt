@@ -8,9 +8,8 @@ Package:
 - Update wiki with changes for the release.
 ------------------------------------------------------------------
 
-- Plugin to override ReadProcessMemory, WriteProcessMemory, VirtualProtectEx and OpenProcess;
-- Masking partially works, let's fix the rest in the next version!
-- CoWork for multi-threading of process enumeration (should greatly lower the waiting time);
+- Masking partially works, let's fix the rest in the next version:
+	- crysearch as process, entrypoint part -> jmp (E9)!
 
 - Bug in import table parser, x64, when switching from slack to winamp!
 

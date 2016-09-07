@@ -21,15 +21,16 @@
 // Adding your own feature flags is possible by defining a new bitflag above the highest Crysearch-defined flag.
 // Note that CrySearch may add feature flags in future versions, overwriting custom defined ones. The maximum 
 // amount of available feature flags is 32 as the flags are stored in a DWORD field.
-#define CRYPLUGIN_UNKNOWN			0x0
-#define CRYPLUGIN_DUMPER			0x1
+#define CRYPLUGIN_UNKNOWN						0x0
+#define CRYPLUGIN_DUMPER						0x1
+#define CRYPLUGIN_COREFUNC_OVERRIDE				0x2
 
 // Plugin state definitions. CrySearch uses state values to indicate whether the plugin is in a specific state.
 // CRYPLUGIN_STATE_LOADED indicates that the plugin has finished its initialization routine(s), is fully loaded into
 // CrySearch address space and ready to use. Note that your plugin is required to take this into account. Not takng
 // this into account may result in unexpected behavior. Undefined plugin state means that CrySearch cannot keep track of it.
-#define CRYPLUGIN_STATE_UNKNOWN		0
-#define CRYPLUGIN_STATE_LOADED		1
+#define CRYPLUGIN_STATE_UNKNOWN					0
+#define CRYPLUGIN_STATE_LOADED					1
 
 // Flag definitions for plugins, sorted by plugin type. Plugin flags may or may not be used by CrySearch. It is allowed
 // to define custom flags for your own plugin. Below are the plugin definitions, sorted by plugin type.
@@ -37,7 +38,14 @@
 // The following flags are specific to dumper plugins. PLUGIN_CLASS_DEFAULT indicates that a dumper plugin is offering
 // to be the default dumper. When dumping all modules in a process, CrySearch will look for the first plugin that offers
 // itself as default dumper. If no plugins do so, it will take the first available dumper.
-#define PLUGIN_CLASS_DEFAULT		0x80
+#define PLUGIN_CLASS_DEFAULT					0x80
+
+// The following flags are specific to plugins that override CrySearch core function behavior. A flag represents a
+// core function. If a flag is set, the corresponding core function must have a body in the plugin.
+#define PLUGIN_CORE_READ_PROCESS_MEMORY			0x1
+#define PLUGIN_CORE_WRITE_PROCESS_MEMORY		0x2
+#define PLUGIN_CORE_PROTECT_PROCESS_MEMORY		0x4
+#define PLUGIN_CORE_OPEN_PROCESS				0x8
 
 // Contains vital information about the plugin. This information should be used to idenfity loaded plugins.
 // Every plugin should have exactly one instance of this structure defined. It is required to have lifetime availability
@@ -86,12 +94,12 @@ typedef DWORD CCryPluginEvent;
 // be loaded at time of calling, hence the structure should be in available memory. The pointer returned by this may not be freed
 // by the caller until the plugin is unloaded. A function called 'CryGetPluginInformation' with the following function prototype
 // must be exported by a plugin, should it be loaded succesfully.
-typedef const BOOL (__stdcall* CryGetPluginInformationProc)(PCRYPLUGINHEADER* const pInfoBuffer);
+typedef const bool (__stdcall* CryGetPluginInformationProc)(PCRYPLUGINHEADER* const pInfoBuffer);
 
 // Initializes the plugin. Implement this function in a new plugin to do any initialization work. Return TRUE if the initialization
 // succeeded and FALSE otherwise. A function called 'CryInitializePlugin' with the following function prototype must be exported by
 // a plugin, should it be loaded succesfully.
-typedef const BOOL (__stdcall* CryInitializePluginProc)();
+typedef const bool (__stdcall* CryInitializePluginProc)();
 
 // Executes any cleanup operations before a plugin is unloaded. A function called 'CryDestroyPlugin' with the following function
 // prototype must be exported by a plugin, should it be loaded succesfully.
@@ -129,5 +137,47 @@ typedef void (__stdcall* CryProcessPluginEventProc)(CCryPluginEvent event, void*
 // moduleSize   | The module size. This is the size that the dumper will read from the memory and written to the output file;
 // fileName     | The path to the output file. If the file already exists it will be overwritten.
 // Returns TRUE if the dump succeeded and FALSE otherwise. Partial dump may or may not result in TRUE depending on the developers intentions.
-typedef const BOOL (__stdcall* CreateModuleDumpProc32)(HANDLE hProcess, const void* moduleBase, const DWORD moduleSize, const char* fileName);
-typedef const BOOL (__stdcall* CreateModuleDumpProc64)(HANDLE hProcess, const void* moduleBase, const ULONGLONG moduleSize, const char* fileName);
+typedef const bool (__stdcall* CreateModuleDumpProc32)(HANDLE hProcess, const void* moduleBase, const DWORD moduleSize, const char* fileName);
+typedef const bool (__stdcall* CreateModuleDumpProc64)(HANDLE hProcess, const void* moduleBase, const ULONGLONG moduleSize, const char* fileName);
+
+// ------------------------------------------------------------------------------------------------------------------------------
+
+// The following functions match the signatures of CrySearch memory reading, writing and protection functions, a.k.a. ReadProcessMemory,
+// WriteProcessMemory, VirtualProtectEx and OpenProcess (or ntdll.dll alternatives: NtReadVirtualMemory, NtWriteVirtualMemory,
+// NtProtectVirtualMemory, NtOpenProcess). Since CrySearch v2.05, a plugin can add an alternative reading, writing or protection function
+// to CrySearch at runtime. These functions can then be used to override the behavior of the default Windows API functions. A function
+// body can then be defined in a plugin and it can be used if and only if it matches the signature defined below.
+
+// The memory reading function can be overridden in a plugin by defining a function with the following signature and named:
+// "CryReadMemoryRoutine". The function takes the following parameters:
+// handle			| A valid handle to a process. The handle must have PROCESS_VM_READ access rights;
+// addr				| A virtual memory address to read from;
+// buffer			| A pointer to a valid buffer to receive the bytes read from memory;
+// size				| The size of the data to read (the buffer should be at least this size);
+// outSize			| A pointer to a variable that receives the size of the data that was actually read.
+typedef const bool (__stdcall* CryReadMemoryRoutineType)(HANDLE handle, LPCVOID addr, LPVOID buffer, SIZE_T size, SIZE_T* outSize);
+
+// The memory writing function can be overridden in a plugin by defining a function with the following signature and named:
+// "CryWriteMemoryRoutine". The memory writing function takes the following parameters:
+// handle			| A valid handle to a process. The handle must have PROCESS_VM_WRITE and PROCESS_VM_OPERATION access rights;
+// addr				| A virtual memory address to write to;
+// buffer			| A pointer to a valid buffer that contains the bytes to write to the target memory address;
+// size				| The size of the data to write (the buffer should be at least this size);
+// outSize			| A pointer to a variable that receives the size of the data that was actually written.
+typedef const bool (__stdcall* CryWriteMemoryRoutineType)(HANDLE handle, LPVOID addr, LPCVOID buffer, SIZE_T size, SIZE_T* outSize);
+
+// The memory protection function can be overridden in a plugin by defining a function with the following signature and named:
+// "CryProtectMemoryRoutine". The memory protection routine takes the following parameters:
+// handle			| A valid handle to a process. The handle must have PROCESS_VM_OPERATION access rights;
+// addr				| A virtual memory address to protect;
+// size				| The size of the memory to protect (aligned by page size ofcourse);
+// newAccess		| The new protection constant to be set;
+// oldAccess		| A pointer to a variable that gets the old access constant.
+typedef const bool (__stdcall* CryProtectMemoryRoutineType)(HANDLE handle, LPVOID addr, SIZE_T size, ULONG newAccess, PULONG oldAccess);
+
+// The process opening routine can be overridden in a plugin by defining a function with the following signature and named:
+// "CryOpenProcessRoutine". The process opening routine takes the following parameters:
+// dwDesiredAccess	| The process access constant to open the process with;
+// bInheritHandle	| Whether the process handle should be inherited;
+// dwProcessId		| The ID of the process to open.
+typedef HANDLE (__stdcall* CryOpenProcessRoutineType)(DWORD dwDesiredAccess, BOOL bInheritHandle, DWORD dwProcessId);

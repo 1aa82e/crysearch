@@ -169,11 +169,30 @@ bool PluginSystem::LoadPlugin(const char* pName)
 			// Multiple plugins with the same name are not allowed.
 			if (this->FindPlugin(plugin.PluginHeader->PluginName) >= 0)
 			{
-				return !this->UnloadPlugin(plugin.PluginHeader->PluginName);
+				// Unload the library, the plugin cannot be loaded.
+				CryDestroyPluginProc pCDP = (CryDestroyPluginProc)GetProcAddress(modBase, "CryDestroyPlugin");
+				if (pCDP)
+				{
+					pCDP();
+				}
+
+				FreeLibrary(modBase);
+
+				return false;
 			}
-			
+
+			// Add the newly loaded plugin to the list.
 			plugin.BaseAddress = modBase;
 			this->mLoadedPlugins.Add(plugin);
+			
+			// If the newly loaded plugin is a core function plugin, check its validity.
+			if (plugin.PluginHeader->PluginFeatures & CRYPLUGIN_COREFUNC_OVERRIDE)
+			{
+				if (!this->IsCorePluginValid(plugin))
+				{
+					return !this->UnloadPlugin(plugin.PluginHeader->PluginName);
+				}
+			}
 			
 			return true;
 		}
@@ -205,4 +224,53 @@ bool PluginSystem::UnloadPlugin(const char* pName)
 	}
 	
 	return false;
+}
+
+// Validates the content of a core function plugin, to see if all set flags have
+// matching bodies. Returns true if the plugin at modBase is valid and false otherwise.
+const bool PluginSystem::IsCorePluginValid(const CrySearchPlugin& plugin) const
+{
+	bool result = true;
+	
+	// Check for the memory reading function flag.
+	if (plugin.PluginHeader->Flags & PLUGIN_CORE_READ_PROCESS_MEMORY)
+	{
+		CryReadMemoryRoutineType func = (CryReadMemoryRoutineType)GetProcAddress(plugin.BaseAddress, "CryReadMemoryRoutine");
+		if (!func)
+		{
+			result = false;
+		}
+	}
+	
+	// Check for the memory writing function flag.
+	if (plugin.PluginHeader->Flags & PLUGIN_CORE_WRITE_PROCESS_MEMORY)
+	{
+		CryWriteMemoryRoutineType func = (CryWriteMemoryRoutineType)GetProcAddress(plugin.BaseAddress, "CryWriteMemoryRoutine");
+		if (!func)
+		{
+			result = false;
+		}
+	}
+	
+	// Check for the memory protection function flag.
+	if (plugin.PluginHeader->Flags & PLUGIN_CORE_PROTECT_PROCESS_MEMORY)
+	{
+		CryProtectMemoryRoutineType func = (CryProtectMemoryRoutineType)GetProcAddress(plugin.BaseAddress, "CryProtectMemoryRoutine");
+		if (!func)
+		{
+			result = false;
+		}
+	}
+	
+	// Check for the process opening function flag.
+	if (plugin.PluginHeader->Flags & PLUGIN_CORE_OPEN_PROCESS)
+	{
+		CryOpenProcessRoutineType func = (CryOpenProcessRoutineType)GetProcAddress(plugin.BaseAddress, "CryOpenProcessRoutine");
+		if (!func)
+		{
+			result = false;
+		}
+	}
+	
+	return result;
 }

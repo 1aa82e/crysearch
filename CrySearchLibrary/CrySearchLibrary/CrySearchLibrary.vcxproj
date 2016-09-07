@@ -193,12 +193,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="CrySearchMain.c" />
-    <ClCompile Include="HandlePermissions.c" />
-    <ClCompile Include="PeUtil.c" />
-    <ClCompile Include="ProcessCore.c" />
+    <ClCompile Include="CrySearchMain.cpp" />
+    <ClCompile Include="HandlePermissions.cpp" />
+    <ClCompile Include="PeUtil.cpp" />
+    <ClCompile Include="ProcessCore.cpp" />
     <ClCompile Include="ProcessorInformation.c" />
-    <ClCompile Include="UtilFunctions.c" />
+    <ClCompile Include="UtilFunctions.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Exports32.def" />

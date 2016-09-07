@@ -1,0 +1,13 @@
+LIBRARY
+
+EXPORTS
+	
+	CryGetPluginInformation
+	CryGetPluginAbout
+	CryInitializePlugin
+	CryOpenProcessRoutine
+	CryReadMemoryRoutine
+	CryWriteMemoryRoutine
+	CryProtectMemoryRoutine
+	CryProcessPluginEvent
+	CryDestroyPlugin

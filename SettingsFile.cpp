@@ -93,12 +93,6 @@ bool SettingsFile::Initialize()
 	
 	this->mLanguage = LNGFromText("EN-EN");
 	
-	// If a simple integer value in the settings file is bogus, the file is corrupt.
-	if (this->mOpenProcessRoutine > 1)
-	{
-		b = false;
-	}
-	
 	return b;
 }
 
