@@ -20,7 +20,7 @@ private:
 	ModuleManager(ModuleManager const&);
 	void operator=(ModuleManager const&);
 	
-	void InitModulesList();
+	const bool InitModulesList();
 public:
 	static ModuleManager* GetInstance()
 	{
@@ -31,12 +31,17 @@ public:
 	static const bool EnumerateModules(const int procID, Vector<Win32ModuleInformation>& outModules);
 	
 	void ClearModules();
-	void Initialize();
+	const bool Initialize();
+
+#ifdef _WIN64
+	void RemoveNonWow64Modules();
+#endif
 	
 	const SIZE_T GetBaseAddress() const;
 	const int GetModuleCount() const;
 	const Win32ModuleInformation* GetModuleFromContainedAddress(const SIZE_T address) const;
 	const Win32ModuleInformation* FindModule(const char* modName) const;
+	const int FindModuleIndex(const char* modName) const;
 	String GetModuleFilename(const SIZE_T mod) const;
 	
 	const Win32ModuleInformation& operator [] (const int x) const

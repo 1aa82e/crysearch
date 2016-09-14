@@ -81,6 +81,8 @@ private:
 	bool mEnableHotkeys;
 	Vector<CrySearchHotKey> hotkeys;
 	
+	bool mHideNonWow64Modules;
+	
 	int mDissectionUpdateInterval;
 	bool mDissectionHexView;
 	bool mEnableDissectionTypeGuessing;
@@ -125,6 +127,8 @@ public:
 	const bool GetEnableHotkeys() const							{ return this->mEnableHotkeys; }
 	const bool GetInvadeProcess() const							{ return this->mInvadeProcess; }
 	
+	const bool GetHideNonWow64Modules() const					{ return this->mHideNonWow64Modules; }
+	
 	const int GetDissectionUpdateInterval() const				{ return this->mDissectionUpdateInterval; }
 	const bool GetDissectionHexadecimalView() const				{ return this->mDissectionHexView; }
 	const bool GetEnableDissectionTypeGuessing() const			{ return this->mEnableDissectionTypeGuessing; }
@@ -157,6 +161,8 @@ public:
 	
 	void SetEnableHotkeys(bool value = true)					{ this->mEnableHotkeys = value; }
 	void SetInvadeProcess(bool value = true)					{ this->mInvadeProcess = value; }
+	
+	void SetHideNonWow64Modules(bool value = true)				{ this->mHideNonWow64Modules = value; }
 	
 	void SetDissectionUpdateInterval(int value = 500)			{ this->mDissectionUpdateInterval = value; }
 	void SetDissectionHexadecimalView(bool value = false)		{ this->mDissectionHexView = value; }

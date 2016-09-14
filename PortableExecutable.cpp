@@ -345,62 +345,72 @@ void PortableExecutable::GetDotNetDirectoryInformation(const IMAGE_DATA_DIRECTOR
 	// Check if the executable contains a COM header.
 	if (netHeader->VirtualAddress && netHeader->Size >= sizeof(IMAGE_COR20_HEADER))
 	{
+		SIZE_T bytesRead;
+
 		// Read COR20 header from file.
 		Byte* netDirBuffer = new Byte[netHeader->Size];
-		CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(this->mBaseAddress + netHeader->VirtualAddress), netDirBuffer, netHeader->Size, NULL);
+		bool b = CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(this->mBaseAddress + netHeader->VirtualAddress), netDirBuffer, netHeader->Size, &bytesRead);
 
-		// Save version information from COR20 header.
-		IMAGE_DATA_DIRECTORY mdDir;
-		memcpy(&mdDir, &((IMAGE_COR20_HEADER*)netDirBuffer)->MetaData, sizeof(IMAGE_DATA_DIRECTORY));
-		delete[] netDirBuffer;
-		
-		// Save the offset to the metadata header to allow dumping of .NET sections later.
-		LoadedProcessPEInformation.DotNetInformation.MetadataHeaderOffset = mdDir.VirtualAddress;
-
-		// Read metadata from header.
-		netDirBuffer = new Byte[mdDir.Size];
-		CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(this->mBaseAddress + mdDir.VirtualAddress), netDirBuffer, mdDir.Size, NULL);
-		
-		// Dissect metadata. Since its a dynamic structure we cannot compile this into a struct.
-		const DWORD vStrLength = *(DWORD*)(netDirBuffer + 12);
-		const WORD streamCount = *(WORD*)(netDirBuffer + 18 + vStrLength);
-
-		// Based on the stream count, dissect streams from the header.
-		DWORD streamIterator = 0;
-		for (const char* iterator = (char*)(netDirBuffer + 20 + vStrLength); streamIterator < streamCount; ++streamIterator)
+		// Check if the section data was read succesfully.
+		if (b && bytesRead == netHeader->Size)
 		{
-			// Get offset and size fields.
-			const DWORD* const offsetPtr = (DWORD*)iterator;
-			iterator += sizeof(DWORD);
-			const DWORD* const sizePtr = (DWORD*)iterator;
-			iterator += sizeof(DWORD);
-			
-			// Read the name of the stream.
-			WORD str = 0;
-			const char* const beginIterator = iterator;
-			bool strEnded = false;
-			while (1)
-			{
-				// First find the end of the string.
-				if (!strEnded && *iterator == 0)
-				{
-					strEnded = true;
-				}
-				// Continue until the next 4 byte boundary is reached.
-				else if (strEnded && ((SIZE_T)iterator % 4) == 0)
-				{
-					break;
-				}
+			// Save version information from COR20 header.
+			IMAGE_DATA_DIRECTORY mdDir;
+			memcpy(&mdDir, &((IMAGE_COR20_HEADER*)netDirBuffer)->MetaData, sizeof(IMAGE_DATA_DIRECTORY));
+			delete[] netDirBuffer;
 
-				++str;
-				++iterator;
+			// Save the offset to the metadata header to allow dumping of .NET sections later.
+			LoadedProcessPEInformation.DotNetInformation.MetadataHeaderOffset = mdDir.VirtualAddress;
+
+			// Read metadata from header.
+			netDirBuffer = new Byte[mdDir.Size];
+			b = CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(this->mBaseAddress + mdDir.VirtualAddress), netDirBuffer, mdDir.Size, &bytesRead);
+
+			// Check whether the metadata was succesfully read into the local buffer.
+			if (b && bytesRead == mdDir.Size)
+			{
+				// Dissect metadata. Since its a dynamic structure we cannot compile this into a struct.
+				const DWORD vStrLength = *(DWORD*)(netDirBuffer + 12);
+				const WORD streamCount = *(WORD*)(netDirBuffer + 18 + vStrLength);
+
+				// Based on the stream count, dissect streams from the header.
+				DWORD streamIterator = 0;
+				for (const char* iterator = (char*)(netDirBuffer + 20 + vStrLength); streamIterator < streamCount; ++streamIterator)
+				{
+					// Get offset and size fields.
+					const DWORD* const offsetPtr = (DWORD*)iterator;
+					iterator += sizeof(DWORD);
+					const DWORD* const sizePtr = (DWORD*)iterator;
+					iterator += sizeof(DWORD);
+
+					// Read the name of the stream.
+					WORD str = 0;
+					const char* const beginIterator = iterator;
+					bool strEnded = false;
+					while (1)
+					{
+						// First find the end of the string.
+						if (!strEnded && *iterator == 0)
+						{
+							strEnded = true;
+						}
+						// Continue until the next 4 byte boundary is reached.
+						else if (strEnded && ((SIZE_T)iterator % 4) == 0)
+						{
+							break;
+						}
+
+						++str;
+						++iterator;
+					}
+
+					// String length was measured, now read it into a variable.
+					Win32DotNetSectionInformation& newSect = LoadedProcessPEInformation.DotNetInformation.DotNetSections.Add();
+					newSect.SectionName = String(beginIterator, str + 1);
+					newSect.Offset = *offsetPtr;
+					newSect.Size = *sizePtr;
+				}
 			}
-			
-			// String length was measured, now read it into a variable.
-			Win32DotNetSectionInformation& newSect = LoadedProcessPEInformation.DotNetInformation.DotNetSections.Add();
-			newSect.SectionName = String(beginIterator, str + 1);
-			newSect.Offset = *offsetPtr;
-			newSect.Size = *sizePtr;
 		}
 
 		delete[] netDirBuffer;
@@ -529,6 +539,8 @@ SIZE_T PortableExecutable32::GetAddressFromExportTable(const AddrStruct* addr, c
 	{
 		int ResurseDotIndex = 0;
 		const DWORD* funcAddrPtr = NULL;
+		bool b;
+		SIZE_T bytesRead;
 		
 		for (unsigned int i = 0; i < addr->ExportDirectory->NumberOfFunctions; ++i)
 		{
@@ -609,16 +621,33 @@ SIZE_T PortableExecutable32::GetAddressFromExportTable(const AddrStruct* addr, c
 			
 			            delete[] dllBuffer;
 			            
-			            Byte* const exportDirectoryBuffer = new Byte[dataDir.Size];
-			            CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(modBaseAddr->BaseAddress + dataDir.VirtualAddress), exportDirectoryBuffer, dataDir.Size, NULL);
-						
-						Byte* const bufBase = exportDirectoryBuffer - dataDir.VirtualAddress;
-						AddrStruct addrStruct((Byte*)modBaseAddr->BaseAddress, (exportDirectoryBuffer - dataDir.VirtualAddress), bufBase + dataDir.VirtualAddress + dataDir.Size
-							, &dataDir, (IMAGE_EXPORT_DIRECTORY*)exportDirectoryBuffer);
-			            
-						SIZE_T forwardedAddress = this->GetAddressFromExportTable(&addrStruct, (char*)(addr->BufferBaseAddress + *funcAddrPtr + ResurseDotIndex + 1), false);
-						delete[] exportDirectoryBuffer;
-						return forwardedAddress;
+			            // Check if the size of the data directory is valid.
+						if (dataDir.Size)
+						{
+							// Read the export directory from memory.
+				            Byte* const exportDirectoryBuffer = new Byte[dataDir.Size];
+				            b = CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(modBaseAddr->BaseAddress + dataDir.VirtualAddress), exportDirectoryBuffer, dataDir.Size, &bytesRead);
+	
+							// Check whether it was read succesfully.
+							if (b && bytesRead == dataDir.Size)
+							{
+								Byte* const bufBase = exportDirectoryBuffer - dataDir.VirtualAddress;
+								AddrStruct addrStruct((Byte*)modBaseAddr->BaseAddress, (exportDirectoryBuffer - dataDir.VirtualAddress), bufBase + dataDir.VirtualAddress + dataDir.Size
+									, &dataDir, (IMAGE_EXPORT_DIRECTORY*)exportDirectoryBuffer);
+	
+								SIZE_T forwardedAddress = this->GetAddressFromExportTable(&addrStruct, (char*)(addr->BufferBaseAddress + *funcAddrPtr + ResurseDotIndex + 1), false);
+								delete[] exportDirectoryBuffer;
+								return forwardedAddress;
+							}
+							else
+							{
+								return EAT_ADDRESS_NOT_FOUND;
+							}
+						}
+						else
+						{
+							return EAT_ADDRESS_NOT_FOUND;
+						}
 					}
 
 					return (SIZE_T)(addr->BaseAddress + *funcAddrPtr);
@@ -721,7 +750,7 @@ void PortableExecutable32::GetImportAddressTable() const
 			IMAGE_DATA_DIRECTORY dataDir = *(&((IMAGE_OPTIONAL_HEADER32*)&pNTHeader->OptionalHeader)->DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT]);
 
             delete[] dllBuffer;
-            
+
             Byte* const exportDirectoryBuffer = new Byte[dataDir.Size];
             CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(modBaseAddr->BaseAddress + dataDir.VirtualAddress), exportDirectoryBuffer, dataDir.Size, NULL);
             
@@ -1397,6 +1426,8 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 		{
 			const DWORD* funcAddrPtr = NULL;
 			int RecurseDotIndex = 0;
+			bool b;
+			SIZE_T bytesRead;
 			
 			for (unsigned int i = 0; i < addr->ExportDirectory->NumberOfFunctions; ++i)
 			{
@@ -1471,19 +1502,36 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 				           
 				            const IMAGE_NT_HEADERS64* const pNTHeader =(IMAGE_NT_HEADERS64*)(dllBuffer + ((IMAGE_DOS_HEADER*)dllBuffer)->e_lfanew);
 							IMAGE_DATA_DIRECTORY dataDir = *(&((IMAGE_OPTIONAL_HEADER64*)&pNTHeader->OptionalHeader)->DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT]);
-				
-				            delete[] dllBuffer;
-				            
-				            Byte* const exportDirectoryBuffer = new Byte[dataDir.Size];
-				            CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(modBaseAddr->BaseAddress + dataDir.VirtualAddress), exportDirectoryBuffer, dataDir.Size, NULL);
 							
-							Byte* const bufBase = exportDirectoryBuffer - dataDir.VirtualAddress;
-							AddrStruct addrStruct((Byte*)modBaseAddr->BaseAddress, (exportDirectoryBuffer - dataDir.VirtualAddress), bufBase + dataDir.VirtualAddress + dataDir.Size
-								, &dataDir, (IMAGE_EXPORT_DIRECTORY*)exportDirectoryBuffer);
-				            
-							SIZE_T forwardedAddress = this->GetAddressFromExportTable(&addrStruct, (char*)(addr->BufferBaseAddress + *funcAddrPtr + RecurseDotIndex + 1), false);
-							delete[] exportDirectoryBuffer;
-							return forwardedAddress;
+							delete[] dllBuffer;
+							
+							// Check if the size of the data directory is valid.
+							if (dataDir.Size)
+							{
+								// Read the export directory from memory.
+					            Byte* const exportDirectoryBuffer = new Byte[dataDir.Size];
+					            b = CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(modBaseAddr->BaseAddress + dataDir.VirtualAddress), exportDirectoryBuffer, dataDir.Size, &bytesRead);
+					            
+					            // Check whether it was read succesfully.
+								if (b && bytesRead == dataDir.Size)
+								{
+									Byte* const bufBase = exportDirectoryBuffer - dataDir.VirtualAddress;
+									AddrStruct addrStruct((Byte*)modBaseAddr->BaseAddress, (exportDirectoryBuffer - dataDir.VirtualAddress), bufBase + dataDir.VirtualAddress + dataDir.Size
+										, &dataDir, (IMAGE_EXPORT_DIRECTORY*)exportDirectoryBuffer);
+						            
+									SIZE_T forwardedAddress = this->GetAddressFromExportTable(&addrStruct, (char*)(addr->BufferBaseAddress + *funcAddrPtr + RecurseDotIndex + 1), false);
+									delete[] exportDirectoryBuffer;
+									return forwardedAddress;
+								}
+								else
+								{
+									return EAT_ADDRESS_NOT_FOUND;
+								}
+							}
+				            else
+				            {
+				            	return EAT_ADDRESS_NOT_FOUND;
+				            }
 						}
 	
 						return (SIZE_T)(addr->BaseAddress + *funcAddrPtr);

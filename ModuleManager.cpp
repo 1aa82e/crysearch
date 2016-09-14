@@ -24,7 +24,8 @@ const bool ModuleManager::EnumerateModules(const int procID, Vector<Win32ModuleI
 	else
 	{
 #ifdef _WIN64
-	result = CrySearchRoutines.RtlQueryProcessDebugInformation(procID, mMemoryScanner->IsX86Process() ? PDI_WOW64_MODULES : PDI_MODULES, db);
+	// We need non-invasiveness in order to have the system call succeed; I didn't find any other way of succesfully retrieving wow64 modules.
+	result = CrySearchRoutines.RtlQueryProcessDebugInformation(procID, mMemoryScanner->IsX86Process() ? PDI_WOW64_MODULES | PDI_NONINVASIVE : PDI_MODULES, db);
 #else
 	result = CrySearchRoutines.RtlQueryProcessDebugInformation(procID, PDI_MODULES, db);
 #endif
@@ -38,13 +39,13 @@ const bool ModuleManager::EnumerateModules(const int procID, Vector<Win32ModuleI
 	}
 	
 	// Walk and save the enumerated modules.
-	PDEBUG_MODULE_INFORMATIONEX modInfo = (PDEBUG_MODULE_INFORMATIONEX)db->Modules;
+	PDEBUG_MODULES_STRUCT modInfo = db->Modules;
 	outModules.Reserve(modInfo->Count);
 	for (unsigned int i = 0; i < modInfo->Count; ++i)
 	{
 		Win32ModuleInformation& curMod = outModules.Add();
-		curMod.BaseAddress = modInfo->DbgModInfo[i].Base;
-		curMod.Length = modInfo->DbgModInfo[i].Size;
+		curMod.BaseAddress = (SIZE_T)modInfo->DbgModInfo[i].ImageBase;
+		curMod.Length = modInfo->DbgModInfo[i].ImageSize;
 	}
 	
 	// Free the allocated debug buffer.
@@ -66,19 +67,19 @@ ModuleManager::~ModuleManager()
 }
 
 // Initializes the internal module store.
-void ModuleManager::InitModulesList()
+const bool ModuleManager::InitModulesList()
 {
 	// Clear previous modules from the list.
 	this->mLoadedModulesList.Clear();
 	
 	// Fill the internal module list with the loaded modules inside the target process.
-	ModuleManager::EnumerateModules(mMemoryScanner->GetProcessId(), this->mLoadedModulesList);
+	return ModuleManager::EnumerateModules(mMemoryScanner->GetProcessId(), this->mLoadedModulesList);
 }
 
 // Resets the module list and retrieves modules from scratch.
-void ModuleManager::Initialize()
+const bool ModuleManager::Initialize()
 {
-	this->InitModulesList();
+	return this->InitModulesList();
 }
 
 // Clears the module list.
@@ -113,7 +114,8 @@ const Win32ModuleInformation* ModuleManager::GetModuleFromContainedAddress(const
 	return NULL;
 }
 
-// Retrieves a module in the module manager using its name. NULL if the module is not found.
+// Retrieves the first instance of a module in the module manager using its name.
+// Returns NULL if the module is not found.
 const Win32ModuleInformation* ModuleManager::FindModule(const char* modName) const
 {
 	for (auto const& mod : this->mLoadedModulesList)
@@ -127,6 +129,22 @@ const Win32ModuleInformation* ModuleManager::FindModule(const char* modName) con
 	return NULL;
 }
 
+// Retrieves the index of the first instance of a module in the module manager using its name.
+// Returns -1 if the module was not found.
+const int ModuleManager::FindModuleIndex(const char* modName) const
+{
+	const int count = this->mLoadedModulesList.GetCount();
+	for (int i = 0; i < count; ++i)
+	{
+		if (_stricmp(this->GetModuleFilename(this->mLoadedModulesList[i].BaseAddress), modName) == 0)
+		{
+			return i;
+		}
+	}
+	
+	return -1;
+}
+
 // Retrieves the module filename of a loaded module in the process. Returns an empty string if
 // the retrieval of the filename failed.
 String ModuleManager::GetModuleFilename(const SIZE_T mod) const
@@ -136,3 +154,73 @@ String ModuleManager::GetModuleFilename(const SIZE_T mod) const
 	buffer.Strlen();
 	return GetFileNamePos(buffer.Begin());
 }
+
+#ifdef _WIN64
+	// Removes all non-wow64 modules from the internal list.
+	void ModuleManager::RemoveNonWow64Modules()
+	{
+		const int count = this->mLoadedModulesList.GetCount();
+		
+		// Unless the user manually hid the image name, there should be two instances of the image name.
+		// Find them, and if there are two, remove the first one.
+		const String imageName = this->GetModuleFilename(NULL);
+		int first = -1;
+		for (int j = 0; j < count; ++j)
+		{
+			if (_stricmp(this->GetModuleFilename(this->mLoadedModulesList[j].BaseAddress), imageName) == 0)
+			{
+				if (first == -1)
+				{
+					first = j;
+				}
+				else
+				{
+					// Second module found, remove the first occurence and bail.
+					this->mLoadedModulesList.Remove(first);
+					first = -1;
+					break;
+				}
+			}
+		}
+		
+		// If only one module with the image name was found, the user has hidden the valid one.
+		// Let's just remove the one module we found.
+		if (first == 0)
+		{
+			this->mLoadedModulesList.Remove(first);
+		}
+		
+		// Remove conflicting ntdll.dll instance.
+		for (int i = 0; i < count; ++i)
+		{
+			if (_stricmp(this->GetModuleFilename(this->mLoadedModulesList[i].BaseAddress), "ntdll.dll") == 0)
+			{
+				// Check whether the address overflows a 32-bit integer (wow64 address space limitations).
+				if (this->mLoadedModulesList[i].BaseAddress / 4294967296 > 0)
+				{
+					this->mLoadedModulesList.Remove(i);
+					break;
+				}
+			}
+		}
+		
+		// Remove the known wow64 modules from the list.
+		const int wow64 = this->FindModuleIndex("wow64.dll");
+		if (wow64 != -1)
+		{
+			this->mLoadedModulesList.Remove(wow64);
+		}
+		
+		const int wow64win = this->FindModuleIndex("wow64win.dll");
+		if (wow64win != -1)
+		{
+			this->mLoadedModulesList.Remove(wow64win);
+		}
+		
+		const int wow64cpu = this->FindModuleIndex("wow64cpu.dll");
+		if (wow64cpu != -1)
+		{
+			this->mLoadedModulesList.Remove(wow64cpu);
+		}
+	}
+#endif

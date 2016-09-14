@@ -31,17 +31,19 @@ const bool __stdcall IsI386Process(HANDLE procHandle)
 // Creates a thread inside the loaded process using the default user-mode WINAPI function(s). Returns 0 if the function succeeded and -1 if it failed.
 const int CryCreateExternalThread(HANDLE procHandle, const SIZE_T StartAddress, void* parameter, BOOL suspended, int* pThreadId)
 {
-	int result = 0;
 	HANDLE hThread;
 
 	// Attempt to create the thread.
 	if (!(hThread = CreateRemoteThread(procHandle, NULL, 0, (LPTHREAD_START_ROUTINE)StartAddress, parameter, suspended ? CREATE_SUSPENDED : 0, (DWORD*)pThreadId)))
 	{
-		result = -1;
+		return -1;
 	}
-
-	CloseHandle(hThread);
-	return result;
+	else
+	{
+		// The function succeeded, but we don't need the handle anymore.
+		CloseHandle(hThread);
+		return 0;
+	}
 }
 
 // Gets thread priority using the default user-mode WINAPI function GetThreadPriority. The return value is a pointer to statically allocated string.

@@ -11,6 +11,13 @@ v2.05:
 		- Writing to process memory;
 		- Changing process memory protection constants.
 	- Fixed bug where the "NOP Selected" button in the disassembler window was visible in read-only mode;
+	- Added an error message for when no modules could be retrieved. This is useful to know because only half of CrySearch will work in this case;
+	- Changes in the module system:
+		- Fixed a bug where enumerating WOW64 modules would not work properly anymore in newer Windows versions;
+		- Added an option for x64 mode to hide modules that are not wow64, which is enabled by default for comfort.
+	- Fixed a bug in retrieving the .NET section of a process, where invalid data would crash CrySearch;
+	- Fixed possible buffer overrun bugs in several parts of CrySearch;
+	- Fixed bug in retrieving function addresses from modules that were previously hidden, that could crash CrySearch;
 	- 
 
 v2.04:

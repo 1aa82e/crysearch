@@ -20,6 +20,7 @@ private:
 	ParentCtrl mInternalsTab;
 	ParentCtrl mDebuggerTab;
 	ParentCtrl mHotkeysTab;
+	ParentCtrl mAdvancedTab;
 	Button mOk;
 	Button mCancel;
 	
@@ -74,6 +75,9 @@ private:
 	Option mHotkeysOption;
 	Button mAddHotkey;
 	CrySearchArrayCtrl mHotkeysList;
+	
+	// Advanced tab
+	Option mHideNonWow64ModulesInX64;
 	
 	void LoadSettings();
 	void SaveSettings();

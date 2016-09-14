@@ -98,6 +98,9 @@ CrySearchSettingsDialog::CrySearchSettingsDialog()
 		<< this->mHotkeysList.HSizePos(5, 5).VSizePos(35, 5)
 	;
 	
+	this->mAdvancedTab
+		<< this->mHideNonWow64ModulesInX64.SetLabel("Hide non-wow64 modules in x64 mode").HSizePos(5, 5).TopPos(2, 25);
+	
 	*this
 		<< this->mainTabCtrl
 		<< this->mOk.Ok().SetLabel("OK").HSizePos(340, 5).BottomPos(5, 25)
@@ -108,6 +111,7 @@ CrySearchSettingsDialog::CrySearchSettingsDialog()
 	this->mainTabCtrl.Add(this->mInternalsTab.SizePos(), "Internals");
 	this->mainTabCtrl.Add(this->mDebuggerTab.SizePos(), "Debugger");
 	this->mainTabCtrl.Add(this->mHotkeysTab.SizePos(), "Hotkeys");
+	this->mainTabCtrl.Add(this->mAdvancedTab.SizePos(), "Advanced");
 	this->mainTabCtrl.SetRect(0, 0, 420, 280);
 	this->Add(mainTabCtrl);
 	
@@ -170,6 +174,7 @@ void CrySearchSettingsDialog::LoadSettings()
 	this->dbgInvadeProcess = this->mSettingsInstance->GetInvadeProcess();
 	this->dbgCatchAllExceptions = this->mSettingsInstance->GetCatchAllExceptions();
 	this->mCrySearchInReadOnlyMode = this->mSettingsInstance->GetEnableReadOnlyMode();
+	this->mHideNonWow64ModulesInX64 = this->mSettingsInstance->GetHideNonWow64Modules();
 	
 	// Based on the loaded settings, make sure the disable/enable options are set correctly.
 	this->InvadeProcessEnablerChanged();
@@ -201,6 +206,7 @@ void CrySearchSettingsDialog::SaveSettings()
 	this->mSettingsInstance->SetEnableHotkeys(this->mHotkeysOption);
 	this->mSettingsInstance->SetInvadeProcess(this->dbgInvadeProcess);
 	this->mSettingsInstance->SetCatchAllExceptions(this->dbgCatchAllExceptions);
+	this->mSettingsInstance->SetHideNonWow64Modules(this->mHideNonWow64ModulesInX64);
 	
 	// Check if the read-only option for CrySearch was changed. If it was, inform the user about the fact that
 	// this will be applied when the process is closed and reopened.

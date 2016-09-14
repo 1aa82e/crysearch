@@ -108,6 +108,14 @@ typedef enum _THREAD_INFORMATION_CLASS_EVO
     ThreadHideFromDebugger
 } THREAD_INFORMATION_CLASS_EVO, *PTHREAD_INFORMATION_CLASS_EVO;
 
+// Flags for the LDR_MODULE structure.
+#define LDR_IMAGE_IS_DLL                0x00000004
+#define LDR_LOAD_IN_PROGRESS            0x00001000
+#define LDR_UNLOAD_IN_PROGRESS          0x00002000
+#define LDR_NO_DLL_CALLS                0x00040000
+#define LDR_PROCESS_ATTACHED            0x00080000
+#define LDR_MODULE_REBASED              0x00200000
+
 typedef struct _LDR_MODULE
 {
     LIST_ENTRY            InLoadOrderModuleList;
@@ -1059,26 +1067,105 @@ typedef struct _RTL_PROCESS_HEAPS
     RTL_HEAP_INFORMATION Heaps[1];
 } RTL_PROCESS_HEAPS, *PRTL_PROCESS_HEAPS;
 
-// Should also be x64 compatible!
+// Process module "ImageFlags" defined flags; added in version 2.05, source: masm32.org.
+#define LDRP_STATIC_LINK				0x00000002
+#define LDRP_IMAGE_DLL					0x00000004
+#define LDRP_LOAD_IN_PROGRESS			0x00001000
+#define LDRP_UNLOAD_IN_PROGRESS			0x00002000
+#define LDRP_ENTRY_PROCESSED			0x00004000
+#define LDRP_ENTRY_INSERTED				0x00008000
+#define LDRP_CURRENT_LOAD				0x00010000
+#define LDRP_FAILED_BUILTIN_LOAD		0x00020000
+#define LDRP_DONT_CALL_FOR_THREADS		0x00040000
+#define LDRP_PROCESS_ATTACH_CALLED		0x00080000
+#define LDRP_DEBUG_SYMBOLS_LOADED		0x00100000
+#define LDRP_IMAGE_NOT_AT_BASE			0x00200000
+#define LDRP_WX86_IGNORE_MACHINETYPE	0x00400000
+
+// Should also be x64 compatible; Edited since version 2.05!
 typedef struct _DEBUG_MODULE_INFORMATION
 {
-	ULONG_PTR Reserved[2];
-	ULONG_PTR Base;
-	ULONG Size;
-	ULONG Flags;
-	USHORT Index;
-	USHORT Unknown;
+	HANDLE Section;
+	PVOID MappedBase;
+	PVOID ImageBase;
+	ULONG ImageSize;
+	ULONG ImageFlags;
+	USHORT LoadOrderIndex;
+	USHORT InitOrderIndex;
 	USHORT LoadCount;
 	USHORT ModuleNameOffset;
 	CHAR ImageName[256];
 } DEBUG_MODULE_INFORMATION, *PDEBUG_MODULE_INFORMATION;
 
-typedef struct _DEBUG_MODULE_INFORMATIONEX
+// Changed name in version 2.05 because of a bug.
+typedef struct _DEBUG_MODULES_STRUCT
 {
 	ULONG Count;
 	DEBUG_MODULE_INFORMATION DbgModInfo[1];
-} DEBUG_MODULE_INFORMATIONEX,*PDEBUG_MODULE_INFORMATIONEX;
+} DEBUG_MODULES_STRUCT,*PDEBUG_MODULES_STRUCT;
 
+// Since version 2.05, we also have an extended module structure.
+// Source: Process Hacker.
+typedef struct _RTL_PROCESS_MODULE_INFORMATION_EX
+{
+	USHORT NextOffset;
+	DEBUG_MODULE_INFORMATION BaseInfo;
+	ULONG ImageChecksum;
+	ULONG TimeDateStamp;
+	PVOID DefaultBase;
+} RTL_PROCESS_MODULE_INFORMATION_EX, *PRTL_PROCESS_MODULE_INFORMATION_EX;
+
+// Added in version 2.05.
+typedef struct _RTL_PROCESS_BACKTRACE_INFORMATION
+{
+    PVOID SymbolicBackTrace;
+    ULONG TraceCount;
+    USHORT Index;
+    USHORT Depth;
+    PVOID BackTrace[16];
+} RTL_PROCESS_BACKTRACE_INFORMATION, *PRTL_PROCESS_BACKTRACE_INFORMATION;
+
+// Added in version 2.05.
+typedef struct _RTL_PROCESS_BACKTRACES
+{
+    ULONG CommittedMemory;
+    ULONG ReservedMemory;
+    ULONG NumberOfBackTraceLookups;
+    ULONG NumberOfBackTraces;
+    RTL_PROCESS_BACKTRACE_INFORMATION BackTraces[1];
+} RTL_PROCESS_BACKTRACES, *PRTL_PROCESS_BACKTRACES;
+
+// Added in version 2.05.
+typedef struct _RTL_PROCESS_LOCK_INFORMATION
+{
+    PVOID Address;
+    USHORT Type;
+    USHORT CreatorBackTraceIndex;
+    ULONG OwnerThreadId;
+    ULONG ActiveCount;
+    ULONG ContentionCount;
+    ULONG EntryCount;
+    ULONG RecursionCount;
+    ULONG NumberOfSharedWaiters;
+    ULONG NumberOfExclusiveWaiters;
+} RTL_PROCESS_LOCK_INFORMATION, *PRTL_PROCESS_LOCK_INFORMATION;
+
+// Added in version 2.05.
+typedef struct _RTL_PROCESS_LOCKS
+{
+    ULONG NumberOfLocks;
+    RTL_PROCESS_LOCK_INFORMATION Locks[1];
+} RTL_PROCESS_LOCKS, *PRTL_PROCESS_LOCKS;
+
+// Added in version 2.05, source: Process Hacker.
+typedef struct _RTL_PROCESS_VERIFIER_OPTIONS
+{
+    ULONG SizeStruct;
+    ULONG Option;
+    UCHAR OptionData[1];
+} RTL_PROCESS_VERIFIER_OPTIONS, *PRTL_PROCESS_VERIFIER_OPTIONS;
+
+// Edited in version 2.05, source: Process Hacker.
 typedef struct _RTL_DEBUG_INFORMATION
 {
 	HANDLE SectionHandleClient;
@@ -1089,27 +1176,44 @@ typedef struct _RTL_DEBUG_INFORMATION
 	HANDLE EventPairTarget;
 	HANDLE TargetProcessId;
 	HANDLE TargetThreadHandle;
-	ULONG_PTR Flags;
-	ULONG_PTR OffsetFree;
-	ULONG_PTR CommitSize;
-	ULONG_PTR ViewSize;
-	PVOID Modules;
-	PVOID BackTraces;
+	ULONG Flags;
+	SIZE_T OffsetFree;
+	SIZE_T CommitSize;
+	SIZE_T ViewSize;
+	
+	// We have two types module information structures.
+	union
+	{
+		PDEBUG_MODULES_STRUCT Modules;
+		PRTL_PROCESS_MODULE_INFORMATION_EX ModulesEx;
+	};
+	
+	PRTL_PROCESS_BACKTRACES BackTraces;
 	PRTL_PROCESS_HEAPS Heaps; // x86 offset should be 0x38, x64 offset should be 0x70.
-	PVOID Locks;
+	PRTL_PROCESS_LOCKS Locks;
 	PVOID SpecificHeap;
 	HANDLE TargetProcessHandle;
+	PRTL_PROCESS_VERIFIER_OPTIONS VerifierOptions;
+	PVOID ProcessHeap;
+	HANDLE CriticalSectionHandle;
 	HANDLE CriticalSectionOwnerThread;
 	PVOID Reserved[4];
 } RTL_DEBUG_INFORMATION, *PRTL_DEBUG_INFORMATION;
 
-#define PDI_MODULES			0x01
-#define PDI_BACKTRACE		0x02
-#define PDI_HEAPS			0x04
-#define PDI_HEAP_TAGS		0x08
-#define PDI_HEAP_BLOCKS		0x10
-#define PDI_LOCKS			0x20
-#define PDI_WOW64_MODULES	0x40
+// RtlQueryProcessDebugInformation function flags.
+// I added a few after 0x40, since CrySearch version 2.05.
+#define PDI_MODULES				0x01
+#define PDI_BACKTRACE			0x02
+#define PDI_HEAPS				0x04
+#define PDI_HEAP_TAGS			0x08
+#define PDI_HEAP_BLOCKS			0x10
+#define PDI_LOCKS				0x20
+#define PDI_WOW64_MODULES		0x40
+#define PDI_VERIFIER_OPTIONS	0x80
+#define PDI_MODULES_EX			0x100
+#define PDI_HEAP_ENTRIES_EX		0x200
+#define PDI_CS_OWNER			0x400
+#define PDI_NONINVASIVE			0x80000000
 
 // Nt functions for enumerating heaps inside the target process.
 typedef PRTL_DEBUG_INFORMATION (__stdcall *RtlCreateQueryDebugBufferPrototype)(ULONG Size, BOOLEAN EventPair);

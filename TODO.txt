@@ -8,9 +8,13 @@ Package:
 - Update wiki with changes for the release.
 ------------------------------------------------------------------
 
+- Add option to dump heaps?
+- Still need to fix shitloads of stuff in the import table parser, sanity checks missing everywhere;
+- release notes - buffer overruns;
+
 - Masking partially works, let's fix the rest in the next version:
 	- crysearch as process, entrypoint part -> jmp (E9)!
-
+- Look at an alternative for BeaEngine?
 - Bug in import table parser, x64, when switching from slack to winamp!
 
 - In disassembly, we can drastically reduce memory usage by only using byte offets to the previous disassembly entry:

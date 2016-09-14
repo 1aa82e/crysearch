@@ -35,6 +35,7 @@ void SettingsFile::Xmlize(XmlIO& pXml)
 		("DissectionUpdateInterval", this->mDissectionUpdateInterval)
 		("DissectionHexView", this->mDissectionHexView)
 		("DissectionEnableTypeGuessing", this->mEnableDissectionTypeGuessing)
+		("HideNonWow64Modules", this->mHideNonWow64Modules)
 	;
 }
 
@@ -74,6 +75,7 @@ void SettingsFile::DefaultSettings()
 	this->SetDissectionUpdateInterval();
 	this->SetDissectionHexadecimalView();
 	this->SetEnableDissectionTypeGuessing();
+	this->SetHideNonWow64Modules();
 	this->Save();
 }
 
