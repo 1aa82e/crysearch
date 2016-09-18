@@ -349,7 +349,7 @@ const SIZE_T DisasmGetPreviousLine(const SIZE_T address, ArchitectureDefinitions
 {
 	// Query the memory page this breakpoint occured in, so we can guarantee accurate instruction parsing.
 	MEMORY_BASIC_INFORMATION block;
-	SIZE_T outputVal;
+	SIZE_T outputVal = 0;
 	if (VirtualQueryEx(mMemoryScanner->GetHandle(), (void*)address, &block, sizeof(block)))
 	{
 		DISASM disasm;

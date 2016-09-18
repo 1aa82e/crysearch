@@ -17,8 +17,7 @@ v2.05:
 		- Added an option for x64 mode to hide modules that are not wow64, which is enabled by default for comfort.
 	- Fixed a bug in retrieving the .NET section of a process, where invalid data would crash CrySearch;
 	- Fixed possible buffer overrun bugs in several parts of CrySearch;
-	- Fixed bug in retrieving function addresses from modules that were previously hidden, that could crash CrySearch;
-	- 
+	- Fixed bug in retrieving function addresses from modules that were previously hidden, that could crash CrySearch.
 
 v2.04:
 	- Added feature to NOP out selected rows using right-click menu in the disassembly window;
