@@ -1,7 +1,0 @@
-﻿cl : Command line warning D9025: overriding '/sdl' with '/GS-'
-  PluginMain.cpp
-     Creating library E:\upp\CrySearch\Plugins\OverrideTestPlugin\\Bin\x86\CryAlternateFunc_x86.lib and object E:\upp\CrySearch\Plugins\OverrideTestPlugin\\Bin\x86\CryAlternateFunc_x86.exp
-  Generating code
-  All 9 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
-  Finished generating code
-  OverrideTestPlugin.vcxproj -> E:\upp\CrySearch\Plugins\OverrideTestPlugin\\Bin\x86\CryAlternateFunc_x86.dll

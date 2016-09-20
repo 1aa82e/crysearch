@@ -18,6 +18,10 @@ Plugins/CryVirtualDump/Bin/*
 Plugins/CryVirtualDump/CryVirtualDump/x64/*
 Plugins/CryVirtualDump/CryVirtualDump/Debug/*
 Plugins/CryVirtualDump/CryVirtualDump/Release/*
+Plugins/OverrideTestPlugin/Bin/*
+Plugins/OverrideTestPlugin/OverrideTestPlugin/x64/*
+Plugins/OverrideTestPlugin/OverrideTestPlugin/Debug/*
+Plugins/OverrideTestPlugin/OverrideTestPlugin/Release/*
 CrySearchKernel/Win7Debug/*
 CrySearchKernel/CrySearchKernel/Win7Debug/*
 CrySearchKernel/CrySearchKernel Package/Win7Debug/*

@@ -880,7 +880,7 @@ void CrySearchForm::SearchResultWhenBar(Bar& pBar)
 void CrySearchForm::SetBreakpointMenuFunction(const HWBP_TYPE type)
 {
 	const int cursor = this->mUserAddressList.GetCursor();
-	HWBP_SIZE size;
+	HWBP_SIZE size = HWBP_SIZE_4;
 	
 	// Get breakpoint-wise correct size of data.
 	switch (GetDataSizeFromValueType(loadedTable[cursor]->ValueType))
@@ -1219,7 +1219,7 @@ void CrySearchForm::SearchResultDoubleClicked()
 		const String& value = GetValue(selectedRows[i]);
 		
 		// The first value of the scan type is unknown, so + 1 should be the correct value.
-		CCryDataType toAddToAddressList;
+		CCryDataType toAddToAddressList = VALUETYPE_UNKNOWN;
 		switch (GlobalScanParameter->GlobalScanValueType)
 		{
 			case VALUETYPE_BYTE:

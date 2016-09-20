@@ -200,7 +200,7 @@ void CryChangeRecordDialog::ValueModeHexOptionChanged()
 		{
 			Byte v = ScanInt(this->mFieldValue.GetText().ToString(), NULL, 16);
 			char text[64];
-			sprintf_s(text, 64, "%hhi", v);
+			sprintf_s(text, 64, "%hhu", v);
 			this->mFieldValue.SetText(text);
 		}
 	}
@@ -460,7 +460,6 @@ void CryChangeRecordDialog::DialogOkay()
 		// Edit the address of the selected entry. This mode is only available if just one entry is selected.
 		else if (this->mMode == CRDM_ADDRESS)
 		{
-			const String& inputVal = this->mFieldValue.GetText().ToString();
 			// Check for empty input value.
 			if (inputVal.IsEmpty())
 			{

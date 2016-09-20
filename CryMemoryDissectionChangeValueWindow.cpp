@@ -3,6 +3,7 @@
 #include "UIUtilities.h"
 #include "BackendGlobalDef.h"
 
+// CryMemoryDissectionChangeValueWindow default constructor.
 CryMemoryDissectionChangeValueWindow::CryMemoryDissectionChangeValueWindow(SIZE_T address, CCryDataType rowType, int* size) : CryDialogTemplate(CrySearchIml::ChangeRecordIcon())
 {
 	this->address = address;
@@ -34,7 +35,7 @@ CryMemoryDissectionChangeValueWindow::CryMemoryDissectionChangeValueWindow(SIZE_
 		Byte value;
 		mMemoryScanner->Peek(this->address, 0, &value);
 		char text[64];
-		sprintf_s(text, 64, "%hhi", value);
+		sprintf_s(text, 64, "%hhu", value);
 		this->mFieldValue.SetText(text);
 	}
 	else if (this->rowType == CRYDATATYPE_2BYTES)
@@ -89,11 +90,13 @@ CryMemoryDissectionChangeValueWindow::CryMemoryDissectionChangeValueWindow(SIZE_
 	}
 }
 
+// CryMemoryDissectionChangeValueWindow default destructor.
 CryMemoryDissectionChangeValueWindow::~CryMemoryDissectionChangeValueWindow()
 {
 	
 }
 
+// Executed when the view mode is changed from or to hexadecimal mode.
 void CryMemoryDissectionChangeValueWindow::ValueModeHexOptionChanged()
 {
 	if (this->mValueIsHex)
@@ -146,17 +149,19 @@ void CryMemoryDissectionChangeValueWindow::ValueModeHexOptionChanged()
 		{
 			Byte v = ScanInt(this->mFieldValue.GetText().ToString(), NULL, 16);
 			char text[64];
-			sprintf_s(text, 64, "%hhi", v);
+			sprintf_s(text, 64, "%hhu", v);
 			this->mFieldValue.SetText(text);
 		}
 	}
 }
 
+// Closes the dialog without saving anything.
 void CryMemoryDissectionChangeValueWindow::CancelDialog()
 {
 	this->Close();
 }
 
+// Executed when the user accepts the dialog.
 void CryMemoryDissectionChangeValueWindow::DialogOkay()
 {
 	// Check for empty input value.

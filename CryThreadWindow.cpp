@@ -23,10 +23,19 @@ String GetHexadecimalThreadId(const int index)
 
 String GetThreadPriority(const int index)
 {
+	// Open the selected thread.
 	HANDLE hThread = OpenThread(THREAD_QUERY_INFORMATION, FALSE, mThreadsList[index].ThreadIdentifier);
-	String priorValue = CryGetThreadPriority(hThread);
-	CloseHandle(hThread);
-	return priorValue;
+	
+	// Check whether it was succesfully opened.
+	if (hThread)
+	{
+		String priorValue = CryGetThreadPriority(hThread);
+		CloseHandle(hThread);
+		return priorValue;
+	}
+	
+	// The function failed, return unknown.
+	return "<unknown>";
 }
 
 String GetThreadStartAddress(const int index)
