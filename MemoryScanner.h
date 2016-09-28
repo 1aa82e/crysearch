@@ -328,9 +328,6 @@ private:
 	template <typename T>
 	void NextScanWorker(WorkerRegionParameterData* const regionData, const T& value);
 	
-	// Reallocation counter function as a workaround for the excessive buffer allocation problem on older systems.
-	inline void ReallocateMemoryScannerBufferCounter(unsigned int* const length);
-	
 	// Singleton code: private constructor, destructor and copy constructors.
 	MemoryScanner();
 	~MemoryScanner();

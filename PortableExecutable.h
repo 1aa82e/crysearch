@@ -195,6 +195,7 @@ public:
 	
 	// Small methods to set the internal variables.
 	void SetBaseAddress(const SIZE_T baseAddress);
+	const SIZE_T GetBaseAddress() const;
 
 	PortableExecutable();
 	virtual ~PortableExecutable();

@@ -8,7 +8,9 @@ Package:
 - Update wiki with changes for the release.
 ------------------------------------------------------------------
 
-- Add option to dump heaps?
+- Maybe start writing to disk at a specific threshold for buffer size, rather than per-page?
+	- If this idea works, we can let memory allocation be done by the Vector class!!!
+- Bug: modules failure warning appears before the 'cannot open x64';
 - Still need to fix shitloads of stuff in the import table parser, sanity checks missing everywhere;
 - release notes - buffer overruns;
 

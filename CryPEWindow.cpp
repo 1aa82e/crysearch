@@ -187,13 +187,13 @@ void CryPEWindow::DumpSection()
 		if (fs->ExecuteSaveAs("Select dump directory"))
 		{
 			const Win32PESectionInformation& sect = LoadedProcessPEInformation.ImageSections[row];
-			if (mPeInstance->DumpProcessSection(fs->Get(), sect.BaseAddress, sect.RawSectionSize ? sect.RawSectionSize : sect.SectionSize))
+			if (mPeInstance->DumpProcessSection(fs->Get(), mPeInstance->GetBaseAddress() + sect.BaseAddress, sect.RawSectionSize ? sect.RawSectionSize : sect.SectionSize))
 			{
 				PromptOK("Dump succeeded!");
 			}
 			else
 			{
-				Prompt("Dumping error", CtrlImg::error(), "Failed to dump the section. Either the memory failed to read of the file could not be created.", "OK");
+				Prompt("Dumping error", CtrlImg::error(), "Failed to dump the section. Either we failed to read the memory or the file could not be created.", "OK");
 			}
 		}
 		
@@ -212,13 +212,13 @@ void CryPEWindow::DumpDotNetSection()
 		if (fs->ExecuteSaveAs("Select dump directory"))
 		{
 			const Win32DotNetSectionInformation& sect = LoadedProcessPEInformation.DotNetInformation.DotNetSections[row];
-			if (mPeInstance->DumpProcessSection(fs->Get(), LoadedProcessPEInformation.DotNetInformation.MetadataHeaderOffset + sect.Offset, sect.Size))
+			if (mPeInstance->DumpProcessSection(fs->Get(), mPeInstance->GetBaseAddress() + LoadedProcessPEInformation.DotNetInformation.MetadataHeaderOffset + sect.Offset, sect.Size))
 			{
 				PromptOK("Dump succeeded!");
 			}
 			else
 			{
-				Prompt("Dumping error", CtrlImg::error(), "Failed to dump the section. Either the memory failed to read of the file could not be created.", "OK");
+				Prompt("Dumping error", CtrlImg::error(), "Failed to dump the section. Either we failed to read the memory or the file could not be created.", "OK");
 			}
 		}
 		

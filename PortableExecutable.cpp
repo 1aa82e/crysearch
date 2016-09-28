@@ -51,6 +51,12 @@ void PortableExecutable::SetBaseAddress(const SIZE_T baseAddress)
 	this->mBaseAddress = baseAddress;
 }
 
+// Gets the base address.
+const SIZE_T PortableExecutable::GetBaseAddress() const
+{
+	return this->mBaseAddress;
+}
+
 // Retrieves the address of the Process Environment Block of the opened process.
 // Returns the PEB base address or NULL if the address was not succesfully retrieved.
 void* PortableExecutable::GetPebAddress() const
@@ -1096,15 +1102,18 @@ bool PortableExecutable32::DumpProcessSection(const String& fileName, const SIZE
 {
 	bool result = true;
 	Byte* const buffer = new Byte[size];
+	SIZE_T bytesRead;
 	
 	// Read section memory from target process and save it into the buffer.
-	if (!CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(this->mBaseAddress + address), buffer, size, NULL))
+	if (!CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)address, buffer, size, &bytesRead)
+		&& bytesRead == 0)
 	{
-		result = false;
+		delete[] buffer;
+		return false;
 	}
 	
 	// Create dmp file on the disk.
-	HANDLE hFile = CreateFile(fileName, GENERIC_WRITE, 0, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
+	HANDLE hFile = CreateFile(fileName, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 	if (hFile == INVALID_HANDLE_VALUE)
 	{
 		result = false;
@@ -1113,9 +1122,9 @@ bool PortableExecutable32::DumpProcessSection(const String& fileName, const SIZE
 	// Write the data read to the file.
 	DWORD bytesWritten;
 #ifdef _WIN64
-	if (!WriteFile(hFile, buffer, (DWORD)size, &bytesWritten, NULL))
+	if (!WriteFile(hFile, buffer, bytesRead, &bytesWritten, NULL))
 #else
-	if (!WriteFile(hFile, buffer, size, &bytesWritten, NULL))
+	if (!WriteFile(hFile, buffer, bytesRead, &bytesWritten, NULL))
 #endif
 	{
 		DeleteFile(fileName);
@@ -1972,14 +1981,17 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 	{
 		bool result = true;
 		Byte* const buffer = new Byte[size];
+		SIZE_T bytesRead;
 		
-		if (!CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(this->mBaseAddress + address), buffer, size, NULL))
+		if (!CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)address, buffer, size, &bytesRead)
+			&& bytesRead == 0)
 		{
-			result = false;
+			delete[] buffer;
+			return false;
 		}
 		
 		// Create dmp file on the disk.
-		HANDLE hFile = CreateFile(fileName, GENERIC_WRITE, 0, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
+		HANDLE hFile = CreateFile(fileName, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 		if (hFile == INVALID_HANDLE_VALUE)
 		{
 			result = false;
@@ -1987,7 +1999,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 		
 		// Write the data read to the file.
 		DWORD bytesWritten;
-		if (!WriteFile(hFile, buffer, (DWORD)size, &bytesWritten, NULL))
+		if (!WriteFile(hFile, buffer, (DWORD)bytesRead, &bytesWritten, NULL))
 		{
 			DeleteFile(fileName);
 			result = false;
