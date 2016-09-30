@@ -222,70 +222,28 @@ private:
 	};
 };
 
-template <typename T>
-bool __fastcall CompareEqual(const T& input, const T& expected);
+// Compare functions are listed below.
 
 template <typename T>
-bool __fastcall CompareSmaller(const T& input, const T& expected);
+const bool CompareEqual(const T& input, const T& expected);
 
 template <typename T>
-bool __fastcall CompareGreater(const T& input, const T& expected);
+const bool CompareSmaller(const T& input, const T& expected);
 
 template <typename T>
-bool __fastcall CompareUnknownInitialValue(const T& input, const T& expected);
+const bool CompareGreater(const T& input, const T& expected);
+
+template <typename T>
+const bool CompareUnknownInitialValue(const T& input, const T& expected);
 
 #define STRING_MAX_UNTIL_NULL	0x100
 
-bool __fastcall CompareStringNullCharA(const char* input, const int inputLength, const char* expected, int* const outputLength);
-bool __fastcall CompareStringNullCharW(const wchar* input, const int inputLength, const wchar* expected, int* const outputLength);
+const bool CompareStringNullCharA(const char* input, const int inputLength, const char* expected, int* const outputLength);
+const bool CompareStringNullCharW(const wchar* input, const int inputLength, const wchar* expected, int* const outputLength);
 
-// Defines the compare function functor, customizable with template type and parameters using the constructor.
-struct CompareFunction { };
-
+// Compare function type definition.
 template <typename T>
-struct ValueComparator : public CompareFunction
-{
-	bool (__fastcall* function)(const T&, const T&);
-	
-	ValueComparator(MemoryScanType type)
-	{
-		switch (type)
-		{
-			case SCANTYPE_UNKNOWN_INITIAL_VALUE:
-				this->function = CompareUnknownInitialValue;
-				break;
-			case SCANTYPE_EXACTVALUE:
-				this->function = CompareEqual;
-				break;
-			case SCANTYPE_SMALLERTHAN:
-				this->function = CompareSmaller;
-				break;
-			case SCANTYPE_GREATERTHAN:
-				this->function = CompareGreater;
-				break;
-			case SCANTYPE_CHANGED:
-				this->function = CompareEqual;
-				break;
-			case SCANTYPE_UNCHANGED:
-				this->function = CompareEqual;
-				break;
-			case SCANTYPE_INCREASED:
-				this->function = CompareGreater;
-				break;
-			case SCANTYPE_DECREASED:
-				this->function = CompareSmaller;
-				break;
-			default:
-				this->function = NULL;
-				break;
-		}
-	};
-	
-	bool operator ()(const T& input, const T& expected)
-	{
-		return this->function(input, expected);
-	};
-};
+using CompareFunctionType = const bool (*)(const T& input, const T& expected);
 
 // The memory scanning class. Used for main memory scanning and reading.
 class MemoryScanner
@@ -301,7 +259,6 @@ private:
 	// Memory scanner control variables.
 	bool ScanRunning;
 	SettingsFile* mSettingsInstance;
-	CompareFunction* mCompareValues;
 	int threadCount;
 	bool mReadOnly;
 	
@@ -322,11 +279,17 @@ private:
 	
 	typedef MemoryScanner CLASSNAME;
 
+	// Function that assigns the correct compare function using the user selected scan type, and fires of the workers accordingly.
 	template <typename T>
-	void FirstScanWorker(WorkerRegionParameterData* const regionData, const T& value);
+	void AssignAndFire(const bool first);
+
+	// Templated worker function for the first scans.
+	template <typename T>
+	void FirstScanWorker(WorkerRegionParameterData* const regionData, const T& value, CompareFunctionType<T> cmp);
 	
+	// Templated worker function for the refresh scans.
 	template <typename T>
-	void NextScanWorker(WorkerRegionParameterData* const regionData, const T& value);
+	void NextScanWorker(WorkerRegionParameterData* const regionData, const T& value, CompareFunctionType<T> cmp);
 	
 	// Singleton code: private constructor, destructor and copy constructors.
 	MemoryScanner();

@@ -61,6 +61,105 @@ void AddResultsToCache(const int Resultcount, const SIZE_T* AddressBuffer, const
 
 // ---------------------------------------------------------------------------------------------
 
+template <>
+const bool CompareGreater(const ArrayOfBytes& input, const ArrayOfBytes& expected)
+{
+	// Dummy function, nessecary for compilation but will never be called.
+	return false;
+}
+
+template <typename T>
+const bool CompareGreater(const T& input, const T& expected)
+{
+	return (input > expected);
+}
+
+template <>
+const bool CompareSmaller(const ArrayOfBytes& input, const ArrayOfBytes& expected)
+{
+	// Dummy function, nessecary for compilation but will never be called.
+	return false;
+}
+
+template <typename T>
+const bool CompareSmaller(const T& input, const T& expected)
+{
+	return (input < expected);
+}
+
+template <>
+const bool CompareEqual(const ArrayOfBytes& input, const ArrayOfBytes& expected)
+{
+	return false;
+}
+
+template <>
+const bool CompareEqual(const float& input, const float& expected)
+{
+	return (((int)input) == ((int)expected));
+}
+
+template <>
+const bool CompareEqual(const double& input, const double& expected)
+{
+	return (((int)input) == ((int)expected));
+}
+
+template <typename T>
+const bool CompareEqual(const T& input, const T& expected)
+{
+	return (input == expected);
+}
+
+template <typename T>
+const bool CompareUnknownInitialValue(const T& input, const T& expected)
+{
+	// Unknown initial value should return everything that is found by the scanner.
+	return true;
+}
+
+// Compares ANSI and Unicode strings until a null character is found.
+const bool CompareStringNullCharA(const char* input, const int inputLength, const char* expected, int* const outputLength)
+{
+	if (memcmp(input, expected, inputLength) == 0)
+	{
+		const char* iterator = input + inputLength;
+		const int endIterator = STRING_MAX_UNTIL_NULL - inputLength;
+		int i = 0;
+		while (*iterator != 0 && i < endIterator)
+		{
+			++iterator;
+			++i;
+		}
+		*outputLength = i + inputLength;
+		return true;
+	}
+	
+	return false;
+}
+
+// Compares Unicode strings until a null character is found.
+const bool CompareStringNullCharW(const wchar* input, const int inputLength, const wchar* expected, int* const outputLength)
+{
+	if (memcmp(input, expected, inputLength) == 0)
+	{
+		const wchar* iterator = input + inputLength;
+		const int endIterator = STRING_MAX_UNTIL_NULL - inputLength;
+		int i = 0;
+		while (*iterator != 0 && i < endIterator)
+		{
+			++iterator;
+			++i;
+		}
+		*outputLength = i + inputLength / sizeof(wchar);
+		return true;
+	}
+	
+	return false;
+}
+
+// ---------------------------------------------------------------------------------------------
+
 // MemoryScanner class default constructor.
 MemoryScanner::MemoryScanner()
 {
@@ -338,110 +437,8 @@ const bool MemoryScanner::GetIsWorkCompleted() const
 // Tells the memory scanner that it can clean up whatever resources were used during a memory scan.
 void MemoryScanner::SetWorkCompleted()
 {
-	// Destruct the compare functor used for the recent memory scan.
-	delete this->mCompareValues;
-	this->mCompareValues = NULL;
-	
 	// Set the scanner to not running.
 	this->ScanRunning = false;
-}
-
-// Compare functions
-
-template <>
-bool __fastcall CompareGreater(const ArrayOfBytes& input, const ArrayOfBytes& expected)
-{
-	// Dummy function, nessecary for compilation but will never be called.
-	return false;
-}
-
-template <typename T>
-bool __fastcall CompareGreater(const T& input, const T& expected)
-{
-	return (input > expected);
-}
-
-template <>
-bool __fastcall CompareSmaller(const ArrayOfBytes& input, const ArrayOfBytes& expected)
-{
-	// Dummy function, nessecary for compilation but will never be called.
-	return false;
-}
-
-template <typename T>
-bool __fastcall CompareSmaller(const T& input, const T& expected)
-{
-	return (input < expected);
-}
-
-template <>
-bool __fastcall CompareEqual(const ArrayOfBytes& input, const ArrayOfBytes& expected)
-{
-	return false;
-}
-
-template <>
-bool __fastcall CompareEqual(const float& input, const float& expected)
-{
-	return (((int)input) == ((int)expected));
-}
-
-template <>
-bool __fastcall CompareEqual(const double& input, const double& expected)
-{
-	return (((int)input) == ((int)expected));
-}
-
-template <typename T>
-bool __fastcall CompareEqual(const T& input, const T& expected)
-{
-	return (input == expected);
-}
-
-template <typename T>
-bool __fastcall CompareUnknownInitialValue(const T& input, const T& expected)
-{
-	// Unknown initial value should return everything that is found by the scanner.
-	return true;
-}
-
-// Compares ANSI and Unicode strings until a null character was found.
-bool __fastcall CompareStringNullCharA(const char* input, const int inputLength, const char* expected, int* const outputLength)
-{
-	if (memcmp(input, expected, inputLength) == 0)
-	{
-		const char* iterator = input + inputLength;
-		const int endIterator = STRING_MAX_UNTIL_NULL - inputLength;
-		int i = 0;
-		while (*iterator != 0 && i < endIterator)
-		{
-			++iterator;
-			++i;
-		}
-		*outputLength = i + inputLength;
-		return true;
-	}
-	
-	return false;
-}
-
-bool __fastcall CompareStringNullCharW(const wchar* input, const int inputLength, const wchar* expected, int* const outputLength)
-{
-	if (memcmp(input, expected, inputLength) == 0)
-	{
-		const wchar* iterator = input + inputLength;
-		const int endIterator = STRING_MAX_UNTIL_NULL - inputLength;
-		int i = 0;
-		while (*iterator != 0 && i < endIterator)
-		{
-			++iterator;
-			++i;
-		}
-		*outputLength = i + inputLength / sizeof(wchar);
-		return true;
-	}
-	
-	return false;
 }
 
 // Clears the search results currently in cache and deletes all temporary files created.
@@ -460,9 +457,63 @@ void MemoryScanner::ClearSearchResults()
 	this->mWorkerFileOrder.Clear();
 }
 
+// Function that assigns the correct compare function using the user selected scan type, and fires of the workers accordingly.
+template <typename T>
+void MemoryScanner::AssignAndFire(const bool first)
+{
+	// Assign the workers the correct compare function.
+	CompareFunctionType<T> cmpFunc;
+	switch (GlobalScanParameter->GlobalScanType)
+	{
+		case SCANTYPE_UNKNOWN_INITIAL_VALUE:
+			cmpFunc = CompareUnknownInitialValue;
+			break;
+		case SCANTYPE_EXACTVALUE:
+			cmpFunc = CompareEqual;
+			break;
+		case SCANTYPE_SMALLERTHAN:
+			cmpFunc = CompareSmaller;
+			break;
+		case SCANTYPE_GREATERTHAN:
+			cmpFunc = CompareGreater;
+			break;
+		case SCANTYPE_CHANGED:
+			cmpFunc = CompareEqual;
+			break;
+		case SCANTYPE_UNCHANGED:
+			cmpFunc = CompareEqual;
+			break;
+		case SCANTYPE_INCREASED:
+			cmpFunc = CompareGreater;
+			break;
+		case SCANTYPE_DECREASED:
+			cmpFunc = CompareSmaller;
+			break;
+		default:
+			cmpFunc = NULL;
+			break;
+	}
+
+	// Start worker threads accordingly to previous scan.
+	for (auto& work : this->mWorkerFileOrder)
+	{
+		work.FinishedWork = false;
+		
+		// Are we firing a first- or a refreshment scan?
+		if (first)
+		{
+			this->mThreadPool & THISBACK3(FirstScanWorker<T>, &work, ((T)(reinterpret_cast<ScanParameters<T>*>(GlobalScanParameter))->ScanValue), cmpFunc);
+		}
+		else
+		{
+			this->mThreadPool & THISBACK3(NextScanWorker<T>, &work, ((T)(reinterpret_cast<ScanParameters<T>*>(GlobalScanParameter))->ScanValue), cmpFunc);
+		}
+	}
+}
+
 // Worker function that implements specialized behavior for double types.
 template <>
-void MemoryScanner::FirstScanWorker(WorkerRegionParameterData* const regionData, const double& value)
+void MemoryScanner::FirstScanWorker(WorkerRegionParameterData* const regionData, const double& value, CompareFunctionType<double> cmp)
 {
 	// Create output files, the destructor will close them.
 	FileOut addressesFile(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.temp", regionData->WorkerIdentifier)));
@@ -493,7 +544,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData* const regionData,
 			{
 				const double* tempStore = (double*)&(buffer[i]);
 				
-				if ((*reinterpret_cast<ValueComparator<double>*>(this->mCompareValues))(*tempStore, value))
+				if (cmp(*tempStore, value))
 				{
 					localAddresses[arrayIndex] = currentRegion.BaseAddress + i;
 					localValues[arrayIndex++] = *tempStore;
@@ -554,7 +605,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData* const regionData,
 
 // Worker function that implements specialized behavior for byte-array types.
 template <>
-void MemoryScanner::FirstScanWorker(WorkerRegionParameterData* const regionData, const ArrayOfBytes& value)
+void MemoryScanner::FirstScanWorker(WorkerRegionParameterData* const regionData, const ArrayOfBytes& value, CompareFunctionType<ArrayOfBytes> cmp)
 {
 	// Create output file, the destructor will close it.
 	FileOut addressesFile(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.temp", regionData->WorkerIdentifier)));
@@ -641,7 +692,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData* const regionData,
 
 // Worker function that implements specialized behavior for Unicode string types.
 template <>
-void MemoryScanner::FirstScanWorker(WorkerRegionParameterData* const regionData, const WString& value)
+void MemoryScanner::FirstScanWorker(WorkerRegionParameterData* const regionData, const WString& value, CompareFunctionType<WString> cmp)
 {
 	// Create output file, the destructor will close it.
 	FileOut addressesFile(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.temp", regionData->WorkerIdentifier)));
@@ -735,7 +786,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData* const regionData,
 
 // Worker function that implements specialized behavior for ANSI string types.
 template <>
-void MemoryScanner::FirstScanWorker(WorkerRegionParameterData* const regionData, const String& value)
+void MemoryScanner::FirstScanWorker(WorkerRegionParameterData* const regionData, const String& value, CompareFunctionType<String> cmp)
 {
 	// Create output file, the destructor will close it.
 	FileOut addressesFile(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.temp", regionData->WorkerIdentifier)));
@@ -829,7 +880,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData* const regionData,
 // Represents the default template worker function for the set of workers including specialized ones.
 // This set of workers run the first scan sequence.
 template <typename T>
-void MemoryScanner::FirstScanWorker(WorkerRegionParameterData* const regionData, const T& value)
+void MemoryScanner::FirstScanWorker(WorkerRegionParameterData* const regionData, const T& value, CompareFunctionType<T> cmp)
 {
 #ifdef _DEBUG
 	LARGE_INTEGER frequency;
@@ -879,7 +930,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData* const regionData,
 			{
 				const T* tempStore = (T*)&(buffer[i]);
 
-				if ((*reinterpret_cast<ValueComparator<T>*>(this->mCompareValues))(*tempStore, value))
+				if (cmp(*tempStore, value))
 				{
 					localAddresses[arrayIndex] = currentRegion.BaseAddress + i;
 					localValues[arrayIndex++] = *tempStore;
@@ -1037,9 +1088,6 @@ void MemoryScanner::FirstScan()
 	const int regionCount = this->memRegions.GetCount();
 	this->ScanStarted(regionCount);
 	
-	// Assign compare function accordingly
-	this->mCompareValues = new ValueComparator<T>(GlobalScanParameter->GlobalScanType);
-
 	const SIZE_T workerAmount = totalMemorySize / threadCount;
 	SIZE_T memoryCounter = 0;
 	int regionIndex = 0;
@@ -1069,16 +1117,13 @@ void MemoryScanner::FirstScan()
 		this->mWorkerFileOrder[this->mWorkerFileOrder.GetCount() - 1].Length += remainder;
 	}
 	
-	// Launch the workers.
-	for (auto& work : this->mWorkerFileOrder)
-	{
-		this->mThreadPool & THISBACK2(FirstScanWorker<T>, &work, ((T)(reinterpret_cast<ScanParameters<T>*>(GlobalScanParameter))->ScanValue));
-	}
+	// Fire off the workers.
+	this->AssignAndFire<T>(true);
 }
 
 // This function contains specialized behavior for byte-array types.
 template <>
-void MemoryScanner::NextScanWorker(WorkerRegionParameterData* const regionData, const ArrayOfBytes& value)
+void MemoryScanner::NextScanWorker(WorkerRegionParameterData* const regionData, const ArrayOfBytes& value, CompareFunctionType<ArrayOfBytes> cmp)
 {
 	const String addrFileOld = AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.tempSCANNING", regionData->WorkerIdentifier));
 	FileOut addressesFile(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.temp", regionData->WorkerIdentifier)));
@@ -1182,7 +1227,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData* const regionData, 
 
 // This function contains specialized behavior for Unicode string types.
 template <>
-void MemoryScanner::NextScanWorker(WorkerRegionParameterData* const regionData, const WString& value)
+void MemoryScanner::NextScanWorker(WorkerRegionParameterData* const regionData, const WString& value, CompareFunctionType<WString> cmp)
 {
 	const String addrFileOld = AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.tempSCANNING", regionData->WorkerIdentifier));
 	FileOut addressesFile(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.temp", regionData->WorkerIdentifier)));
@@ -1293,7 +1338,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData* const regionData, 
 
 // This function contains specialized behavior for ANSI string types.
 template <>
-void MemoryScanner::NextScanWorker(WorkerRegionParameterData* const regionData, const String& value)
+void MemoryScanner::NextScanWorker(WorkerRegionParameterData* const regionData, const String& value, CompareFunctionType<String> cmp)
 {
 	const String addrFileOld = AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.tempSCANNING", regionData->WorkerIdentifier));
 	FileOut addressesFile(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.temp", regionData->WorkerIdentifier)));
@@ -1402,7 +1447,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData* const regionData, 
 
 // This function is the default template for the set of specialized workers for the next scan.
 template <typename T>
-void MemoryScanner::NextScanWorker(WorkerRegionParameterData* const regionData, const T& value)
+void MemoryScanner::NextScanWorker(WorkerRegionParameterData* const regionData, const T& value, CompareFunctionType<T> cmp)
 {
 	const String addrFileOld = AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.tempSCANNING", regionData->WorkerIdentifier));
 	const String valuesFileOld = AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Values%i.tempSCANNING", regionData->WorkerIdentifier));
@@ -1467,15 +1512,15 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData* const regionData, 
 					bool compareSucceeded = false;
 					if (GlobalScanParameter->GlobalScanType == SCANTYPE_CHANGED)
 					{
-						compareSucceeded = !(*reinterpret_cast<ValueComparator<T>*>(this->mCompareValues))(*currentDataPtr, valuesFileBuffer[oldTempFileIndex]);
+						compareSucceeded = !cmp(*currentDataPtr, valuesFileBuffer[oldTempFileIndex]);
 					}
 					else if (GlobalScanParameter->GlobalScanType >= (int)SCANTYPE_UNCHANGED)
 					{
-						compareSucceeded = (*reinterpret_cast<ValueComparator<T>*>(this->mCompareValues))(*currentDataPtr, valuesFileBuffer[oldTempFileIndex]);
+						compareSucceeded = cmp(*currentDataPtr, valuesFileBuffer[oldTempFileIndex]);
 					}
 					else
 					{
-						compareSucceeded = (*reinterpret_cast<ValueComparator<T>*>(this->mCompareValues))(*currentDataPtr, value);
+						compareSucceeded = cmp(*currentDataPtr, value);
 					}
 					
 					// Whether the comparison succeeded or not, this seperate array index always has to be incremented.
@@ -1615,20 +1660,13 @@ void MemoryScanner::NextScan()
 	this->mRegionFinishCount = 0;
 	this->ScanStarted(this->memRegions.GetCount());
 	
-	// Assign compare function accordingly
-	this->mCompareValues = new ValueComparator<T>(GlobalScanParameter->GlobalScanType);
-	
 	// Set thread priority for the workers ran by this scan session.
 #ifdef _MULTITHREADED
 	this->mThreadPool.SetThreadPriority(this->mSettingsInstance->GetScanThreadPriority());
 #endif
 
 	// Start worker threads accordingly to previous scan.
-	for (auto& work : this->mWorkerFileOrder)
-	{
-		work.FinishedWork = false;
-		this->mThreadPool & THISBACK2(NextScanWorker<T>, &work, ((T)(reinterpret_cast<ScanParameters<T>*>(GlobalScanParameter))->ScanValue));
-	}
+	this->AssignAndFire<T>(false);
 }
 
 // Writes a byte array with specified size to the specified address.

@@ -1849,12 +1849,13 @@ void CrySearchForm::ClearScanResultsWithoutWarning()
 bool CrySearchForm::InitializeProcessUI()
 {
 #ifndef _WIN64
-	this->mWindowManager.GetModuleWindow()->Initialize();
-	this->mWindowManager.GetThreadWindow()->Initialize();
-
 	// Check the architecture of the loaded process. Under x64, processes can cause trouble.
 	if (mMemoryScanner->IsX86Process())
 	{
+		// Load modules and threads first, other components depend on them.
+		this->mWindowManager.GetModuleWindow()->Initialize();
+		this->mWindowManager.GetThreadWindow()->Initialize();
+
 		// Instantiate new PE class.
 		mPeInstance = new PortableExecutable32();
 		mDebugger = new CryDebugger32();

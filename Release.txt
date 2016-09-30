@@ -4,9 +4,11 @@ evolution536, www.unknowncheats.me
 
 v2.06
 	- Added right-click option to dump heaps in heap walk dialog (whatever is readable from the memory of the heap will be dumped);
-	- Revised memory scanner:
+	- Revised memory scanner, performance changes should be noticable:
 		- In very big scans, performance improvement is negligible, because I/O still is the bottleneck. However, less time is wasted in not writing anything;
-		- Out-of-memory exceptions that used to occur are very unlikely to occur again.
+		- Out-of-memory exceptions that used to occur are very unlikely to occur again;
+		- Improved value comparison, reducing processing overhead in scanning.
+	- Fixed bug where opening an x64 process with CrySearch x86 would give two error messages instead of one;
 	- 
 
 v2.05:
