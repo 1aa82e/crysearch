@@ -134,23 +134,29 @@ void CryImportsWindow::FunctionListRightClick(Bar& pBar)
 // Restores the original address from a function in the import table, using the address from the designated export table.
 void CryImportsWindow::RestoreIATFunction()
 {
-	const ImportTableDescriptor& key = LoadedProcessPEInformation.ImportAddressTable[MasterIndex];
-	const Win32ModuleInformation* const masterMod = &(*mModuleManager)[this->mModulesDropList.GetIndex()];
-	const ImportAddressTableEntry& entry = key.FunctionList[this->mFunctionsList.GetCursor()];
+	// In many cases, a function is colored red because an error occured while looking up the function address in the export table
+	// rather than it being hooked. Trying to restore the original function address may then cause problems.
+	if (this->mModulesDropList.GetIndex() < mModuleManager->GetModuleCount())
+	{
 
-	// Set the base address to the correct module.
-	mPeInstance->SetBaseAddress((*mModuleManager)[this->mModulesDropList.GetIndex()].BaseAddress);
-	
-	if (key.LogicalBaseAddress)
-	{
-		mPeInstance->RestoreExportTableAddressImport(masterMod, key.LogicalBaseAddress, entry.Ordinal ? (char*)entry.Ordinal : entry.FunctionName.Begin(), entry.Ordinal);
+		const ImportTableDescriptor& key = LoadedProcessPEInformation.ImportAddressTable[MasterIndex];
+		const Win32ModuleInformation* const masterMod = &(*mModuleManager)[this->mModulesDropList.GetIndex()];
+		const ImportAddressTableEntry& entry = key.FunctionList[this->mFunctionsList.GetCursor()];
+
+		// Set the base address to the correct module.
+		mPeInstance->SetBaseAddress((*mModuleManager)[this->mModulesDropList.GetIndex()].BaseAddress);
+
+		if (key.LogicalBaseAddress)
+		{
+			mPeInstance->RestoreExportTableAddressImport(masterMod, key.LogicalBaseAddress, entry.Ordinal ? (char*)entry.Ordinal : entry.FunctionName.Begin(), entry.Ordinal);
+		}
+		else
+		{
+			mPeInstance->RestoreExportTableAddressImport(masterMod, mModuleManager->FindModule(LoadedProcessPEInformation.ImportAddressTable[this->mModulesList.GetCursor()].ModuleName)->BaseAddress, entry.Ordinal ? (char*)entry.Ordinal : entry.FunctionName.Begin(), entry.Ordinal);
+		}
+
+		this->RefreshImports();
 	}
-	else
-	{
-		mPeInstance->RestoreExportTableAddressImport(masterMod, mModuleManager->FindModule(LoadedProcessPEInformation.ImportAddressTable[this->mModulesList.GetCursor()].ModuleName)->BaseAddress, entry.Ordinal ? (char*)entry.Ordinal : entry.FunctionName.Begin(), entry.Ordinal);
-	}
-	
-	this->RefreshImports();
 }
 
 // Replaces the address of a function in the import table with one that was given by the user.

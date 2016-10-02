@@ -539,7 +539,8 @@ void PortableExecutable32::GetExecutablePeInformation() const
 // Retrieves the address of a function in the export table of a module. Address can be returned for function by name or ordinal.
 // Returns the address of the function, created from the module base address added by the function RVA.
 // If the function is not found, the return value is 0xFFFFFFFF.
-SIZE_T PortableExecutable32::GetAddressFromExportTable(const AddrStruct* addr, const char* NameOrdinal, bool IsOrdinal) const
+// The NameLength parameter contains the length of the name if there is a name, or 0 if the function is ordinal-based.
+SIZE_T PortableExecutable32::GetAddressFromExportTable(const AddrStruct* addr, const char* NameOrdinal, const unsigned int NameLength) const
 {
 	if (addr->ExportDirectory->AddressOfNameOrdinals)
 	{
@@ -552,7 +553,7 @@ SIZE_T PortableExecutable32::GetAddressFromExportTable(const AddrStruct* addr, c
 		{
 			const WORD* const ordValue = (WORD*)((addr->BufferBaseAddress + addr->ExportDirectory->AddressOfNameOrdinals) + (i * sizeof(WORD)));
 
-			if (IsOrdinal)
+			if (!NameLength)
 			{
 				bool found = false;
 
@@ -594,7 +595,7 @@ SIZE_T PortableExecutable32::GetAddressFromExportTable(const AddrStruct* addr, c
 					AddrStruct addrStruct((Byte*)modBaseAddr->BaseAddress, (exportDirectoryBuffer - dataDir.VirtualAddress), bufBase + dataDir.VirtualAddress + dataDir.Size
 						, &dataDir, (IMAGE_EXPORT_DIRECTORY*)exportDirectoryBuffer);
 			            
-					SIZE_T forwardedAddress = this->GetAddressFromExportTable(&addrStruct, (char*)(SIZE_T)ScanInt((char*)(addr->BufferBaseAddress + *funcAddrPtr + ResurseDotIndex + 2), NULL, 10), true);
+					SIZE_T forwardedAddress = this->GetAddressFromExportTable(&addrStruct, (char*)(SIZE_T)ScanInt((char*)(addr->BufferBaseAddress + *funcAddrPtr + ResurseDotIndex + 2), NULL, 10), NameLength);
 					delete[] exportDirectoryBuffer;
 					return forwardedAddress;
 				}
@@ -606,8 +607,7 @@ SIZE_T PortableExecutable32::GetAddressFromExportTable(const AddrStruct* addr, c
 				const DWORD* const stringPtr = (DWORD*)((addr->BufferBaseAddress + addr->ExportDirectory->AddressOfNames) + (i * sizeof(DWORD)));
 				const char* const functionName = (char*)(addr->BufferBaseAddress + *stringPtr);
 				
-				const size_t strlength = strlen(NameOrdinal);
-				if ((functionName > (char*)addr->BufferBaseAddress + addr->DirectoryAddress->VirtualAddress && (functionName + strlength + 1) < (char*)addr->BufferEndAddress) && memcmp(NameOrdinal, functionName, strlength) == 0)
+				if ((functionName > (char*)addr->BufferBaseAddress + addr->DirectoryAddress->VirtualAddress && (functionName + NameLength + 1) < (char*)addr->BufferEndAddress) && memcmp(NameOrdinal, functionName, NameLength) == 0)
 				{
 					funcAddrPtr = (DWORD*)((addr->BufferBaseAddress + addr->ExportDirectory->AddressOfFunctions) + (sizeof(DWORD) * *ordValue));
 					if (*funcAddrPtr > addr->DirectoryAddress->VirtualAddress && *funcAddrPtr < (addr->DirectoryAddress->VirtualAddress + addr->DirectoryAddress->Size))
@@ -641,7 +641,7 @@ SIZE_T PortableExecutable32::GetAddressFromExportTable(const AddrStruct* addr, c
 								AddrStruct addrStruct((Byte*)modBaseAddr->BaseAddress, (exportDirectoryBuffer - dataDir.VirtualAddress), bufBase + dataDir.VirtualAddress + dataDir.Size
 									, &dataDir, (IMAGE_EXPORT_DIRECTORY*)exportDirectoryBuffer);
 	
-								SIZE_T forwardedAddress = this->GetAddressFromExportTable(&addrStruct, (char*)(addr->BufferBaseAddress + *funcAddrPtr + ResurseDotIndex + 1), false);
+								SIZE_T forwardedAddress = this->GetAddressFromExportTable(&addrStruct, (char*)(addr->BufferBaseAddress + *funcAddrPtr + ResurseDotIndex + 1), NameLength);
 								delete[] exportDirectoryBuffer;
 								return forwardedAddress;
 							}
@@ -756,100 +756,104 @@ void PortableExecutable32::GetImportAddressTable() const
 			IMAGE_DATA_DIRECTORY dataDir = *(&((IMAGE_OPTIONAL_HEADER32*)&pNTHeader->OptionalHeader)->DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT]);
 
             delete[] dllBuffer;
-
-            Byte* const exportDirectoryBuffer = new Byte[dataDir.Size];
-            CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(modBaseAddr->BaseAddress + dataDir.VirtualAddress), exportDirectoryBuffer, dataDir.Size, NULL);
             
-			Byte* const bufBase = (exportDirectoryBuffer - dataDir.VirtualAddress);
-			AddrStruct addrStruct((Byte*)modBaseAddr->BaseAddress, (exportDirectoryBuffer - dataDir.VirtualAddress), bufBase + dataDir.VirtualAddress + dataDir.Size
-				, &dataDir, (IMAGE_EXPORT_DIRECTORY*)exportDirectoryBuffer);
-
-			IMAGE_THUNK_DATA32 thunk;
-			unsigned int count = 0;
-
-			do
-			{
-				// Read current thunk into local memory.
-				CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(this->mBaseAddress + pDesc.OriginalFirstThunk + count * sizeof(DWORD)), &thunk, sizeof(IMAGE_THUNK_DATA32), NULL);
-
-				ImportAddressTableEntry funcEntry;
-
-				// Check for 32-bit ordinal magic flag.
-				if (thunk.u1.Ordinal & IMAGE_ORDINAL_FLAG32)
-				{
-					funcEntry.Ordinal = IMAGE_ORDINAL32(thunk.u1.Ordinal);
-					funcEntry.Hint = 0;
-
-					if (addrStruct.ExportDirectory->AddressOfNames)
-					{
-						funcEntry.FunctionName = this->GetOrdinalFunctionNameFromExportTable(&addrStruct, funcEntry.Ordinal);
-					}
-				}
-				else
-				{
-					// Read function name from thunk data.
-					char funcName[96];
-					CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(this->mBaseAddress + thunk.u1.AddressOfData), funcName, 96, NULL);
-
-					// Set ordinal value to 0, read function name and WORD sized hint from the first two read bytes sequence.
-					funcEntry.Ordinal = 0;
-					funcEntry.Hint = *(WORD*)funcName;
-					funcEntry.FunctionName = funcName + sizeof(WORD);
-				}
-
-				// In a rare occasion the ordinal bit-flag is already removed. In this case the ordinal should be detected by section awareness.
-				if (funcEntry.FunctionName.IsEmpty() && !RVAPointsInsideSection(thunk.u1.Ordinal))
-				{
-					funcEntry.Ordinal = (WORD)thunk.u1.Ordinal;
-					funcEntry.Hint = 0;
-					
-					if (addrStruct.ExportDirectory->AddressOfNames)
-					{
-						funcEntry.FunctionName = this->GetOrdinalFunctionNameFromExportTable(&addrStruct, funcEntry.Ordinal);
-					}
-				}
-				
-				// If the function name is empty even after ordinal resolving, the function has no name. Give it an automated name.
-				if (funcEntry.FunctionName.IsEmpty())
-				{
-					String localModName = dllName;
-					const int dotIndex = localModName.ReverseFind('.');
-					localModName.Remove(dotIndex, localModName.GetLength() - dotIndex);
-					funcEntry.FunctionName = Format("%s.%i", localModName, funcEntry.Ordinal);
-				}
-				
-				// Save the thunk address of the function.
-				funcEntry.ThunkAddress = this->mBaseAddress + pDesc.FirstThunk + count++ * sizeof(DWORD);
-				
-				// Read function address from thunk data and increment function iteration counter.
-				DWORD funcAddress;
-				CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)funcEntry.ThunkAddress, &funcAddress, sizeof(DWORD), NULL);
+            // Check whether the discovered module actually has an export table.
+            if (dataDir.Size)
+            {
+				Byte* const exportDirectoryBuffer = new Byte[dataDir.Size];
+	            CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(modBaseAddr->BaseAddress + dataDir.VirtualAddress), exportDirectoryBuffer, dataDir.Size, NULL);
+	            
+				Byte* const bufBase = (exportDirectoryBuffer - dataDir.VirtualAddress);
+				AddrStruct addrStruct((Byte*)modBaseAddr->BaseAddress, (exportDirectoryBuffer - dataDir.VirtualAddress), bufBase + dataDir.VirtualAddress + dataDir.Size
+					, &dataDir, (IMAGE_EXPORT_DIRECTORY*)exportDirectoryBuffer);
 	
-				if (!funcAddress)
+				IMAGE_THUNK_DATA32 thunk;
+				unsigned int count = 0;
+	
+				do
 				{
-					continue;
+					// Read current thunk into local memory.
+					CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(this->mBaseAddress + pDesc.OriginalFirstThunk + count * sizeof(DWORD)), &thunk, sizeof(IMAGE_THUNK_DATA32), NULL);
+	
+					ImportAddressTableEntry funcEntry;
+	
+					// Check for 32-bit ordinal magic flag.
+					if (thunk.u1.Ordinal & IMAGE_ORDINAL_FLAG32)
+					{
+						funcEntry.Ordinal = IMAGE_ORDINAL32(thunk.u1.Ordinal);
+						funcEntry.Hint = 0;
+	
+						if (addrStruct.ExportDirectory->AddressOfNames)
+						{
+							funcEntry.FunctionName = this->GetOrdinalFunctionNameFromExportTable(&addrStruct, funcEntry.Ordinal);
+						}
+					}
+					else
+					{
+						// Read function name from thunk data.
+						char funcName[96];
+						CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(this->mBaseAddress + thunk.u1.AddressOfData), funcName, 96, NULL);
+	
+						// Set ordinal value to 0, read function name and WORD sized hint from the first two read bytes sequence.
+						funcEntry.Ordinal = 0;
+						funcEntry.Hint = *(WORD*)funcName;
+						funcEntry.FunctionName = funcName + sizeof(WORD);
+					}
+	
+					// In a rare occasion the ordinal bit-flag is already removed. In this case the ordinal should be detected by section awareness.
+					if (funcEntry.FunctionName.IsEmpty() && !RVAPointsInsideSection(thunk.u1.Ordinal))
+					{
+						funcEntry.Ordinal = (WORD)thunk.u1.Ordinal;
+						funcEntry.Hint = 0;
+						
+						if (addrStruct.ExportDirectory->AddressOfNames)
+						{
+							funcEntry.FunctionName = this->GetOrdinalFunctionNameFromExportTable(&addrStruct, funcEntry.Ordinal);
+						}
+					}
+					
+					// If the function name is empty even after ordinal resolving, the function has no name. Give it an automated name.
+					if (funcEntry.FunctionName.IsEmpty())
+					{
+						String localModName = dllName;
+						const int dotIndex = localModName.ReverseFind('.');
+						localModName.Remove(dotIndex, localModName.GetLength() - dotIndex);
+						funcEntry.FunctionName = Format("%s.%i", localModName, funcEntry.Ordinal);
+					}
+					
+					// Save the thunk address of the function.
+					funcEntry.ThunkAddress = this->mBaseAddress + pDesc.FirstThunk + count++ * sizeof(DWORD);
+					
+					// Read function address from thunk data and increment function iteration counter.
+					DWORD funcAddress;
+					CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)funcEntry.ThunkAddress, &funcAddress, sizeof(DWORD), NULL);
+		
+					if (!funcAddress)
+					{
+						continue;
+					}
+					
+					funcEntry.VirtualAddress = funcAddress;
+					funcEntry.Flag = 0;
+					
+					// Check whether actual address is equal to the address it should be, otherwise the IAT is hooked.
+					const SIZE_T eatAddress = this->GetAddressFromExportTable(&addrStruct, funcEntry.Ordinal ? (char*)funcEntry.Ordinal : funcEntry.FunctionName.Begin(), funcEntry.Ordinal ? 0 : funcEntry.FunctionName.GetLength());
+					if (eatAddress == EAT_ADDRESS_NOT_FOUND)
+					{
+						funcEntry.Flag = IAT_FLAG_NOT_FOUND;
+					}
+					else if (eatAddress != funcEntry.VirtualAddress)
+					{
+						funcEntry.Flag = IAT_FLAG_HOOKED;
+					}
+					
+					// Add function to import descriptor.
+					impDesc.FunctionList.Add(funcEntry);
 				}
+				while (thunk.u1.AddressOfData);
 				
-				funcEntry.VirtualAddress = funcAddress;
-				funcEntry.Flag = 0;
-				
-				// Check whether actual address is equal to the address it should be, otherwise the IAT is hooked.
-				const SIZE_T eatAddress = this->GetAddressFromExportTable(&addrStruct, funcEntry.Ordinal ? (char*)funcEntry.Ordinal : funcEntry.FunctionName.Begin(), funcEntry.Ordinal);
-				if (eatAddress == EAT_ADDRESS_NOT_FOUND)
-				{
-					funcEntry.Flag = IAT_FLAG_NOT_FOUND;
-				}
-				else if (eatAddress != funcEntry.VirtualAddress)
-				{
-					funcEntry.Flag = IAT_FLAG_HOOKED;
-				}
-				
-				// Add function to import descriptor.
-				impDesc.FunctionList.Add(funcEntry);
-			}
-			while (thunk.u1.AddressOfData);
-			
-			delete[] exportDirectoryBuffer;
+				delete[] exportDirectoryBuffer;
+            }
         }
 
 		CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(this->mBaseAddress + pOptionalHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress + (++counter * sizeof(IMAGE_IMPORT_DESCRIPTOR))), &pDesc, sizeof(IMAGE_IMPORT_DESCRIPTOR), NULL);
@@ -1122,7 +1126,7 @@ bool PortableExecutable32::DumpProcessSection(const String& fileName, const SIZE
 	// Write the data read to the file.
 	DWORD bytesWritten;
 #ifdef _WIN64
-	if (!WriteFile(hFile, buffer, bytesRead, &bytesWritten, NULL))
+	if (!WriteFile(hFile, buffer, (DWORD)bytesRead, &bytesWritten, NULL))
 #else
 	if (!WriteFile(hFile, buffer, bytesRead, &bytesWritten, NULL))
 #endif
@@ -1220,7 +1224,7 @@ bool PortableExecutable32::LoadLibraryExternalHijack(const String& library, HAND
 	
 	// Allocate executable block of memory for the shellcode.
 	void* const lpShellCode = VirtualAllocEx(this->mProcessHandle, NULL, 1024, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
-	const SIZE_T flagAddress = (SIZE_T)lpShellCode + 0x100;
+	const DWORD flagAddress = (DWORD)lpShellCode + 0x100;
 	
 	// Suspend the thread and back up the context.
 #ifdef _WIN64
@@ -1337,16 +1341,20 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 
     delete[] dllBuffer;
     
-    Byte* const exportDirectoryBuffer = new Byte[dataDir.Size];
-    CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(baseAddress + dataDir.VirtualAddress), exportDirectoryBuffer, dataDir.Size, NULL);
-    
-	Byte* const bufBase = (exportDirectoryBuffer - dataDir.VirtualAddress);
-	AddrStruct addrStruct((Byte*)baseAddress, (exportDirectoryBuffer - dataDir.VirtualAddress), bufBase + dataDir.VirtualAddress + dataDir.Size
-		, &dataDir, (IMAGE_EXPORT_DIRECTORY*)exportDirectoryBuffer);
-    
-	this->PlaceIATHook(modBase, NameOrdinal, this->GetAddressFromExportTable(&addrStruct, NameOrdinal, IsOrdinal), IsOrdinal);
-	
-	delete[] exportDirectoryBuffer;
+    // Check whether the discovered module actually has an export table.
+    if (dataDir.Size)
+    {
+	    Byte* const exportDirectoryBuffer = new Byte[dataDir.Size];
+	    CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(baseAddress + dataDir.VirtualAddress), exportDirectoryBuffer, dataDir.Size, NULL);
+	    
+		Byte* const bufBase = (exportDirectoryBuffer - dataDir.VirtualAddress);
+		AddrStruct addrStruct((Byte*)baseAddress, (exportDirectoryBuffer - dataDir.VirtualAddress), bufBase + dataDir.VirtualAddress + dataDir.Size
+			, &dataDir, (IMAGE_EXPORT_DIRECTORY*)exportDirectoryBuffer);
+	    
+		this->PlaceIATHook(modBase, NameOrdinal, this->GetAddressFromExportTable(&addrStruct, NameOrdinal, IsOrdinal), IsOrdinal);
+		
+		delete[] exportDirectoryBuffer;
+    }
 }
 
 // -------------------------------------------------------------------------------------------------------------------------------
@@ -1429,7 +1437,8 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 	// Retrieves the address of a function in the export table of a module. Address can be returned for function by name or ordinal.
 	// Returns the address of the function, created from the module base address added by the function RVA.
 	// If the function is not found, the return value is 0xFFFFFFFF.
-	SIZE_T PortableExecutable64::GetAddressFromExportTable(const AddrStruct* addr, const char* NameOrdinal, bool IsOrdinal) const
+	// The NameLength parameter contains the length of the name if there is a name, or 0 if the function is ordinal-based.
+	SIZE_T PortableExecutable64::GetAddressFromExportTable(const AddrStruct* addr, const char* NameOrdinal, const unsigned int NameLength) const
 	{
 		if (addr->ExportDirectory->AddressOfNameOrdinals)
 		{
@@ -1442,7 +1451,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 			{
 				const WORD* const ordValue = (WORD*)(addr->BufferBaseAddress + addr->ExportDirectory->AddressOfNameOrdinals + (i * sizeof(WORD)));
 	
-				if (IsOrdinal)
+				if (!NameLength)
 				{
 					bool found = false;
 					
@@ -1493,9 +1502,8 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 				{
 					const DWORD* const stringPtr = (DWORD*)(addr->BufferBaseAddress + addr->ExportDirectory->AddressOfNames + (i * sizeof(DWORD)));
 					const char* const functionName = (char*)(addr->BufferBaseAddress + *stringPtr);
-				
-					const size_t strlength = strlen(NameOrdinal);
-					if ((functionName > (char*)addr->BufferBaseAddress + addr->DirectoryAddress->VirtualAddress && (functionName + strlength + 1) < (char*)addr->BufferEndAddress) && memcmp(NameOrdinal, functionName, strlength) == 0)
+					
+					if ((functionName > (char*)addr->BufferBaseAddress + addr->DirectoryAddress->VirtualAddress && (functionName + NameLength + 1) < (char*)addr->BufferEndAddress) && memcmp(NameOrdinal, functionName, NameLength) == 0)
 					{
 						funcAddrPtr = (DWORD*)(addr->BufferBaseAddress + addr->ExportDirectory->AddressOfFunctions + (sizeof(DWORD) * *ordValue));
 						if (*funcAddrPtr > addr->DirectoryAddress->VirtualAddress && *funcAddrPtr < addr->DirectoryAddress->VirtualAddress + addr->DirectoryAddress->Size)
@@ -1644,97 +1652,101 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 	            
 	            delete[] dllBuffer;
 	            
-	            Byte* exportDirectoryBuffer = new Byte[dataDir.Size];
-	            CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(modBaseAddr->BaseAddress + dataDir.VirtualAddress), exportDirectoryBuffer, dataDir.Size, NULL);
-	            
-				Byte* const bufBase = exportDirectoryBuffer - dataDir.VirtualAddress;
-				AddrStruct addrStruct((Byte*)modBaseAddr->BaseAddress, (exportDirectoryBuffer - dataDir.VirtualAddress), bufBase + dataDir.VirtualAddress + dataDir.Size
-					, &dataDir, (IMAGE_EXPORT_DIRECTORY*)exportDirectoryBuffer);
-	        
-				IMAGE_THUNK_DATA thunk;
-		        unsigned int count = 0;
-	        
-				do
-				{
-					CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(this->mBaseAddress + pDesc.OriginalFirstThunk + count * sizeof(IMAGE_THUNK_DATA)), &thunk, sizeof(IMAGE_THUNK_DATA), NULL);
-				
-					ImportAddressTableEntry funcEntry;
-					
-					// Check for 64-bit ordinal magic flag.
-					if (thunk.u1.Ordinal & IMAGE_ORDINAL_FLAG64)
+	            // Check whether the discovered module actually contains an export table.
+	            if (dataDir.Size)
+	            {
+		            Byte* exportDirectoryBuffer = new Byte[dataDir.Size];
+		            CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(modBaseAddr->BaseAddress + dataDir.VirtualAddress), exportDirectoryBuffer, dataDir.Size, NULL);
+		            
+					Byte* const bufBase = exportDirectoryBuffer - dataDir.VirtualAddress;
+					AddrStruct addrStruct((Byte*)modBaseAddr->BaseAddress, (exportDirectoryBuffer - dataDir.VirtualAddress), bufBase + dataDir.VirtualAddress + dataDir.Size
+						, &dataDir, (IMAGE_EXPORT_DIRECTORY*)exportDirectoryBuffer);
+		        
+					IMAGE_THUNK_DATA thunk;
+			        unsigned int count = 0;
+		        
+					do
 					{
-						funcEntry.Ordinal = IMAGE_ORDINAL64(thunk.u1.Ordinal);
-						funcEntry.Hint = 0;
+						CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(this->mBaseAddress + pDesc.OriginalFirstThunk + count * sizeof(IMAGE_THUNK_DATA)), &thunk, sizeof(IMAGE_THUNK_DATA), NULL);
+					
+						ImportAddressTableEntry funcEntry;
 						
-						if (addrStruct.ExportDirectory->AddressOfNames)
+						// Check for 64-bit ordinal magic flag.
+						if (thunk.u1.Ordinal & IMAGE_ORDINAL_FLAG64)
 						{
-							funcEntry.FunctionName = this->GetOrdinalFunctionNameFromExportTable(&addrStruct, funcEntry.Ordinal);
+							funcEntry.Ordinal = IMAGE_ORDINAL64(thunk.u1.Ordinal);
+							funcEntry.Hint = 0;
+							
+							if (addrStruct.ExportDirectory->AddressOfNames)
+							{
+								funcEntry.FunctionName = this->GetOrdinalFunctionNameFromExportTable(&addrStruct, funcEntry.Ordinal);
+							}
 						}
-					}
-					else
-					{
-						char funcName[96];
-						CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(this->mBaseAddress + thunk.u1.AddressOfData), funcName, 96, NULL);
-					
-						// Set ordinal value to 0, read function name and WORD sized hint from the first two read bytes sequence.
-						funcEntry.Ordinal = 0;
-						funcEntry.Hint = *(WORD*)funcName;
-						funcEntry.FunctionName = funcName + sizeof(WORD);
-					}
-					
-					// In a rare occasion the ordinal bit-flag is already removed. In this case the ordinal should be detected by section awareness.
-					if (funcEntry.FunctionName.IsEmpty() && !RVAPointsInsideSection((DWORD)thunk.u1.Ordinal))
-					{
-						funcEntry.Ordinal = (WORD)thunk.u1.Ordinal;
-						funcEntry.Hint = 0;
+						else
+						{
+							char funcName[96];
+							CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(this->mBaseAddress + thunk.u1.AddressOfData), funcName, 96, NULL);
 						
-						if (addrStruct.ExportDirectory->AddressOfNames)
-						{
-							funcEntry.FunctionName = this->GetOrdinalFunctionNameFromExportTable(&addrStruct, funcEntry.Ordinal);
+							// Set ordinal value to 0, read function name and WORD sized hint from the first two read bytes sequence.
+							funcEntry.Ordinal = 0;
+							funcEntry.Hint = *(WORD*)funcName;
+							funcEntry.FunctionName = funcName + sizeof(WORD);
 						}
-					}
-					
-					// If the function name is empty even after ordinal resolving, the function has no name. Give it an automated name.
-					if (funcEntry.FunctionName.IsEmpty())
-					{
-						String localModName = dllName;
-						const int dotIndex = localModName.ReverseFind('.');
-						localModName.Remove(dotIndex, localModName.GetLength() - dotIndex);
-						funcEntry.FunctionName = Format("%s.%i", localModName, funcEntry.Ordinal);
-					}
-					
-					// Save the thunk address of the function.
-					funcEntry.ThunkAddress = this->mBaseAddress + pDesc.FirstThunk + count++ * sizeof(SIZE_T);
-
-					// Read function address from thunk data and increment function iteration counter.
-					SIZE_T funcAddress;
-					CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)funcEntry.ThunkAddress, &funcAddress, sizeof(SIZE_T), NULL);
+						
+						// In a rare occasion the ordinal bit-flag is already removed. In this case the ordinal should be detected by section awareness.
+						if (funcEntry.FunctionName.IsEmpty() && !RVAPointsInsideSection((DWORD)thunk.u1.Ordinal))
+						{
+							funcEntry.Ordinal = (WORD)thunk.u1.Ordinal;
+							funcEntry.Hint = 0;
+							
+							if (addrStruct.ExportDirectory->AddressOfNames)
+							{
+								funcEntry.FunctionName = this->GetOrdinalFunctionNameFromExportTable(&addrStruct, funcEntry.Ordinal);
+							}
+						}
+						
+						// If the function name is empty even after ordinal resolving, the function has no name. Give it an automated name.
+						if (funcEntry.FunctionName.IsEmpty())
+						{
+							String localModName = dllName;
+							const int dotIndex = localModName.ReverseFind('.');
+							localModName.Remove(dotIndex, localModName.GetLength() - dotIndex);
+							funcEntry.FunctionName = Format("%s.%i", localModName, funcEntry.Ordinal);
+						}
+						
+						// Save the thunk address of the function.
+						funcEntry.ThunkAddress = this->mBaseAddress + pDesc.FirstThunk + count++ * sizeof(SIZE_T);
 	
-					if (!funcAddress)
-					{
-						continue;
-					}
-				
-					funcEntry.VirtualAddress = funcAddress;
-					funcEntry.Flag = 0;
+						// Read function address from thunk data and increment function iteration counter.
+						SIZE_T funcAddress;
+						CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)funcEntry.ThunkAddress, &funcAddress, sizeof(SIZE_T), NULL);
+		
+						if (!funcAddress)
+						{
+							continue;
+						}
 					
-					// Check whether actual address is equal to the address it should be, otherwise the IAT is hooked.
-					const SIZE_T eatAddress = this->GetAddressFromExportTable(&addrStruct, funcEntry.Ordinal ? (char*)funcEntry.Ordinal : funcEntry.FunctionName.Begin(), funcEntry.Ordinal);
-					if (eatAddress == EAT_ADDRESS_NOT_FOUND)
-					{
-						funcEntry.Flag = IAT_FLAG_NOT_FOUND;
+						funcEntry.VirtualAddress = funcAddress;
+						funcEntry.Flag = 0;
+						
+						// Check whether actual address is equal to the address it should be, otherwise the IAT is hooked.
+						const SIZE_T eatAddress = this->GetAddressFromExportTable(&addrStruct, funcEntry.Ordinal ? (char*)funcEntry.Ordinal : funcEntry.FunctionName.Begin(), funcEntry.Ordinal ? 0 : funcEntry.FunctionName.GetLength());
+						if (eatAddress == EAT_ADDRESS_NOT_FOUND)
+						{
+							funcEntry.Flag = IAT_FLAG_NOT_FOUND;
+						}
+						else if (eatAddress != funcEntry.VirtualAddress)
+						{
+							funcEntry.Flag = IAT_FLAG_HOOKED;
+						}
+				
+						// Add function to import descriptor.
+						impDesc.FunctionList.Add(funcEntry);
 					}
-					else if (eatAddress != funcEntry.VirtualAddress)
-					{
-						funcEntry.Flag = IAT_FLAG_HOOKED;
-					}
-			
-					// Add function to import descriptor.
-					impDesc.FunctionList.Add(funcEntry);
-				}
-				while (thunk.u1.AddressOfData);
-			
-				delete[] exportDirectoryBuffer;
+					while (thunk.u1.AddressOfData);
+				
+					delete[] exportDirectoryBuffer;
+	            }
 			}
 			
 			CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(this->mBaseAddress + pOptionalHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress + (++counter * sizeof(IMAGE_IMPORT_DESCRIPTOR))), &pDesc, sizeof(IMAGE_IMPORT_DESCRIPTOR), NULL);
@@ -2187,15 +2199,19 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 	
 	    delete[] dllBuffer;
 	    
-	    Byte* const exportDirectoryBuffer = new Byte[dataDir.Size];
-	    CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(baseAddress + dataDir.VirtualAddress), exportDirectoryBuffer, dataDir.Size, NULL);
-	    
-		Byte* const bufBase = exportDirectoryBuffer - dataDir.VirtualAddress;
-		AddrStruct addrStruct((Byte*)baseAddress, (exportDirectoryBuffer - dataDir.VirtualAddress), bufBase + dataDir.VirtualAddress + dataDir.Size
-			, &dataDir, (IMAGE_EXPORT_DIRECTORY*)exportDirectoryBuffer);
-	    
-		this->PlaceIATHook(modBase, NameOrdinal, this->GetAddressFromExportTable(&addrStruct, NameOrdinal, IsOrdinal), IsOrdinal);
-		
-		delete[] exportDirectoryBuffer;
+	    // Check whether the discovered module actually has an export table.
+    	if (dataDir.Size)
+    	{
+	 	    Byte* const exportDirectoryBuffer = new Byte[dataDir.Size];
+		    CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(baseAddress + dataDir.VirtualAddress), exportDirectoryBuffer, dataDir.Size, NULL);
+		    
+			Byte* const bufBase = exportDirectoryBuffer - dataDir.VirtualAddress;
+			AddrStruct addrStruct((Byte*)baseAddress, (exportDirectoryBuffer - dataDir.VirtualAddress), bufBase + dataDir.VirtualAddress + dataDir.Size
+				, &dataDir, (IMAGE_EXPORT_DIRECTORY*)exportDirectoryBuffer);
+		    
+			this->PlaceIATHook(modBase, NameOrdinal, this->GetAddressFromExportTable(&addrStruct, NameOrdinal, IsOrdinal), IsOrdinal);
+			
+			delete[] exportDirectoryBuffer;   		
+    	}
 	}
 #endif

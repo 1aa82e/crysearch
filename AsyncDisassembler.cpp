@@ -206,6 +206,9 @@ void AsyncDisassembler::Disassemble(const SIZE_T address, const SIZE_T size, con
     Byte* const buffer = new Byte[size];
     CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), (void*)address, buffer, size, NULL);
     
+    // Reserve a buffer for instruction lines.
+    outInstructions.Reserve((int)size / 4);
+    
     // Set EIP, correct architecture and security block to prevent access violations.
 	disasm.EIP = (UIntPtr)buffer;
 	disasm.Archi = architecture;
@@ -241,5 +244,7 @@ void AsyncDisassembler::Disassemble(const SIZE_T address, const SIZE_T size, con
 		}
 	}
 	
+	// Clean up used buffers and shrink instruction line buffer.
+	outInstructions.Shrink();
 	delete[] buffer;
 }

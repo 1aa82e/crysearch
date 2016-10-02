@@ -8,7 +8,7 @@ Package:
 - Update wiki with changes for the release.
 ------------------------------------------------------------------
 
-- when I force crysearch to close, I should gracefully terminate scanning threads;
+- Current way of disassembling may cause inconsistencies;
 - Still need to fix shitloads of stuff in the import table parser, sanity checks missing everywhere;
 - release notes - buffer overruns;
 
@@ -31,7 +31,7 @@ Package:
 - Provide the output window / menu bar entry (PLUGIN_WANTS_OUTPUT_TAB);
 - Debugger window (stack / registers) resolve addresses to relative/apis;
 
-- yes yes, track control flow of entire process and build it a tree!
+- Track control flow of entire process and build it a tree!
 
 - Debugger:
 	- Disabling bp's doesn't always work yet;
