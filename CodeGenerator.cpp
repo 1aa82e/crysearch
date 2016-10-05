@@ -182,7 +182,8 @@ void CodeGenerator::Generate(String& codenz)
 	}
 	else
 	{
-		for (int i = 0; i < this->mTable->GetCount(); i++)
+		const int count = this->mTable->GetCount();
+		for (int i = 0; i < count; ++i)
 		{
 			codenz += this->GenerateInternalEntry((*this->mTable)[i], i);
 		}

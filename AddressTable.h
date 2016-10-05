@@ -12,7 +12,11 @@ using namespace Upp;
 // When a relative address table entry was not succesfully resolved, it should be still written
 // back to the address table file as if it was never changed. This indication value helps
 // CrySearch know when a dangling entry is the case.
-#define ADDRESS_ENTRY_DANGLING (BOOLEAN)0xFF
+#define ADDRESS_ENTRY_DANGLING	(BOOLEAN)0xFF
+
+// In practice, an address table could contain infinitely many entries. This is not a good idea,
+// and therefore we set a limit on its size. The following constant sets the limit.
+#define ADDRESS_TABLE_MAX_SIZE	512
 
 // Represents an entry in the user defined address list.
 struct AddressTableEntry : Moveable<AddressTableEntry>

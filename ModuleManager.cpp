@@ -111,6 +111,7 @@ const Win32ModuleInformation* ModuleManager::GetModuleFromContainedAddress(const
 		}
 	}
 	
+	// The module was not found.
 	return NULL;
 }
 
@@ -126,6 +127,7 @@ const Win32ModuleInformation* ModuleManager::FindModule(const char* modName) con
 		}
 	}
 	
+	// The module was not found.
 	return NULL;
 }
 
@@ -142,6 +144,7 @@ const int ModuleManager::FindModuleIndex(const char* modName) const
 		}
 	}
 	
+	// The module was not found.
 	return -1;
 }
 

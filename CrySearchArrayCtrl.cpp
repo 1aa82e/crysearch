@@ -9,7 +9,8 @@ bool CrySearchArrayCtrl::Key(dword key, int count)
 		// Execute the removal routine. Since we make such intensive use of virtual rows, we 
 		// can't place responsibility at the control itself.
 		Vector<int> selectedRows;
-		for (int i = 0; i < this->GetCount(); ++i)
+		const int rowCount = this->GetCount();
+		for (int i = 0; i < rowCount; ++i)
 		{
 			if (this->IsSelected(i))
 			{
@@ -22,6 +23,7 @@ bool CrySearchArrayCtrl::Key(dword key, int count)
 		{
 			this->RemovalRoutine(selectedRows);
 		}
+		
 		return true;
 	}
 	

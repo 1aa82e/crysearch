@@ -1178,7 +1178,8 @@ void CrySearchForm::ClearAddressList()
 		// When clearing the list, assurance of all data breakpoints being removed must be made.
 		if (mDebugger && mDebugger->IsDebuggerAttached())
 		{
-			for (int i = 0; i < loadedTable.GetCount(); i++)
+			const int count = loadedTable.GetCount();
+			for (int i = 0; i < count; ++i)
 			{
 				mDebugger->RemoveBreakpoint(loadedTable[i]->Address);
 			}
@@ -1210,8 +1211,16 @@ void CrySearchForm::SearchResultDoubleClicked()
 		}
 	}
 	
-	// Walk the selected rows.
+	// Check how many entries may still be added to the address table.
 	rowcount = selectedRows.GetCount();
+	const int canStillAdd = ADDRESS_TABLE_MAX_SIZE - loadedTable.GetCount();
+	if (rowcount > ADDRESS_TABLE_MAX_SIZE || rowcount > canStillAdd)
+	{
+		Prompt("Input Error", CtrlImg::error(), Format("This insertion violates the address table limit. %i entries can still be added.", canStillAdd), "OK");
+		return;
+	}
+	
+	// Walk the selected rows.
 	bool failed = false;
 	for (int i = 0; i < rowcount; ++i)
 	{
@@ -1491,7 +1500,8 @@ bool CrySearchForm::CloseProcess()
 	}
 	
 	// Set all address entries to invalid values. Since the timer stopped it does not automatically update this anymore.
-	for (int i = 0; i < loadedTable.GetCount(); i++)
+	const int count = loadedTable.GetCount();
+	for (int i = 0; i < count; ++i)
 	{
 		loadedTable[i]->Value = "???";
 	}

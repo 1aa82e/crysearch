@@ -2,7 +2,7 @@ CrySearch Memory Scanner
 
 evolution536, www.unknowncheats.me
 
-v2.1
+v2.10
 	- Added right-click option to dump heaps in heap walk dialog (whatever is readable from the memory of the heap will be dumped);
 	- Revised memory scanner, performance changes should be noticable:
 		- In very big scans, performance improvement is negligible, because I/O still is the bottleneck. However, less time is wasted in not writing anything;
@@ -11,6 +11,7 @@ v2.1
 	- Fixed bug where opening an x64 process with CrySearch x86 would give two error messages instead of one;
 	- Slight performance improvement in the import address table parser;
 	- Fixed bug in the import table parser that could cause a crash when resolving modules with an empty export table;
+	- Put a limit of 512 entries on the address table. If this limit is violated, nothing will be added. Instead, it will show you how many entries may be added;
 	- 
 
 v2.05:

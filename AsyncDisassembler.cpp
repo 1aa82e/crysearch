@@ -12,7 +12,8 @@ Vector<DisasmMemoryRegion> mExecutablePagesList;
 // Retrieves the correct page index in the list by passing an address inside it.
 const int GetPageIndexFromAddress(const SIZE_T address, SIZE_T* const sizePtr)
 {
-	for (int i = 0; i < mExecutablePagesList.GetCount(); ++i)
+	const int count = mExecutablePagesList.GetCount();
+	for (int i = 0; i < count; ++i)
 	{
 		const DisasmMemoryRegion& mem = mExecutablePagesList[i];
 		if (address >= mem.BaseAddress && address < mem.BaseAddress + mem.MemorySize)

@@ -96,7 +96,8 @@ void CryModuleWindow::DumpModuleButtonSubMenu(Bar& pBar)
 	}
 	
 	// Still here, so add menus for the dumpers.
-	for (int i = 0; i < dumpers.GetCount(); ++i)
+	const int count = dumpers.GetCount();
+	for (int i = 0; i < count; ++i)
 	{
 		const CrySearchPlugin& plugin = dumpers[i];
 		pBar.Add(plugin.PluginHeader->PluginName, THISBACK1(DumpModuleButton, (SIZE_T)plugin.BaseAddress));

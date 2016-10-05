@@ -505,7 +505,8 @@ const int CryDebugger::FindBreakpoint(const SIZE_T address) const
 // Checks whether a breakpoint matches a previously trapped instruction. This function is needed to reveal single stepped exceptions from data breakpoints.
 const int CryDebugger::FindBreakpointByPreviousInstruction(const SIZE_T address)
 {
-	for (int i = 0; i < this->mBreakpoints.GetCount(); i++)
+	const int count = this->mBreakpoints.GetCount();
+	for (int i = 0; i < count; ++i)
 	{
 		// Previous instruction only applies to hardware breakpoints.
 		if (this->mBreakpoints[i].BpType == BPTYPE_HARDWARE)
@@ -529,7 +530,7 @@ void CryDebugger::ClearBreakpoints()
 	this->isDetaching = true;
 	
 	// Remove all breakpoints from the list.
-	for (int i = 0; i < this->mBreakpoints.GetCount(); i++)
+	for (int i = 0; i < this->mBreakpoints.GetCount(); ++i)
 	{
 		this->RemoveBreakpoint(this->mBreakpoints[i].Address);
 	}

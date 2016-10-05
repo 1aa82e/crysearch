@@ -25,7 +25,8 @@ CryByteArrayGenerationWindow::CryByteArrayGenerationWindow(const Vector<int>& ro
 	
 	// Retrieve byte sets that are selected.
 	Vector<Byte> byteSets;
-	for (int i = 0; i < rows.GetCount(); ++i)
+	const int count = rows.GetCount();
+	for (int i = 0; i < count; ++i)
 	{
 		ArrayOfBytes sequence;
 #ifdef _WIN64

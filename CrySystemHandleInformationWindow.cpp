@@ -113,7 +113,8 @@ void CrySystemHandleInformationWindow::Initialize()
 	this->mOpenHandles.SetVirtualCount(mHandleCollection.GetCount());
 	
 	// Visualize the results.
-	for (int i = 0; i < mHandleCollection.GetCount(); ++i)
+	const int count = mHandleCollection.GetCount();
+	for (int i = 0; i < count; ++i)
 	{
 		const Win32HandleInformation& curHandle = mHandleCollection[i];
 		if (curHandle.ObjectName == "!")

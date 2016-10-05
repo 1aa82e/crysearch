@@ -121,11 +121,14 @@ const bool CompareUnknownInitialValue(const T& input, const T& expected)
 // Compares ANSI and Unicode strings until a null character is found.
 const bool CompareStringNullCharA(const char* input, const int inputLength, const char* expected, int* const outputLength)
 {
-	if (memcmp(input, expected, inputLength) == 0)
+	// Do the initial comparison of the input string.
+	if (strncmp(input, expected, inputLength) == 0)
 	{
 		const char* iterator = input + inputLength;
 		const int endIterator = STRING_MAX_UNTIL_NULL - inputLength;
 		int i = 0;
+		
+		// Keep collecting characters until a NULL character is reached.
 		while (*iterator != 0 && i < endIterator)
 		{
 			++iterator;
@@ -141,17 +144,20 @@ const bool CompareStringNullCharA(const char* input, const int inputLength, cons
 // Compares Unicode strings until a null character is found.
 const bool CompareStringNullCharW(const wchar* input, const int inputLength, const wchar* expected, int* const outputLength)
 {
-	if (memcmp(input, expected, inputLength) == 0)
+	// Do the initial comparison of the input string.
+	if (wcsncmp(input, expected, inputLength) == 0)
 	{
 		const wchar* iterator = input + inputLength;
 		const int endIterator = STRING_MAX_UNTIL_NULL - inputLength;
 		int i = 0;
+		
+		// Keep collecting characters until a NULL character is reached.
 		while (*iterator != 0 && i < endIterator)
 		{
 			++iterator;
 			++i;
 		}
-		*outputLength = i + inputLength / sizeof(wchar);
+		*outputLength = i + inputLength;
 		return true;
 	}
 	
@@ -542,12 +548,12 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData* const regionData,
 		{
 			for (SIZE_T i = 0; i < regionSize; i += fastScanAlignSize)
 			{
-				const double* tempStore = (double*)&(buffer[i]);
+				const double tempStore = *(double*)&(buffer[i]);
 				
-				if (cmp(*tempStore, value))
+				if (cmp(tempStore, value))
 				{
 					localAddresses[arrayIndex] = currentRegion.BaseAddress + i;
-					localValues[arrayIndex++] = *tempStore;
+					localValues[arrayIndex++] = tempStore;
 					
 					// Increment result counters for file and I/O.
 					++fileIndex;
@@ -700,7 +706,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData* const regionData,
 	unsigned int fileIndex = 0;
 	const wchar* const inputData = value.Begin();
 	const int inputLengthInChars = value.GetLength();
-	const int inputLength = value.GetLength() * sizeof(wchar);
+	const int inputLength = value.GetLength();
 	const bool localNullScan = GlobalScanParameter->ScanUntilNullChar;
 
 	// Create a buffer to store search results in, that can be reused at all times.
@@ -728,7 +734,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData* const regionData,
 				const wchar* strPtr = (wchar*)&(buffer[i]);
 				
 				int outputLength = inputLengthInChars;
-				if (localNullScan ? CompareStringNullCharW(strPtr, inputLength, inputData, &outputLength) : (memcmp(strPtr, inputData, inputLength) == 0))
+				if (localNullScan ? CompareStringNullCharW(strPtr, inputLength, inputData, &outputLength) : (wcsncmp(strPtr, inputData, inputLength) == 0))
 				{
 					localAddresses[arrayIndex] = currentRegion.BaseAddress + i;
 					stringLengthsArray[arrayIndex++] = outputLength;
@@ -821,7 +827,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData* const regionData,
 				const char* strPtr = (char*)&(buffer[i]);
 				
 				int outputLength = inputLength;
-				if (localNullScan ? CompareStringNullCharA(strPtr, inputLength, inputData, &outputLength) : (memcmp(strPtr, inputData, inputLength) == 0))
+				if (localNullScan ? CompareStringNullCharA(strPtr, inputLength, inputData, &outputLength) : (strncmp(strPtr, inputData, inputLength) == 0))
 				{
 					localAddresses[arrayIndex] = currentRegion.BaseAddress + i;
 					stringLengthsArray[arrayIndex++] = outputLength;
@@ -928,12 +934,12 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData* const regionData,
 		{
 			for (SIZE_T i = 0; i < regionSize; i += fastScanAlignSize)
 			{
-				const T* tempStore = (T*)&(buffer[i]);
+				const T tempStore = *(T*)&(buffer[i]);
 
-				if (cmp(*tempStore, value))
+				if (cmp(tempStore, value))
 				{
 					localAddresses[arrayIndex] = currentRegion.BaseAddress + i;
-					localValues[arrayIndex++] = *tempStore;
+					localValues[arrayIndex++] = tempStore;
 					
 					// Increment result counters for file and I/O.
 					++fileIndex;
@@ -1059,7 +1065,7 @@ void MemoryScanner::FirstScan()
 	this->mRegionFinishCount = 0;
 	
 	// Check for sets of regions and append overlapping regions to reduce the number of regions needed to read.
-	for (int i = 0; i < this->memRegions.GetCount(); i++)
+	for (int i = 0; i < this->memRegions.GetCount(); ++i)
 	{
 		// Append new region to other region if possible.
 		const int prev = i - 1;
@@ -1270,7 +1276,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData* const regionData, 
 					const SIZE_T currentResultPtr = addressesFileBuffer[resultIndex];
 					const wchar* currentDataPtr = (wchar*)(buffer + (currentResultPtr - currentRegion.BaseAddress));
 					
-					if (memcmp(currentDataPtr, inputData, inputLength) == 0)
+					if (wcsncmp(currentDataPtr, inputData, inputLength) == 0)
 					{
 						localAddresses[arrayIndex] = currentResultPtr;
 						stringLengthsArray[arrayIndex++] = inputLengthInChars;
@@ -1379,7 +1385,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData* const regionData, 
 					const SIZE_T currentResultPtr = addressesFileBuffer[resultIndex];
 					const char* currentDataPtr = (char*)(buffer + (currentResultPtr - currentRegion.BaseAddress));
 					
-					if (memcmp(currentDataPtr, value, inputLength) == 0)
+					if (strncmp(currentDataPtr, value, inputLength) == 0)
 					{
 						localAddresses[arrayIndex] = currentResultPtr;
 						stringLengthsArray[arrayIndex++] = inputLength;
@@ -1506,21 +1512,21 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData* const regionData, 
 				for (unsigned int resultIndex = 0; resultIndex < currentRegion.FileDataIndexes.ResultCount; resultIndex++)
 				{
 					const SIZE_T currentResultPtr = addressesFileBuffer[resultIndex];
-					const T* currentDataPtr = (T*)(buffer + (currentResultPtr - currentRegion.BaseAddress));
+					const T currentDataPtr = *(T*)(buffer + (currentResultPtr - currentRegion.BaseAddress));
 					
 					// Compare the current and saved values with whatever configured comparetor.
 					bool compareSucceeded = false;
 					if (GlobalScanParameter->GlobalScanType == SCANTYPE_CHANGED)
 					{
-						compareSucceeded = !cmp(*currentDataPtr, valuesFileBuffer[oldTempFileIndex]);
+						compareSucceeded = !cmp(currentDataPtr, valuesFileBuffer[oldTempFileIndex]);
 					}
 					else if (GlobalScanParameter->GlobalScanType >= (int)SCANTYPE_UNCHANGED)
 					{
-						compareSucceeded = cmp(*currentDataPtr, valuesFileBuffer[oldTempFileIndex]);
+						compareSucceeded = cmp(currentDataPtr, valuesFileBuffer[oldTempFileIndex]);
 					}
 					else
 					{
-						compareSucceeded = cmp(*currentDataPtr, value);
+						compareSucceeded = cmp(currentDataPtr, value);
 					}
 					
 					// Whether the comparison succeeded or not, this seperate array index always has to be incremented.
@@ -1529,7 +1535,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData* const regionData, 
 					if (compareSucceeded)
 					{
 						localAddresses[arrayIndex] = currentResultPtr;
-						localValues[arrayIndex++] = *currentDataPtr;
+						localValues[arrayIndex++] = currentDataPtr;
 						
 						// Increment result counters for file and I/O.
 						++fileIndex;

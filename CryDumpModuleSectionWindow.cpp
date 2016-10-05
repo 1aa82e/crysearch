@@ -45,7 +45,8 @@ CryDumpModuleSectionWindow::CryDumpModuleSectionWindow(const int modListIndex, c
 
 	delete[] moduleBuffer;
 	
-	for (int i = 0; i < this->imageSections.GetCount(); ++i)
+	const int count = this->imageSections.GetCount();
+	for (int i = 0; i < count; ++i)
 	{
 		const Win32PESectionInformation& cur = this->imageSections[i];
 		this->mSectionsList.Add(cur.SectionName, FormatInt64HexUpper((__int64)cur.BaseAddress), FormatInt64HexUpper((__int64)cur.SectionSize));

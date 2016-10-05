@@ -49,7 +49,8 @@ void AddressTable::Clear()
 #ifdef _WIN64
 	const int AddressTable::Find(const __int64 address, const CCryDataType valueType) const
 	{
-		for (int i = 0; i < this->mEntries.GetCount(); i++)
+		const int count = this->mEntries.GetCount();
+		for (int i = 0; i < count; ++i)
 		{
 			if ((this->mEntries[i].Address == address) && this->mEntries[i].ValueType == valueType)
 			{
@@ -62,7 +63,8 @@ void AddressTable::Clear()
 #else
 	const int AddressTable::Find(const int address, const CCryDataType valueType) const
 	{
-		for (int i = 0; i < this->mEntries.GetCount(); i++)
+		const int count = this->mEntries.GetCount();
+		for (int i = 0; i < count; ++i)
 		{
 			if ((this->mEntries[i].Address == address) && this->mEntries[i].ValueType == valueType)
 			{
@@ -167,7 +169,8 @@ const bool AddressTable::GetRelativeDisplayString(const AddressTableEntry* entry
 	
 	void AddressTable::Remove(const __int64 address, const CCryDataType valueType)
 	{
-		for (int i = 0; i < this->mEntries.GetCount(); i++)
+		const int count = this->mEntries.GetCount();
+		for (int i = 0; i < count; ++i)
 		{
 			if (this->mEntries[i].Address == address && this->mEntries[i].ValueType == valueType)
 			{
@@ -204,7 +207,8 @@ const bool AddressTable::GetRelativeDisplayString(const AddressTableEntry* entry
 	
 	void AddressTable::Remove(const int address, const CCryDataType valueType)
 	{
-		for (int i = 0; i < this->mEntries.GetCount(); i++)
+		const int count = this->mEntries.GetCount();
+		for (int i = 0; i < count; ++i)
 		{
 			if (this->mEntries[i].Address == address && this->mEntries[i].ValueType == valueType)
 			{

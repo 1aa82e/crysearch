@@ -14,7 +14,8 @@
 // Checks whether a RVA points inside a section of the executable. Returns true if so and false if not.
 const bool RVAPointsInsideSection(const DWORD rva)
 {
-	for (int i = 0; i < LoadedProcessPEInformation.ImageSections.GetCount(); ++i)
+	const int count = LoadedProcessPEInformation.ImageSections.GetCount();
+	for (int i = 0; i < count; ++i)
 	{
 		const Win32PESectionInformation& section = LoadedProcessPEInformation.ImageSections[i];
 		if (rva > section.BaseAddress && rva < (section.BaseAddress + section.RawSectionSize))
