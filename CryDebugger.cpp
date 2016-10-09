@@ -1,7 +1,6 @@
 #include "CryDebugger.h"
 #include "BackendGlobalDef.h"
-
-#include "BeaEngine/include/BeaEngine.h"
+#include "Disassembler.h"
 
 #include <Psapi.h>
 #include <VerRsrc.h>

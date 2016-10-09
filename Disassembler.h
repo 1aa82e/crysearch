@@ -9,13 +9,29 @@ using namespace Upp;
 #define BEA_USE_STDCALL
 
 #include "MemoryScanner.h"
-#include "BeaEngine/include/BeaEngine.h"
+
+// Using the old version of BeaEngine or the new v5 one (dev)?
+//#define BEA_USE_V4
+
+#ifdef BEA_USE_V4
+	#include "BeaEngine/BeaEngine v4/include/BeaEngine.h"
+#else
+	#include "BeaEngine/BeaEngine v5/include/BeaEngine.h"
+#endif
 
 // Dynamically link to disassembler library.
 #ifdef _WIN64
-	#pragma comment(lib, "BeaEngine/lib/BeaEngine64.lib")
+	#ifdef BEA_USE_V4
+		#pragma comment(lib, "BeaEngine/BeaEngine v4/lib/BeaEngine64.lib")
+	#else
+		#pragma comment(lib, "BeaEngine/BeaEngine v5/lib/BeaEngine64.lib")
+	#endif
 #else
-	#pragma comment(lib, "BeaEngine/lib/BeaEngine.lib")
+	#ifdef BEA_USE_V4
+		#pragma comment(lib, "BeaEngine/BeaEngine v4/lib/BeaEngine.lib")
+	#else
+		#pragma comment(lib, "BeaEngine/BeaEngine v5/lib/BeaEngine.lib")
+	#endif
 #endif
 
 #ifdef _cplusplus
