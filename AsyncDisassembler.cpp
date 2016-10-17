@@ -114,7 +114,7 @@ void AsyncDisassembler::Start(const SIZE_T address)
 	this->mCurrentPageSize = bs;
 
 	// First, split the total memory size to disassemble into tCount blocks.
-	const int tCount = mMemoryScanner->GetSystemThreadCount();
+	const int tCount = 1;//mMemoryScanner->GetSystemThreadCount();
 	const SIZE_T blockSize = bs / tCount;
 	const unsigned int remainder = bs % tCount;
 	

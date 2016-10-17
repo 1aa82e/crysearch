@@ -12,7 +12,8 @@ v2.10
 	- Slight performance improvement in the import address table parser;
 	- Fixed bug in the import table parser that could cause a crash when resolving modules with an empty export table;
 	- Put a limit of 512 entries on the address table. If this limit is violated, nothing will be added. Instead, it will show you how many entries may be added;
-	- 
+	- Fixed bug in disassembler with incorrect disassembly by reducing number of threads to 1;
+	- Started using BeaEngine v5.0 dev in CrySearch x86 because Windows Defender is annoyingly and falsely detecting BeaEngine.dll as malicious.
 
 v2.05:
 	- Added the version number of the U++ trunk used to compile CrySearch to the about dialog;

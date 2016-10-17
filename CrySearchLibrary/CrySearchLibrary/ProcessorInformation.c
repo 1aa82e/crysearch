@@ -43,58 +43,58 @@ void __stdcall GetProcessorSupportInformation(char pProcInformationString[128])
 	tsx = CPUInfo[1] & (1 << 11);
 
 	// Create output string to display to the user.
-	strcpy(pProcInformationString, prefixString);
+	strcpy_s(pProcInformationString, 128, prefixString);
 
 	if (sse)
 	{
-		strcat(pProcInformationString, "SSE, ");
+		strcat_s(pProcInformationString, 128, "SSE, ");
 	}
 	if (sse2)
 	{
-		strcat(pProcInformationString, "SSE2, ");
+		strcat_s(pProcInformationString, 128, "SSE2, ");
 	}
 	if (sse3)
 	{
-		strcat(pProcInformationString, "SSE3, ");
+		strcat_s(pProcInformationString, 128, "SSE3, ");
 	}
 	if (ssse3)
 	{
-		strcat(pProcInformationString, "SSSE3, ");
+		strcat_s(pProcInformationString, 128, "SSSE3, ");
 	}
 	if (sse41)
 	{
-		strcat(pProcInformationString, "SSE4.1, ");
+		strcat_s(pProcInformationString, 128, "SSE4.1, ");
 	}
 	if (sse42)
 	{
-		strcat(pProcInformationString, "SSE4.2, ");
+		strcat_s(pProcInformationString, 128, "SSE4.2, ");
 	}
 	if (mmx)
 	{
-		strcat(pProcInformationString, "MMX, ");
+		strcat_s(pProcInformationString, 128, "MMX, ");
 	}
 	if (vtx)
 	{
-		strcat(pProcInformationString, "VMX, ");
+		strcat_s(pProcInformationString, 128, "VMX, ");
 	}
 	if (fma)
 	{
-		strcat(pProcInformationString, "FMA3, ");
+		strcat_s(pProcInformationString, 128, "FMA3, ");
 	}
 	if (avx)
 	{
-		strcat(pProcInformationString, "AVX, ");
+		strcat_s(pProcInformationString, 128, "AVX, ");
 	}
 	if (avx2)
 	{
-		strcat(pProcInformationString, "AVX2, ");
+		strcat_s(pProcInformationString, 128, "AVX2, ");
 	}
 	if (tsx)
 	{
-		strcat(pProcInformationString, "TSX, ");
+		strcat_s(pProcInformationString, 128, "TSX, ");
 	}
 
-	strcat(pProcInformationString, ".]");
+	strcat_s(pProcInformationString, 128, ".]");
 	
 	// If the last character of the string is a comma, truncate it.
 	lastChar = strlen(pProcInformationString) - 4;
