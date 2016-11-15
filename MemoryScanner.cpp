@@ -68,11 +68,25 @@ const bool CompareGreater(const ArrayOfBytes& input, const ArrayOfBytes& expecte
 	return false;
 }
 
+template <>
+const bool CompareGreater(const float& input, const float& expected)
+{
+	return ((int)input > (int)expected);
+}
+
+template <>
+const bool CompareGreater(const double& input, const double& expected)
+{
+	return ((int)input > (int)expected);
+}
+
 template <typename T>
 const bool CompareGreater(const T& input, const T& expected)
 {
 	return (input > expected);
 }
+
+// ---------------------------------------------------------------------------------------------
 
 template <>
 const bool CompareSmaller(const ArrayOfBytes& input, const ArrayOfBytes& expected)
@@ -81,15 +95,30 @@ const bool CompareSmaller(const ArrayOfBytes& input, const ArrayOfBytes& expecte
 	return false;
 }
 
+template <>
+const bool CompareSmaller(const float& input, const float& expected)
+{
+	return ((int)input < (int)expected);
+}
+
+template <>
+const bool CompareSmaller(const double& input, const double& expected)
+{
+	return ((int)input < (int)expected);
+}
+
 template <typename T>
 const bool CompareSmaller(const T& input, const T& expected)
 {
 	return (input < expected);
 }
 
+// ---------------------------------------------------------------------------------------------
+
 template <>
 const bool CompareEqual(const ArrayOfBytes& input, const ArrayOfBytes& expected)
 {
+	// Dummy function, nessecary for compilation but will never be called.
 	return false;
 }
 
@@ -111,12 +140,44 @@ const bool CompareEqual(const T& input, const T& expected)
 	return (input == expected);
 }
 
+// ---------------------------------------------------------------------------------------------
+
+template <>
+const bool CompareInBetween(const ArrayOfBytes& input, const ArrayOfBytes& expected)
+{
+	// Dummy function, nessecary for compilation but will never be called.
+	return false;
+}
+
+template <>
+const bool CompareInBetween(const float& input, const float& expected)
+{
+	return ((int)input >= (int)expected && (int)input <= (int)(reinterpret_cast<ScanParameters<float>*>(GlobalScanParameter))->OuterScanValue);
+}
+
+template <>
+const bool CompareInBetween(const double& input, const double& expected)
+{
+	return ((int)input >= (int)expected && (int)input <= (int)(reinterpret_cast<ScanParameters<double>*>(GlobalScanParameter))->OuterScanValue);
+}
+
+template <typename T>
+const bool CompareInBetween(const T& input, const T& expected)
+{
+	// Is the input value at least expected and at most the second expected value?
+	return (input >= expected && input <= (reinterpret_cast<ScanParameters<T>*>(GlobalScanParameter))->OuterScanValue);
+}
+
+// ---------------------------------------------------------------------------------------------
+
 template <typename T>
 const bool CompareUnknownInitialValue(const T& input, const T& expected)
 {
 	// Unknown initial value should return everything that is found by the scanner.
 	return true;
 }
+
+// ---------------------------------------------------------------------------------------------
 
 // Compares ANSI and Unicode strings until a null character is found.
 const bool CompareStringNullCharA(const char* input, const int inputLength, const char* expected, int* const outputLength)
@@ -482,6 +543,9 @@ void MemoryScanner::AssignAndFire(const bool first)
 			break;
 		case SCANTYPE_GREATERTHAN:
 			cmpFunc = CompareGreater;
+			break;
+		case SCANTYPE_VALUE_IN_BETWEEN:
+			cmpFunc = CompareInBetween;
 			break;
 		case SCANTYPE_CHANGED:
 			cmpFunc = CompareEqual;

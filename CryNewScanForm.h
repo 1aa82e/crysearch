@@ -13,8 +13,10 @@ private:
 	Button mOk;
 	Button mCancel;
 	Label mValueInfoLabel;
+	Label mValueSecondInfoLabel;
 	Option mValueIsHex;
 	EditField mValueToSearchFor;
+	EditField mSecondValueToSearchFor;
 	DropList mBlockSizeSelector;
 	Label mBlockSizeSelectorLabel;
 	Label mScanTypeSelectorLabel;
@@ -27,15 +29,11 @@ private:
 	void ScanTypeSelected();
 	void BlockSizeSelected();
 	void OkButtonClicked();
-	
-	friend class CrySearchForm;
 public:
 	CryNewScanForm(bool FirstScan, const Image& icon);
 	~CryNewScanForm();
 
 	typedef CryNewScanForm CLASSNAME;
-	
-	Callback2<const ScanParameterBase*, MemoryScanValueType> ScanTriggered;
 };
 
 #endif

@@ -49,7 +49,6 @@ Package:
 	- Expand to be used with pointers, maybe structs;
 
 - Opening PDB files to navigate through disassembly with symbols, or just view symbols?
-- Scan for value in between;
 
 - Disassembler:
 	- Follow unconditional jumps (draw arrow to the left of the disasm if in same page);

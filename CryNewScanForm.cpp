@@ -15,6 +15,7 @@ ScanTypeDescriptor ScanTypeDescriptorDescriptorTable[] =
 	{ SCANTYPE_EXACTVALUE, "Exact Value" },
 	{ SCANTYPE_SMALLERTHAN, "Smaller Than" },
 	{ SCANTYPE_GREATERTHAN, "Greater Than" },
+	{ SCANTYPE_VALUE_IN_BETWEEN, "Value Between" },
 	{ SCANTYPE_CHANGED, "Changed Value" },
 	{ SCANTYPE_UNCHANGED, "Unchanged Value" },
 	{ SCANTYPE_INCREASED, "Increased Value" },
@@ -42,11 +43,12 @@ MemoryScanType GetMemoryScanTypeFromStringRepresentation(const String& strRep)
 
 // ---------------------------------------------------------------------------------------------
 
+// CryNewScanForm default constructor.
 CryNewScanForm::CryNewScanForm(bool FirstScan, const Image& icon) : CryDialogTemplate(icon)
 {
 	this->mNextScan = !FirstScan;
 	
-	this->Title(FirstScan ? "New Scan" : "Next Scan").SetRect(0, 0, 275, 155);
+	this->Title(FirstScan ? "New Scan" : "Next Scan").SetRect(0, 0, 275, 185);
 	
 	this->mOk <<= THISBACK(OkButtonClicked);
 	this->Rejector(this->mCancel, IDCANCEL);
@@ -55,12 +57,15 @@ CryNewScanForm::CryNewScanForm(bool FirstScan, const Image& icon) : CryDialogTem
 		<< this->mValueInfoLabel.SetLabel("Value:").LeftPos(5, 75).TopPos(5, 25)
 		<< this->mValueIsHex.SetLabel("Hex").LeftPos(75, 50).TopPos(5, 25)
 		<< this->mValueToSearchFor.HSizePos(130, 5).TopPos(5, 25)
-		<< this->mBlockSizeSelectorLabel.SetLabel("Size:").LeftPos(5, 75).TopPos(35, 25)
+		<< this->mValueSecondInfoLabel.SetLabel("Second Value:").LeftPos(5, 75).TopPos(35, 25)
+		<< this->mSecondValueToSearchFor.HSizePos(130, 5).TopPos(35, 25)
+		<< this->mBlockSizeSelectorLabel.SetLabel("Size:").LeftPos(5, 75).TopPos(65, 25)
 		<< this->mBlockSizeSelector.Add("Byte").Add("Short (2 Bytes)").Add("Integer (4 Bytes)")
 			.Add("Long (8 Bytes)").Add("Float (4 Bytes)").Add("Double (8 Bytes)").Add("Array of Bytes")
-			.Add("String (Slower scan, be patient)").HSizePos(75, 5).TopPos(35, 25)
-		<< this->mScanTypeSelectorLabel.SetLabel("Type:").LeftPos(5, 75).TopPos(65, 25)
-		<< this->mScanTypeSelector.Add("Exact Value").Add("Smaller Than").Add("Greater Than").HSizePos(75, 5).TopPos(65, 25)
+			.Add("String (Slower scan, be patient)").HSizePos(75, 5).TopPos(65, 25)
+		<< this->mScanTypeSelectorLabel.SetLabel("Type:").LeftPos(5, 75).TopPos(95, 25)
+		<< this->mScanTypeSelector.Add("Exact Value").Add("Smaller Than").Add("Greater Than")
+			.Add("Value Between").HSizePos(75, 5).TopPos(95, 25)
 		<< this->useFastScan.Set(SettingsFile::GetInstance()->GetFastScanByDefault()).SetLabel("Fast Scan")
 			.LeftPos(5, 100).BottomPos(35, 25)
 		<< this->stringUnicode.SetLabel("Unicode").RightPos(5, 75).BottomPos(35, 25)
@@ -79,10 +84,13 @@ CryNewScanForm::CryNewScanForm(bool FirstScan, const Image& icon) : CryDialogTem
 	this->stringUnicode.Hide();
 	this->stringUntilNull.Hide();
 	
+	// Are we opening the dialog for a first scan or a next scan?
 	if (!FirstScan)
 	{
+		// Add fast scan option.
 		this->useFastScan = GlobalScanParameter->CurrentScanFastScan;
 		
+		// Apply value-type-specific properties.		
 		switch(GlobalScanParameter->GlobalScanValueType)
 		{
 			case VALUETYPE_BYTE:
@@ -128,6 +136,7 @@ CryNewScanForm::CryNewScanForm(bool FirstScan, const Image& icon) : CryDialogTem
 				break;
 		}
 		
+		// Add next scan specific scan types to the list of selectable scan types.
 		this->mScanTypeSelector.Add("Changed Value");
 		this->mScanTypeSelector.Add("Unchanged Value");
 		this->mScanTypeSelector.Add("Increased Value");
@@ -138,6 +147,14 @@ CryNewScanForm::CryNewScanForm(bool FirstScan, const Image& icon) : CryDialogTem
 		{
 			this->mValueInfoLabel.Disable();
 			this->mValueToSearchFor.Disable();
+			this->mValueSecondInfoLabel.Disable();
+			this->mSecondValueToSearchFor.Disable();
+		}
+		else if (GlobalScanParameter->GlobalScanType != SCANTYPE_VALUE_IN_BETWEEN)
+		{
+			// Disable the value in between fields if the user did not desire to search so.
+			this->mValueSecondInfoLabel.Disable();
+			this->mSecondValueToSearchFor.Disable();
 		}
 		
 		this->mBlockSizeSelector.Disable();
@@ -152,18 +169,26 @@ CryNewScanForm::CryNewScanForm(bool FirstScan, const Image& icon) : CryDialogTem
 		
 		this->mBlockSizeSelector.SetIndex(2);
 		this->mScanTypeSelector.SetIndex(0);
+		
+		this->mValueSecondInfoLabel.Disable();
+		this->mSecondValueToSearchFor.Disable();
 	}
 }
 
+// CryNewScanForm default destructor.
 CryNewScanForm::~CryNewScanForm()
 {
 	
 }
 
+// Executed when the user toggles the hexadecimal/decimal view option.
 void CryNewScanForm::ValueInputHexToggleChanged()
 {
 	const String& curInput = this->mValueToSearchFor.GetText().ToString();
+	const String& curSecondInput = this->mSecondValueToSearchFor.GetText().ToString();
 	const String& curType = this->mBlockSizeSelector.GetValue();
+	
+	// Toggle a hexadecimal value representation for the first value field.
 	if (!curInput.IsEmpty())
 	{
 		if (curType != "String (Slower scan, be patient)" && curType != "Array of Bytes" && curType != "Float (4 Bytes)" && curType != "Double (8 Bytes)")
@@ -171,6 +196,7 @@ void CryNewScanForm::ValueInputHexToggleChanged()
 			if (curType == "Long (8 Bytes)")
 			{
 				this->mValueToSearchFor.SetText(this->mValueIsHex ? FormatInt64HexUpper(ScanInt64(curInput)) : Format("%lli", ScanInt64(curInput, NULL, 16)));
+				
 			}
 			else
 			{
@@ -178,8 +204,26 @@ void CryNewScanForm::ValueInputHexToggleChanged()
 			}
 		}
 	}
+	
+	// Toggle a hexadecimal value representation for the second value field.
+	if (!curSecondInput.IsEmpty())
+	{
+		if (curType != "String (Slower scan, be patient)" && curType != "Array of Bytes" && curType != "Float (4 Bytes)" && curType != "Double (8 Bytes)")
+		{
+			if (curType == "Long (8 Bytes)")
+			{
+				this->mSecondValueToSearchFor.SetText(this->mValueIsHex ? FormatInt64HexUpper(ScanInt64(curSecondInput)) : Format("%lli", ScanInt64(curSecondInput, NULL, 16)));
+				
+			}
+			else
+			{
+				this->mSecondValueToSearchFor.SetText(this->mValueIsHex ? FormatHexadecimalIntSpecial(ScanInt(curSecondInput)) : Format("%lli", ScanInt(curSecondInput, NULL, 16)));
+			}
+		}
+	}
 }
 
+// Executed when the user selects a scan type.
 void CryNewScanForm::ScanTypeSelected()
 {
 	if (this->mScanTypeSelector.GetValue() == "Changed Value" || this->mScanTypeSelector.GetValue() == "Unchanged Value"
@@ -188,27 +232,44 @@ void CryNewScanForm::ScanTypeSelected()
 		this->mValueInfoLabel.Disable();
 		this->mValueIsHex.Disable();
 		this->mValueToSearchFor.Disable();
+		this->mValueSecondInfoLabel.Disable();
+		this->mSecondValueToSearchFor.Disable();
+	}
+	else if (this->mScanTypeSelector.GetValue() == "Value Between")
+	{
+		this->mValueInfoLabel.Enable();
+		this->mValueIsHex.Enable();
+		this->mValueToSearchFor.Enable();
+		this->mValueSecondInfoLabel.Enable();
+		this->mSecondValueToSearchFor.Enable();
 	}
 	else if (this->mScanTypeSelector.GetValue() == "Unknown Initial Value")
 	{
 		this->mValueInfoLabel.Disable();
 		this->mValueIsHex.Disable();
 		this->mValueToSearchFor.Disable();
+		this->mValueSecondInfoLabel.Disable();
+		this->mSecondValueToSearchFor.Disable();
 	}
 	else
 	{
 		this->mValueInfoLabel.Enable();
 		this->mValueIsHex.Enable();
 		this->mValueToSearchFor.Enable();
+		this->mValueSecondInfoLabel.Disable();
+		this->mSecondValueToSearchFor.Disable();
 	}
 }
 
+// Executed when the user selects a block size.
 void CryNewScanForm::BlockSizeSelected()
 {
 	const String& selected = this->mBlockSizeSelector.GetValue();
 	if (selected == "String (Slower scan, be patient)")
 	{
 		this->mValueToSearchFor.Enable();
+		this->mValueSecondInfoLabel.Disable();
+		this->mSecondValueToSearchFor.Disable();
 		this->mValueIsHex.Disable();
 		this->useFastScan.Disable();
 		this->mScanTypeSelector.SetIndex(0);
@@ -220,6 +281,8 @@ void CryNewScanForm::BlockSizeSelected()
 	else if (selected == "Array of Bytes")
 	{
 		this->mValueToSearchFor.Enable();
+		this->mValueSecondInfoLabel.Disable();
+		this->mSecondValueToSearchFor.Disable();
 		this->mValueIsHex.Disable();
 		this->useFastScan.Disable();
 		this->mScanTypeSelector.SetIndex(0);
@@ -236,17 +299,34 @@ void CryNewScanForm::BlockSizeSelected()
 		this->mScanTypeSelectorLabel.Enable();
 		this->stringUnicode.Hide();
 		this->stringUntilNull.Hide();
+		
+		// Only enable the second value fields if the corresponding scan type was selected.
+		if (this->mScanTypeSelector.GetValue() == "Value Between")
+		{
+			this->mValueSecondInfoLabel.Enable();
+			this->mSecondValueToSearchFor.Enable();	
+		}
 	}
 }
 
+// Executed when the user clicks the OK button to accept the dialog.
 void CryNewScanForm::OkButtonClicked()
 {
+	// Check whether the user inserted a proper value to search for.
 	if (this->mValueToSearchFor.GetText().IsEmpty() && this->mScanTypeSelector.GetIndex() < 3)
 	{
 		Prompt("Input Error", CtrlImg::error(), "The inserted value is invalid!", "OK");
 		return;
 	}
 	
+	// In case the user desired a value in between, a second value also needs to be inserted.
+	if (this->mSecondValueToSearchFor.GetText().IsEmpty() && this->mScanTypeSelector.GetValue() == "Value Between")
+	{
+		Prompt("Input Error", CtrlImg::error(), "Please insert a second value!", "OK");
+		return;
+	}
+	
+	// Check whether the array of bytes formatting was correct.
 	if ((this->mBlockSizeSelector.GetIndex() == 6) && (this->mValueToSearchFor.GetLength() > 2 && this->mValueToSearchFor.GetText().Find(" ") == -1))
 	{
 		Prompt("Input Error", CtrlImg::error(), "Please format array of bytes correctly!&&Example: 0A FF B3", "OK");
@@ -258,37 +338,44 @@ void CryNewScanForm::OkButtonClicked()
 	{
 		delete GlobalScanParameter;
 	}
-
+	
+	// Initialize the global scan parameter.
 	switch(this->mBlockSizeSelector.GetIndex())
 	{
 		case 0: // byte
 			GlobalScanParameter = new ScanParameters<Byte>();
 			(reinterpret_cast<ScanParameters<Byte>*>(GlobalScanParameter))->ScanValue = this->mValueIsHex ? ScanInt(this->mValueToSearchFor.GetText().ToString(), NULL, 16) : StrInt(this->mValueToSearchFor.GetText().ToString());
+			(reinterpret_cast<ScanParameters<Byte>*>(GlobalScanParameter))->OuterScanValue = this->mValueIsHex ? ScanInt(this->mSecondValueToSearchFor.GetText().ToString(), NULL, 16) : StrInt(this->mSecondValueToSearchFor.GetText().ToString());
 			GlobalScanParameter->GlobalScanValueType = VALUETYPE_BYTE;
 			break;
 		case 1: // 2 bytes
 			GlobalScanParameter = new ScanParameters<short>();
 			(reinterpret_cast<ScanParameters<short>*>(GlobalScanParameter))->ScanValue = this->mValueIsHex ? ScanInt(this->mValueToSearchFor.GetText().ToString(), NULL, 16) : StrInt(this->mValueToSearchFor.GetText().ToString());
+			(reinterpret_cast<ScanParameters<short>*>(GlobalScanParameter))->OuterScanValue = this->mValueIsHex ? ScanInt(this->mSecondValueToSearchFor.GetText().ToString(), NULL, 16) : StrInt(this->mSecondValueToSearchFor.GetText().ToString());
 			GlobalScanParameter->GlobalScanValueType = VALUETYPE_2BYTE;
 			break;
 		case 2: // 4 bytes
 			GlobalScanParameter = new ScanParameters<int>();
 			(reinterpret_cast<ScanParameters<int>*>(GlobalScanParameter))->ScanValue = this->mValueIsHex ? ScanInt(this->mValueToSearchFor.GetText().ToString(), NULL, 16) : StrInt(this->mValueToSearchFor.GetText().ToString());
+			(reinterpret_cast<ScanParameters<int>*>(GlobalScanParameter))->OuterScanValue = this->mValueIsHex ? ScanInt(this->mSecondValueToSearchFor.GetText().ToString(), NULL, 16) : StrInt(this->mSecondValueToSearchFor.GetText().ToString());
 			GlobalScanParameter->GlobalScanValueType = VALUETYPE_4BYTE;
 			break;
 		case 3: // 8 bytes
 			GlobalScanParameter = new ScanParameters<__int64>();
 			(reinterpret_cast<ScanParameters<__int64>*>(GlobalScanParameter))->ScanValue = this->mValueIsHex ? ScanInt64(this->mValueToSearchFor.GetText().ToString(), NULL, 16) : atol(this->mValueToSearchFor.GetText().ToString());
+			(reinterpret_cast<ScanParameters<__int64>*>(GlobalScanParameter))->OuterScanValue = this->mValueIsHex ? ScanInt64(this->mSecondValueToSearchFor.GetText().ToString(), NULL, 16) : atol(this->mSecondValueToSearchFor.GetText().ToString());
 			GlobalScanParameter->GlobalScanValueType = VALUETYPE_8BYTE;
 			break;
 		case 4: // float
 			GlobalScanParameter = new ScanParameters<float>();
 			(reinterpret_cast<ScanParameters<float>*>(GlobalScanParameter))->ScanValue = this->mValueIsHex ? (float)ScanInt(this->mValueToSearchFor.GetText().ToString(), NULL, 16) : (float)StrDbl(this->mValueToSearchFor.GetText().ToString());
+			(reinterpret_cast<ScanParameters<float>*>(GlobalScanParameter))->OuterScanValue = this->mValueIsHex ? (float)ScanInt(this->mSecondValueToSearchFor.GetText().ToString(), NULL, 16) : (float)StrDbl(this->mSecondValueToSearchFor.GetText().ToString());
 			GlobalScanParameter->GlobalScanValueType = VALUETYPE_FLOAT;
 			break;
 		case 5: // double
 			GlobalScanParameter = new ScanParameters<double>();
 			(reinterpret_cast<ScanParameters<double>*>(GlobalScanParameter))->ScanValue = this->mValueIsHex ? (double)ScanInt(this->mValueToSearchFor.GetText().ToString(), NULL, 16) : StrDbl(this->mValueToSearchFor.GetText().ToString());
+			(reinterpret_cast<ScanParameters<double>*>(GlobalScanParameter))->OuterScanValue = this->mValueIsHex ? (double)ScanInt(this->mSecondValueToSearchFor.GetText().ToString(), NULL, 16) : StrDbl(this->mSecondValueToSearchFor.GetText().ToString());
 			GlobalScanParameter->GlobalScanValueType = VALUETYPE_DOUBLE;
 			break;
 		case 6: // aob
@@ -336,5 +423,6 @@ void CryNewScanForm::OkButtonClicked()
 		GlobalScanParameter->GlobalScanType = GetMemoryScanTypeFromStringRepresentation(this->mScanTypeSelector.GetValue());
 	}
 	
+	// Accept the dialog.
 	this->AcceptBreak(10);
 }

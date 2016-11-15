@@ -3,6 +3,8 @@ CrySearch Memory Scanner
 evolution536, www.unknowncheats.me
 
 v2.11:
+	- Added scanning for values that are in between of two user-entered values;
+	- Fixed an inconsistency in comparing floats and doubles, not being rounded to the nearest integer;
 	- 
 
 v2.10:

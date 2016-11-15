@@ -34,6 +34,7 @@ enum MemoryScanType
 	SCANTYPE_EXACTVALUE,
 	SCANTYPE_SMALLERTHAN,
 	SCANTYPE_GREATERTHAN,
+	SCANTYPE_VALUE_IN_BETWEEN,
 	SCANTYPE_CHANGED,
 	
 	// The same comparetor function applies for the scan types below. Do not add a scan type that requires a different comparetor.
@@ -45,9 +46,16 @@ enum MemoryScanType
 // Generalisation struct that can be used to save class instances with template parameter lists.
 struct ScanParameterBase
 {
+	// Indicates whether a fast (aligned) scan should be executed.
 	bool CurrentScanFastScan;
+	
+	// The type of scan that should be executed.
 	MemoryScanType GlobalScanType;
+	
+	// The value type (sizeof) of the value that should be scanned for.
 	MemoryScanValueType GlobalScanValueType;
+	
+	// Are we returning search results in hexadecimal?
 	bool CurrentScanHexValues;
 	
 	// This parameter contains the size of an array of bytes or the length of a string in case of such a scan.
@@ -74,7 +82,13 @@ struct ScanParameterBase
 template <typename T>
 struct ScanParameters : public ScanParameterBase
 {
+	// The value to scan a process' memory for. If the user wants to scan for a value that is
+	// in between of two values, this variable is the first value of the two.
 	T ScanValue;
+	
+	// If the user wants tot scan for a value that is in between of two values, this variable is
+	// the second of the two. Otherwise, this variable is not used.
+	T OuterScanValue;
 };
 
 // Global variable to store scan parameters because of the performance issues a function parameter brings in.
@@ -232,6 +246,9 @@ const bool CompareSmaller(const T& input, const T& expected);
 
 template <typename T>
 const bool CompareGreater(const T& input, const T& expected);
+
+template <typename T>
+const bool CompareInBetween(const T& input, const T& expected);
 
 template <typename T>
 const bool CompareUnknownInitialValue(const T& input, const T& expected);
