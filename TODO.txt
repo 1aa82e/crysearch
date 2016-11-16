@@ -34,7 +34,6 @@ Package:
 - Track control flow of entire process and build it a tree!
 
 - Debugger:
-	- Disabling bp's doesn't always work yet;
 	- Software bp not correctly removed in Far Cry;
 	- 16-byte registers during snapshot?
 	- VEH debugger

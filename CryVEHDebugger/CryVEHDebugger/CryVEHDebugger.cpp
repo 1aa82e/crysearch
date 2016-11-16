@@ -13,7 +13,11 @@ CryVEHDebugger::~CryVEHDebugger()
 // Starts the debugger, allowing exceptions to be caught.
 void CryVEHDebugger::Start()
 {
+	// Set the debugger state to running.
 	this->mIsRunning = true;
+
+	// Dispatch the debugger loop into a separate thread.
+	CreateThread(NULL, 0, DebuggerLoop, NULL, 0, NULL);
 }
 
 // Stops the debugger. This results in exceptions not being caught anymore.
@@ -22,12 +26,13 @@ void CryVEHDebugger::Stop()
 	this->mIsRunning = false;
 }
 
-// --------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------
 
 // Attempts to add a software breakpoint to the process. Returns true if a breakpoint already exists at
 // the specified address and if the function succeeds. Returns false otherwise.
 const bool CryVEHDebugger::AddSoftwareBreakpoint(const SIZE_T address)
 {
+	// If a breakpoint already exists on this address, don't do anything.
 	if (this->FindBreakpoint(address) >= 0)
 	{
 		return true;
@@ -43,15 +48,14 @@ const bool CryVEHDebugger::AddSoftwareBreakpoint(const SIZE_T address)
 	*(BYTE*)address = 0xCC;
 
 	// Flush instruction cache to apply instruction to executable code.
-	FlushInstructionCache(GetCurrentProcess(), (void*)address, sizeof(BYTE));
-
-	return true;
+	return !!FlushInstructionCache(GetCurrentProcess(), (void*)address, sizeof(BYTE));
 }
 
 // Attempts to add a hardware breakpoint to the process. Returns true if a breakpoint already exists at
 // the specified address and if the function succeeds. Returns false otherwise.
 const bool CryVEHDebugger::AddHardwareBreakpoint(const SIZE_T address, CryHwbpSize size, CryHwbpType type)
 {
+	// If a breakpoint already exists on this address, don't do anything.
 	if (this->FindBreakpoint(address) >= 0)
 	{
 		return true;
@@ -70,6 +74,7 @@ const bool CryVEHDebugger::AddHardwareBreakpoint(const SIZE_T address, CryHwbpSi
 	std::vector<DWORD> threadIds;
 	EnumerateThreads(threadIds);
 
+	// Set a hardware breakpoint on each thread.
 	const int count = threadIds.size();
 	for (int i = 0; i < count; ++i)
 	{
@@ -84,15 +89,18 @@ const bool CryVEHDebugger::AddHardwareBreakpoint(const SIZE_T address, CryHwbpSi
 // the breakpoint from the debugger administration. Returns true if succeeded or false otherwise.
 const bool CryVEHDebugger::DisableBreakpoint(const SIZE_T address)
 {
+	// If no breakpoint exists on this address, don't do anything.
 	const int pos = this->FindBreakpoint(address);
 	if (pos == -1)
 	{
 		return true;
 	}
 
+	// Retrieve the breakpoint.
 	CryBreakpoint* bp = &this->breakpointList[pos];
 	if (bp->BreakpointType == HardwareBreakpoint)
 	{
+		// Remove the hardware breakpoint from each thread.
 		bp->MustSetHardware = false;
 		const int threadcount = bp->AffectedThreads.size();
 		for (int i = 0; i < threadcount; ++i)
@@ -100,29 +108,32 @@ const bool CryVEHDebugger::DisableBreakpoint(const SIZE_T address)
 			// Execute the breakpoint routine for each enumerated thread.
 			BreakpointRoutine(bp, bp->AffectedThreads[i]);
 		}
+
+		bp->Disabled = true;
+		return true;
 	}
 	else
 	{
 		// Restore old instruction and flush instruction cache.
 		*(BYTE*)address = bp->OldInstruction;
-		FlushInstructionCache(GetCurrentProcess(), (void*)address, sizeof(BYTE));
+		bp->Disabled = true;
+		return !!FlushInstructionCache(GetCurrentProcess(), (void*)address, sizeof(BYTE));
 	}
-
-	bp->Disabled = true;
-
-	return true;
 }
 
 // Attempts to remove a breakpoint from the process. Returns true if the function succeeded
 // or false otherwise.
 const bool CryVEHDebugger::RemoveBreakpoint(const SIZE_T address)
 {
+	// If no breakpoint exists on this address, don't do anything.
 	const int pos = this->FindBreakpoint(address);
 	if (pos == -1)
 	{
 		return true;
 	}
 
+	// Retrieve the breakpoint.
+	bool retVal = true;
 	CryBreakpoint* bp = &this->breakpointList[pos];
 	if (bp->BreakpointType == HardwareBreakpoint)
 	{
@@ -138,13 +149,13 @@ const bool CryVEHDebugger::RemoveBreakpoint(const SIZE_T address)
 	{
 		// Restore old instruction and flush instruction cache.
 		*(BYTE*)address = bp->OldInstruction;
-		FlushInstructionCache(GetCurrentProcess(), (void*)address, sizeof(BYTE));
+		retVal = !!FlushInstructionCache(GetCurrentProcess(), (void*)address, sizeof(BYTE));
 	}
 
 	// Remove the breakpoint structure from the list.
 	this->breakpointList.erase(this->breakpointList.begin() + pos);
 
-	return true;
+	return retVal;
 }
 
 // --------------------------------------------------------------------------------------------------------
@@ -165,6 +176,7 @@ const int CryVEHDebugger::GetBreakpointCount() const
 // in the list if it is found and -1 if it is not found.
 const int CryVEHDebugger::FindBreakpoint(const SIZE_T address) const
 {
+	// Walk the breakpoint list to see if a breakpoint exists on the given address.
 	const int bpsize = this->breakpointList.size();
 	for (int i = 0; i < bpsize; ++i)
 	{
@@ -174,5 +186,6 @@ const int CryVEHDebugger::FindBreakpoint(const SIZE_T address) const
 		}
 	}
 
+	// No breakpoint exists!
 	return -1;
 }

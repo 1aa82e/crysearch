@@ -64,6 +64,9 @@ struct CryBreakpoint
 	}
 };
 
+// Forward definition of the function, it is declared somewhere else.
+DWORD __stdcall DebuggerLoop(LPVOID lpParam);
+
 // Represents the debugger itself.
 class CryVEHDebugger
 {
@@ -120,13 +123,19 @@ typedef struct _CRY_ACTION_QUEUE_ITEM
 // It should be mapped at the base address of the memory mapped file and used to navigate further into the data.
 typedef struct _CRY_VEH_COMMUNICATION_HEADER
 {
+	// The size of the entire communication structure, in bytes.
 	DWORD SizeInBytes;
+
+	// Structure that tracks actions.
 	struct
 	{
 		// The maximum amount of allocated queue items is 8!
 		DWORD ActionCount;
 		CRY_ACTION_QUEUE_ITEM ActionData[MAX_ACTION_COUNT];
 	} ActionQueue;
+
+	// Communication synchronization variable. Who is currently accessing the structure?
+	BOOL CurrentlyBeingAccessed;
 
 } CRY_VEH_COMMUNICATION_HEADER;
 
