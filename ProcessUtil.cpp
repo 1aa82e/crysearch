@@ -30,6 +30,7 @@ void EnumerateProcesses(Vector<Win32ProcessInformation>& outList)
 	}
 	while (returnVal == STATUS_INFO_LENGTH_MISMATCH);
 	
+	// Did the query succeed?
 	if (returnVal == STATUS_SUCCESS)
 	{
 		PSYSTEM_PROCESS_INFORMATION curProc = procInfo;
@@ -77,6 +78,7 @@ void EnumerateThreads(const int processId, Vector<Win32ThreadInformation>& threa
 	}
 	while (returnVal == STATUS_INFO_LENGTH_MISMATCH);
 	
+	// Did the query succeed?
 	if (returnVal == STATUS_SUCCESS)
 	{
 		PSYSTEM_PROCESS_INFORMATION curProc = procInfo;
@@ -221,6 +223,7 @@ void EnumerateHandles(const int processId, Vector<Win32HandleInformation>& handl
 	}
 	while (returnVal == STATUS_INFO_LENGTH_MISMATCH);
 	
+	// Did the query succeed?
 	if (returnVal == STATUS_SUCCESS)
 	{
 		// The system query succeeded, let's allocate buffers to hold the necessary information.

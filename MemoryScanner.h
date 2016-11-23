@@ -145,12 +145,18 @@ struct SearchResultCacheEntry : Moveable<SearchResultCacheEntry>
 // Represents a memory region found by the memory scanner.
 struct MemoryRegion : Moveable<MemoryRegion>
 {
+	// Represents the base address of the memory region.
 	SIZE_T BaseAddress;
+	
+	// Represents the size of the memory region.
 	SIZE_T MemorySize;
 	
 	struct
 	{
+		// The number of results that were found in scanning this memory region.
 		unsigned int ResultCount;
+		
+		// The start index of the results for this memory region in data files.
 		unsigned int StartIndex;
 	}
 	FileDataIndexes;
@@ -184,9 +190,13 @@ struct WorkerRegionParameterData : Moveable<WorkerRegionParameterData>
 // Represents an array of bytes to be searched for in memory.
 struct ArrayOfBytes
 {
+	// The bytes buffer.
 	Byte* Data;
+	
+	// The size of the buffer.
 	int Size;
 	
+	// The ArrayOfBytes default constructor.
 	ArrayOfBytes()
 	{
 		this->Data = NULL;
@@ -199,7 +209,8 @@ struct ArrayOfBytes
 		this->Data = data;
 		this->Size = size;
 	};
-
+	
+	// The ArrayOfBytes default destructor.
 	~ArrayOfBytes()
 	{
 		if (this->Data)
@@ -210,18 +221,21 @@ struct ArrayOfBytes
 		this->Data = NULL;
 		this->Size = 0;
 	};
-
+	
+	// Allocates a buffer for this instance.
 	void Allocate(int size)
 	{
 		this->Data = new Byte[size];
 		this->Size = size;
 	};
 	
+	// The ArrayOfBytes copy constructor.
 	ArrayOfBytes(ArrayOfBytes const& next)
 	{
 		this->CopyConstructAob(next);
 	};
-
+	
+	// The ArrayOfBytes assignment operator.
 	ArrayOfBytes& operator=(ArrayOfBytes const& next)
 	{
 		this->CopyConstructAob(next);
@@ -229,6 +243,7 @@ struct ArrayOfBytes
 	};
 
 private:
+	// Copy constructs this instance from another array of bytes.
 	inline void CopyConstructAob(ArrayOfBytes const& next)
 	{
 		this->Allocate(next.Size);

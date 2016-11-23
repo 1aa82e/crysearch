@@ -10,7 +10,10 @@ using namespace Upp;
 // Represents a row of dissection in an available dissection.
 struct DissectionRowEntry : Moveable<DissectionRowEntry>
 {
+	// The offset in bytes for this row.
 	int RowOffset;
+	
+	// The data type for this row.
 	CCryDataType RowType;
 	
 	// The data length is only applicable for AOB, string or wstring types.

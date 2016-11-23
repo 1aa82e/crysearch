@@ -291,10 +291,16 @@ void CryNewScanForm::BlockSizeSelected()
 		this->stringUnicode.Hide();
 		this->stringUntilNull.Hide();
 	}
+	else if (selected == "Float (4 Bytes)" || selected == "Double (8 Bytes)")
+	{
+		this->mValueIsHex = false;
+		this->mValueIsHex.Disable();
+	}
 	else
 	{
 		this->mValueIsHex.Enable(selected != "Float (4 Bytes)" && selected != "Double (8 Bytes)");
 		this->useFastScan.Enable();
+		this->mValueIsHex.Enable();
 		this->mScanTypeSelector.Enable();
 		this->mScanTypeSelectorLabel.Enable();
 		this->stringUnicode.Hide();

@@ -95,6 +95,16 @@ void CryImportsWindow::ModulesDropped()
 {
 	// Refresh modules before dropping the list.
 	mModuleManager->Initialize();
+	
+#ifdef _WIN64
+	// The user may want to hide the non-wow64 modules. If so, we need to remove several things from the vector.
+	if (mMemoryScanner->IsX86Process() && SettingsFile::GetInstance()->GetHideNonWow64Modules())
+	{
+		mModuleManager->RemoveNonWow64Modules();
+	}
+#endif
+
+	// Set the user interface to match the modules.
 	this->mModulesDropList.SetCount(mModuleManager->GetModuleCount());
 }
 
