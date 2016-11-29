@@ -7,6 +7,10 @@ v2.11:
 	- Fixed an inconsistency in comparing floats and doubles, not being rounded to the nearest integer;
 	- Fixed bug in the new scan window where the hexadecimal view option was not correctly toggled when selecting float or double types;
 	- Fixed bug in the imports window in CrySearch x64 where non-WOW64 modules were not removed in the module droplist;
+	- Some improvements to the View Handles window:
+		- Fixed bug where some handle access masks would cause CrySearch to hang;
+		- Fixed bug where handles would not be displayed when the name could not be queried;
+		- Now queries mount points using QueryDosDevice to present drive letters rather than native device paths.
 	- 
 
 v2.10:

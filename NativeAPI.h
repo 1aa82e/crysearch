@@ -1482,7 +1482,8 @@ typedef struct _SYSTEM_PROCESS_INFORMATION
 typedef struct _SYSTEM_HANDLE_TABLE_ENTRY_INFO
 {
 	DWORD UniqueProcessId;
-	WORD HandleType;
+	BYTE ObjectTypeNumber;
+    BYTE Flags;
 	USHORT HandleValue;
 	PVOID Object;
 	ACCESS_MASK GrantedAccess;

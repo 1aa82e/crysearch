@@ -28,3 +28,4 @@ EXPORTS
 	GetCrySearchDataTypeRepresentation
 	GetOSVersionString
 	GuessTypeOfValue
+	GetMappedDriveLetter

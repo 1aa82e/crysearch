@@ -78,6 +78,10 @@ extern "C"
 	// language extensions.
 	void __stdcall GetProcessorSupportInformation(char pProcInformationString[128]);
 
+	// Retrieves drive letter that is mapped to a native device name, retrieved by handle information. Returns the resolved drive letter
+	// in ASCII character code if succeeded and 0 if failed.
+	const char GetMappedDriveLetter(const char* mappedDrive, const unsigned int length);
+
 #ifdef __cplusplus
 }
 #endif

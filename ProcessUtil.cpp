@@ -157,11 +157,6 @@ String GetObjectNameByType(HANDLE hObject, const wchar* pType, const DWORD lengt
 		{
 			retVal = Format("(%i) - %s", (int)GetProcessId(hObject), GetFileName(path));
 		}
-		else
-		{
-			// The process handle may have insufficient access.
-			retVal = "!";
-		}
 	}
 	else if (wcsncmp(pType, L"Thread", length) == 0)
 	{
@@ -171,18 +166,26 @@ String GetObjectNameByType(HANDLE hObject, const wchar* pType, const DWORD lengt
 		{
 			retVal = Format("Thread ID: %i", (int)ti.ClientId.UniqueThread);
 		}
-		else
-		{
-			// Failed to query thread information.
-			retVal = "!";
-		}
 	}
 	else
 	{
 		// The object was not a user-friendly object that can be queried with logical information. Call NtQueryObject.
 		// Allocate a buffer to hold the object name and query it into the buffer.
 		POBJECT_NAME_INFORMATION objNameInfo = (POBJECT_NAME_INFORMATION)VirtualAlloc(NULL, 0x1000, MEM_COMMIT, PAGE_READWRITE);
-		if (CrySearchRoutines.NtQueryObject(hObject, ObjectNameInformation, objNameInfo, 0x1000, NULL) == STATUS_SUCCESS)
+		ULONG outLength;
+		NTSTATUS statusCode = CrySearchRoutines.NtQueryObject(hObject, ObjectNameInformation, objNameInfo, 0x1000, &outLength);
+		if (statusCode != STATUS_SUCCESS)
+		{
+			// The query failed, the buffer may have been too small.
+			VirtualFree(objNameInfo, 0, MEM_RELEASE);
+			objNameInfo = (POBJECT_NAME_INFORMATION)VirtualAlloc(NULL, outLength, MEM_COMMIT, PAGE_READWRITE);
+			
+			// Retry the query with the adjusted buffer size.
+			statusCode = CrySearchRoutines.NtQueryObject(hObject, ObjectNameInformation, objNameInfo, outLength, &outLength);
+		}
+		
+		// Query succeeded?
+		if (statusCode == STATUS_SUCCESS)
 		{
 			// Not all handles have a name. Sanity check for the name.
 			if (objNameInfo->ObjectName.Buffer)
@@ -233,9 +236,12 @@ void EnumerateHandles(const int processId, Vector<Win32HandleInformation>& handl
 		// The count is available, let's resize the Vector to save us the additional allocations.
 		handles.Reserve(handleInfo->NumberOfHandles);
 		
+		// Walk the retrieved handle collection.
 		for (DWORD i = 0; i < handleInfo->NumberOfHandles; ++i)
 		{
 			const PSYSTEM_HANDLE_TABLE_ENTRY_INFO curHandle = &handleInfo->Handles[i];
+			
+			// Does this handle belong to our process?
 			if (curHandle->UniqueProcessId == processId)
 			{
 				// Duplicate the handle in order to find out what object it is associated with.
@@ -248,23 +254,67 @@ void EnumerateHandles(const int processId, Vector<Win32HandleInformation>& handl
 					// Query the object to find out what kind of object it is.
 					if (CrySearchRoutines.NtQueryObject(hDup, ObjectTypeInformation, objInfo, 0x1000, NULL) == STATUS_SUCCESS)
 					{
-						// Query the object again for its name.
-						String objName = GetObjectNameByType(hDup, objInfo->TypeName.Buffer, objInfo->TypeName.Length + 1);
-						if (!objName.IsEmpty())
-						{
-							Win32HandleInformation& newHandle = handles.Add();
-							newHandle.Handle = curHandle->HandleValue;
-							newHandle.Access = curHandle->GrantedAccess;
-							newHandle.ObjectType = WString(objInfo->TypeName.Buffer, objInfo->TypeName.Length).ToString();
-							newHandle.ObjectName = objName;
+						// Add new handle to the list.
+						Win32HandleInformation& newHandle = handles.Add();
+						newHandle.Handle = curHandle->HandleValue;
+						newHandle.Access = curHandle->GrantedAccess;
+						newHandle.ObjectType = WString(objInfo->TypeName.Buffer, objInfo->TypeName.Length).ToString();
 
-							// Query the object again for the other information block.
-							if (CrySearchRoutines.NtQueryObject(hDup, ObjectBasicInformation, objBasicInfo, sizeof(OBJECT_BASIC_INFORMATION), &dataLength) == STATUS_SUCCESS)
+						// When calling NtQueryObject with ObjectNameInformation, the function may never return if the access mask is 0x0012019F.
+						// We cannot query the name of these handles. In my case, 0x00120089 and 0x0012008D are also culprits.
+						newHandle.ObjectName = (curHandle->GrantedAccess == 0x00120089 || curHandle->GrantedAccess == 0x0012019F || curHandle->GrantedAccess == 0x0012008D)
+							? "" : GetObjectNameByType(hDup, objInfo->TypeName.Buffer, objInfo->TypeName.Length + 1);
+						
+						// If the handle refers to a file, we can query the exact path on the filesystem with another query.
+						if (wcsncmp(objInfo->TypeName.Buffer, L"File", objInfo->TypeName.Length + 1) == 0)
+						{
+							// In case of a file, we can try to retrieve the mapped drive letter.
+							const char driveLetter = GetMappedDriveLetter(newHandle.ObjectName, newHandle.ObjectName.GetLength());
+							
+							// Did we get a sensible drive letter?
+							if (driveLetter)
 							{
-								// As documented in ProcessHacker, we should decrement the handle count because NtQueryObject opened a handle
-								// to this object too. This handle is not applicable for counting with the references.
-								newHandle.ReferenceCount = objBasicInfo->HandleCount - 1;
+								// Strip the device parts from the path. We assume that a native device path always has two parts up front.
+								String procPath = newHandle.ObjectName;
+								
+								// Remove trailing backslash.
+								procPath.Remove(0);
+								
+								// Remove the first part, including the next backslash.
+								int bkslashIndex = procPath.FindFirstOf("\\") + 1;
+								if (bkslashIndex < procPath.GetLength())
+								{
+									procPath.Remove(0, bkslashIndex);
+								}
+								
+								// Remove the second part.
+								bkslashIndex = procPath.FindFirstOf("\\");
+								if (bkslashIndex < procPath.GetLength())
+								{
+									procPath.Remove(0, bkslashIndex);
+								}
+								
+								// We now have the real path, we can prepend the drive letter.
+								String finalPath;
+								finalPath += driveLetter;
+								finalPath += ":" + procPath;
+								
+								// We should check whether the path we have just created exists, to be a 100 percent sure that what we
+								// did is actually correct, since we made an assumption on the structure of the native path.
+								if (DirectoryExists(finalPath) || FileExists(finalPath))
+								{
+									// The path exists and is correct.
+									newHandle.ObjectName = finalPath;
+								}
 							}
+						}
+
+						// Query the object again for the other information block.
+						if (CrySearchRoutines.NtQueryObject(hDup, ObjectBasicInformation, objBasicInfo, sizeof(OBJECT_BASIC_INFORMATION), &dataLength) == STATUS_SUCCESS)
+						{
+							// As documented in ProcessHacker, we should decrement the handle count because NtQueryObject opened a handle
+							// to this object too. This handle is not applicable for counting with the references.
+							newHandle.ReferenceCount = objBasicInfo->HandleCount - 1;
 						}
 					}
 				}

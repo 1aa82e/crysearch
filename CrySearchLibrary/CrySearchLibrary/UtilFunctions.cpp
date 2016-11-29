@@ -296,3 +296,33 @@ const CCryDataType GuessTypeOfValue(const void* value)
 	// The type could not be guessed. Return the default data type.
 	return CRYDATATYPE_4BYTES;
 }
+
+// Retrieves drive letter that is mapped to a native device name, retrieved by handle information. Returns the resolved drive letter
+// in ASCII character code if succeeded and 0 if failed.
+const char GetMappedDriveLetter(const char* mappedDrive, const unsigned int length)
+{
+	// Prepare string representation buffer, where per iteration only the first character will change.
+	char query[4];
+	query[1] = ':';
+	query[2] = 0;
+
+	// ASCII codes 65 until 90 are capital A-Z, which represent drive letters.
+	for (char i = 65; i <= 90; ++i)
+	{
+		// Create a string representation for the current character.
+		query[0] = i;
+
+		// Query the device name.
+		char targetPath[MAX_PATH];
+		DWORD numChars = QueryDosDeviceA(query, targetPath, MAX_PATH);
+		
+		// Did the query succeed and does it match our request?
+		if (numChars && strstr(mappedDrive, targetPath))
+		{
+			return i;
+		}
+	}
+
+	// Nothing was found!
+	return 0;
+}

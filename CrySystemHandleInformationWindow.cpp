@@ -112,21 +112,6 @@ void CrySystemHandleInformationWindow::Initialize()
 	EnumerateHandles(mMemoryScanner->GetProcessId(), mHandleCollection);
 	this->mOpenHandles.SetVirtualCount(mHandleCollection.GetCount());
 	
-	// Visualize the results.
-	const int count = mHandleCollection.GetCount();
-	for (int i = 0; i < count; ++i)
-	{
-		const Win32HandleInformation& curHandle = mHandleCollection[i];
-		if (curHandle.ObjectName == "!")
-		{
-			this->mOpenHandles.SetRowDisplay(i, RedDisplayDrawInstance);
-		}
-		else
-		{
-			this->mOpenHandles.SetRowDisplay(i, StdDisplay());
-		}
-	}
-	
 	// Set the total handle count in a label in the window.
 	this->mTotalHandles.SetLabel(Format("Total %i handles", mHandleCollection.GetCount()));
 }
