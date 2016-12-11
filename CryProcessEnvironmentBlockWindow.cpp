@@ -1,6 +1,7 @@
 #include "CryProcessEnvironmentBlockWindow.h"
 #include "BackendGlobalDef.h"
 
+// The CryProcessEnvironmentBlockWindow default constructor.
 CryProcessEnvironmentBlockWindow::CryProcessEnvironmentBlockWindow(const Image& icon) : CryDialogTemplate(icon)
 {
 	this->Title("Process Information").Sizeable().SetRect(0, 0, 500, 300);
@@ -22,11 +23,13 @@ CryProcessEnvironmentBlockWindow::CryProcessEnvironmentBlockWindow(const Image& 
 	this->Initialize();
 }
 
+// The CryProcessEnvironmentBlockWindow default destructor.
 CryProcessEnvironmentBlockWindow::~CryProcessEnvironmentBlockWindow()
 {
 	
 }
 
+// Initializes the window with 32-bit PEB fields.
 void CryProcessEnvironmentBlockWindow::Initialize32(const PEB32* peb, const RTL_USER_PROCESS_PARAMETERS32* userparams)
 {
 	this->mPEBInfo.Add("Inherited address space", Format("%X", peb->InheritedAddressSpace));
@@ -120,6 +123,7 @@ void CryProcessEnvironmentBlockWindow::Initialize32(const PEB32* peb, const RTL_
 }
 
 #ifdef _WIN64
+	// Initializes the window with 64-bit PEB fields.
 	void CryProcessEnvironmentBlockWindow::Initialize64(const PEB* peb, const RTL_USER_PROCESS_PARAMETERS* userparams)
 	{
 		this->mPEBInfo.Add("Inherited address space", Format("%X", peb->InheritedAddressSpace));
@@ -213,6 +217,7 @@ void CryProcessEnvironmentBlockWindow::Initialize32(const PEB32* peb, const RTL_
 	}
 #endif
 
+// Initializes the PEB window components with information.
 void CryProcessEnvironmentBlockWindow::Initialize()
 {
 	// Start retrieving information from thread environment block.
@@ -295,6 +300,7 @@ void CryProcessEnvironmentBlockWindow::Initialize()
 #endif
 }
 
+// Resets the debug flag in the PEB structure.
 void CryProcessEnvironmentBlockWindow::ResetDebugFlag()
 {
 	// Reset the debug flag.
@@ -310,6 +316,7 @@ void CryProcessEnvironmentBlockWindow::ResetDebugFlag()
 	this->Initialize();
 }
 
+// Executed when the dialog is closed.
 void CryProcessEnvironmentBlockWindow::DialogClose()
 {
 	this->Close();

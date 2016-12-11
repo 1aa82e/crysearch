@@ -7,31 +7,37 @@
 // The handles are saved globally to simplify the code necessary.
 Vector<Win32HandleInformation> mHandleCollection;
 
+// Gets the string representation of a handle.
 String GetHandleValue(const int index)
 {
 	return Format("%lX", mHandleCollection[index].Handle);
 }
 
+// Gets the object type name of a handle.
 String GetHandleObject(const int index)
 {
 	return mHandleCollection[index].ObjectType;
 }
 
+// Gets the number of references to a handle.
 String GetHandleReferences(const int index)
 {
 	return Format("%i", mHandleCollection[index].ReferenceCount);
 }
 
+// Gets the name of a handle.
 String GetHandleName(const int index)
 {
 	return mHandleCollection[index].ObjectName;
 }
 
+// Gets the string representation of the access mask number of a handle.
 String GetHandleAccess(const int index)
 {
 	return Format("%lX", mHandleCollection[index].Access);
 }
 
+// The CrySystemHandleInformationWindow default constructor.
 CrySystemHandleInformationWindow::CrySystemHandleInformationWindow(const Image& icon) : CryDialogTemplate(icon)
 {
 	this->Title("Open Handles").Zoomable().Sizeable().SetRect(0, 0, 600 , 200);
@@ -55,11 +61,13 @@ CrySystemHandleInformationWindow::CrySystemHandleInformationWindow(const Image& 
 	this->Initialize();
 }
 
+// The CrySystemHandleInformationWindow default destructor.
 CrySystemHandleInformationWindow::~CrySystemHandleInformationWindow()
 {
 	
 }
 
+// Executed when the user right clicks a handle.
 void CrySystemHandleInformationWindow::HandlesListWhenBar(Bar& pBar)
 {
 	pBar.Add("Close Handle", THISBACK(CloseRemoteHandleClicked));
@@ -78,6 +86,7 @@ void CrySystemHandleInformationWindow::HandlesListWhenBar(Bar& pBar)
 	}
 }
 
+// Closes the selected handle.
 void CrySystemHandleInformationWindow::CloseRemoteHandleClicked()
 {
 	if (!CloseRemoteHandle(mMemoryScanner->GetHandle(), (HANDLE)mHandleCollection[this->mOpenHandles.GetCursor()].Handle))
@@ -89,6 +98,7 @@ void CrySystemHandleInformationWindow::CloseRemoteHandleClicked()
 	this->Initialize();
 }
 
+// Opens a new dialog that shows the string representation of all access masks applied to the selected handle.
 void CrySystemHandleInformationWindow::ViewAccessButtonClicked()
 {
 	const int row = this->mOpenHandles.GetCursor();
@@ -97,12 +107,14 @@ void CrySystemHandleInformationWindow::ViewAccessButtonClicked()
 	delete cshamw;
 }
 
+// Executed when the user closes the handles window.
 void CrySystemHandleInformationWindow::CloseButtonClicked()
 {
 	mHandleCollection.Clear();
 	this->Close();
 }
 
+// Initializes the window: retrieves and formats handle information.
 void CrySystemHandleInformationWindow::Initialize()
 {
 	// Clear the list.

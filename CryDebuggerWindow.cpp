@@ -11,6 +11,7 @@ int BreakpointMasterIndex = 0;
 
 // ---------------------------------------------------------------------------------------------
 
+// Gets the string representation of the address of a breakpoint.
 String GetBreakpointAddress(const int index)
 {
 #ifdef _WIN64
@@ -27,11 +28,13 @@ String GetBreakpointAddress(const int index)
 #endif
 }
 
+// Gets the number of hits for a specified breakpoint.
 String GetBreakpointHitCount(const int index)
 {
 	return FormatInt((*mDebugger)[index].HitCount);
 }
 
+// Gets the string representation of an address in the stack snapshot.
 String GetStackViewAddress(const int index)
 {
 #ifdef _WIN64
@@ -48,6 +51,7 @@ String GetStackViewAddress(const int index)
 #endif
 }
 
+// Gets the string representation of the value at a specific place in the stack memory.
 String GetStackViewValue(const int index)
 {
 #ifdef _WIN64
@@ -73,6 +77,7 @@ String GetStackViewValue(const int index)
 #endif
 }
 
+// Gets the function call, possibly resolved using debug symbols.
 String GetCallStackFunctionCall(const int index)
 {
 	// Due to synchronization problems that occur very rarely, we need to work around a possible
@@ -84,19 +89,32 @@ String GetCallStackFunctionCall(const int index)
 		const Win32ModuleInformation* mod = NULL;
 		if (mod = mModuleManager->GetModuleFromContainedAddress((SIZE_T)address))
 		{
+			// Find the module that contains this address.
 			String modName = mModuleManager->GetModuleFilename(mod->BaseAddress);
 			char symbolName[MAX_PATH];
 			if (GetSingleSymbolName(mMemoryScanner->GetHandle(), (SIZE_T)address, symbolName, MAX_PATH))
 			{
+				// Using debug symbols, we found the actual name of the function. Great!
 				return Format("%s!%s", modName, symbolName);
 			}
 			else
 			{
-				return Format("%s!%llX", modName, (LONG_PTR)address);
+				// Try to resolve the function address to an imported function name.
+				String functionName;
+				if (LoadedProcessPEInformation.FindImportedFunctionAddress((SIZE_T)address, functionName))
+				{
+					return Format("%s!%s", modName, functionName);
+				}
+				else
+				{
+					// We know in which module the function resides, but we don't know the name.
+					return Format("%s!%llX", modName, (LONG_PTR)address);
+				}
 			}
 		}
 		else
 		{
+			// We couldn't locate the module containing this address.
 			return FormatInt64HexUpper((LONG_PTR)address);
 		}
 	}
@@ -108,6 +126,7 @@ String GetCallStackFunctionCall(const int index)
 
 // ---------------------------------------------------------------------------------------------
 
+// The CryDebuggerWindow default constructor.
 CryDebuggerWindow::CryDebuggerWindow()
 {
 	this->AddFrame(mToolStrip);
@@ -132,6 +151,7 @@ CryDebuggerWindow::CryDebuggerWindow()
 	this->mDebuggerHitView.SetTooltip("Click to follow in disassembler.");
 }
 
+// The CryDebuggerWindow default destructor.
 CryDebuggerWindow::~CryDebuggerWindow()
 {
 	if (mDebugger)
@@ -140,17 +160,20 @@ CryDebuggerWindow::~CryDebuggerWindow()
 	}
 }
 
+// Populates the toolstrip.
 void CryDebuggerWindow::ToolStrip(Bar& pBar)
 {
 	const bool elegible = mDebugger && mDebugger->GetBreakpointCount() > 0;
 	pBar.Add(elegible, "Clear Breakpoints", CrySearchIml::ClearBreakpointsSmall(), THISBACK(DebuggerClearBreakpoints));
 }
 
+// Initializes the debugger window.
 void CryDebuggerWindow::Initialize()
 {
 	mDebugger->DebuggerEventOccured = THISBACK(DebuggerEventOccured);
 }
 
+// Executed when the user changes the selection of a breakpoint.
 void CryDebuggerWindow::BreakpointSelectionChanged()
 {
 	BreakpointMasterIndex = this->mBreakpointsHitList.GetCursor();
@@ -167,6 +190,7 @@ void CryDebuggerWindow::BreakpointSelectionChanged()
 	this->mToolStrip.Set(THISBACK(ToolStrip));
 }
 
+// Executed when the user right clicks the breakpoint list.
 void CryDebuggerWindow::BreakpointListRightClick(Bar& pBar)
 {
 	if (mDebugger->IsDebuggerAttached())
@@ -180,6 +204,7 @@ void CryDebuggerWindow::BreakpointListRightClick(Bar& pBar)
 	}
 }
 
+// Executed when the user right clicks the call stack.
 void CryDebuggerWindow::CallStackListRightClick(Bar& pBar)
 {
 	if (mDebugger->IsDebuggerAttached())
@@ -192,18 +217,21 @@ void CryDebuggerWindow::CallStackListRightClick(Bar& pBar)
 	}
 }
 
+// Jumps to disassembly view, selecting the address selected in the stack trace.
 void CryDebuggerWindow::FollowStackTraceInDisassembler()
 {
 	mCrySearchWindowManager->GetDisasmWindow()->MoveToAddress((SIZE_T)(*mDebugger)[BreakpointMasterIndex].BreakpointSnapshot.CallStackView[this->mCallStackView.GetCursor()]);
 	mCrySearchWindowManager->GetParentWindow()->SetActiveTabWindow("Disassembly");
 }
 
+// Disables the selected breakpoint.
 void CryDebuggerWindow::DisableBreakpointButtonClicked()
 {
 	const int cursor = this->mBreakpointsHitList.GetCursor();
 	mDebugger->DisableBreakpoint((*mDebugger)[cursor].Address);
 }
 
+// Removes the selected breakpoint.
 void CryDebuggerWindow::RemoveBreakpointButtonClicked()
 {
 	const int cursor = this->mBreakpointsHitList.GetCursor();
@@ -211,6 +239,7 @@ void CryDebuggerWindow::RemoveBreakpointButtonClicked()
 	mDebugger->RemoveBreakpoint((*mDebugger)[cursor].Address);
 }
 
+// Releases all used resources in this window, making it ready to close.
 void CryDebuggerWindow::Cleanup()
 {
 	this->mBreakpointsHitList.Clear();
@@ -220,11 +249,13 @@ void CryDebuggerWindow::Cleanup()
 	this->mCallStackView.SetVirtualCount(0);
 }
 
+// Executed when the debugger subsystem returned an error.
 void CryDebuggerWindow::DebuggerEventOccured(DebugEvent event, void* param)
 {
 	PostCallback(THISBACK2(DebuggerEventOccuredThreadsafe, event, param));
 }
 
+// Creates the stack view when a breakpoint is hit.
 void CryDebuggerWindow::DynamicCreateStackView()
 {
 	if ((*mDebugger)[(int)BreakpointMasterIndex].HitCount)
@@ -244,6 +275,7 @@ void CryDebuggerWindow::DynamicCreateStackView()
 	}
 }
 
+// Thread-safe dispatch function for the error event.
 void CryDebuggerWindow::DebuggerEventOccuredThreadsafe(DebugEvent event, void* param)
 {
 	switch (event)

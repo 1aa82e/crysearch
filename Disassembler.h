@@ -11,7 +11,7 @@ using namespace Upp;
 #include "MemoryScanner.h"
 
 // Using the old version of BeaEngine or the new v5 one (dev)?
-//#define BEA_USE_V4
+#define BEA_USE_V4
 
 #ifdef BEA_USE_V4
 	#include "BeaEngine/BeaEngine v4/include/BeaEngine.h"

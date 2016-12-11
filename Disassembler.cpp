@@ -311,6 +311,7 @@ String DisasmGetLineEx(const SIZE_T address, ArchitectureDefinitions architectur
 				// Is the instruction actually an unconditional jump? If so, match the address to thunk addresses in the import table.
 				if (thunk.Instruction.BranchType == JmpType)
 				{
+					// Try to resolve the function address to an imported function name.
 					if (LoadedProcessPEInformation.FindImportedFunctionAddress((SIZE_T)thunk.Argument1.Memory.Displacement, functionName))
 					{
 						// The instruction refers to an imported function.
