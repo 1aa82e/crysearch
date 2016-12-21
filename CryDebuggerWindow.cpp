@@ -99,11 +99,15 @@ String GetCallStackFunctionCall(const int index)
 			}
 			else
 			{
-				// Try to resolve the function address to an imported function name.
+				// Try to resolve the call stack address to an imported function address.
 				String functionName;
-				if (LoadedProcessPEInformation.FindImportedFunctionAddress((SIZE_T)address, functionName))
+				const SIZE_T funcAddr = LoadedProcessPEInformation.FindImportedFunctionAddressEx((SIZE_T)address, mod, functionName);
+				if (funcAddr)
 				{
-					return Format("%s!%s", modName, functionName);
+					// A function was found, calculate the offset, which is a guess. We use a constant function length.
+					// Since imports are sorted by function address in the import address table, and the function finder
+					// function is linear, the chance that the correct function is selected is very fair.
+					return Format("%s!%s+%lX", modName, functionName, (LONG_PTR)(address - funcAddr));
 				}
 				else
 				{

@@ -11,8 +11,11 @@ using namespace Upp;
 #include "MemoryScanner.h"
 
 // Using the old version of BeaEngine or the new v5 one (dev)?
-#define BEA_USE_V4
+#ifdef _WIN64
+	#define BEA_USE_V4
+#endif
 
+// Are we using the conventional (unfortunately detected as malware by Windows Defender) version of BeaEngine or the new one?
 #ifdef BEA_USE_V4
 	#include "BeaEngine/BeaEngine v4/include/BeaEngine.h"
 #else
@@ -39,12 +42,14 @@ extern "C"
 {
 #endif
 
+// C++ wrapper around the Disasm function, which is written in C.
 const int __stdcall CryDisasm(LPDISASM lpDisasm);
 
 #ifdef _cplusplus
 }
 #endif
 
+// Specifies the maximum length of an instruction in both x86 and x64.
 #ifdef _WIN64
 	#define ASM_LINE_MAX_BYTES 19
 #else

@@ -750,6 +750,8 @@ void PortableExecutable32::GetImportAddressTable() const
         
         if (modBaseAddr)
         {
+            impDesc.ModulePointer = modBaseAddr;
+            
             Byte* const dllBuffer = new Byte[0x400];
             CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)modBaseAddr->BaseAddress, dllBuffer, 0x400, NULL);
            
@@ -775,7 +777,7 @@ void PortableExecutable32::GetImportAddressTable() const
 				{
 					// Read current thunk into local memory.
 					CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(this->mBaseAddress + pDesc.OriginalFirstThunk + count * sizeof(DWORD)), &thunk, sizeof(IMAGE_THUNK_DATA32), NULL);
-	
+					
 					ImportAddressTableEntry funcEntry;
 	
 					// Check for 32-bit ordinal magic flag.
@@ -1645,6 +1647,8 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 	        
 			if (modBaseAddr)
 			{
+				impDesc.ModulePointer = modBaseAddr;
+				
 	            Byte* const dllBuffer = new Byte[0x400];
 	            CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)modBaseAddr->BaseAddress, dllBuffer, 0x400, NULL);
 	           

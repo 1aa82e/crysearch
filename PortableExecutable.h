@@ -70,6 +70,7 @@ struct ImportTableDescriptor : Moveable<ImportTableDescriptor>
 {
 	String ModuleName;
 	Vector<ImportAddressTableEntry> FunctionList;
+	const Win32ModuleInformation* ModulePointer;
 	
 	// Logical base address of a possibly virtualized API. If the module is not virtualized, this field is 0.
 	SIZE_T LogicalBaseAddress;
@@ -86,6 +87,9 @@ struct Win32DotNetInformation
 	DWORD MetadataHeaderOffset;
 	Vector<Win32DotNetSectionInformation> DotNetSections;
 };
+
+// Threshold value for the maximum length of a function to look for.
+#define FUNCTION_RUNLENGTH_THRESHOLD	0x100
 
 // Represents a pointable struct that contains all PE information of a loaded process.
 struct Win32PEInformation
@@ -129,6 +133,33 @@ struct Win32PEInformation
 		
 		// No function was found at the specified address.
 		return false;
+	};
+	
+	// Looks for an imported function at a specified address, taking the function length into account.
+	const SIZE_T FindImportedFunctionAddressEx(const SIZE_T address, const Win32ModuleInformation* const mod, String& function) const
+	{
+		// Walk through the import table descriptors.
+		for (auto const& iat : this->ImportAddressTable)
+		{
+			// We only want to search the module we know for functions.
+			if (iat.ModulePointer == mod)
+			{
+				// Walk through the functions in this descriptor.
+				for (auto const& f : iat.FunctionList)
+				{
+					// Check whether a function in the function list matches the specified address.
+					if (address >= f.ThunkAddress && address < f.ThunkAddress + FUNCTION_RUNLENGTH_THRESHOLD)
+					{
+						// Return the guessed function address.
+						function = f.FunctionName;
+						return f.ThunkAddress;
+					}
+				}
+			}
+		}
+		
+		// No function was found at the specified address.
+		return 0;
 	};
 };
 
