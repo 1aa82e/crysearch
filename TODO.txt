@@ -8,9 +8,6 @@ Package:
 - Update wiki with changes for the release.
 ------------------------------------------------------------------
 
-- Also let call stack resolve to intermodular calls / IAT?
-	- Hmm, doesn't quite work yet!
-
 - Current way of disassembling may cause inconsistencies;
 	- Temporarely fixed by 1 thread.
 - Still need to fix shitloads of stuff in the import table parser, sanity checks missing everywhere;
