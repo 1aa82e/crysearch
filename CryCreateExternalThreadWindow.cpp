@@ -1,6 +1,7 @@
 #include "CryCreateExternalThreadWindow.h"
 #include "BackendGlobalDef.h"
 
+// CryCreateExternalThreadWindow default constructor.
 CryCreateExternalThreadWindow::CryCreateExternalThreadWindow(CreateNewThreadStruct* outStructDataPtr, const Image& icon) : CryDialogTemplate(icon)
 {
 	this->outStructDataPtr = outStructDataPtr;
@@ -11,21 +12,23 @@ CryCreateExternalThreadWindow::CryCreateExternalThreadWindow(CreateNewThreadStru
 	this->mCancel <<= THISBACK(CancelButton);
 	
 	*this
-		<< this->mOk.Ok().SetLabel("OK").RightPosZ(5, 60).BottomPosZ(5, 20)
-		<< this->mCancel.SetLabel("Cancel").RightPosZ(70, 60).BottomPosZ(5, 20)
+		<< this->mOk.Ok().SetLabel("OK").RightPos(5, 70).BottomPosZ(5, 20)
+		<< this->mCancel.SetLabel("Cancel").RightPos(80, 70).BottomPosZ(5, 20)
 		<< this->mStartAddressDescriptor.SetLabel("Start address (Hex):").LeftPosZ(5, 140).TopPosZ(5, 20)
 		<< this->mStartAddressEditField.HSizePosZ(150, 5).TopPosZ(5, 20)
 		<< this->mParameterDescriptor.SetLabel("Parameter pointer (Hex):").LeftPosZ(5, 140).TopPosZ(30, 20)
 		<< this->mParameterEditField.HSizePosZ(150, 5).TopPosZ(30, 20)
-		<< this->mStartSuspended.SetLabel("Start thread in suspended state").HSizePosZ(5, 5).TopPosZ(60, 20)
+		<< this->mStartSuspended.SetLabel("Start thread in suspended state").HSizePosZ(5, 5).TopPos(80, 25)
 	;
 }
 
+// CryCreateExternalThreadWindow default destructor.
 CryCreateExternalThreadWindow::~CryCreateExternalThreadWindow()
 {
 	
 }
 
+// Executed when the user accepts the dialog input.
 void CryCreateExternalThreadWindow::OkButton()
 {
 	String addrField = this->mStartAddressEditField.GetText().ToString();
@@ -86,7 +89,7 @@ void CryCreateExternalThreadWindow::OkButton()
 		{
 			Prompt("Input Error", CtrlImg::error(), "The specified start address is incorrect. Please enter a hexadecimal value.", "OK");
 			return;
-		}		
+		}
 	}
 
 	// Check if the parameter is specified. If not, display a warning.
@@ -108,14 +111,16 @@ void CryCreateExternalThreadWindow::OkButton()
 		this->outStructDataPtr->ParameterPointer = (void*)ScanInt64(this->mParameterEditField.GetText().ToString(), NULL, 16);
 #else
 		this->outStructDataPtr->ParameterPointer = (void*)ScanInt(this->mParameterEditField.GetText().ToString(), NULL, 16);
-#endif		
+#endif	
 	}
-
+	
+	// Do we need the thread to start in suspended state?
 	this->outStructDataPtr->StartSuspended = this->mStartSuspended ? TRUE : FALSE;
 	
 	this->AcceptBreak(10);
 }
 
+// Executed when the user closes the dialog without accepting the input.
 void CryCreateExternalThreadWindow::CancelButton()
 {
 	this->Close();

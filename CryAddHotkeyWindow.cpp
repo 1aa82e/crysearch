@@ -71,11 +71,11 @@ CryAddHotkeyWindow::CryAddHotkeyWindow(CrySearchHotKey* entry, const Image& icon
 	*this
 		<< this->mHotkeyActionDescription.SetLabel("Action:").LeftPos(5, 75).TopPos(5, 20)
 		<< this->mHotkeyAction.Add("Refresh search results, changed value").Add("Refresh search results, unchanged value")
-			.Add("Refresh search results, increased value").Add("Refresh search results, decreased value").HSizePos(80, 5).TopPos(5, 20)
-		<< this->mHotkeyDescription.SetLabel("Hotkey").LeftPos(5, 75).TopPos(30, 20)
-		<< this->mHotkey.HSizePos(80, 5).TopPos(30, 20)
-		<< this->mOK.Ok().SetLabel("OK").RightPos(5, 60).BottomPos(5, 20)
-		<< this->mCancel.SetLabel("Cancel").RightPos(70, 60).BottomPos(5, 20)
+			.Add("Refresh search results, increased value").Add("Refresh search results, decreased value").HSizePos(80, 5).TopPos(5, 25)
+		<< this->mHotkeyDescription.SetLabel("Hotkey").LeftPos(5, 75).TopPos(35, 25)
+		<< this->mHotkey.HSizePos(80, 5).TopPos(35, 25)
+		<< this->mOK.Ok().SetLabel("OK").RightPos(5, 70).BottomPos(5, 25)
+		<< this->mCancel.SetLabel("Cancel").RightPos(80, 70).BottomPos(5, 25)
 	;
 	
 	for (unsigned int i = 0; i < sizeof(HotkeyLookupTable) / sizeof(HotkeyLookupTable[0]); i++)

@@ -1,6 +1,7 @@
 #include "CryPlaceIATHookWindow.h"
 #include "BackendGlobalDef.h"
 
+// CryPlaceIATHookWindow default constructor.
 CryPlaceIATHookWindow::CryPlaceIATHookWindow(SIZE_T* const pAddress, const Image& icon) : CryDialogTemplate(icon)
 {
 	this->mAddress = pAddress;
@@ -12,16 +13,18 @@ CryPlaceIATHookWindow::CryPlaceIATHookWindow(SIZE_T* const pAddress, const Image
 	*this
 		<< this->mAddressDescription.SetLabel("Detour Address:").HSizePos(5, 5).TopPos(5, 25)
 		<< this->mAddressInput.HSizePos(130, 5).TopPos(5, 25)
-		<< this->mOk.Ok().SetLabel("OK").RightPos(5, 60).BottomPos(5, 25)
-		<< this->mCancel.SetLabel("Cancel").RightPos(70, 60).BottomPos(5, 25)
+		<< this->mOk.Ok().SetLabel("OK").RightPos(5, 70).BottomPos(5, 25)
+		<< this->mCancel.SetLabel("Cancel").RightPos(80, 70).BottomPos(5, 25)
 	;
 }
 
+// CryPlaceIATHookWindow default destructor.
 CryPlaceIATHookWindow::~CryPlaceIATHookWindow()
 {
 	
 }
 
+// Executed when the user accepts the dialog input.
 void CryPlaceIATHookWindow::DialogOkay()
 {
 	// Check whether the input is not empty or retarded.
@@ -43,6 +46,7 @@ void CryPlaceIATHookWindow::DialogOkay()
 	this->AcceptBreak(10);
 }
 
+// Executed when the user closes the dialog without accepting the input.
 void CryPlaceIATHookWindow::DialogCancel()
 {
 	this->Close();

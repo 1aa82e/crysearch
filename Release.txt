@@ -14,6 +14,7 @@ v2.11:
 	- Fixed byte masking for the signature generation window:
 		- Control transfer instructions and instructions with an immediate value are masked;
 		- 
+	- Improved some cosmetics for windows and controls.
 
 v2.10:
 	- Added right-click option to dump heaps in heap walk dialog (whatever is readable from the memory of the heap will be dumped);

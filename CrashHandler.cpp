@@ -16,8 +16,8 @@ CryCrashHandlerWindow::CryCrashHandlerWindow(const String& excMsg)
 		<< this->mErrorImage.SetImage(CtrlImg::error()).LeftPos(10, 50).TopPos(10, 50)
 		<< this->mDescriptionLabel.SetLabel("An error has occured inside CrySearch. The information\r\nin this crash report can be used to inform the developer\r\nabout a bug or malfunction.").HSizePos(70, 5).TopPos(10, 60)
 		<< this->mCrashReport.SetEditable(false).HSizePos(5, 5).VSizePos(70, 35)
-		<< this->mOk.Ok().SetLabel("OK").RightPos(5, 60).BottomPos(5, 25)
-		<< this->mCopyToClipboard.SetLabel("Copy to Clipboard").RightPos(70, 125).BottomPos(5, 25)
+		<< this->mOk.Ok().SetLabel("OK").RightPos(5, 70).BottomPos(5, 25)
+		<< this->mCopyToClipboard.SetLabel("Copy to Clipboard").LeftPos(5, 150).BottomPos(5, 25)
 	;
 	
 	this->mOk <<= THISBACK(CloseWindow);

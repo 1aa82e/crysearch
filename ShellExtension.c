@@ -54,8 +54,10 @@ const BOOL RegisterAddressTableExtension()
 			strcat_s(action, 20, (char*)appname);
 		}
 		
+		// Compose the registry key path.
 		CreatePathCommand(extension, action, pathCommand);
 		
+		// Set the correct value.
 		RegSetValueEx(key, NULL, 0, REG_SZ, (char*)fileDesc, (DWORD)strlen((char*)fileDesc));
 		RegCloseKey(key);
 		

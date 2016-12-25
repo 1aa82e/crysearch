@@ -20,7 +20,7 @@ CryByteArrayGenerationWindow::CryByteArrayGenerationWindow(const Vector<int>& ro
 		<< this->mCSharpStyleSection.SetLabel("C#").HSizePos(5, 5).TopPos(55, 45)
 		<< this->mCSharpStyle.SetLabel("Byte-array:").LeftPos(10, 80).TopPos(70, 25)
 		<< this->mCSharpStyleSig.SetEditable(false).HSizePos(90, 10).TopPos(70, 25)
-		<< this->mClose.SetLabel("Close").RightPos(5, 60).BottomPos(5, 25)
+		<< this->mClose.SetLabel("Close").RightPos(5, 70).BottomPos(5, 25)
 	;
 	
 	// Retrieve byte sets that are selected.

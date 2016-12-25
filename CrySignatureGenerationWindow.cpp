@@ -21,7 +21,7 @@ CrySignatureGenerationWindow::CrySignatureGenerationWindow(const Vector<int>& ro
 		<< this->mBytesStyleSection.SetLabel("Bytes style").HSizePos(5, 5).TopPos(90, 50)
 		<< this->mBytesStyle.SetLabel("Signature:").LeftPos(10, 80).TopPos(110, 25)
 		<< this->mBytesStyleSig.SetEditable(false).HSizePos(90, 10).TopPos(110, 25)
-		<< this->mClose.SetLabel("Close").RightPos(5, 60).BottomPos(5, 25)
+		<< this->mClose.SetLabel("Close").RightPos(5, 70).BottomPos(5, 25)
 	;
 	
 	// Retrieve byte sets that are selected.

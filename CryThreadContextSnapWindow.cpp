@@ -1,6 +1,7 @@
 #include "CryThreadContextSnapWindow.h"
 #include "BackendGlobalDef.h"
 
+// CryThreadContextSnapWindow default constructor.
 CryThreadContextSnapWindow::CryThreadContextSnapWindow(const Image& icon, const int threadId) : CryDialogTemplate(icon)
 {
 	this->mThreadId = threadId;
@@ -11,8 +12,8 @@ CryThreadContextSnapWindow::CryThreadContextSnapWindow(const Image& icon, const 
 	
 	*this
 		<< this->mContextValues.HSizePos(5, 5).VSizePos(5, 35)
-		<< this->mRefresh.SetLabel("Refresh").RightPos(70, 60).BottomPos(5, 25)
-		<< this->mClose.SetLabel("Close").RightPos(5, 60).BottomPos(5, 25)
+		<< this->mRefresh.SetLabel("Refresh").RightPos(80, 70).BottomPos(5, 25)
+		<< this->mClose.SetLabel("Close").RightPos(5, 70).BottomPos(5, 25)
 	;
 	
 	this->mContextValues.CryAddColumn("Field");
@@ -22,17 +23,20 @@ CryThreadContextSnapWindow::CryThreadContextSnapWindow(const Image& icon, const 
 	this->RefreshSnapshot();
 }
 
+// CryThreadContextSnapWindow default destructor.
 CryThreadContextSnapWindow::~CryThreadContextSnapWindow()
 {
 	
 }
 
+// Refreshes the thread context snapshot.
 void CryThreadContextSnapWindow::RefreshSnapshot()
 {
 	// Clear old data.
 	this->mContextValues.Clear();
 	
 #ifdef _WIN64
+	// Query the thread context.
 	if (mMemoryScanner->IsX86Process())
 	{
 		WOW64_CONTEXT ctx;
@@ -110,6 +114,7 @@ void CryThreadContextSnapWindow::RefreshSnapshot()
 #endif
 }
 
+// Executed when the user closes the dialog.
 void CryThreadContextSnapWindow::CloseWindow()
 {
 	this->Close();

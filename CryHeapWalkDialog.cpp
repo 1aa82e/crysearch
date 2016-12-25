@@ -19,7 +19,7 @@ CryHeapWalkDialog::CryHeapWalkDialog(const Image& icon) : CryDialogTemplate(icon
 	*this
 		<< this->mHeapList.HSizePos(5, 5).VSizePos(5, 35)
 		<< this->mHeapCount.LeftPos(5, 100).BottomPos(5, 25)
-		<< this->mClose.SetLabel("Close").RightPos(5, 60).BottomPos(5, 25)
+		<< this->mClose.SetLabel("Close").RightPos(5, 70).BottomPos(5, 25)
 	;
 	
 	// Call heap enumeration function and put data inside UI parts to visualize.

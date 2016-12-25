@@ -14,6 +14,7 @@ struct RegisterNameOffsetMapping
 };
 
 #ifdef _WIN64
+	// Lookup table for resolving 32-bit registers to names.
 	RegisterNameOffsetMapping RegisterMapping32LookupTable[] =
 	{
 		{ "EAX", offsetof(WOW64_CONTEXT, Eax) },
@@ -27,6 +28,7 @@ struct RegisterNameOffsetMapping
 		{ "EIP", offsetof(WOW64_CONTEXT, Eip) }
 	};
 	
+	// Lookup table for resolving 64-bit registers to names.
 	RegisterNameOffsetMapping RegisterMapping64LookupTable[] =
 	{
 		{ "RAX", offsetof(CONTEXT, Rax) },
@@ -48,6 +50,7 @@ struct RegisterNameOffsetMapping
 		{ "R15", offsetof(CONTEXT, R15) }
 	};
 #else
+	// Lookup table for resolving 32-bit registers to names.
 	RegisterNameOffsetMapping RegisterMapping32LookupTable[] =
 	{
 		{ "EAX", offsetof(CONTEXT, Eax) },
@@ -64,6 +67,7 @@ struct RegisterNameOffsetMapping
 
 // ---------------------------------------------------------------------------------------------
 
+// Gets the name of the selected register.
 String GetRegisterName(const int index)
 {
 #ifdef _WIN64
@@ -80,6 +84,7 @@ String GetRegisterName(const int index)
 #endif
 }
 
+// Gets a string representation of the value of a specific register.
 String GetRegisterValue(const int index)
 {
 #ifdef _WIN64
@@ -98,6 +103,7 @@ String GetRegisterValue(const int index)
 
 // ---------------------------------------------------------------------------------------------
 
+// CryDebuggerHitView default constructor.
 CryDebuggerHitView::CryDebuggerHitView()
 {
 	*this
@@ -113,6 +119,7 @@ CryDebuggerHitView::CryDebuggerHitView()
 	this->disasmAddress = 0;
 }
 
+// CryDebuggerHitView default destructor.
 CryDebuggerHitView::~CryDebuggerHitView()
 {
 	
@@ -173,6 +180,7 @@ void CryDebuggerHitView::HitInstructionClicked()
 {
 	if (this->disasmAddress)
 	{
+		// Selects the disassembly window to be active and jumps to the hit instruction.
 		mCrySearchWindowManager->GetDisasmWindow()->MoveToAddress(this->disasmAddress);
 		mCrySearchWindowManager->GetParentWindow()->SetActiveTabWindow("Disassembly");
 	}

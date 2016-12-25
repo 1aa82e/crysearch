@@ -2,6 +2,7 @@
 #include "ImlProvider.h"
 #include "BackendGlobalDef.h"
 
+// CryThreadInformationBlockWindow default constructor.
 CryThreadInformationBlockWindow::CryThreadInformationBlockWindow(const int threadId) : CryDialogTemplate(CrySearchIml::AboutButton())
 {
 	this->Title("Thread Information").Sizeable().SetRect(0, 0, 400, 300);
@@ -11,7 +12,7 @@ CryThreadInformationBlockWindow::CryThreadInformationBlockWindow(const int threa
 	*this
 		<< this->mThreadWindowDescription.SetLabel(Format("Viewing thread environment block for thread: %X", threadId)).HSizePos(5, 5).TopPos(5, 25)
 		<< this->mThreadInfo.HSizePos(5, 5).VSizePos(35, 35)
-		<< this->mOk.Ok().SetLabel("OK").RightPos(5, 60).BottomPos(5, 25)
+		<< this->mOk.Ok().SetLabel("OK").RightPos(5, 70).BottomPos(5, 25)
 	;
 	
 	// Start retrieving information from thread environment block.
@@ -58,6 +59,13 @@ CryThreadInformationBlockWindow::CryThreadInformationBlockWindow(const int threa
 	CloseHandle(hThread);
 }
 
+// CryThreadInformationBlockWindow default destructor.
+CryThreadInformationBlockWindow::~CryThreadInformationBlockWindow()
+{
+	
+}
+
+// Initializes the window with 32-bit TEB fields and values.
 void CryThreadInformationBlockWindow::Initialize32(const TEB32* tib)
 {
 	this->mThreadInfo.Add("TEB Address", Format("%lX", (LONG_PTR)tib->NtTib.Self));
@@ -127,6 +135,7 @@ void CryThreadInformationBlockWindow::Initialize32(const TEB32* tib)
 }
 
 #ifdef _WIN64
+	// Initializes the window with 64-bit TEB fields and values.
 	void CryThreadInformationBlockWindow::Initialize64(const TEB* tib)
 	{
 		this->mThreadInfo.Add("TEB Address", Format("%llX", (LONG_PTR)tib->NtTib.Self));
@@ -198,11 +207,7 @@ void CryThreadInformationBlockWindow::Initialize32(const TEB32* tib)
 	}
 #endif
 
-CryThreadInformationBlockWindow::~CryThreadInformationBlockWindow()
-{
-	
-}
-
+// Executed when the user closes the dialog.
 void CryThreadInformationBlockWindow::DialogClose()
 {
 	this->Close();

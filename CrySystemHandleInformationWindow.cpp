@@ -55,7 +55,7 @@ CrySystemHandleInformationWindow::CrySystemHandleInformationWindow(const Image& 
 	*this
 		<< this->mOpenHandles.HSizePos(5, 5).VSizePos(5, 35)
 		<< this->mTotalHandles.LeftPos(5, 130).BottomPos(5, 25)
-		<< this->mOK.Ok().SetLabel("OK").RightPos(5, 50).BottomPos(5, 25)
+		<< this->mOK.Ok().SetLabel("OK").RightPos(5, 60).BottomPos(5, 25)
 	;
 	
 	this->Initialize();

@@ -1,5 +1,6 @@
 #include "DissectionRowSizeCtrl.h"
 
+// DissectionRowSizeCtrl default constructor.
 DissectionRowSizeCtrl::DissectionRowSizeCtrl()
 {
 	*this
@@ -10,6 +11,7 @@ DissectionRowSizeCtrl::DissectionRowSizeCtrl()
 	this->mCurrentRowDataSize.WhenAction = THISBACK(ValueEntered);
 }
 
+// DissectionRowSizeCtrl default destructor.
 DissectionRowSizeCtrl::~DissectionRowSizeCtrl()
 {
 	

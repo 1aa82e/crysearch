@@ -10,23 +10,23 @@ CryChangeRecordDialog::CryChangeRecordDialog(AddressTable& addrTable, const Vect
 	this->mLoadedEntry = (mode == CRDM_MANUALNEW) ? NULL : const_cast<AddressTableEntry*>(addrTable[rows[0]]);
 	this->mRowArray = &rows;
 	
-	this->SetRect(0, 0, 250, 120);
+	this->SetRect(0, 0, 250, 130);
 	
 	this->mCancel <<= THISBACK(CancelDialog);
 	this->mOk <<= THISBACK(DialogOkay);
 	this->mTypeSelector.WhenAction = THISBACK(BlockSizeSelected);
 	
 	*this
-		<< this->mCancel.SetLabel("Cancel").HSizePos(190, 5).BottomPos(5, 25)
-		<< this->mOk.Ok().SetLabel("OK").HSizePos(130, 60).BottomPos(5, 25)
+		<< this->mCancel.SetLabel("Cancel").RightPos(7, 70).BottomPos(5, 25)
+		<< this->mOk.Ok().SetLabel("OK").RightPos(80, 70).BottomPos(5, 25)
 	;
 	
 	// Begin: window open type specific user interface alter operations.
 	if (mode == CRDM_DESCRIPTION)
 	{
 		*this
-			<< this->mFieldDescription.SetLabel("Description:").HSizePos(5, 100).TopPos(5, 20)
-			<< this->mFieldValue.HSizePos(110, 5).TopPos(5, 20)
+			<< this->mFieldDescription.SetLabel("Description:").HSizePos(5, 100).TopPos(5, 25)
+			<< this->mFieldValue.HSizePos(110, 5).TopPos(5, 25)
 		;
 		
 		this->Title("Change Description");
@@ -35,8 +35,8 @@ CryChangeRecordDialog::CryChangeRecordDialog(AddressTable& addrTable, const Vect
 	else if (mode == CRDM_ADDRESS)
 	{
 		*this
-			<< this->mFieldDescription.SetLabel("Address (Hex):").HSizePos(5, 100).TopPos(5, 20)
-			<< this->mFieldValue.HSizePos(110, 5).TopPos(5, 20)
+			<< this->mFieldDescription.SetLabel("Address (Hex):").HSizePos(5, 100).TopPos(5, 25)
+			<< this->mFieldValue.HSizePos(110, 5).TopPos(5, 25)
 		;
 		
 		this->Title("Change Address");
@@ -62,12 +62,12 @@ CryChangeRecordDialog::CryChangeRecordDialog(AddressTable& addrTable, const Vect
 		
 		// If the window is opened for altering the data type of an entry, add the necessary controls.
 		*this
-			<< this->mFieldDescription.SetLabel("Type:").HSizePos(5, 100).TopPos(5, 20)
+			<< this->mFieldDescription.SetLabel("Type:").HSizePos(5, 100).TopPos(5, 25)
 			<< this->mTypeSelector.Add("Byte").Add("2 Bytes").Add("4 Bytes").Add("8 Bytes").Add("Float").Add("Double")
-				.Add("Array of Bytes").Add("String").HSizePos(92, 5).TopPos(5, 20)
-			<< this->mUnicodeString.SetLabel("Unicode").HSizePos(180, 5).TopPos(30, 20)
-			<< this->mTypeLengthDescription.SetLabel("Length:").HSizePos(5, 100).TopPos(30, 20)
-			<< this->mTypeLength.Min(1).HSizePos(92, 80).TopPos(30, 20)
+				.Add("Array of Bytes").Add("String").HSizePos(92, 5).TopPos(5, 25)
+			<< this->mUnicodeString.SetLabel("Unicode").HSizePos(180, 5).TopPos(35, 25)
+			<< this->mTypeLengthDescription.SetLabel("Length:").HSizePos(5, 100).TopPos(35, 25)
+			<< this->mTypeLength.Min(1).HSizePos(92, 80).TopPos(35, 25)
 		;
 		
 		// Value size depends on the current value type.
@@ -102,14 +102,14 @@ CryChangeRecordDialog::CryChangeRecordDialog(AddressTable& addrTable, const Vect
 		this->Title("Add Address");
 		
 		*this
-			<< this->mFieldDescription.SetLabel("Address (Hex):").HSizePos(5, 100).TopPos(5, 20)
-			<< this->mFieldValue.HSizePos(110, 5).TopPos(5, 20)
-			<< this->mSecondFieldDescription.SetLabel("Type:").HSizePos(5, 100).TopPos(30, 20)
+			<< this->mFieldDescription.SetLabel("Address (Hex):").HSizePos(5, 100).TopPos(5, 25)
+			<< this->mFieldValue.HSizePos(110, 5).TopPos(5, 25)
+			<< this->mSecondFieldDescription.SetLabel("Type:").HSizePos(5, 100).TopPos(35, 25)
 			<< this->mTypeSelector.Add("Byte").Add("2 Bytes").Add("4 Bytes").Add("8 Bytes").Add("Float").Add("Double")
-				.Add("Array of Bytes").Add("String").HSizePos(110, 5).TopPos(30, 20)
-			<< this->mUnicodeString.SetLabel("Unicode").HSizePos(180, 5).TopPos(55, 20)
-			<< this->mTypeLengthDescription.SetLabel("Length:").HSizePos(5, 100).TopPos(55, 20)
-			<< this->mTypeLength.Min(1).HSizePos(110, 80).TopPos(55, 20)
+				.Add("Array of Bytes").Add("String").HSizePos(110, 5).TopPos(35, 25)
+			<< this->mUnicodeString.SetLabel("Unicode").HSizePos(180, 5).TopPos(60, 25)
+			<< this->mTypeLengthDescription.SetLabel("Length:").HSizePos(5, 100).TopPos(60, 25)
+			<< this->mTypeLength.Min(1).HSizePos(110, 80).TopPos(60, 25)
 		;
 		
 		// Manually added addresses will always have 0 as initial length, so 1 needs to be set as minimum.
@@ -125,8 +125,8 @@ CryChangeRecordDialog::CryChangeRecordDialog(AddressTable& addrTable, const Vect
 	else if (mode == CRDM_VALUE)
 	{
 		*this
-			<< this->mFieldDescription.SetLabel("Value:").HSizePos(5, 100).TopPos(5, 20)
-			<< this->mFieldValue.HSizePos(110, 5).TopPos(5, 20)
+			<< this->mFieldDescription.SetLabel("Value:").HSizePos(5, 100).TopPos(5, 25)
+			<< this->mFieldValue.HSizePos(110, 5).TopPos(5, 25)
 		;
 		
 		this->Title("Change Value");
@@ -135,7 +135,7 @@ CryChangeRecordDialog::CryChangeRecordDialog(AddressTable& addrTable, const Vect
 		if (this->mLoadedEntry->ValueType == CRYDATATYPE_BYTE || this->mLoadedEntry->ValueType == CRYDATATYPE_2BYTES ||
 		    this->mLoadedEntry->ValueType == CRYDATATYPE_4BYTES || this->mLoadedEntry->ValueType == CRYDATATYPE_8BYTES)
 		{
-			*this << this->mValueIsHex.SetLabel("Hexadecimal").HSizePos(5, 100).TopPos(30, 20);
+			*this << this->mValueIsHex.SetLabel("Hexadecimal").HSizePos(5, 100).TopPos(35, 25);
 			this->mValueIsHex.WhenAction = THISBACK(ValueModeHexOptionChanged);
 		}
 	}

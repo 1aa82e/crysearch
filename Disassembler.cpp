@@ -67,39 +67,6 @@ String DisasmGetLine(const SIZE_T address, ArchitectureDefinitions architecture,
 	return "";
 }
 
-template <typename T>
-const unsigned int FindValueInBytes(const Byte* const bytes, const unsigned int length, const T value)
-{
-	// Walk the sequence of bytes.
-	for (unsigned int i = 0; i < length; ++i)
-	{
-		// Compare using type-based comparison.
-		if (*(T*)(bytes + i) == value)
-		{
-			return i;
-		}
-	}
-	
-	// Nothing was found!
-	return BYTE_INDEX_NOT_FOUND;
-}
-
-const unsigned int FindValueInBytes(const Byte* const bytes, const unsigned int length, const Byte* const value, const unsigned int valueLength)
-{
-	// Walk the sequence of bytes.
-	for (unsigned int i = 0; i < length; ++i)
-	{
-		// Compare memory using the input value size.
-		if (memcmp(bytes + i, value, valueLength) == 0)
-		{
-			return i;
-		}
-	}
-	
-	// Nothing was found!
-	return BYTE_INDEX_NOT_FOUND;
-}
-
 // Retrieves only the instruction bytes at the specified address. It's wise to input an array of 8 in size for the 'optOutMasking' parameter.
 void DisasmForBytes(const SIZE_T address, ArchitectureDefinitions architecture, ArrayOfBytes* const outAob, Vector<char>* const optOutMasking)
 {

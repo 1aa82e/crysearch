@@ -28,7 +28,7 @@ String GetSymbolPathString(const int index)
 CrySearchSettingsDialog::CrySearchSettingsDialog()
 {
 	this->mSettingsInstance = SettingsFile::GetInstance();
-	this->Title("Settings").Icon(CrySearchIml::SettingsButton).SetRect(0, 0, 420, 330);
+	this->Title("Settings").Icon(CrySearchIml::SettingsButton).SetRect(0, 0, 450, 340);
 	
 	this->mOk <<= THISBACK(SettingsOk);
 	this->mCancel <<= THISBACK(SettingsCancel);
@@ -47,37 +47,37 @@ CrySearchSettingsDialog::CrySearchSettingsDialog()
 	this->mScanningTab
 		<< this->fastScanByDefault.SetLabel("Use a fast scan by default").HSizePos(5, 5).TopPos(0, 20)
 		<< this->mScanProtectionTypes.SetLabel("Protected regions to scan").HSizePos(5, 5).TopPos(25, 45)
-		<< this->scanWritable.SetLabel("Writable").HSizePos(10, 300).TopPos(43, 20)
-		<< this->scanExecutable.SetLabel("Executable").HSizePos(150, 140).TopPos(43, 20)
-		<< this->scanCopyOnWrite.SetLabel("CopyOnWrite").HSizePos(270, 10).TopPos(43, 20)
-		<< this->mScanTypes.SetLabel("Region types to scan").HSizePos(5, 5).TopPos(70, 80)
-		<< this->memPrivate.SetLabel("MEM_PRIVATE").HSizePos(10, 10).TopPos(87, 20)
-		<< this->memImage.SetLabel("MEM_IMAGE").HSizePos(10, 10).TopPos(107, 20)
-		<< this->memMapped.SetLabel("MEM_MAPPED").HSizePos(10, 10).TopPos(127, 20)
-		<< this->mScanThreadProperties.SetLabel("Scanning thread properties").HSizePos(5, 5).TopPos(153, 50)
+		<< this->scanWritable.SetLabel("Writable").HSizePos(10, 300).TopPos(45, 20)
+		<< this->scanExecutable.SetLabel("Executable").HSizePos(150, 140).TopPos(45, 20)
+		<< this->scanCopyOnWrite.SetLabel("CopyOnWrite").HSizePos(270, 10).TopPos(45, 20)
+		<< this->mScanTypes.SetLabel("Region types to scan").HSizePos(5, 5).TopPos(70, 45)
+		<< this->memPrivate.SetLabel("MEM_PRIVATE").HSizePos(10, 300).TopPos(90, 20)
+		<< this->memImage.SetLabel("MEM_IMAGE").HSizePos(150, 140).TopPos(90, 20)
+		<< this->memMapped.SetLabel("MEM_MAPPED").HSizePos(270, 10).TopPos(90, 20)
+		<< this->mScanThreadProperties.SetLabel("Scanning thread properties").HSizePos(5, 5).TopPos(120, 50)
 		<< this->scanningThreadPriorityLabel.SetLabel("Scan worker thread priority:").HSizePos(10, 160)
-			.TopPos(170, 25)
+			.TopPos(140, 25)
 		<< this->scanningThreadPriority.Add("Lowest").Add("Below Normal").Add("Normal").Add("Above Normal")
-			.Add("Highest").HSizePos(210, 10).TopPos(170, 25)
-		<< this->mCrySearchInReadOnlyMode.SetLabel("Enable read-only mode").TopPos(210, 22).HSizePos(10, 10)
+			.Add("Highest").HSizePos(210, 10).TopPos(140, 25)
+		<< this->mCrySearchInReadOnlyMode.SetLabel("Enable read-only mode").TopPos(180, 25).HSizePos(10, 10)
 	;
 	
 	this->mInternalsTab
 		<< this->mAddressTableUpdaterIntervalBox.SetLabel("Address table updater").HSizePos(5, 5).TopPos(0, 47)
 		<< this->mAddressTableUpdaterIntervalDescription.SetLabel("Update Interval:").HSizePos(10, 120).TopPos(18, 25)
 		<< this->mAddressTableUpdaterIntervalEditField.HSizePos(150, 10).TopPos(18, 25)
-		<< this->mRoutinesBox.SetLabel("Routines").HSizePos(5, 5).VSizePos(46, 67)
-		<< this->mOpenProcRoutineSelectorLabel.SetLabel("Opening a process:").HSizePos(10, 90).TopPos(61, 25)
-		<< this->mOpenProcRoutineSelector.Add("OpenProcess (Default)").Add("NtOpenProcess").HSizePos(150, 10).TopPos(61, 25)
-		<< this->mReadMemoryProcRoutineSelectorLabel.SetLabel("Reading memory:").HSizePos(10, 90).TopPos(89, 25)
-		<< this->mReadMemoryProcRoutineSelector.Add("ReadProcessMemory (Default)").Add("NtReadVirtualMemory").HSizePos(150, 10).TopPos(89, 25)
-		<< this->mWriteMemoryProcRoutineSelectorLabel.SetLabel("Writing memory:").HSizePos(10, 90).TopPos(117, 25)
-		<< this->mWriteMemoryProcRoutineSelector.Add("WriteProcessMemory (Default)").Add("NtWriteVirtualMemory").HSizePos(150, 10).TopPos(117, 25)
-		<< this->mProtectMemoryProcRoutineSelectorLabel.SetLabel("Protecting memory:").HSizePos(10, 90).TopPos(145, 25)
-		<< this->mProtectMemoryProcRoutineSelector.Add("VirtualProtectEx (Default)").Add("NtProtectVirtualMemory").HSizePos(150, 10).TopPos(145, 25)
-		<< this->mInjectionBox.SetLabel("Library Injection").HSizePos(5, 5).VSizePos(180, 25)
-		<< this->mInjectionMethodDescriptor.SetLabel("Injection method:").HSizePos(10, 90).TopPos(190, 25)
-		<< this->mInjectionMethod.Add("CreateRemoteThread (Default)").Add("Hijack thread").HSizePos(150, 10).TopPos(190, 25)
+		<< this->mRoutinesBox.SetLabel("Routines").HSizePos(5, 5).VSizePos(50, 80)
+		<< this->mOpenProcRoutineSelectorLabel.SetLabel("Opening a process:").HSizePos(10, 90).TopPos(65, 25)
+		<< this->mOpenProcRoutineSelector.Add("OpenProcess (Default)").Add("NtOpenProcess").HSizePos(150, 10).TopPos(65, 25)
+		<< this->mReadMemoryProcRoutineSelectorLabel.SetLabel("Reading memory:").HSizePos(10, 90).TopPos(95, 25)
+		<< this->mReadMemoryProcRoutineSelector.Add("ReadProcessMemory (Default)").Add("NtReadVirtualMemory").HSizePos(150, 10).TopPos(95, 25)
+		<< this->mWriteMemoryProcRoutineSelectorLabel.SetLabel("Writing memory:").HSizePos(10, 90).TopPos(125, 25)
+		<< this->mWriteMemoryProcRoutineSelector.Add("WriteProcessMemory (Default)").Add("NtWriteVirtualMemory").HSizePos(150, 10).TopPos(125, 25)
+		<< this->mProtectMemoryProcRoutineSelectorLabel.SetLabel("Protecting memory:").HSizePos(10, 90).TopPos(155, 25)
+		<< this->mProtectMemoryProcRoutineSelector.Add("VirtualProtectEx (Default)").Add("NtProtectVirtualMemory").HSizePos(150, 10).TopPos(155, 25)
+		<< this->mInjectionBox.SetLabel("Library Injection").HSizePos(5, 5).BottomPos(30, 45)
+		<< this->mInjectionMethodDescriptor.SetLabel("Injection method:").HSizePos(10, 90).BottomPos(35, 25)
+		<< this->mInjectionMethod.Add("CreateRemoteThread (Default)").Add("Hijack thread").HSizePos(150, 10).BottomPos(35, 25)
 		<< this->mRegisterFileExtensionWithCrySearch.SetLabel("Associate address table files with CrySearch.").HSizePos(5, 5).BottomPos(0, 25)
 	;
 	
@@ -103,8 +103,8 @@ CrySearchSettingsDialog::CrySearchSettingsDialog()
 	
 	*this
 		<< this->mainTabCtrl
-		<< this->mOk.Ok().SetLabel("OK").HSizePos(340, 5).BottomPos(5, 25)
-		<< this->mCancel.SetLabel("Cancel").HSizePos(255, 85).BottomPos(5, 25)
+		<< this->mOk.Ok().SetLabel("OK").HSizePos(350, 5).BottomPos(5, 25)
+		<< this->mCancel.SetLabel("Cancel").HSizePos(250, 105).BottomPos(5, 25)
 	;
 	
 	this->mainTabCtrl.Add(this->mScanningTab.SizePos(), "Scanning");
@@ -112,7 +112,7 @@ CrySearchSettingsDialog::CrySearchSettingsDialog()
 	this->mainTabCtrl.Add(this->mDebuggerTab.SizePos(), "Debugger");
 	this->mainTabCtrl.Add(this->mHotkeysTab.SizePos(), "Hotkeys");
 	this->mainTabCtrl.Add(this->mAdvancedTab.SizePos(), "Advanced");
-	this->mainTabCtrl.SetRect(0, 0, 420, 280);
+	this->mainTabCtrl.SetRect(0, 0, 450, 300);
 	this->Add(mainTabCtrl);
 	
 	// Probe for routine plugins and add their functions to the options.

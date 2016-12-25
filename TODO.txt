@@ -8,6 +8,9 @@ Package:
 - Update wiki with changes for the release.
 ------------------------------------------------------------------
 
+- Bug in getting imports from theide.exe!
+- Possibility to free allocated memory;
+- Sexier text control for code generation window?
 - Current way of disassembling may cause inconsistencies;
 	- Temporarely fixed by 1 thread.
 - Still need to fix shitloads of stuff in the import table parser, sanity checks missing everywhere;
