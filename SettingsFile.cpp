@@ -36,6 +36,7 @@ void SettingsFile::Xmlize(XmlIO& pXml)
 		("DissectionHexView", this->mDissectionHexView)
 		("DissectionEnableTypeGuessing", this->mEnableDissectionTypeGuessing)
 		("HideNonWow64Modules", this->mHideNonWow64Modules)
+		("SignatureMaskingByDefault", this->mSignatureMaskingByDefault)
 	;
 }
 
@@ -76,6 +77,7 @@ void SettingsFile::DefaultSettings()
 	this->SetDissectionHexadecimalView();
 	this->SetEnableDissectionTypeGuessing();
 	this->SetHideNonWow64Modules();
+	this->SetSignatureMaskingByDefault();
 	this->Save();
 }
 

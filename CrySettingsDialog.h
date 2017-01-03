@@ -78,6 +78,7 @@ private:
 	
 	// Advanced tab
 	Option mHideNonWow64ModulesInX64;
+	Option mSignatureDefaultMasking;
 	
 	void LoadSettings();
 	void SaveSettings();

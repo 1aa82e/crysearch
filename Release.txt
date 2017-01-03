@@ -12,8 +12,8 @@ v2.11:
 		- Fixed bug where handles would not be displayed when the name could not be queried;
 		- Now queries mount points using QueryDosDevice to present drive letters rather than native device paths.
 	- Fixed byte masking for the signature generation window:
-		- Control transfer instructions and instructions with an immediate value are masked;
-		- 
+		- Added an option in the signature generation window to choose for automatic masking, and a corresponding default option in the settings window.
+		- Control transfer instructions and instructions with an immediate value are masked.
 	- Improved some cosmetics for windows and controls.
 
 v2.10:

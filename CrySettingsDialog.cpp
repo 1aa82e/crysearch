@@ -99,7 +99,9 @@ CrySearchSettingsDialog::CrySearchSettingsDialog()
 	;
 	
 	this->mAdvancedTab
-		<< this->mHideNonWow64ModulesInX64.SetLabel("Hide non-wow64 modules in x64 mode").HSizePos(5, 5).TopPos(2, 25);
+		<< this->mHideNonWow64ModulesInX64.SetLabel("Hide non-wow64 modules in x64 mode").HSizePos(5, 5).TopPos(5, 25)
+		<< this->mSignatureDefaultMasking.SetLabel("Automatically mask Assembler instruction arguments by default").HSizePos(5, 5).TopPos(30, 25)
+	;
 	
 	*this
 		<< this->mainTabCtrl
@@ -175,6 +177,7 @@ void CrySearchSettingsDialog::LoadSettings()
 	this->dbgCatchAllExceptions = this->mSettingsInstance->GetCatchAllExceptions();
 	this->mCrySearchInReadOnlyMode = this->mSettingsInstance->GetEnableReadOnlyMode();
 	this->mHideNonWow64ModulesInX64 = this->mSettingsInstance->GetHideNonWow64Modules();
+	this->mSignatureDefaultMasking = this->mSettingsInstance->GetSignatureMaskingByDefault();
 	
 	// Based on the loaded settings, make sure the disable/enable options are set correctly.
 	this->InvadeProcessEnablerChanged();
@@ -207,6 +210,7 @@ void CrySearchSettingsDialog::SaveSettings()
 	this->mSettingsInstance->SetInvadeProcess(this->dbgInvadeProcess);
 	this->mSettingsInstance->SetCatchAllExceptions(this->dbgCatchAllExceptions);
 	this->mSettingsInstance->SetHideNonWow64Modules(this->mHideNonWow64ModulesInX64);
+	this->mSettingsInstance->SetSignatureMaskingByDefault(this->mSignatureDefaultMasking);
 	
 	// Check if the read-only option for CrySearch was changed. If it was, inform the user about the fact that
 	// this will be applied when the process is closed and reopened.

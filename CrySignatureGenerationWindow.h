@@ -8,20 +8,24 @@
 class CrySignatureGenerationWindow : public CryDialogTemplate
 {
 private:
+	Vector<char> maskInfo;
+	
 	Button mClose;
 	LabelBox mStringStyleSection;
 	Label mStringStyle;
 	EditField mStringStyleSig;
 	Label mStringMask;
+	Option mShouldMask;
 	EditField mStringMaskSig;
 	LabelBox mBytesStyleSection;
 	Label mBytesStyle;
 	EditField mBytesStyleSig;
 	
 	void CloseWindow();
+	void ShouldMaskToggle();
 	
 	void GenerateEvoStyle(const Vector<Byte>& aobs);
-	void GenerateStringStyle(const Vector<Byte>& aobs, const Vector<char>& mask);
+	void GenerateStringStyle(const Vector<Byte>& aobs);
 	
 	typedef CrySignatureGenerationWindow CLASSNAME;
 public:

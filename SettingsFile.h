@@ -82,6 +82,7 @@ private:
 	Vector<CrySearchHotKey> hotkeys;
 	
 	bool mHideNonWow64Modules;
+	bool mSignatureMaskingByDefault;
 	
 	int mDissectionUpdateInterval;
 	bool mDissectionHexView;
@@ -128,6 +129,7 @@ public:
 	const bool GetInvadeProcess() const							{ return this->mInvadeProcess; }
 	
 	const bool GetHideNonWow64Modules() const					{ return this->mHideNonWow64Modules; }
+	const bool GetSignatureMaskingByDefault() const				{ return this->mSignatureMaskingByDefault; }
 	
 	const int GetDissectionUpdateInterval() const				{ return this->mDissectionUpdateInterval; }
 	const bool GetDissectionHexadecimalView() const				{ return this->mDissectionHexView; }
@@ -163,6 +165,7 @@ public:
 	void SetInvadeProcess(bool value = true)					{ this->mInvadeProcess = value; }
 	
 	void SetHideNonWow64Modules(bool value = true)				{ this->mHideNonWow64Modules = value; }
+	void SetSignatureMaskingByDefault(bool value = true)		{ this->mSignatureMaskingByDefault = value; }
 	
 	void SetDissectionUpdateInterval(int value = 500)			{ this->mDissectionUpdateInterval = value; }
 	void SetDissectionHexadecimalView(bool value = false)		{ this->mDissectionHexView = value; }

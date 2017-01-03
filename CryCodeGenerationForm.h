@@ -2,7 +2,6 @@
 #define _CrySearch_CryCodeGenerationForm_h_
 
 #include <CtrlLib/CtrlLib.h>
-#include <CodeEditor/CodeEditor.h>
 
 #include "CodeGenerator.h"
 

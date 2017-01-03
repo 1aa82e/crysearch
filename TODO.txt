@@ -10,19 +10,15 @@ Package:
 
 - Bug in getting imports from theide.exe!
 - Possibility to free allocated memory;
-- Sexier text control for code generation window?
 - Current way of disassembling may cause inconsistencies;
 	- Temporarely fixed by 1 thread.
 - Still need to fix shitloads of stuff in the import table parser, sanity checks missing everywhere;
 - release notes - buffer overruns;
-
-- Masking partially works, let's fix the rest in the next version: (only displacements left. :))
-	- Just read out the displacement by incrementing the pointer to the start of the displacement then dereferencing the pointer with a type that is the size of the displacement. Add that value to the memory location of the instruction, add instruction size, and you know where it points to.
 - Bug in import table parser, x64, when switching from slack to winamp!
 
 - In disassembly, we can drastically reduce memory usage by only using byte offets to the previous disassembly entry:
 	- exponential time solution though!
-- Resolve to relative offsets too?
+- Guessing for pointer can be done by checking whether it is inside a memory page of the process?
 
 - Follow pointer, many need it!
 - let's build C++11/14 code from the current, and try to reduce the application size!
