@@ -101,6 +101,7 @@ CrySearchSettingsDialog::CrySearchSettingsDialog()
 	this->mAdvancedTab
 		<< this->mHideNonWow64ModulesInX64.SetLabel("Hide non-wow64 modules in x64 mode").HSizePos(5, 5).TopPos(5, 25)
 		<< this->mSignatureDefaultMasking.SetLabel("Automatically mask Assembler instruction arguments by default").HSizePos(5, 5).TopPos(30, 25)
+		<< this->mWarnForPackedExecutable.SetLabel("Warn for possibly packed executable").HSizePos(5, 5).TopPos(55, 25)
 	;
 	
 	*this
@@ -178,6 +179,7 @@ void CrySearchSettingsDialog::LoadSettings()
 	this->mCrySearchInReadOnlyMode = this->mSettingsInstance->GetEnableReadOnlyMode();
 	this->mHideNonWow64ModulesInX64 = this->mSettingsInstance->GetHideNonWow64Modules();
 	this->mSignatureDefaultMasking = this->mSettingsInstance->GetSignatureMaskingByDefault();
+	this->mWarnForPackedExecutable = this->mSettingsInstance->GetWarnForPackedProcess();
 	
 	// Based on the loaded settings, make sure the disable/enable options are set correctly.
 	this->InvadeProcessEnablerChanged();
@@ -211,6 +213,7 @@ void CrySearchSettingsDialog::SaveSettings()
 	this->mSettingsInstance->SetCatchAllExceptions(this->dbgCatchAllExceptions);
 	this->mSettingsInstance->SetHideNonWow64Modules(this->mHideNonWow64ModulesInX64);
 	this->mSettingsInstance->SetSignatureMaskingByDefault(this->mSignatureDefaultMasking);
+	this->mSettingsInstance->SetWarnForPackedProcess(this->mWarnForPackedExecutable);
 	
 	// Check if the read-only option for CrySearch was changed. If it was, inform the user about the fact that
 	// this will be applied when the process is closed and reopened.

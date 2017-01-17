@@ -83,6 +83,7 @@ private:
 	
 	bool mHideNonWow64Modules;
 	bool mSignatureMaskingByDefault;
+	bool mWarnForPackedProcess;
 	
 	int mDissectionUpdateInterval;
 	bool mDissectionHexView;
@@ -130,6 +131,7 @@ public:
 	
 	const bool GetHideNonWow64Modules() const					{ return this->mHideNonWow64Modules; }
 	const bool GetSignatureMaskingByDefault() const				{ return this->mSignatureMaskingByDefault; }
+	const bool GetWarnForPackedProcess() const					{ return this->mWarnForPackedProcess; }
 	
 	const int GetDissectionUpdateInterval() const				{ return this->mDissectionUpdateInterval; }
 	const bool GetDissectionHexadecimalView() const				{ return this->mDissectionHexView; }
@@ -166,6 +168,7 @@ public:
 	
 	void SetHideNonWow64Modules(bool value = true)				{ this->mHideNonWow64Modules = value; }
 	void SetSignatureMaskingByDefault(bool value = true)		{ this->mSignatureMaskingByDefault = value; }
+	void SetWarnForPackedProcess(bool value = true)				{ this->mWarnForPackedProcess = value; }
 	
 	void SetDissectionUpdateInterval(int value = 500)			{ this->mDissectionUpdateInterval = value; }
 	void SetDissectionHexadecimalView(bool value = false)		{ this->mDissectionHexView = value; }

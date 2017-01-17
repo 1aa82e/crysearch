@@ -173,7 +173,7 @@ protected:
 	virtual const char* GetOrdinalFunctionNameFromExportTable(const AddrStruct* addr, const WORD ordinal) const = 0;
 public:
 	virtual void GetExecutablePeInformation() const = 0;
-	virtual void GetImportAddressTable() const = 0;
+	virtual const bool GetImportAddressTable() const = 0;
 	virtual bool PlaceIATHook(const Win32ModuleInformation* modBase, const char* NameOrdinal, const SIZE_T newAddress, bool IsOrdinal) const = 0;
 	virtual bool RestorePEHeaderFromFile(const String& fileName, const Win32ModuleInformation& module) const = 0;
 	virtual bool HideModuleFromProcess(const Win32ModuleInformation& module) const = 0;
@@ -212,7 +212,7 @@ protected:
 	virtual const char* GetOrdinalFunctionNameFromExportTable(const AddrStruct* addr, const WORD ordinal) const;
 public:
 	virtual void GetExecutablePeInformation() const override final;
-	virtual void GetImportAddressTable() const override final;
+	virtual const bool GetImportAddressTable() const override final;
 	virtual bool PlaceIATHook(const Win32ModuleInformation* modBase, const char* NameOrdinal, const SIZE_T newAddress, bool IsOrdinal) const override final;
 	virtual bool RestorePEHeaderFromFile(const String& fileName, const Win32ModuleInformation& module) const override final;
 	virtual bool HideModuleFromProcess(const Win32ModuleInformation& module) const override final;
@@ -235,7 +235,7 @@ public:
 		virtual const char* GetOrdinalFunctionNameFromExportTable(const AddrStruct* addr, const WORD ordinal) const;
 	public:
 		virtual void GetExecutablePeInformation() const override final;
-		virtual void GetImportAddressTable() const override final;
+		virtual const bool GetImportAddressTable() const override final;
 		virtual bool PlaceIATHook(const Win32ModuleInformation* modBase, const char* NameOrdinal, const SIZE_T newAddress, bool IsOrdinal) const override final;
 		virtual bool RestorePEHeaderFromFile(const String& fileName, const Win32ModuleInformation& module) const override final;
 		virtual bool HideModuleFromProcess(const Win32ModuleInformation& module) const override final;

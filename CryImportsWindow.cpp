@@ -294,8 +294,17 @@ void CryImportsWindow::RefreshImports()
 // The imports window initialization function; populates the window.
 void CryImportsWindow::Initialize()
 {
+	// Try to parse the import address table of the target process or one of its modules.
+	const bool succeeded = mPeInstance->GetImportAddressTable();
+	
+	// Did we succeed? In case we did not, the imports were probably parsed, but the target executable may be packed.
+	if (!succeeded && SettingsFile::GetInstance()->GetWarnForPackedProcess())
+	{
+		Prompt("Warning", CtrlImg::exclamation(), "The imports may not have been parsed succesfully, the application may be packed!", "OK");
+	}
+	
+	// Set the user interface to display the imports.
 	const int modCount = mModuleManager->GetModuleCount();
-	mPeInstance->GetImportAddressTable();
 	this->mModulesDropList.SetCount(modCount);
 	const int cursor = this->mModulesDropList.GetIndex();
 	if (modCount > 0)

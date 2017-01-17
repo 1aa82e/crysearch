@@ -79,6 +79,7 @@ private:
 	// Advanced tab
 	Option mHideNonWow64ModulesInX64;
 	Option mSignatureDefaultMasking;
+	Option mWarnForPackedExecutable;
 	
 	void LoadSettings();
 	void SaveSettings();

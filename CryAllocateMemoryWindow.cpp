@@ -14,6 +14,7 @@ CryAllocateMemoryWindow::CryAllocateMemoryWindow(AllocateMemoryDataStruct* dataS
 	*this
 		<< this->mOk.Ok().SetLabel("OK").RightPos(5, 70).BottomPos(5, 25)
 		<< this->mCancel.SetLabel("Cancel").RightPos(80, 70).BottomPos(5, 25)
+		<< this->mViewCurrent.SetLabel("View Pages").LeftPos(5, 90).BottomPos(5, 25)
 		<< this->mMemorySizeDescriptor.SetLabel("Memory Size:").HSizePos(5, 100).TopPos(5, 25)
 		<< this->mMemorySize.HSizePos(110, 5).TopPos(5, 25)
 		<< this->mProtectionFieldDescriptor.SetLabel("Protection:").HSizePos(5, 100).TopPos(35, 25)

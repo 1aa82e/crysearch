@@ -14,10 +14,10 @@
 // Checks whether a RVA points inside a section of the executable. Returns true if so and false if not.
 const bool RVAPointsInsideSection(const DWORD rva)
 {
-	const int count = LoadedProcessPEInformation.ImageSections.GetCount();
-	for (int i = 0; i < count; ++i)
+	// Walk the sections in the target process.
+	for (auto const& section : LoadedProcessPEInformation.ImageSections)
 	{
-		const Win32PESectionInformation& section = LoadedProcessPEInformation.ImageSections[i];
+		// Check if the specified RVA is within the bounds of a section.
 		if (rva > section.BaseAddress && rva < (section.BaseAddress + section.RawSectionSize))
 		{
 			return true;
@@ -180,8 +180,8 @@ void PortableExecutable::GetImageSectionsList(const IMAGE_SECTION_HEADER* pSecHe
 		
 		// The name of a section can only be 8 characters long. A longer name has a different notation.
 		// This is not taken into account because the chance of it appearing in an executable is very small.
-		list.Add(Win32PESectionInformation((char*)pSecHeader->Name, pSecHeader->VirtualAddress, pSecHeader->Misc.VirtualSize == 0 ? pSecHeader->SizeOfRawData : pSecHeader->Misc.VirtualSize
-			, pSecHeader->SizeOfRawData));
+		list.Add(Win32PESectionInformation((char*)pSecHeader->Name, pSecHeader->VirtualAddress, pSecHeader->Misc.VirtualSize == 0 ? pSecHeader->SizeOfRawData
+			: pSecHeader->Misc.VirtualSize, pSecHeader->SizeOfRawData));
 	}
 }
 
@@ -427,9 +427,11 @@ void PortableExecutable::GetDotNetDirectoryInformation(const IMAGE_DATA_DIRECTOR
 // Resolves ApiSetSchema module names and returns a pointer to the resolved module.
 const Win32ModuleInformation* PortableExecutable::GetResolvedModule(const Byte* bufferBase, int* const recurseIndex, const DWORD* funcPtr, const char* NameOrdinal) const
 {
+	// Find the first dot in the filename.
 	String forwardedModName = (char*)(bufferBase + *funcPtr);
 	*recurseIndex = forwardedModName.Find('.');
 
+	// If the resulting filename starts with api-ms-win, we are dealing with ApiSetSchema libraries.
 	if (ToLower(forwardedModName).StartsWith("api-ms-win"))
 	{
 		WString unicodeBuffer(forwardedModName);
@@ -441,6 +443,7 @@ const Win32ModuleInformation* PortableExecutable::GetResolvedModule(const Byte* 
 		delete[] outWString;
 	}
 
+	// Append .dll after the filename.
 	const int dotIndex = forwardedModName.Find('.');
 	if (dotIndex >= 0)
 	{
@@ -448,6 +451,7 @@ const Win32ModuleInformation* PortableExecutable::GetResolvedModule(const Byte* 
 		forwardedModName += ".dll";
 	}
 
+	// Resolve the module to a loaded one.
 	return mModuleManager->FindModule(forwardedModName);
 }
 
@@ -469,7 +473,7 @@ void PortableExecutable32::GetExecutablePeInformation() const
 	LoadedProcessPEInformation.Reset();
 	
 	// Read process memory into local buffer in order to load PE headers.
-	Byte* moduleBuffer = new Byte[0x400];
+	Byte moduleBuffer[0x400];
 	CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)this->mBaseAddress, moduleBuffer, 0x400, NULL);
 	
 	// Load PE headers.
@@ -479,7 +483,6 @@ void PortableExecutable32::GetExecutablePeInformation() const
 	// When the PE Headers are destroyed at runtime the pointer to the headers may run out of the buffer's bounds.
 	if ((Byte*)pNTHeader > (moduleBuffer + 0x400))
 	{
-		delete[] moduleBuffer;
 		LoadedProcessPEInformation.PEFields.Clear();
 		return;
 	}
@@ -527,14 +530,11 @@ void PortableExecutable32::GetExecutablePeInformation() const
 	// Get the COM header from the PE file.
 	this->GetDotNetDirectoryInformation(&pOptionalHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR]);
 	
-	// Delete the allocated buffer to move on to the section enumeration.
-	delete[] moduleBuffer;
-	
 	// Attempt to load the sections inside the PE file.
-	moduleBuffer = new Byte[sectionSizeBytes];
-	CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, firstSectionPtr, moduleBuffer, sectionSizeBytes, NULL);
-	this->GetImageSectionsList((IMAGE_SECTION_HEADER*)moduleBuffer, sectionCount, LoadedProcessPEInformation.ImageSections);
-	delete[] moduleBuffer;
+	Byte* const sectionBuffer = new Byte[sectionSizeBytes];
+	CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, firstSectionPtr, sectionBuffer, sectionSizeBytes, NULL);
+	this->GetImageSectionsList((IMAGE_SECTION_HEADER*)sectionBuffer, sectionCount, LoadedProcessPEInformation.ImageSections);
+	delete[] sectionBuffer;
 }
 
 // Retrieves the address of a function in the export table of a module. Address can be returned for function by name or ordinal.
@@ -550,6 +550,7 @@ SIZE_T PortableExecutable32::GetAddressFromExportTable(const AddrStruct* addr, c
 		bool b;
 		SIZE_T bytesRead;
 		
+		// Walk the exported functions in the target module.
 		for (unsigned int i = 0; i < addr->ExportDirectory->NumberOfFunctions; ++i)
 		{
 			const WORD* const ordValue = (WORD*)((addr->BufferBaseAddress + addr->ExportDirectory->AddressOfNameOrdinals) + (i * sizeof(WORD)));
@@ -581,13 +582,11 @@ SIZE_T PortableExecutable32::GetAddressFromExportTable(const AddrStruct* addr, c
 						return EAT_ADDRESS_NOT_FOUND;
 					}
 						
-					Byte* const dllBuffer = new Byte[0x400];
+					Byte dllBuffer[0x400];
 			        CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)modBaseAddr->BaseAddress, dllBuffer, 0x400, NULL);
 			        
 			        const IMAGE_NT_HEADERS32* const pNTHeader =(IMAGE_NT_HEADERS32*)(dllBuffer + ((IMAGE_DOS_HEADER*)dllBuffer)->e_lfanew);
 					IMAGE_DATA_DIRECTORY dataDir = *(&((IMAGE_OPTIONAL_HEADER32*)&pNTHeader->OptionalHeader)->DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT]);
-			
-			        delete[] dllBuffer;
 			            
 			        Byte* const exportDirectoryBuffer = new Byte[dataDir.Size];
 			        CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(modBaseAddr->BaseAddress + dataDir.VirtualAddress), exportDirectoryBuffer, dataDir.Size, NULL);
@@ -620,13 +619,11 @@ SIZE_T PortableExecutable32::GetAddressFromExportTable(const AddrStruct* addr, c
 							return EAT_ADDRESS_NOT_FOUND;
 						}
 						
-						Byte* const dllBuffer = new Byte[0x400];
+						Byte dllBuffer[0x400];
 			            CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)modBaseAddr->BaseAddress, dllBuffer, 0x400, NULL);
 			           
 			            const IMAGE_NT_HEADERS32* const pNTHeader =(IMAGE_NT_HEADERS32*)(dllBuffer + ((IMAGE_DOS_HEADER*)dllBuffer)->e_lfanew);
 						IMAGE_DATA_DIRECTORY dataDir = *(&((IMAGE_OPTIONAL_HEADER32*)&pNTHeader->OptionalHeader)->DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT]);
-			
-			            delete[] dllBuffer;
 			            
 			            // Check if the size of the data directory is valid.
 						if (dataDir.Size)
@@ -692,10 +689,13 @@ const char* PortableExecutable32::GetOrdinalFunctionNameFromExportTable(const Ad
 
 // Retrieves the import table from the PE header of the loaded process. This information is stored in the global storage that has process lifetime.
 // Note that IMAGE_NT_HEADERS, IMAGE_OPTIONAL_HEADER, IMAGE_THUNK_DATA and SIZE_T are explicitly defined as the 32 bit version. If compiled as 64 bit the structs differ.
-void PortableExecutable32::GetImportAddressTable() const
+const bool PortableExecutable32::GetImportAddressTable() const
 {
+	// We use a return value to indicate whether function names can actually be retrieved using OriginalFirstThunk.
+	bool result = true;
+
 	// Read process memory into local buffer in order to load IAT.
-	Byte* const moduleBuffer = new Byte[0x400];
+	Byte moduleBuffer[0x400];
 	CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)this->mBaseAddress, moduleBuffer, 0x400, NULL);
 	
 	const IMAGE_NT_HEADERS32* const pNTHeader =(IMAGE_NT_HEADERS32*)(moduleBuffer + ((IMAGE_DOS_HEADER*)moduleBuffer)->e_lfanew);
@@ -703,15 +703,22 @@ void PortableExecutable32::GetImportAddressTable() const
 	// The PE Headers are not valid, the pointer runs outside the bounds of the buffer.
 	if ((Byte*)pNTHeader > (moduleBuffer + 0x400))
 	{
-		delete[] moduleBuffer;
-		return;
+		return false;
 	}
 
 	const IMAGE_OPTIONAL_HEADER32* const pOptionalHeader = (IMAGE_OPTIONAL_HEADER32*)&pNTHeader->OptionalHeader;
 	
+	// Read the import descriptor table into local memory.
 	unsigned int counter = 0;
 	IMAGE_IMPORT_DESCRIPTOR pDesc;
 	CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(this->mBaseAddress + pOptionalHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress + (counter * sizeof(IMAGE_IMPORT_DESCRIPTOR))), &pDesc, sizeof(IMAGE_IMPORT_DESCRIPTOR), NULL);
+
+	// Check whether OriginalFirstThunk is non-zero. If it is zero, the target process executable may be packed. We can find
+	// the function addresses, but we cannot find the function names directly.
+	if (!pDesc.OriginalFirstThunk)
+	{
+		result = false;
+	}
 
 	while (pDesc.FirstThunk && pDesc.Name != 0xFFFF)
 	{
@@ -752,13 +759,11 @@ void PortableExecutable32::GetImportAddressTable() const
         {
             impDesc.ModulePointer = modBaseAddr;
             
-            Byte* const dllBuffer = new Byte[0x400];
+            Byte dllBuffer[0x400];
             CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)modBaseAddr->BaseAddress, dllBuffer, 0x400, NULL);
            
             const IMAGE_NT_HEADERS32* const pNTHeader =(IMAGE_NT_HEADERS32*)(dllBuffer + ((IMAGE_DOS_HEADER*)dllBuffer)->e_lfanew);
 			IMAGE_DATA_DIRECTORY dataDir = *(&((IMAGE_OPTIONAL_HEADER32*)&pNTHeader->OptionalHeader)->DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT]);
-
-            delete[] dllBuffer;
             
             // Check whether the discovered module actually has an export table.
             if (dataDir.Size)
@@ -775,9 +780,9 @@ void PortableExecutable32::GetImportAddressTable() const
 	
 				do
 				{
-					// Read current thunk into local memory.
+					// Try to read current thunk into local memory.
 					CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(this->mBaseAddress + pDesc.OriginalFirstThunk + count * sizeof(DWORD)), &thunk, sizeof(IMAGE_THUNK_DATA32), NULL);
-					
+
 					ImportAddressTableEntry funcEntry;
 	
 					// Check for 32-bit ordinal magic flag.
@@ -861,9 +866,8 @@ void PortableExecutable32::GetImportAddressTable() const
 
 		CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(this->mBaseAddress + pOptionalHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress + (++counter * sizeof(IMAGE_IMPORT_DESCRIPTOR))), &pDesc, sizeof(IMAGE_IMPORT_DESCRIPTOR), NULL);
 	}
-	
-	// Success, free used buffers and return.
-	delete[] moduleBuffer;
+
+	return result;
 }
 
 // Places a hook in the IAT, replacing the function address with another one.
@@ -1063,11 +1067,9 @@ bool PortableExecutable32::HideModuleFromProcess(const Win32ModuleInformation& m
                     for (unsigned int index = 0; index < 3; (Node += sizeof(LIST_ENTRY32)), index++)
                     {
 				        LIST_ENTRY32 current;
-						BOOL localRes = TRUE;
 
 				        // Read current, previous and next list entry from the process memory.
-						CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)Node, &current, sizeof(LIST_ENTRY32), NULL);
-				        
+						BOOL localRes = CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)Node, &current, sizeof(LIST_ENTRY32), NULL);
 						if (!localRes)
 				        {
 							found = false;
@@ -1336,13 +1338,11 @@ void PortableExecutable32::UnloadLibraryExternal(const SIZE_T module) const
 // Restores the original address of an imported function from the export table.
 void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInformation* modBase, const SIZE_T baseAddress, const char* NameOrdinal, bool IsOrdinal) const
 {
-	Byte* const dllBuffer = new Byte[0x400];
+	Byte dllBuffer[0x400];
     CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)baseAddress, dllBuffer, 0x400, NULL);
    
     const IMAGE_NT_HEADERS32* const pNTHeader =(IMAGE_NT_HEADERS32*)(dllBuffer + ((IMAGE_DOS_HEADER*)dllBuffer)->e_lfanew);
 	IMAGE_DATA_DIRECTORY dataDir = *(&((IMAGE_OPTIONAL_HEADER32*)&pNTHeader->OptionalHeader)->DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT]);
-
-    delete[] dllBuffer;
     
     // Check whether the discovered module actually has an export table.
     if (dataDir.Size)
@@ -1378,7 +1378,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 		LoadedProcessPEInformation.Reset();
 	
 		// Read process memory into local buffer in order to load PE headers.
-		Byte* moduleBuffer = new Byte[0x400];
+		Byte moduleBuffer[0x400];
 		CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)this->mBaseAddress, moduleBuffer, 0x400, NULL);
 		
 		// Load PE headers.
@@ -1387,7 +1387,6 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 		// When the PE Headers are destroyed at runtime the pointer to the headers may run out of the buffer's bounds.
 		if ((Byte*)pNTHeader > (moduleBuffer + 0x400))
 		{
-			delete[] moduleBuffer;
 			LoadedProcessPEInformation.PEFields.Clear();
 			return;
 		}
@@ -1428,13 +1427,12 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 		
 		// Get the COM header from the PE file.
 		this->GetDotNetDirectoryInformation(&pOptionalHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR]);
-	
-		delete[] moduleBuffer;
-	
-		moduleBuffer = new Byte[sectionSizeBytes];
-		CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, firstSectionPtr, moduleBuffer, sectionSizeBytes, NULL);
-		this->GetImageSectionsList((IMAGE_SECTION_HEADER*)moduleBuffer, sectionCount, LoadedProcessPEInformation.ImageSections);
-		delete[] moduleBuffer;
+		
+		// Retrieve the sections from the PE header.
+		Byte* const sectionBuffer = new Byte[sectionSizeBytes];
+		CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, firstSectionPtr, sectionBuffer, sectionSizeBytes, NULL);
+		this->GetImageSectionsList((IMAGE_SECTION_HEADER*)sectionBuffer, sectionCount, LoadedProcessPEInformation.ImageSections);
+		delete[] sectionBuffer;
 	}
 	
 	// Retrieves the address of a function in the export table of a module. Address can be returned for function by name or ordinal.
@@ -1479,13 +1477,11 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 							return EAT_ADDRESS_NOT_FOUND;
 						}
 	
-						Byte* const dllBuffer = new Byte[0x400];
+						Byte dllBuffer[0x400];
 				        CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)modBaseAddr->BaseAddress, dllBuffer, 0x400, NULL);
 				           
 				        const IMAGE_NT_HEADERS64* pNTHeader =(IMAGE_NT_HEADERS64*)(dllBuffer + ((IMAGE_DOS_HEADER*)dllBuffer)->e_lfanew);
 						IMAGE_DATA_DIRECTORY dataDir = *(&((IMAGE_OPTIONAL_HEADER64*)&pNTHeader->OptionalHeader)->DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT]);
-				
-				        delete[] dllBuffer;
 				            
 				        Byte* const exportDirectoryBuffer = new Byte[dataDir.Size];
 				        CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(modBaseAddr->BaseAddress + dataDir.VirtualAddress), exportDirectoryBuffer, dataDir.Size, NULL);
@@ -1494,7 +1490,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 						AddrStruct addrStruct((Byte*)modBaseAddr->BaseAddress, (exportDirectoryBuffer - dataDir.VirtualAddress), bufBase + dataDir.VirtualAddress + dataDir.Size
 							, &dataDir, (IMAGE_EXPORT_DIRECTORY*)exportDirectoryBuffer);
 
-						SIZE_T forwardedAddress = this->GetAddressFromExportTable(&addrStruct, (char*)ScanInt((char*)(addr->BufferBaseAddress + *funcAddrPtr + RecurseDotIndex + 1), NULL, 10), true);
+						const SIZE_T forwardedAddress = this->GetAddressFromExportTable(&addrStruct, (char*)ScanInt((char*)(addr->BufferBaseAddress + *funcAddrPtr + RecurseDotIndex + 1), NULL, 10), true);
 						delete[] exportDirectoryBuffer;
 						return forwardedAddress;
 					}
@@ -1517,13 +1513,11 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 								return EAT_ADDRESS_NOT_FOUND;
 							}
 
-							Byte* const dllBuffer = new Byte[0x400];
+							Byte dllBuffer[0x400];
 				            CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)modBaseAddr->BaseAddress, dllBuffer, 0x400, NULL);
 				           
 				            const IMAGE_NT_HEADERS64* const pNTHeader =(IMAGE_NT_HEADERS64*)(dllBuffer + ((IMAGE_DOS_HEADER*)dllBuffer)->e_lfanew);
 							IMAGE_DATA_DIRECTORY dataDir = *(&((IMAGE_OPTIONAL_HEADER64*)&pNTHeader->OptionalHeader)->DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT]);
-							
-							delete[] dllBuffer;
 							
 							// Check if the size of the data directory is valid.
 							if (dataDir.Size)
@@ -1589,10 +1583,13 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 
 	
 	// Retrieves the import table from the PE header of the loaded process. This information is stored in the global storage that has process lifetime.
-	void PortableExecutable64::GetImportAddressTable() const
+	const bool PortableExecutable64::GetImportAddressTable() const
 	{
+		// We use a return value to indicate whether function names can actually be retrieved using OriginalFirstThunk.
+		bool result = true;
+		
 		// Read process memory into local buffer in order to load IAT.
-		Byte* const moduleBuffer = new Byte[0x400];
+		Byte moduleBuffer[0x400];
 		CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)this->mBaseAddress, moduleBuffer, 0x400, NULL);
 		
 		const IMAGE_NT_HEADERS64* const pNTHeader = (IMAGE_NT_HEADERS*)((BYTE*)moduleBuffer + ((IMAGE_DOS_HEADER*)moduleBuffer)->e_lfanew);
@@ -1600,15 +1597,22 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 		// The PE Headers are not valid, the pointer runs outside the bounds of the buffer.
 		if ((Byte*)pNTHeader > (moduleBuffer + 0x400))
 		{
-			delete[] moduleBuffer;
-			return;
+			return false;
 		}
 		
 		const IMAGE_OPTIONAL_HEADER* const pOptionalHeader = ((IMAGE_OPTIONAL_HEADER*)&pNTHeader->OptionalHeader);
 		
+		// Read the import descriptor table into local memory.
 		unsigned int counter = 0;
 		IMAGE_IMPORT_DESCRIPTOR pDesc;
 		CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(this->mBaseAddress + pOptionalHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress + (counter * sizeof(IMAGE_IMPORT_DESCRIPTOR))), &pDesc, sizeof(IMAGE_IMPORT_DESCRIPTOR), NULL);
+		
+		// Check whether OriginalFirstThunk is non-zero. If it is zero, the target process executable may be packed. We can find
+		// the function addresses, but we cannot find the function names directly.
+		if (!pDesc.OriginalFirstThunk)
+		{
+			result = false;
+		}
 		
 		while (pDesc.FirstThunk && pDesc.Name != 0xFFFF)
 		{
@@ -1649,13 +1653,11 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 			{
 				impDesc.ModulePointer = modBaseAddr;
 				
-	            Byte* const dllBuffer = new Byte[0x400];
+	            Byte dllBuffer[0x400];
 	            CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)modBaseAddr->BaseAddress, dllBuffer, 0x400, NULL);
 	           
 	            const IMAGE_NT_HEADERS64* pNTHeader =(IMAGE_NT_HEADERS64*)(dllBuffer + ((IMAGE_DOS_HEADER*)dllBuffer)->e_lfanew);
 				IMAGE_DATA_DIRECTORY dataDir = *(&((IMAGE_OPTIONAL_HEADER64*)&pNTHeader->OptionalHeader)->DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT]);
-	            
-	            delete[] dllBuffer;
 	            
 	            // Check whether the discovered module actually contains an export table.
 	            if (dataDir.Size)
@@ -1672,6 +1674,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 		        
 					do
 					{
+						// Try to read current thunk into local memory.
 						CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(this->mBaseAddress + pDesc.OriginalFirstThunk + count * sizeof(IMAGE_THUNK_DATA)), &thunk, sizeof(IMAGE_THUNK_DATA), NULL);
 					
 						ImportAddressTableEntry funcEntry;
@@ -1757,8 +1760,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 			CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(this->mBaseAddress + pOptionalHeader->DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress + (++counter * sizeof(IMAGE_IMPORT_DESCRIPTOR))), &pDesc, sizeof(IMAGE_IMPORT_DESCRIPTOR), NULL);
 		}
 		
-		// Success, free used buffers and return.
-		delete[] moduleBuffer;
+		return result;
 	}
 	
 	// Places a hook in the IAT, replacing the function address with another one.
@@ -1952,11 +1954,9 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 	                    for (unsigned int index = 0; index < 3; Node++, index++)
 	                    {
 					        LIST_ENTRY current;
-					        BOOL localRes = TRUE;
 					        
 					        // Read current, previous and next list entry from the process memory.
-							CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, Node, &current, sizeof(LIST_ENTRY), NULL);
-					        
+							BOOL localRes = CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, Node, &current, sizeof(LIST_ENTRY), NULL);
 					        if (!localRes)
 					        {
 								found = false;

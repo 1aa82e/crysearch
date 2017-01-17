@@ -59,6 +59,17 @@ void AddResultsToCache(const int Resultcount, const SIZE_T* AddressBuffer, const
 	}
 }
 
+// Adds a set of new search results to the cache vectors after checking for availability.
+void AddResultsToCacheConditional(const int Resultcount, const SIZE_T* AddressBuffer, const Byte* lengthBuffers)
+{
+	// Check whether the UI cache vectors have room available.
+	if (CachedAddresses.GetCount() < MEMORYSCANNER_CACHE_LIMIT)
+	{
+		// There is room, add entries to the cache.
+		AddResultsToCache(Resultcount, AddressBuffer, lengthBuffers);
+	}
+}
+
 // ---------------------------------------------------------------------------------------------
 
 template <>
@@ -607,16 +618,17 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData* const regionData,
 		const SIZE_T regionSize = currentRegion.MemorySize;
 		currentRegion.FileDataIndexes.StartIndex = fileIndex;
 		
+		// Try to read the memory page contents into local memory.
 		Byte* buffer = new Byte[currentRegion.MemorySize];
 		if (CrySearchRoutines.CryReadMemoryRoutine(this->mOpenedProcessHandle, (void*)currentRegion.BaseAddress, buffer, currentRegion.MemorySize, NULL))
 		{
-			for (SIZE_T i = 0; i < regionSize; i += fastScanAlignSize)
+			for (SIZE_T j = 0; j < regionSize; j += fastScanAlignSize)
 			{
-				const double tempStore = *(double*)&(buffer[i]);
+				const double tempStore = *(double*)&(buffer[j]);
 				
 				if (cmp(tempStore, value))
 				{
-					localAddresses[arrayIndex] = currentRegion.BaseAddress + i;
+					localAddresses[arrayIndex] = currentRegion.BaseAddress + j;
 					localValues[arrayIndex++] = tempStore;
 					
 					// Increment result counters for file and I/O.
@@ -627,10 +639,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData* const regionData,
 					if (arrayIndex >= MEMORY_SCANNER_BUFFER_LENGTH_THRESHOLD)
 					{
 						// Check whether we have to cache some more search results in the user interface.
-						if (CachedAddresses.GetCount() < MEMORYSCANNER_CACHE_LIMIT)
-						{
-							AddResultsToCache(arrayIndex, localAddresses, NULL);
-						}
+						AddResultsToCacheConditional(arrayIndex, localAddresses, NULL);
 						
 						// Write memory buffers out to file.
 						addressesFile.Put(localAddresses, arrayIndex * sizeof(SIZE_T));
@@ -655,10 +664,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData* const regionData,
 	if (arrayIndex > 0 && arrayIndex < MEMORY_SCANNER_BUFFER_LENGTH_THRESHOLD)
 	{
 		// Check whether we have to cache some more search results in the user interface.
-		if (CachedAddresses.GetCount() < MEMORYSCANNER_CACHE_LIMIT)
-		{
-			AddResultsToCache(arrayIndex, localAddresses, NULL);
-		}
+		AddResultsToCacheConditional(arrayIndex, localAddresses, NULL);
 		
 		// Write memory buffers out to file.
 		addressesFile.Put(localAddresses, arrayIndex * sizeof(SIZE_T));
@@ -698,16 +704,17 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData* const regionData,
 		const SIZE_T regionSize = currentRegion.MemorySize;
 		currentRegion.FileDataIndexes.StartIndex = fileIndex;
 		
+		// Try to read the memory page contents into local memory.
 		Byte* buffer = new Byte[currentRegion.MemorySize];
 		if (CrySearchRoutines.CryReadMemoryRoutine(this->mOpenedProcessHandle, (void*)currentRegion.BaseAddress, buffer, currentRegion.MemorySize, NULL))
 		{
-			for (SIZE_T i = 0; i < regionSize; ++i)
+			for (SIZE_T j = 0; j < regionSize; ++j)
 			{
-				Byte* tempStore = &(buffer[i]);
+				Byte* tempStore = &(buffer[j]);
 				
 				if (memcmp(tempStore, inputData, inputLength) == 0)
 				{
-					localAddresses[arrayIndex++] = currentRegion.BaseAddress + i;
+					localAddresses[arrayIndex++] = currentRegion.BaseAddress + j;
 					
 					// Increment result counters for file and I/O.
 					++fileIndex;
@@ -717,10 +724,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData* const regionData,
 					if (arrayIndex >= MEMORY_SCANNER_BUFFER_LENGTH_THRESHOLD)
 					{
 						// Check whether we have to cache some more search results in the user interface.
-						if (CachedAddresses.GetCount() < MEMORYSCANNER_CACHE_LIMIT)
-						{
-							AddResultsToCache(arrayIndex, localAddresses, NULL);
-						}
+						AddResultsToCacheConditional(arrayIndex, localAddresses, NULL);
 						
 						// Write memory buffers out to file.
 						addressesFile.Put(localAddresses, arrayIndex * sizeof(SIZE_T));
@@ -744,10 +748,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData* const regionData,
 	if (arrayIndex > 0 && arrayIndex < MEMORY_SCANNER_BUFFER_LENGTH_THRESHOLD)
 	{
 		// Check whether we have to cache some more search results in the user interface.
-		if (CachedAddresses.GetCount() < MEMORYSCANNER_CACHE_LIMIT)
-		{
-			AddResultsToCache(arrayIndex, localAddresses, NULL);
-		}
+		AddResultsToCacheConditional(arrayIndex, localAddresses, NULL);
 		
 		// Write memory buffers out to file.
 		addressesFile.Put(localAddresses, arrayIndex * sizeof(SIZE_T));
@@ -790,17 +791,18 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData* const regionData,
 		const SIZE_T regionSize = currentRegion.MemorySize;
 		currentRegion.FileDataIndexes.StartIndex = fileIndex;
 		
+		// Try to read the memory page contents into local memory.
 		Byte* buffer = new Byte[currentRegion.MemorySize];
 		if (CrySearchRoutines.CryReadMemoryRoutine(this->mOpenedProcessHandle, (void*)currentRegion.BaseAddress, buffer, currentRegion.MemorySize, NULL))
 		{
-			for (SIZE_T i = 0; i < regionSize; ++i)
+			for (SIZE_T j = 0; j < regionSize; ++j)
 			{
-				const wchar* strPtr = (wchar*)&(buffer[i]);
+				const wchar* strPtr = (wchar*)&(buffer[j]);
 				
 				int outputLength = inputLengthInChars;
 				if (localNullScan ? CompareStringNullCharW(strPtr, inputLength, inputData, &outputLength) : (wcsncmp(strPtr, inputData, inputLength) == 0))
 				{
-					localAddresses[arrayIndex] = currentRegion.BaseAddress + i;
+					localAddresses[arrayIndex] = currentRegion.BaseAddress + j;
 					stringLengthsArray[arrayIndex++] = outputLength;
 					
 					// Increment result counters for file and I/O.
@@ -811,10 +813,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData* const regionData,
 					if (arrayIndex >= MEMORY_SCANNER_BUFFER_LENGTH_THRESHOLD)
 					{
 						// Check whether we have to cache some more search results in the user interface.
-						if (CachedAddresses.GetCount() < MEMORYSCANNER_CACHE_LIMIT)
-						{
-							AddResultsToCache(arrayIndex, localAddresses, stringLengths.Begin());
-						}
+						AddResultsToCacheConditional(arrayIndex, localAddresses, stringLengths.Begin());
 						
 						// Write memory buffers out to file.
 						addressesFile.Put(localAddresses, arrayIndex * sizeof(SIZE_T));
@@ -838,10 +837,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData* const regionData,
 	if (arrayIndex > 0 && arrayIndex < MEMORY_SCANNER_BUFFER_LENGTH_THRESHOLD)
 	{
 		// Check whether we have to cache some more search results in the user interface.
-		if (CachedAddresses.GetCount() < MEMORYSCANNER_CACHE_LIMIT)
-		{
-			AddResultsToCache(arrayIndex, localAddresses, stringLengths.Begin());
-		}
+		AddResultsToCacheConditional(arrayIndex, localAddresses, stringLengths.Begin());
 		
 		// Write memory buffers out to file.
 		addressesFile.Put(localAddresses, arrayIndex * sizeof(SIZE_T));
@@ -882,18 +878,19 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData* const regionData,
 		const SIZE_T regionSize = currentRegion.MemorySize;
 		unsigned int resultCounter = 0;
 		currentRegion.FileDataIndexes.StartIndex = fileIndex;
-
+		
+		// Try to read the memory page contents into local memory.
 		Byte* buffer = new Byte[currentRegion.MemorySize];
 		if (CrySearchRoutines.CryReadMemoryRoutine(this->mOpenedProcessHandle, (void*)currentRegion.BaseAddress, buffer, currentRegion.MemorySize, NULL))
 		{
-			for (SIZE_T i = 0; i < regionSize; ++i)
+			for (SIZE_T j = 0; j < regionSize; ++j)
 			{
-				const char* strPtr = (char*)&(buffer[i]);
+				const char* strPtr = (char*)&(buffer[j]);
 				
 				int outputLength = inputLength;
 				if (localNullScan ? CompareStringNullCharA(strPtr, inputLength, inputData, &outputLength) : (strncmp(strPtr, inputData, inputLength) == 0))
 				{
-					localAddresses[arrayIndex] = currentRegion.BaseAddress + i;
+					localAddresses[arrayIndex] = currentRegion.BaseAddress + j;
 					stringLengthsArray[arrayIndex++] = outputLength;
 					
 					// Increment result counters for file and I/O.
@@ -904,10 +901,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData* const regionData,
 					if (arrayIndex >= MEMORY_SCANNER_BUFFER_LENGTH_THRESHOLD)
 					{
 						// Check whether we have to cache some more search results in the user interface.
-						if (CachedAddresses.GetCount() < MEMORYSCANNER_CACHE_LIMIT)
-						{
-							AddResultsToCache(arrayIndex, localAddresses, stringLengths.Begin());
-						}
+						AddResultsToCacheConditional(arrayIndex, localAddresses, stringLengths.Begin());
 						
 						// Write memory buffers out to file.
 						addressesFile.Put(localAddresses, arrayIndex * sizeof(SIZE_T));
@@ -931,10 +925,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData* const regionData,
 	if (arrayIndex > 0 && arrayIndex < MEMORY_SCANNER_BUFFER_LENGTH_THRESHOLD)
 	{
 		// Check whether we have to cache some more search results in the user interface.
-		if (CachedAddresses.GetCount() < MEMORYSCANNER_CACHE_LIMIT)
-		{
-			AddResultsToCache(arrayIndex, localAddresses, stringLengths.Begin());
-		}
+		AddResultsToCacheConditional(arrayIndex, localAddresses, stringLengths.Begin());
 		
 		// Write memory buffers out to file.
 		addressesFile.Put(localAddresses, arrayIndex * sizeof(SIZE_T));
@@ -984,7 +975,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData* const regionData,
 	SIZE_T* localAddresses = new SIZE_T[MEMORY_SCANNER_BUFFER_LENGTH_THRESHOLD];
 	T* localValues = new T[MEMORY_SCANNER_BUFFER_LENGTH_THRESHOLD];
 	unsigned int arrayIndex = 0;
-		
+	
 	// Loop the memory pages for this worker.
 	for (unsigned int i = regionData->OriginalStartIndex; i < forLoopLength; ++i)
 	{
@@ -993,16 +984,17 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData* const regionData,
 		currentRegion.FileDataIndexes.StartIndex = fileIndex;
 		unsigned int resultCounter = 0;
 		
+		// Try to read the memory page contents into local memory.
 		Byte* buffer = new Byte[currentRegion.MemorySize];
 		if (CrySearchRoutines.CryReadMemoryRoutine(this->mOpenedProcessHandle, (void*)currentRegion.BaseAddress, buffer, currentRegion.MemorySize, NULL))
 		{
-			for (SIZE_T i = 0; i < regionSize; i += fastScanAlignSize)
+			for (SIZE_T j = 0; j < regionSize; j += fastScanAlignSize)
 			{
-				const T tempStore = *(T*)&(buffer[i]);
+				const T tempStore = *(T*)&(buffer[j]);
 
 				if (cmp(tempStore, value))
 				{
-					localAddresses[arrayIndex] = currentRegion.BaseAddress + i;
+					localAddresses[arrayIndex] = currentRegion.BaseAddress + j;
 					localValues[arrayIndex++] = tempStore;
 					
 					// Increment result counters for file and I/O.
@@ -1013,10 +1005,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData* const regionData,
 					if (arrayIndex >= MEMORY_SCANNER_BUFFER_LENGTH_THRESHOLD)
 					{
 						// Check whether we have to cache some more search results in the user interface.
-						if (CachedAddresses.GetCount() < MEMORYSCANNER_CACHE_LIMIT)
-						{
-							AddResultsToCache(arrayIndex, localAddresses, NULL);
-						}
+						AddResultsToCacheConditional(arrayIndex, localAddresses, NULL);
 						
 						// Write memory buffers out to file.
 						addressesFile.Put(localAddresses, arrayIndex * sizeof(SIZE_T));
@@ -1041,10 +1030,7 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData* const regionData,
 	if (arrayIndex > 0 && arrayIndex < MEMORY_SCANNER_BUFFER_LENGTH_THRESHOLD)
 	{
 		// Check whether we have to cache some more search results in the user interface.
-		if (CachedAddresses.GetCount() < MEMORYSCANNER_CACHE_LIMIT)
-		{
-			AddResultsToCache(arrayIndex, localAddresses, NULL);
-		}
+		AddResultsToCacheConditional(arrayIndex, localAddresses, NULL);
 		
 		// Write memory buffers out to file.
 		addressesFile.Put(localAddresses, arrayIndex * sizeof(SIZE_T));
@@ -1218,6 +1204,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData* const regionData, 
 		// Are there any search results for this page?
 		if (currentRegion.FileDataIndexes.ResultCount > 0)
 		{
+			// Try to read the memory page contents into local memory.
 			Byte* buffer = new Byte[currentRegion.MemorySize];
 			if (CrySearchRoutines.CryReadMemoryRoutine(this->mOpenedProcessHandle, (void*)currentRegion.BaseAddress, buffer, currentRegion.MemorySize, NULL))
 			{
@@ -1242,10 +1229,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData* const regionData, 
 						if (arrayIndex >= MEMORY_SCANNER_BUFFER_LENGTH_THRESHOLD)
 						{
 							// Check whether we have to cache some more search results in the user interface.
-							if (CachedAddresses.GetCount() < MEMORYSCANNER_CACHE_LIMIT)
-							{
-								AddResultsToCache(arrayIndex, localAddresses, NULL);
-							}
+							AddResultsToCacheConditional(arrayIndex, localAddresses, NULL);
 							
 							// Write memory buffers out to file.
 							addressesFile.Put(localAddresses, arrayIndex * sizeof(SIZE_T));
@@ -1273,10 +1257,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData* const regionData, 
 	if (arrayIndex > 0 && arrayIndex < MEMORY_SCANNER_BUFFER_LENGTH_THRESHOLD)
 	{
 		// Check whether we have to cache some more search results in the user interface.
-		if (CachedAddresses.GetCount() < MEMORYSCANNER_CACHE_LIMIT)
-		{
-			AddResultsToCache(arrayIndex, localAddresses, NULL);
-		}
+		AddResultsToCacheConditional(arrayIndex, localAddresses, NULL);
 		
 		// Write memory buffers out to file.
 		addressesFile.Put(localAddresses, arrayIndex * sizeof(SIZE_T));
@@ -1328,6 +1309,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData* const regionData, 
 		// Are there any search results for this page?
 		if (currentRegion.FileDataIndexes.ResultCount > 0)
 		{
+			// Try to read the memory page contents into local memory.
 			Byte* buffer = new Byte[currentRegion.MemorySize];
 			if (CrySearchRoutines.CryReadMemoryRoutine(this->mOpenedProcessHandle, (void*)currentRegion.BaseAddress, buffer, currentRegion.MemorySize, NULL))
 			{
@@ -1353,10 +1335,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData* const regionData, 
 						if (arrayIndex >= MEMORY_SCANNER_BUFFER_LENGTH_THRESHOLD)
 						{
 							// Check whether we have to cache some more search results in the user interface.
-							if (CachedAddresses.GetCount() < MEMORYSCANNER_CACHE_LIMIT)
-							{
-								AddResultsToCache(arrayIndex, localAddresses, stringLengths.Begin());
-							}
+							AddResultsToCacheConditional(arrayIndex, localAddresses, stringLengths.Begin());
 							
 							// Write memory buffers out to file.
 							addressesFile.Put(localAddresses, arrayIndex * sizeof(SIZE_T));
@@ -1384,10 +1363,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData* const regionData, 
 	if (arrayIndex > 0 && arrayIndex < MEMORY_SCANNER_BUFFER_LENGTH_THRESHOLD)
 	{
 		// Check whether we have to cache some more search results in the user interface.
-		if (CachedAddresses.GetCount() < MEMORYSCANNER_CACHE_LIMIT)
-		{
-			AddResultsToCache(arrayIndex, localAddresses, stringLengths.Begin());
-		}
+		AddResultsToCacheConditional(arrayIndex, localAddresses, stringLengths.Begin());
 		
 		// Write memory buffers out to file.
 		addressesFile.Put(localAddresses, arrayIndex * sizeof(SIZE_T));
@@ -1437,6 +1413,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData* const regionData, 
 		// Are there any search results for this page?
 		if (currentRegion.FileDataIndexes.ResultCount > 0)
 		{
+			// Try to read the memory page contents into local memory.
 			Byte* buffer = new Byte[currentRegion.MemorySize];
 			if (CrySearchRoutines.CryReadMemoryRoutine(this->mOpenedProcessHandle, (void*)currentRegion.BaseAddress, buffer, currentRegion.MemorySize, NULL))
 			{
@@ -1462,10 +1439,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData* const regionData, 
 						if (arrayIndex >= MEMORY_SCANNER_BUFFER_LENGTH_THRESHOLD)
 						{
 							// Check whether we have to cache some more search results in the user interface.
-							if (CachedAddresses.GetCount() < MEMORYSCANNER_CACHE_LIMIT)
-							{
-								AddResultsToCache(arrayIndex, localAddresses, stringLengths.Begin());
-							}
+							AddResultsToCacheConditional(arrayIndex, localAddresses, stringLengths.Begin());
 							
 							// Write memory buffers out to file.
 							addressesFile.Put(localAddresses, arrayIndex * sizeof(SIZE_T));
@@ -1493,10 +1467,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData* const regionData, 
 	if (arrayIndex > 0 && arrayIndex < MEMORY_SCANNER_BUFFER_LENGTH_THRESHOLD)
 	{
 		// Check whether we have to cache some more search results in the user interface.
-		if (CachedAddresses.GetCount() < MEMORYSCANNER_CACHE_LIMIT)
-		{
-			AddResultsToCache(arrayIndex, localAddresses, stringLengths.Begin());
-		}
+		AddResultsToCacheConditional(arrayIndex, localAddresses, stringLengths.Begin());
 		
 		// Write memory buffers out to file.
 		addressesFile.Put(localAddresses, arrayIndex * sizeof(SIZE_T));
@@ -1555,6 +1526,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData* const regionData, 
 		// Are there any search results for this page?
 		if (currentRegion.FileDataIndexes.ResultCount > 0)
 		{
+			// Try to read the memory page contents into local memory.
 			Byte* buffer = new Byte[currentRegion.MemorySize];
 			if (CrySearchRoutines.CryReadMemoryRoutine(this->mOpenedProcessHandle, (void*)currentRegion.BaseAddress, buffer, currentRegion.MemorySize, NULL))
 			{
@@ -1609,10 +1581,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData* const regionData, 
 						if (arrayIndex >= MEMORY_SCANNER_BUFFER_LENGTH_THRESHOLD)
 						{
 							// Check whether we have to cache some more search results in the user interface.
-							if (CachedAddresses.GetCount() < MEMORYSCANNER_CACHE_LIMIT)
-							{
-								AddResultsToCache(arrayIndex, localAddresses, NULL);
-							}
+							AddResultsToCacheConditional(arrayIndex, localAddresses, NULL);
 							
 							// Write memory buffers out to file.
 							addressesFile.Put(localAddresses, arrayIndex * sizeof(SIZE_T));
@@ -1655,10 +1624,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData* const regionData, 
 	if (arrayIndex > 0 && arrayIndex < MEMORY_SCANNER_BUFFER_LENGTH_THRESHOLD)
 	{
 		// Check whether we have to cache some more search results in the user interface.
-		if (CachedAddresses.GetCount() < MEMORYSCANNER_CACHE_LIMIT)
-		{
-			AddResultsToCache(arrayIndex, localAddresses, NULL);
-		}
+		AddResultsToCacheConditional(arrayIndex, localAddresses, NULL);
 		
 		// Write memory buffers out to file.
 		addressesFile.Put(localAddresses, arrayIndex * sizeof(SIZE_T));

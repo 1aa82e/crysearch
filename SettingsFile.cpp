@@ -37,6 +37,7 @@ void SettingsFile::Xmlize(XmlIO& pXml)
 		("DissectionEnableTypeGuessing", this->mEnableDissectionTypeGuessing)
 		("HideNonWow64Modules", this->mHideNonWow64Modules)
 		("SignatureMaskingByDefault", this->mSignatureMaskingByDefault)
+		("WarnForPackedProcess", this->mWarnForPackedProcess)
 	;
 }
 
@@ -78,6 +79,7 @@ void SettingsFile::DefaultSettings()
 	this->SetEnableDissectionTypeGuessing();
 	this->SetHideNonWow64Modules();
 	this->SetSignatureMaskingByDefault();
+	this->SetWarnForPackedProcess();
 	this->Save();
 }
 

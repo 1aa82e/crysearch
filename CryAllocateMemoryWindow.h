@@ -18,6 +18,7 @@ private:
 
 	Button mOk;
 	Button mCancel;
+	Button mViewCurrent;
 	Label mMemorySizeDescriptor;
 	EditField mMemorySize;
 	Label mProtectionFieldDescriptor;
