@@ -5,7 +5,7 @@
 #include "ProcessUtil.h"
 
 const int GetPageIndexFromAddress(const SIZE_T address, SIZE_T* const sizePtr);
-const DisasmMemoryRegion* GetPageFromAddress(const SIZE_T address);
+const MemoryRegion* GetPageFromAddress(const SIZE_T address);
 
 // Represents worker-specific information during multi-threaded disassembly.
 struct AsyncDisasmWorkerInformation : Moveable<AsyncDisasmWorkerInformation>

@@ -103,8 +103,10 @@ const int ModuleManager::GetModuleCount() const
 // Retrieves a pointer to the module that contains the specified address. NULL if no module does.
 const Win32ModuleInformation* ModuleManager::GetModuleFromContainedAddress(const SIZE_T address) const
 {
+	// Walk the modules list.
 	for (auto const& mod : this->mLoadedModulesList)
 	{
+		// Check whether the address is between the current start and end address.
 		if (address >= mod.BaseAddress && address < mod.BaseAddress + mod.Length)
 		{
 			return &mod;
@@ -119,8 +121,10 @@ const Win32ModuleInformation* ModuleManager::GetModuleFromContainedAddress(const
 // Returns NULL if the module is not found.
 const Win32ModuleInformation* ModuleManager::FindModule(const char* modName) const
 {
+	// Walk the modules list.
 	for (auto const& mod : this->mLoadedModulesList)
 	{
+		// Compare the module name.
 		if (_stricmp(this->GetModuleFilename(mod.BaseAddress), modName) == 0)
 		{
 			return &mod;

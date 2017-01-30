@@ -9,7 +9,7 @@
 
 // Extern declarations are needed here to prevent errors.
 extern Vector<LONG_PTR> DisasmVisibleLines;
-extern Vector<DisasmMemoryRegion> mExecutablePagesList;
+extern Vector<MemoryRegion> mExecutablePagesList;
 
 #define DISASSEMBLER_PROGRESS_TIMECALLBACK		40
 #define SELECTCOUNT_THRESHOLD					256
@@ -404,7 +404,7 @@ void CryDisasmCtrl::ExecutablePageSelected()
 	if (cursor >= 0 && mExecutablePagesList.GetCount() > 0)
 	{
 		// Get the page from the page index.
-		const DisasmMemoryRegion& found = mExecutablePagesList[cursor];
+		const MemoryRegion& found = mExecutablePagesList[cursor];
 
 		// Clean up the existing set of lines.
 		this->disasmDisplay.Clear();

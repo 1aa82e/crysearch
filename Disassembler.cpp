@@ -325,7 +325,7 @@ const SIZE_T DisasmGetPreviousLine(const SIZE_T address, ArchitectureDefinitions
 }
 
 // Retrieves all executable pages in the target process and puts them in the vector passed as parameter.
-void RefreshExecutablePages(Vector<DisasmMemoryRegion>& pages)
+void RefreshExecutablePages(Vector<MemoryRegion>& pages)
 {
 	// Clear list first.
 	pages.Clear();
@@ -343,7 +343,7 @@ void RefreshExecutablePages(Vector<DisasmMemoryRegion>& pages)
 	     	if (((block.Protect & MEM_EXECUTABLE) != 0) || ((block.Protect & MEM_WRITABLE) != 0))
 	     	{
 	     		// Memory region is valid for scanning, add it to the region list.
-		        DisasmMemoryRegion memReg;
+		        MemoryRegion memReg;
 		        memReg.BaseAddress = (SIZE_T)block.BaseAddress;
 			    memReg.MemorySize = block.RegionSize;
 			    pages << memReg;

@@ -8,8 +8,9 @@ Package:
 - Update wiki with changes for the release.
 ------------------------------------------------------------------
 
-- Revise memory scanner using bitset on disk:
-	- also in memory for the cached addresses? would make little difference but still...
+- Revise memory scanner using bitset on disk (when u++ implements proper methods);
+- take a look at passing the alignment size so we can ditch double specialization;
+
 - Possibility to free allocated memory;
 - Current way of disassembling may cause inconsistencies;
 	- Temporarely fixed by 1 thread.

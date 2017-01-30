@@ -63,18 +63,8 @@ enum ArchitectureDefinitions
 	ARCH_X64 = 64
 };
 
-// Represents a memory region solely for disassembler use.
-struct DisasmMemoryRegion : Moveable<DisasmMemoryRegion>
-{
-	// The base address of a block of memory.
-	SIZE_T BaseAddress;
-	
-	// The size of a block of memory.
-	SIZE_T MemorySize;
-};
-
 // Refreshes the pages that may contain code to be disassembled.
-void RefreshExecutablePages(Vector<DisasmMemoryRegion>& pages);
+void RefreshExecutablePages(Vector<MemoryRegion>& pages);
 
 // Retrieves an instruction that precedes that one at the specified address.
 const SIZE_T DisasmGetPreviousLine(const SIZE_T address, ArchitectureDefinitions architecture, ArrayOfBytes* const outAob);

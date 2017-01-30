@@ -150,16 +150,6 @@ struct MemoryRegion : Moveable<MemoryRegion>
 	
 	// Represents the size of the memory region.
 	SIZE_T MemorySize;
-	
-	struct
-	{
-		// The number of results that were found in scanning this memory region.
-		unsigned int ResultCount;
-		
-		// The start index of the results for this memory region in data files.
-		unsigned int StartIndex;
-	}
-	FileDataIndexes;
 };
 
 // Defines a set of parameters needed for a new scan.

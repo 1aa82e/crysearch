@@ -2,9 +2,12 @@ CrySearch Memory Scanner
 
 evolution536, www.unknowncheats.me
 
-v?:
+v3.0:
 	- Slight performance optimizations by eliminating heap allocations;
 	- Added a configurable warning (advanced tab, settings window) for when OriginalFirstThunk is zero: e.g. the application is packed;
+	- Revised the memory scanner for performance and I/O usage:
+		- Changed the disk storage scheme from plain value array to using vector of bools and more complex data structure on disk;
+		- Improved search performance, especially for larger scans.
 	- 
 
 v2.11:
