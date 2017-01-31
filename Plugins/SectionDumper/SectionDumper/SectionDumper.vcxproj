@@ -183,7 +183,7 @@
     <None Include="Exports64.def" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="PluginMain.c" />
+    <ClCompile Include="PluginMain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\CrySearchLibrary\SDK\Plugin.h" />

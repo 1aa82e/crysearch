@@ -9,10 +9,10 @@ Package:
 ------------------------------------------------------------------
 
 - Revise memory scanner using bitset on disk (when u++ implements proper methods);
-- take a look at passing the alignment size so we can ditch double specialization;
-
+- Also blocks for the values and using compression/encoding to reduce size?
 - Possibility to free allocated memory;
 - Current way of disassembling may cause inconsistencies;
+	- different disassembler, capstone?
 	- Temporarely fixed by 1 thread.
 - Still need to fix shitloads of stuff in the import table parser, sanity checks missing everywhere;
 - release notes - buffer overruns;
@@ -24,7 +24,6 @@ Package:
 
 - Follow pointer, many need it!
 - let's build C++11/14 code from the current, and try to reduce the application size!
-- bug opening cue splitter - imports are totally fucked (UPX);
 - Improve SDK documentation, see learn_more's notes;
 - Post-dump (plugin operations) event in plugins!!!
 - Provide the output window / menu bar entry (PLUGIN_WANTS_OUTPUT_TAB);
