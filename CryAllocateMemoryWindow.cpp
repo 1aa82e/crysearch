@@ -1,6 +1,8 @@
 #include "CryAllocateMemoryWindow.h"
+#include "CryAllocateViewPagesWindow.h"
 #include "ImlProvider.h"
 
+// CryAllocateMemoryWindow default constructor.
 CryAllocateMemoryWindow::CryAllocateMemoryWindow(AllocateMemoryDataStruct* dataStruct) : CryDialogTemplate(CrySearchIml::AllocateMemoryButton())
 {
 	this->dataStruct = dataStruct;
@@ -10,6 +12,7 @@ CryAllocateMemoryWindow::CryAllocateMemoryWindow(AllocateMemoryDataStruct* dataS
 	
 	this->mOk <<= THISBACK(OkButton);
 	this->mCancel <<= THISBACK(CancelButton);
+	this->mViewCurrent <<= THISBACK(ViewPagesButton);
 	
 	*this
 		<< this->mOk.Ok().SetLabel("OK").RightPos(5, 70).BottomPos(5, 25)
@@ -25,11 +28,13 @@ CryAllocateMemoryWindow::CryAllocateMemoryWindow(AllocateMemoryDataStruct* dataS
 	this->mProtectionSelector.SetIndex(1);
 }
 
+// CryAllocateMemoryWindow default destructor.
 CryAllocateMemoryWindow::~CryAllocateMemoryWindow()
 {
 	
 }
 
+// Executed when the user accepts the dialog.
 void CryAllocateMemoryWindow::OkButton()
 {
 	this->dataStruct->MemorySize = ScanInt(this->mMemorySize.GetText().ToString(), NULL, 10);
@@ -46,7 +51,16 @@ void CryAllocateMemoryWindow::OkButton()
 	this->AcceptBreak(10);
 }
 
+// Executed when the user closes the dialog.
 void CryAllocateMemoryWindow::CancelButton()
 {
 	this->Close();
+}
+
+// Executed when the user clicks the view pages button.
+void CryAllocateMemoryWindow::ViewPagesButton()
+{
+	CryAllocateViewPagesWindow* cavpw = new CryAllocateViewPagesWindow();
+	cavpw->Execute();
+	delete cavpw;
 }

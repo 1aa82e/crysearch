@@ -38,6 +38,8 @@ file
 	CryProcessEnumeratorForm.h,
 	CryNewScanForm.cpp,
 	CryNewScanForm.h,
+	CryAllocateViewPagesWindow.cpp,
+	CryAllocateViewPagesWindow.h,
 	CryAllocateMemoryWindow.cpp,
 	CryAllocateMemoryWindow.h,
 	CryFillMemoryWindow.cpp,

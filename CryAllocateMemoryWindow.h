@@ -26,6 +26,7 @@ private:
 	
 	void OkButton();
 	void CancelButton();
+	void ViewPagesButton();
 	
 	typedef CryAllocateMemoryWindow CLASSNAME;
 public:

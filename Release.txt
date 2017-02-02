@@ -8,6 +8,7 @@ v3.0:
 	- Revised the memory scanner for performance and I/O usage:
 		- Changed the disk storage scheme from plain value array to using vector of bools and more complex data structure on disk;
 		- Improved search performance, especially for larger scans.
+	- Added a window to view all committed memory page in the target process, with the possiblity to free them (Allocate memory window);
 	- 
 
 v2.11:
