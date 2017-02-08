@@ -5,9 +5,15 @@
 
 #pragma comment(lib, "Psapi.lib")
 
-// Retrieves all modules loaded from a process including base and size.
-const bool ModuleManager::EnumerateModules(const int procID, Vector<Win32ModuleInformation>& outModules)
+// Retrieves all modules loaded from a process including base and size. Pointers can be specified
+// to receive the lower and upper bound of module addresses are stored. If the function fails,
+// these bounds remain untouched.
+const bool ModuleManager::EnumerateModules(const int procID, Index<Win32ModuleInformation>& outModules, SIZE_T* lowerBound, SIZE_T* upperBound)
 {
+	// Create local variables to save the lower- and upper bounds.
+	SIZE_T lb = (SIZE_T)~((SIZE_T)0);
+	SIZE_T hb = 0;
+	
 	// Create debug buffer to hold heap information.
 	PRTL_DEBUG_INFORMATION db = CrySearchRoutines.RtlCreateQueryDebugBuffer(0, FALSE);
 	if (!db)
@@ -43,13 +49,36 @@ const bool ModuleManager::EnumerateModules(const int procID, Vector<Win32ModuleI
 	outModules.Reserve(modInfo->Count);
 	for (unsigned int i = 0; i < modInfo->Count; ++i)
 	{
-		Win32ModuleInformation& curMod = outModules.Add();
-		curMod.BaseAddress = (SIZE_T)modInfo->DbgModInfo[i].ImageBase;
-		curMod.Length = modInfo->DbgModInfo[i].ImageSize;
+		// Save this module information.
+		Win32ModuleInformation curMod((SIZE_T)modInfo->DbgModInfo[i].ImageBase, modInfo->DbgModInfo[i].ImageSize);
+		outModules.Add(curMod);
+		
+		// Update lower upper bound if necessary.
+		if (curMod.BaseAddress < lb)
+		{
+			lb = curMod.BaseAddress;
+		}
+		
+		// Update upper bound if necessary.
+		const SIZE_T endAddr = curMod.BaseAddress + curMod.Length;
+		if (endAddr > hb)
+		{
+			hb = endAddr;
+		}
 	}
 	
 	// Free the allocated debug buffer.
 	CrySearchRoutines.RtlDestroyQueryDebugBuffer(db);
+	
+	// Provide the caller with lower and upper bounds.
+	if (lowerBound)
+	{
+		*lowerBound = lb;
+	}
+	if (upperBound)
+	{
+		*upperBound = hb;
+	}
 	
 	return true;
 }
@@ -57,7 +86,8 @@ const bool ModuleManager::EnumerateModules(const int procID, Vector<Win32ModuleI
 // Default ModuleManager constructor.
 ModuleManager::ModuleManager()
 {
-	
+	this->lowestAddress = 0;
+	this->highestAddress = 0;
 }
 
 // Default ModuleManager destructor.
@@ -73,7 +103,7 @@ const bool ModuleManager::InitModulesList()
 	this->mLoadedModulesList.Clear();
 	
 	// Fill the internal module list with the loaded modules inside the target process.
-	return ModuleManager::EnumerateModules(mMemoryScanner->GetProcessId(), this->mLoadedModulesList);
+	return ModuleManager::EnumerateModules(mMemoryScanner->GetProcessId(), this->mLoadedModulesList, &this->lowestAddress, &this->highestAddress);
 }
 
 // Resets the module list and retrieves modules from scratch.
@@ -103,16 +133,21 @@ const int ModuleManager::GetModuleCount() const
 // Retrieves a pointer to the module that contains the specified address. NULL if no module does.
 const Win32ModuleInformation* ModuleManager::GetModuleFromContainedAddress(const SIZE_T address) const
 {
-	// Walk the modules list.
-	for (auto const& mod : this->mLoadedModulesList)
+	// Check whether the specified address is within the range of possibly stored addresses.
+	// If it is not, we will have the worst possible performance.
+	if (address >= this->lowestAddress && address <= this->highestAddress)
 	{
-		// Check whether the address is between the current start and end address.
-		if (address >= mod.BaseAddress && address < mod.BaseAddress + mod.Length)
+		// Walk the modules list.
+		for (auto const& mod : this->mLoadedModulesList)
 		{
-			return &mod;
+			// Check whether the address is between the current start and end address.
+			if (address >= mod.BaseAddress && address < mod.BaseAddress + mod.Length)
+			{
+				return &mod;
+			}
 		}
 	}
-	
+		
 	// The module was not found.
 	return NULL;
 }
@@ -135,22 +170,24 @@ const Win32ModuleInformation* ModuleManager::FindModule(const char* modName) con
 	return NULL;
 }
 
-// Retrieves the index of the first instance of a module in the module manager using its name.
-// Returns -1 if the module was not found.
-const int ModuleManager::FindModuleIndex(const char* modName) const
-{
-	const int count = this->mLoadedModulesList.GetCount();
-	for (int i = 0; i < count; ++i)
+#ifdef _WIN64
+	// Retrieves the index of the first instance of a module in the module manager using its name.
+	// Returns -1 if the module was not found.
+	const int ModuleManager::FindModuleIndex(const char* modName) const
 	{
-		if (_stricmp(this->GetModuleFilename(this->mLoadedModulesList[i].BaseAddress), modName) == 0)
+		const int count = this->mLoadedModulesList.GetCount();
+		for (int i = 0; i < count; ++i)
 		{
-			return i;
+			if (_stricmp(this->GetModuleFilename(this->mLoadedModulesList[i].BaseAddress), modName) == 0)
+			{
+				return i;
+			}
 		}
+		
+		// The module was not found.
+		return -1;
 	}
-	
-	// The module was not found.
-	return -1;
-}
+#endif
 
 // Retrieves the module filename of a loaded module in the process. Returns an empty string if
 // the retrieval of the filename failed.

@@ -11,7 +11,9 @@ using namespace Upp;
 class ModuleManager
 {
 private:
-	Vector<Win32ModuleInformation> mLoadedModulesList;
+	Index<Win32ModuleInformation> mLoadedModulesList;
+	SIZE_T lowestAddress;
+	SIZE_T highestAddress;
 
 	// Singleton code: private constructor, destructor and copy constructors.
 	ModuleManager();
@@ -21,6 +23,10 @@ private:
 	void operator=(ModuleManager const&);
 	
 	const bool InitModulesList();
+	
+#ifdef _WIN64
+	const int FindModuleIndex(const char* modName) const;
+#endif
 public:
 	static ModuleManager* GetInstance()
 	{
@@ -28,7 +34,7 @@ public:
 		return &instance;
 	}
 	
-	static const bool EnumerateModules(const int procID, Vector<Win32ModuleInformation>& outModules);
+	static const bool EnumerateModules(const int procID, Index<Win32ModuleInformation>& outModules, SIZE_T* lowerBound, SIZE_T* upperBound);
 	
 	void ClearModules();
 	const bool Initialize();
@@ -41,7 +47,6 @@ public:
 	const int GetModuleCount() const;
 	const Win32ModuleInformation* GetModuleFromContainedAddress(const SIZE_T address) const;
 	const Win32ModuleInformation* FindModule(const char* modName) const;
-	const int FindModuleIndex(const char* modName) const;
 	String GetModuleFilename(const SIZE_T mod) const;
 	
 	const Win32ModuleInformation& operator [] (const int x) const

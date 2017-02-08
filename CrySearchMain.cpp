@@ -155,7 +155,7 @@ void DispatchOptionsOperation32(const DWORD options, FileOut& outStream)
 		for (int i = 0; i < modCount; ++i)
 		{
 			const Win32ModuleInformation& curMod = (*mModuleManager)[i];
-			outStream << Format("%s, Base Address: %lX, Size: %lX\r\n", mModuleManager->GetModuleFilename(curMod.BaseAddress), (LONG_PTR)curMod.BaseAddress, curMod.Length);
+			outStream << Format("%s, Base Address: %lX, Size: %lX\r\n", mModuleManager->GetModuleFilename(curMod.BaseAddress), (LONG_PTR)curMod.BaseAddress, (LONG_PTR)curMod.Length);
 		}
 	}
 	
@@ -250,7 +250,7 @@ void DispatchOptionsOperation32(const DWORD options, FileOut& outStream)
 			for (int i = 0; i < modCount; ++i)
 			{
 				const Win32ModuleInformation& curMod = (*mModuleManager)[i];
-				outStream << Format("%s, Base Address: %llX, Size: %llX\r\n", mModuleManager->GetModuleFilename(curMod.BaseAddress), (LONG_PTR)curMod.BaseAddress, curMod.Length);
+				outStream << Format("%s, Base Address: %llX, Size: %llX\r\n", mModuleManager->GetModuleFilename(curMod.BaseAddress), (LONG_PTR)curMod.BaseAddress, (LONG_PTR)curMod.Length);
 			}
 		}
 		

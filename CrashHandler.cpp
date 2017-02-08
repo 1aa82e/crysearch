@@ -49,7 +49,7 @@ void CryCrashHandlerWindow::CloseWindow()
 }
 
 // Finds information about a loaded module by its address.
-const Win32ModuleInformation* FindLocalModuleAddress(const Vector<Win32ModuleInformation>& mods, const SIZE_T current)
+const Win32ModuleInformation* FindLocalModuleAddress(const Index<Win32ModuleInformation>& mods, const SIZE_T current)
 {
 	const int modCount = mods.GetCount();
 	for (int i = 0; i < modCount; ++i)
@@ -147,8 +147,8 @@ LONG __stdcall CrashHandler(PEXCEPTION_POINTERS ExceptionInfo)
 	}
 	
 	// Retrieve a locally loaded module list to trace back the exception through modules.
-	Vector<Win32ModuleInformation> localMods;
-	ModuleManager::EnumerateModules(GetCurrentProcessId(), localMods);
+	Index<Win32ModuleInformation> localMods;
+	ModuleManager::EnumerateModules(GetCurrentProcessId(), localMods, NULL, NULL);
 	
 	// Iterate the obtained stack trace.
 	const int count = callstack.GetCount();

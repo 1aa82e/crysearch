@@ -107,9 +107,6 @@ void PortableExecutable::ParseMachineType(const DWORD machineType) const
 		case IMAGE_FILE_MACHINE_AMD64:
 			LoadedProcessPEInformation.PEFields.Add("Machine Type", "amd64");
 			break;
-		default:
-			// This function is never called with other values than the three cases so we may assume a dead code path.
-			__assume(0);
 	}
 }
 
@@ -157,9 +154,6 @@ void PortableExecutable::ParseSubsystemValue(const DWORD subSystem) const
 		case IMAGE_SUBSYSTEM_WINDOWS_BOOT_APPLICATION:
 			LoadedProcessPEInformation.PEFields.Add("Subsystem", "Boot application");
 			break;
-		default:
-			// Since the compiler cannot predict what value is in the Subsystem variable, we need to make the compiler assume there are no other values then stated.
-			__assume(0);
 	}
 }
 

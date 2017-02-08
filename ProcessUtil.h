@@ -9,12 +9,23 @@ using namespace Upp;
 // and to dump data from the process' memory.
 struct Win32ModuleInformation : Moveable<Win32ModuleInformation>
 {
+	// The base address of the module.
 	SIZE_T BaseAddress;
-#ifdef _WIN64
-	__int64 Length;
-#else
-	int Length;
-#endif
+	
+	// The size of the module in memory.
+	SIZE_T Length;
+	
+	unsigned GetHashValue() const
+	{
+		return ::GetHashValue(this->BaseAddress);
+	}
+	
+	// Constructor for simplifying constructiong of module object.
+	Win32ModuleInformation(const SIZE_T base, const SIZE_T sz)
+	{
+		this->BaseAddress = base;
+		this->Length = sz;
+	};
 };
 
 // Represents a process that is running on the system. It can be enumerated and used as identifying

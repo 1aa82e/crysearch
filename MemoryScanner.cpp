@@ -44,13 +44,13 @@ inline const bool* RunForOne(const bool* AddressBuffer, const int maxCount)
 // Adds a set of new search results to the cache vectors. Up to a million results are kept in memory for GUI visibility.
 void AddResultsToCache(const int addrCount, const int valueCount, const SIZE_T baseAddr, const unsigned int distance, const bool* AddressBuffer, const Byte* lengthBuffers)
 {
+	// Lock access to the cache vector.
+	CacheMutex.Enter();
+
 	// While the count is not yet bigger than the threshold, we may copy the entries into the cache.
 	const int possible = MEMORYSCANNER_CACHE_LIMIT - CachedAddresses.GetCount();
 	if (possible > 0)
-	{
-		// Lock access to the cache vector.
-		CacheMutex.Enter();
-		
+	{	
 		// Add entries to the cache.
 		const bool* runBuf = AddressBuffer;
 		const int minIt = min(possible, valueCount);
@@ -72,10 +72,10 @@ void AddResultsToCache(const int addrCount, const int valueCount, const SIZE_T b
 				entry.StringLength = lengthBuffers[i];
 			}
 		}
-
-		// Release the lock.
-		CacheMutex.Leave();
 	}
+
+	// Release the lock.
+	CacheMutex.Leave();
 }
 
 // Adds a set of new search results to the cache vectors after checking for availability.
