@@ -91,7 +91,7 @@ const bool __stdcall CryInitializePlugin()
 const bool __stdcall CreateModuleDump32(HANDLE hProcess, const void* moduleBase, const DWORD moduleSize, const char* fileName)
 {
 	MEMORY_BASIC_INFORMATION block;
-	DWORD dwBlockSize = 0;
+	SIZE_T dwBlockSize = 0;
 
 	// Create output file.
 	HANDLE hFile = CreateFileA(fileName, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
@@ -101,7 +101,7 @@ const bool __stdcall CreateModuleDump32(HANDLE hProcess, const void* moduleBase,
 	}
 
 	// Set the base address for VirtualQueryEx to the correct value.
-	block.BaseAddress = (void*)(DWORD)moduleBase;
+	block.BaseAddress = (void*)moduleBase;
 
 	// Dumping the whole module failed, scan the memory information instead.
 	while (VirtualQueryEx(hProcess, block.BaseAddress, &block, sizeof(block)) && (dwBlockSize < moduleSize))
@@ -110,7 +110,7 @@ const bool __stdcall CreateModuleDump32(HANDLE hProcess, const void* moduleBase,
 		BYTE* buffer = (BYTE*)VirtualAlloc(NULL, block.RegionSize, MEM_COMMIT, PAGE_READWRITE);
 
 		// We are interested in committed pages.
-		if (block.State & MEM_COMMIT)
+		if (block.State == MEM_COMMIT)
 		{
 			// Check if the pages are accessible. Protected memory pages should be skipped and filled with zero's.
 			if ((block.Protect & PAGE_GUARD) || (block.Protect & PAGE_NOACCESS))
@@ -127,9 +127,6 @@ const bool __stdcall CreateModuleDump32(HANDLE hProcess, const void* moduleBase,
 					memset(buffer, 0, block.RegionSize);
 				}
 			}
-
-			// Flush the buffer to the output file.
-			WriteFile(hFile, buffer, block.RegionSize, NULL, NULL);
 		}
 		else
 		{
@@ -137,7 +134,8 @@ const bool __stdcall CreateModuleDump32(HANDLE hProcess, const void* moduleBase,
 			memset(buffer, 0, block.RegionSize);
 		}
 
-
+		// Flush the buffer to the output file.
+		WriteFile(hFile, buffer, (DWORD)block.RegionSize, NULL, NULL);
 
 		// Free the local buffer for the current page contents.
 		VirtualFree(buffer, 0, MEM_RELEASE);
@@ -158,6 +156,66 @@ const bool __stdcall CreateModuleDump32(HANDLE hProcess, const void* moduleBase,
 #ifdef _WIN64
 const bool __stdcall CreateModuleDump64(HANDLE hProcess, const void* moduleBase, const ULONGLONG moduleSize, const char* fileName)
 {
+	MEMORY_BASIC_INFORMATION block;
+	SIZE_T dwBlockSize = 0;
+
+	// Create output file.
+	HANDLE hFile = CreateFileA(fileName, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+	if (hFile == INVALID_HANDLE_VALUE)
+	{
+		return FALSE;
+	}
+
+	// Set the base address for VirtualQueryEx to the correct value.
+	block.BaseAddress = (void*)moduleBase;
+
+	// Dumping the whole module failed, scan the memory information instead.
+	while (VirtualQueryEx(hProcess, block.BaseAddress, &block, sizeof(block)) && (dwBlockSize < moduleSize))
+	{
+		// Create a buffer for the memory page.
+		BYTE* buffer = (BYTE*)VirtualAlloc(NULL, block.RegionSize, MEM_COMMIT, PAGE_READWRITE);
+
+		// We are interested in committed pages.
+		if (block.State == MEM_COMMIT)
+		{
+			// Check if the pages are accessible. Protected memory pages should be skipped and filled with zero's.
+			if ((block.Protect & PAGE_GUARD) || (block.Protect & PAGE_NOACCESS))
+			{
+				memset(buffer, 0, block.RegionSize);
+			}
+			else
+			{
+				SIZE_T bytesRead;
+				ReadProcessMemory(hProcess, block.BaseAddress, buffer, block.RegionSize, &bytesRead);
+				if (bytesRead != block.RegionSize)
+				{
+					// Failed to read the memory, save it as failure.
+					memset(buffer, 0, block.RegionSize);
+				}
+			}
+		}
+		else
+		{
+			// This is not a committed page, but it still fills the output file as padding.
+			memset(buffer, 0, block.RegionSize);
+		}
+
+		// Flush the buffer to the output file.
+		WriteFile(hFile, buffer, (DWORD)block.RegionSize, NULL, NULL);
+
+		// Free the local buffer for the current page contents.
+		VirtualFree(buffer, 0, MEM_RELEASE);
+
+		// Increment output buffer size.
+		dwBlockSize += block.RegionSize;
+
+		// Increment the region address.
+		block.BaseAddress = (BYTE*)block.BaseAddress + block.RegionSize;
+	}
+
+	// All succeeded, free resources and return.
+	CloseHandle(hFile);
+
 	return TRUE;
 }
 #endif

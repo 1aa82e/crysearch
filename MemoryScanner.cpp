@@ -50,7 +50,7 @@ void AddResultsToCache(const int addrCount, const int valueCount, const SIZE_T b
 	// While the count is not yet bigger than the threshold, we may copy the entries into the cache.
 	const int possible = MEMORYSCANNER_CACHE_LIMIT - CachedAddresses.GetCount();
 	if (possible > 0)
-	{	
+	{
 		// Add entries to the cache.
 		const bool* runBuf = AddressBuffer;
 		const int minIt = min(possible, valueCount);

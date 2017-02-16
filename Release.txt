@@ -11,6 +11,7 @@ v3.0:
 		- Changes resulted in improved search performance, especially for larger scans.
 	- Added a window to view all committed memory page in the target process, with the possiblity to free them (Allocate memory window);
 	- Fixed race condition issue in the caching of search results for the user interface, keeping more results in memory than intended;
+	- Added a first version of a dumper that dumps a module by enumerating the pages inside the process base address plus size range (needs to be perfected);
 	- 
 
 v2.11:
