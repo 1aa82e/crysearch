@@ -12,6 +12,7 @@
 #include "CrySystemHandleInformationWindow.h"
 #include "CryHeapWalkDialog.h"
 #include "CryPluginsWindow.h"
+#include "CryBruteforcePIDWindow.h"
 #include "ImlProvider.h"
 #include "UIUtilities.h"
 
@@ -643,6 +644,7 @@ void CrySearchForm::EditMenu(Bar& pBar)
 // Populates the menu bar for tools.
 void CrySearchForm::ToolsMenu(Bar& pBar)
 {
+	// Some menu items should only be added when a process has been opened.
 	if (this->processLoaded)
 	{
 		pBar.Add("View PEB", CrySearchIml::AboutButton(), THISBACK(ViewPEBButtonClicked));
@@ -654,9 +656,11 @@ void CrySearchForm::ToolsMenu(Bar& pBar)
 		pBar.Add("View Heap Information", CrySearchIml::HeapWalkSmall(), THISBACK(HeapWalkMenuClicked));
 		pBar.Separator();
 		pBar.Add((this->mUserAddressList.GetCount() > 0), "Code Generation", CrySearchIml::CodeGenerationButton(), THISBACK(CodeGenerationButtonClicked));
-		pBar.Separator();
 	}
 	
+	// These menu items can be added regardless of the program state.
+	pBar.Add("Brute-Force PID", CrySearchIml::BruteForceSmall(), THISBACK(BruteForcePIDClicked));
+	pBar.Separator();
 	pBar.Add("Plugins", CrySearchIml::PluginsMenuSmall(), THISBACK(PluginsMenuClicked));
 }
 
@@ -930,6 +934,14 @@ void CrySearchForm::RemoveBreakpointMenu()
 {
 	this->mWindowManager.GetDebuggerWindow()->Cleanup();
 	mDebugger->RemoveBreakpoint(loadedTable[this->mUserAddressList.GetCursor()]->Address);
+}
+
+// Executes operations to brute force PIDs (Process ID's) to find hidden processes.
+void CrySearchForm::BruteForcePIDClicked()
+{
+	CryBruteforcePIDWindow* cbfpidw = new CryBruteforcePIDWindow();
+	cbfpidw->Execute();
+	delete cbfpidw;
 }
 
 // Executes the plugins window.

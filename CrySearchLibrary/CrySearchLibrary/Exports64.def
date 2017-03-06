@@ -30,3 +30,4 @@ EXPORTS
 	GetOSVersionString
 	GuessTypeOfValue
 	GetMappedDriveLetter
+	QueryOpenProcessBasic

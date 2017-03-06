@@ -1,5 +1,8 @@
 #include "../../../CrySearchLibrary/SDK/Plugin.h"
 
+#include <Psapi.h>
+#pragma comment(lib, "psapi.lib")
+
 CRYPLUGINHEADER SectionDumperPluginHeader;
 char creditArray[128]; //"CrySearch VirtualDump&&CrySearch dump engine that works better for .NET processes.&Written by evolution536."
 
@@ -88,57 +91,62 @@ const bool __stdcall CryInitializePlugin()
 	return TRUE;
 }
 
+// Places a signature in the PE header of the dumped process module.
+void PlaceSignatureInDump(IMAGE_DOS_HEADER* const buffer, const unsigned int maxCount)
+{
+	// Get pointer to the desired fields. We can place some stuff in the symbol table fields, since they are not used.
+	IMAGE_NT_HEADERS* nt = (IMAGE_NT_HEADERS*)((BYTE*)buffer + buffer->e_lfanew);
+	if ((SIZE_T)nt < (SIZE_T)buffer + maxCount)
+	{
+		nt->FileHeader.NumberOfSymbols = 0x6F7665;
+		nt->FileHeader.PointerToSymbolTable = 0x797243;
+	}
+}
+
 const bool __stdcall CreateModuleDump32(HANDLE hProcess, const void* moduleBase, const DWORD moduleSize, const char* fileName)
 {
-	MEMORY_BASIC_INFORMATION block;
-	SIZE_T dwBlockSize = 0;
-
 	// Create output file.
 	HANDLE hFile = CreateFileA(fileName, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 	if (hFile == INVALID_HANDLE_VALUE)
 	{
-		return FALSE;
+		return false;
 	}
 
 	// Set the base address for VirtualQueryEx to the correct value.
+	MEMORY_BASIC_INFORMATION block;
 	block.BaseAddress = (void*)moduleBase;
+	SIZE_T dwBlockSize = 0;
+
+	// Create a buffer for the memory page.
+	BYTE* buffer = (BYTE*)VirtualAlloc(NULL, moduleSize, MEM_COMMIT, PAGE_READWRITE);
 
 	// Dumping the whole module failed, scan the memory information instead.
 	while (VirtualQueryEx(hProcess, block.BaseAddress, &block, sizeof(block)) && (dwBlockSize < moduleSize))
 	{
-		// Create a buffer for the memory page.
-		BYTE* buffer = (BYTE*)VirtualAlloc(NULL, block.RegionSize, MEM_COMMIT, PAGE_READWRITE);
-
 		// We are interested in committed pages.
 		if (block.State == MEM_COMMIT)
 		{
 			// Check if the pages are accessible. Protected memory pages should be skipped and filled with zero's.
 			if ((block.Protect & PAGE_GUARD) || (block.Protect & PAGE_NOACCESS))
 			{
-				memset(buffer, 0, block.RegionSize);
+				memset(buffer + dwBlockSize, 0, block.RegionSize);
 			}
 			else
 			{
 				SIZE_T bytesRead;
-				ReadProcessMemory(hProcess, block.BaseAddress, buffer, block.RegionSize, &bytesRead);
+				ReadProcessMemory(hProcess, block.BaseAddress, buffer + dwBlockSize, block.RegionSize, &bytesRead);
 				if (bytesRead != block.RegionSize)
 				{
 					// Failed to read the memory, save it as failure.
-					memset(buffer, 0, block.RegionSize);
+					memset(buffer + dwBlockSize, 0, block.RegionSize);
 				}
 			}
 		}
 		else
 		{
 			// This is not a committed page, but it still fills the output file as padding.
-			memset(buffer, 0, block.RegionSize);
+			memset(buffer + dwBlockSize, 0, block.RegionSize);
 		}
-
-		// Flush the buffer to the output file.
-		WriteFile(hFile, buffer, (DWORD)block.RegionSize, NULL, NULL);
-
-		// Free the local buffer for the current page contents.
-		VirtualFree(buffer, 0, MEM_RELEASE);
 
 		// Increment output buffer size.
 		dwBlockSize += block.RegionSize;
@@ -147,64 +155,66 @@ const bool __stdcall CreateModuleDump32(HANDLE hProcess, const void* moduleBase,
 		block.BaseAddress = (BYTE*)block.BaseAddress + block.RegionSize;
 	}
 
+	// Place a CrySearch signature in the dumped file.
+	PlaceSignatureInDump((IMAGE_DOS_HEADER*)buffer, moduleSize);
+
+	// Flush the buffer to the output file.
+	WriteFile(hFile, buffer, moduleSize, NULL, NULL);
+
+	// Free the local buffer for the current page contents.
+	VirtualFree(buffer, 0, MEM_RELEASE);
+
 	// All succeeded, free resources and return.
 	CloseHandle(hFile);
 
-	return TRUE;
+	return true;
 }
 
 #ifdef _WIN64
 const bool __stdcall CreateModuleDump64(HANDLE hProcess, const void* moduleBase, const ULONGLONG moduleSize, const char* fileName)
 {
-	MEMORY_BASIC_INFORMATION block;
-	SIZE_T dwBlockSize = 0;
-
 	// Create output file.
 	HANDLE hFile = CreateFileA(fileName, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 	if (hFile == INVALID_HANDLE_VALUE)
 	{
-		return FALSE;
+		return false;
 	}
 
 	// Set the base address for VirtualQueryEx to the correct value.
+	MEMORY_BASIC_INFORMATION block;
 	block.BaseAddress = (void*)moduleBase;
+	SIZE_T dwBlockSize = 0;
+
+	// Create a buffer for the memory page.
+	BYTE* buffer = (BYTE*)VirtualAlloc(NULL, moduleSize, MEM_COMMIT, PAGE_READWRITE);
 
 	// Dumping the whole module failed, scan the memory information instead.
 	while (VirtualQueryEx(hProcess, block.BaseAddress, &block, sizeof(block)) && (dwBlockSize < moduleSize))
 	{
-		// Create a buffer for the memory page.
-		BYTE* buffer = (BYTE*)VirtualAlloc(NULL, block.RegionSize, MEM_COMMIT, PAGE_READWRITE);
-
 		// We are interested in committed pages.
 		if (block.State == MEM_COMMIT)
 		{
 			// Check if the pages are accessible. Protected memory pages should be skipped and filled with zero's.
 			if ((block.Protect & PAGE_GUARD) || (block.Protect & PAGE_NOACCESS))
 			{
-				memset(buffer, 0, block.RegionSize);
+				memset(buffer + dwBlockSize, 0, block.RegionSize);
 			}
 			else
 			{
 				SIZE_T bytesRead;
-				ReadProcessMemory(hProcess, block.BaseAddress, buffer, block.RegionSize, &bytesRead);
+				ReadProcessMemory(hProcess, block.BaseAddress, buffer + dwBlockSize, block.RegionSize, &bytesRead);
 				if (bytesRead != block.RegionSize)
 				{
 					// Failed to read the memory, save it as failure.
-					memset(buffer, 0, block.RegionSize);
+					memset(buffer + dwBlockSize, 0, block.RegionSize);
 				}
 			}
 		}
 		else
 		{
 			// This is not a committed page, but it still fills the output file as padding.
-			memset(buffer, 0, block.RegionSize);
+			memset(buffer + dwBlockSize, 0, block.RegionSize);
 		}
-
-		// Flush the buffer to the output file.
-		WriteFile(hFile, buffer, (DWORD)block.RegionSize, NULL, NULL);
-
-		// Free the local buffer for the current page contents.
-		VirtualFree(buffer, 0, MEM_RELEASE);
 
 		// Increment output buffer size.
 		dwBlockSize += block.RegionSize;
@@ -213,10 +223,19 @@ const bool __stdcall CreateModuleDump64(HANDLE hProcess, const void* moduleBase,
 		block.BaseAddress = (BYTE*)block.BaseAddress + block.RegionSize;
 	}
 
+	// Place a CrySearch signature in the dumped file.
+	PlaceSignatureInDump((IMAGE_DOS_HEADER*)buffer, moduleSize);
+
+	// Flush the buffer to the output file.
+	WriteFile(hFile, buffer, moduleSize, NULL, NULL);
+
+	// Free the local buffer for the current page contents.
+	VirtualFree(buffer, 0, MEM_RELEASE);
+
 	// All succeeded, free resources and return.
 	CloseHandle(hFile);
 
-	return TRUE;
+	return true;
 }
 #endif
 

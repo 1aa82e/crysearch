@@ -39,7 +39,7 @@ extern "C"
 	const int CryAllocateProcessMemory(HANDLE procHandle, const unsigned int MemorySize, const int protection, SIZE_T* pVirtualAddress);
 
 	// Attempts to close a remote handle. It duplicates the handle while closing the source and then closes the duplicate.
-	// Returns TRUE if the operation succeeded and FALSE otherwise.
+	// Returns true if the operation succeeded and false otherwise.
 	const bool CloseRemoteHandle(HANDLE procHandle, HANDLE handle);
 
 	// GetProcAddress equivalent for external Wow64 processes. Used widely for PE features. Returns the 32-bit address of a function in a 32-bit DLL in a process.
@@ -47,11 +47,11 @@ extern "C"
 	const DWORD Wow64GetProcAddress(HANDLE hProcess, const DWORD moduleBase, const char* const funcName);
 
 	// Checks whether a process is still active. It actually checks whether the process still responds to user input.
-	// Returns TRUE if the process is still active and FALSE otherwise.
+	// Returns true if the process is still active and false otherwise.
 	const bool IsProcessActive(HANDLE procHandle);
 
 	// Creates a snapshot of the thread specified by the threadId parameter. The thread context is put into the second parameter.
-	// Returns TRUE if the snapshot succeeded and FALSE otherwise.
+	// Returns true if the snapshot succeeded and false otherwise.
 #ifdef _WIN64
 	const bool SnapThreadContext32(const int threadId, PWOW64_CONTEXT pContext);
 	const bool SnapThreadContext64(const int threadId, PCONTEXT pContext);
@@ -59,6 +59,23 @@ extern "C"
 	const bool SnapThreadContext32(const int threadId, PCONTEXT pContext);
 #endif
 
+	// Represents basic process information that can be returned by the QueryOpenProcessBasic function.
+	struct BasicOpenProcessInfo
+	{
+		// The actual PID of the process.
+		int ProcessID;
+
+		// The full path of the process executable.
+		wchar_t ProcessPath[MAX_PATH];
+
+		// Indicates whether the queried process is 32-bit or 64-bit.
+		bool Is32;
+	};
+
+	// Attempts to open a process by its specified process ID and returns some basic information about it if the function succeeds.
+	// Returns true if the function succeeds and false otherwise.
+	// Remark: This process is intrusive, it calls OpenProcess with PROCESS_VM_READ access rights.
+	const bool QueryOpenProcessBasic(const int pid, BasicOpenProcessInfo* const outInfo);
 #ifdef __cplusplus
 }
 #endif

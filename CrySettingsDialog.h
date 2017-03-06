@@ -80,6 +80,7 @@ private:
 	Option mHideNonWow64ModulesInX64;
 	Option mSignatureDefaultMasking;
 	Option mWarnForPackedExecutable;
+	Option mShowArchitectureInProcWindow;
 	
 	void LoadSettings();
 	void SaveSettings();

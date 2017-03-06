@@ -66,6 +66,18 @@ const bool __stdcall CryInitializePlugin()
 	return TRUE;
 }
 
+// Places a signature in the PE header of the dumped process module.
+void PlaceSignatureInDump(IMAGE_DOS_HEADER* const buffer, const unsigned int maxCount)
+{
+	// Get pointer to the desired fields. We can place some stuff in the symbol table fields, since they are not used.
+	IMAGE_NT_HEADERS* nt = (IMAGE_NT_HEADERS*)((BYTE*)buffer + buffer->e_lfanew);
+	if ((SIZE_T)nt < (SIZE_T)buffer + maxCount)
+	{
+		nt->FileHeader.NumberOfSymbols = 0x6F7665;
+		nt->FileHeader.PointerToSymbolTable = 0x797243;
+	}
+}
+
 #ifdef _WIN64
 	BYTE* const ReadModuleFromMemory64(HANDLE hProcess, const void* moduleBase, const ULONGLONG moduleSize)
 	{
@@ -140,6 +152,9 @@ const bool __stdcall CreateModuleDump32(HANDLE hProcess, const void* moduleBase,
 	DWORD bytesWritten;
 	BYTE* const buffer = ReadModuleFromMemory32(hProcess, moduleBase, moduleSize);
 
+	// Place a CrySearch signature in the dumped file.
+	PlaceSignatureInDump((IMAGE_DOS_HEADER*)buffer, moduleSize);
+
 	// Create output file
 	HANDLE hFile = CreateFileA(fileName, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 	if (hFile == INVALID_HANDLE_VALUE)
@@ -167,6 +182,9 @@ const bool __stdcall CreateModuleDump32(HANDLE hProcess, const void* moduleBase,
 		bool result = true;
 		DWORD bytesWritten;
 		BYTE* const buffer = ReadModuleFromMemory64(hProcess, moduleBase, moduleSize);
+
+		// Place a CrySearch signature in the dumped file.
+		PlaceSignatureInDump((IMAGE_DOS_HEADER*)buffer, moduleSize);
 
 		// Create output file
 		HANDLE hFile = CreateFileA(fileName, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);

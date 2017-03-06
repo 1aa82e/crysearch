@@ -15,9 +15,10 @@ const bool __stdcall IsI386Process(HANDLE procHandle)
 	// Get native system info. GetSystemInfo will not return the desired information at all times.
 	GetNativeSystemInfo(&sysInfo);
 
+	// Are we running on an x86 operating system?
 	if (sysInfo.wProcessorArchitecture == 0)
 	{
-		is32 = TRUE;
+		is32 = true;
 	}
 	else
 	{
@@ -276,3 +277,35 @@ const bool IsProcessActive(HANDLE procHandle)
 		return true;
 	}
 #endif
+
+// Attempts to open a process by its specified process ID and returns some basic information about it if the function succeeds.
+// Returns true if the function succeeds and false otherwise.
+// Remark: This process is intrusive, it calls OpenProcess for reading.
+const bool QueryOpenProcessBasic(const int pid, BasicOpenProcessInfo* const outInfo)
+{
+	// Check if the input buffer is non-NULL.
+	if (!outInfo)
+	{
+		return false;
+	}
+
+	// Attempt to open the process with read access rights.
+	HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, pid);
+	if (!hProcess || hProcess == INVALID_HANDLE_VALUE)
+	{
+		// Failed to open the process.
+		return false;
+	}
+
+	// We know that this process opens, so save the PID.
+	outInfo->ProcessID = pid;
+
+	// Query the full process path name.
+	DWORD bytesWritten = sizeof(outInfo->ProcessPath);
+	QueryFullProcessImageName(hProcess, 0, outInfo->ProcessPath, &bytesWritten);
+
+	// Check whether the process is 32-bit or 64-bit.
+	outInfo->Is32 = IsI386Process(hProcess);
+
+	return true;
+}

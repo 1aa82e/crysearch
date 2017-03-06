@@ -104,6 +104,7 @@ private:
 	void LinkHotkeysToActions();
 	void RemoveBreakpointMenu();
 	void PluginsMenuClicked();
+	void BruteForcePIDClicked();
 	void ExecuteCrashHandlerWindowSafe(const String& msg, volatile bool* const comp);
 	
 	bool InitializeProcessUI();

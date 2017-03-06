@@ -38,6 +38,7 @@ void SettingsFile::Xmlize(XmlIO& pXml)
 		("HideNonWow64Modules", this->mHideNonWow64Modules)
 		("SignatureMaskingByDefault", this->mSignatureMaskingByDefault)
 		("WarnForPackedProcess", this->mWarnForPackedProcess)
+		("ShowArchitectureInProcWindow", this->mShowArchitectureInProcWindow)
 	;
 }
 
@@ -80,6 +81,7 @@ void SettingsFile::DefaultSettings()
 	this->SetHideNonWow64Modules();
 	this->SetSignatureMaskingByDefault();
 	this->SetWarnForPackedProcess();
+	this->SetShowArchitectureInProcWindow();
 	this->Save();
 }
 

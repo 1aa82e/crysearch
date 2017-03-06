@@ -8,7 +8,7 @@
 class CryPluginsWindow : public CryDialogTemplate
 {
 private:
-	Button mOK;	
+	Button mOK;
 	CrySearchArrayCtrl mPluginsList;
 	Label mPluginCount;
 	

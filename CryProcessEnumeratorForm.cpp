@@ -67,7 +67,7 @@ void ProcessSelectionDragArea::LeftUp(Point p, dword keyflags)
 // Default CryProcessEnumeratorForm constructor.
 CryProcessEnumeratorForm::CryProcessEnumeratorForm(const Image& icon) : CryDialogTemplate(icon)
 {
-	this->Title("Select Process").SetRect(0, 0, 340, 360);
+	this->Title("Select Process").SetRect(0, 0, 400, 370);
 	
 	this->mOk <<= THISBACK(OkButtonClicked);
 	this->mCancel <<= THISBACK(CancelButtonClicked);
@@ -77,8 +77,8 @@ CryProcessEnumeratorForm::CryProcessEnumeratorForm(const Image& icon) : CryDialo
 	this->mSearchBox.WhenAction = THISBACK(SearchProcess);
 	
 	this->mProcessList.CryAddColumn("", 10).SetDisplay(ImageDisplay());
-	ArrayCtrl::Column& col0 = this->mProcessList.CryAddColumn("PID", 25);
-	ArrayCtrl::Column& col1 = this->mProcessList.CryAddColumn("Title", 65);
+	ArrayCtrl::Column& col0 = this->mProcessList.CryAddColumn("PID", 20);
+	ArrayCtrl::Column& col1 = this->mProcessList.CryAddColumn("Title", 70);
 	this->mProcessList.WhenLeftDouble = THISBACK(OkButtonClicked);
 	
 	col0.HeaderTab().WhenAction = THISBACK(IdColumnHeaderClicked);
@@ -90,12 +90,12 @@ CryProcessEnumeratorForm::CryProcessEnumeratorForm(const Image& icon) : CryDialo
 	*this
 		<< this->mInfoAboutDialog.SetText("Search for process:").HSizePos(5, 5).TopPos(5, 25)
 		<< this->mSearchBox.HSizePos(150, 5).TopPos(5, 25)
-		<< this->mHideWindowLessProcesses.SetLabel("Hide processes with no window").HSizePos(5, 30).TopPos(30, 25)
+		<< this->mHideWindowLessProcesses.SetLabel("Hide processes without window").HSizePos(5, 30).TopPos(30, 25)
 		<< this->mDragArea.RightPos(5, 20).TopPos(35, 20)
 		<< this->mProcessList.HSizePos(5, 5).VSizePos(60, 35)
-		<< this->mOk.Ok().SetLabel("OK").RightPos(5, 60).BottomPos(5, 25)
-		<< this->mCancel.SetLabel("Cancel").RightPos(70, 60).BottomPos(5, 25)
-		<< this->mRefresh.SetLabel("Refresh").RightPos(135, 65).BottomPos(5, 25)
+		<< this->mOk.Ok().SetLabel("OK").LeftPos(290, 70).BottomPos(5, 25)
+		<< this->mCancel.SetLabel("Cancel").LeftPos(215, 70).BottomPos(5, 25)
+		<< this->mRefresh.SetLabel("Refresh").LeftPos(140, 70).BottomPos(5, 25)
 		<< this->mCreateProcess.SetLabel("Create Process").LeftPos(5, 130).BottomPos(5, 25)
 	;
 	
@@ -250,17 +250,36 @@ void CryProcessEnumeratorForm::AddToProcessListMoreLess(HICON hIcon, const Win32
 		return;
 	}
 	
+	// Check if we need to append a suffix (x64) to the process.
+	String exeTitle = proc.ExeTitle;
+	if (SettingsFile::GetInstance()->GetShowArchitectureInProcWindow())
+	{
+		// Open the process to get the architecture.
+		HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, proc.ProcessId);
+		if (hProcess && hProcess != INVALID_HANDLE_VALUE)
+		{
+			// Check whether the process is x86 or x64.
+			if (!IsI386Process(hProcess))
+			{
+				exeTitle += " (x64)";
+			}
+			
+			// Close the process handle nicely.
+			CloseHandle(hProcess);
+		}
+	}
+	
 	// The process was not yet found in the list. Add it to the list.
 	if (less)
 	{
 		if (hIcon)
 		{
-			this->mProcessList.Add(CreateImageFromHICON(hIcon), proc.ProcessId, proc.ExeTitle);
+			this->mProcessList.Add(CreateImageFromHICON(hIcon), proc.ProcessId, exeTitle);
 		}
 	}
 	else
 	{
-		this->mProcessList.Add(CreateImageFromHICON(hIcon), proc.ProcessId, proc.ExeTitle);
+		this->mProcessList.Add(CreateImageFromHICON(hIcon), proc.ProcessId, exeTitle);
 	}
 }
 
