@@ -51,6 +51,12 @@ void AddResultsToCache(const int addrCount, const int valueCount, const SIZE_T b
 	const int possible = MEMORYSCANNER_CACHE_LIMIT - CachedAddresses.GetCount();
 	if (possible > 0)
 	{
+		// Linearly iterating the module list to find contained addresses is rather expensive.
+		// We can make the assumption on the input data that the number of resulting modules is small.
+		// Therefore, caching the lookup result for more addresses is a good solution.
+		const Win32ModuleInformation* mCachedContainedMod = NULL;
+		SIZE_T cachedEndAddr = 0;
+		
 		// Add entries to the cache.
 		const bool* runBuf = AddressBuffer;
 		const int minIt = min(possible, valueCount);
@@ -60,11 +66,16 @@ void AddResultsToCache(const int addrCount, const int valueCount, const SIZE_T b
 			runBuf = RunForOne(runBuf, addrCount);
 			const SIZE_T actualAddr = baseAddr + (runBuf++ - AddressBuffer) * distance;
 			
-			// Find out whether this address points inside a loaded module. Tardy this way, but this is most accurate.
-			const Win32ModuleInformation* mod = mModuleManager->GetModuleFromContainedAddress(actualAddr);
+			// Do we need to find the next module or is this address still in the current module?
+			if (!mCachedContainedMod || (actualAddr < mCachedContainedMod->BaseAddress || actualAddr > cachedEndAddr))
+			{
+				// Find out whether this address points inside a loaded module.
+				mCachedContainedMod = mModuleManager->GetModuleFromContainedAddress(actualAddr);
+				cachedEndAddr = mCachedContainedMod ? (mCachedContainedMod->BaseAddress + mCachedContainedMod->Length) : 0;
+			}
 			
 			// Add the cache values to the appropriate buffer.
-			SearchResultCacheEntry& entry = CachedAddresses.Add(SearchResultCacheEntry(actualAddr, !!mod));
+			SearchResultCacheEntry& entry = CachedAddresses.Add(SearchResultCacheEntry(actualAddr, !!mCachedContainedMod));
 
 			// If the string length is specified, add it to the search result identifier.
 			if (lengthBuffers)

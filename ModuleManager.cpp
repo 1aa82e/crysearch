@@ -133,18 +133,13 @@ const int ModuleManager::GetModuleCount() const
 // Retrieves a pointer to the module that contains the specified address. NULL if no module does.
 const Win32ModuleInformation* ModuleManager::GetModuleFromContainedAddress(const SIZE_T address) const
 {
-	// Check whether the specified address is within the range of possibly stored addresses.
-	// If it is not, we will have the worst possible performance.
-	if (address >= this->lowestAddress && address <= this->highestAddress)
+	// Walk the modules list.
+	for (auto const& mod : this->mLoadedModulesList)
 	{
-		// Walk the modules list.
-		for (auto const& mod : this->mLoadedModulesList)
+		// Check whether the address is between the current start and end address.
+		if (address >= mod.BaseAddress && address < mod.BaseAddress + mod.Length)
 		{
-			// Check whether the address is between the current start and end address.
-			if (address >= mod.BaseAddress && address < mod.BaseAddress + mod.Length)
-			{
-				return &mod;
-			}
+			return &mod;
 		}
 	}
 		
