@@ -33,6 +33,7 @@ CryBruteforcePIDWindow::CryBruteforcePIDWindow() : CryDialogTemplate(CrySearchIm
 	this->mPidResults.AddColumn("PID", 10);
 	this->mPidResults.AddColumn("Path", 70);
 	this->mPidResults.AddColumn("Architecture", 20);
+	this->mPidResults.WhenBar = THISBACK(ProcessResultWhenBar);
 	
 	*this
 		<< this->mPidResultCount.SetLabel("Click Begin to start Brute-Forcing").HSizePos(5, 5).TopPos(5, 25)
@@ -49,6 +50,24 @@ CryBruteforcePIDWindow::~CryBruteforcePIDWindow()
 }
 
 // ---------------------------------------------------------------------------------------------
+
+// Populates the context menu bar for right-clicking the brute-force result list.
+void CryBruteforcePIDWindow::ProcessResultWhenBar(Bar& pBar)
+{
+	const int row = this->mPidResults.GetCursor();
+	if (row >= 0 && this->mPidResults.GetCount() > 0)
+	{
+		pBar.Add("Open Process", CrySearchIml::AttachToProcessMenu(), THISBACK(OpenBruteForcedProcess));
+	}
+}
+
+// Opens a brute forced process.
+void CryBruteforcePIDWindow::OpenBruteForcedProcess()
+{
+	const int row = this->mPidResults.GetCursor();
+	this->tmpProc.ProcessId = this->mPidResults.Get(row, 0);
+	this->AcceptBreak(10);
+}
 
 // Closes the window.
 void CryBruteforcePIDWindow::CloseWindow()
@@ -94,5 +113,11 @@ void CryBruteforcePIDWindow::BruteForceBegin()
 // Sets the result label to whatever number of results there currently are.
 void CryBruteforcePIDWindow::SetResultLabel(const int numres)
 {
-	this->mPidResultCount.SetLabel(Format("Brute-Force found %i Process ID's (Marked red means not in process list)", numres));
+	this->mPidResultCount.SetLabel(Format("Brute-Force found %i Process ID's (Marked red means not in regular process list)", numres));
+}
+
+// Retrieves the process that is currently selected.
+Win32ProcessInformation* const CryBruteforcePIDWindow::GetSelectedProcess()
+{
+	return &this->tmpProc;
 }

@@ -319,8 +319,6 @@ void CrySearchForm::CheckKeyPresses()
 	SetTimeCallback(100, THISBACK(CheckKeyPresses), HOTKEY_TIMECALLBACK);
 }
 
-// ---------------------------------------------------------------------------------------------
-
 // Called regularly to update the search results currently visible.
 void CrySearchForm::SearchResultListUpdater()
 {
@@ -412,16 +410,6 @@ void CrySearchForm::CheckProcessTermination()
 	}
 	
 	SetTimeCallback(250, THISBACK(CheckProcessTermination), PROCESS_TERMINATION_TIMECALLBACK);
-}
-
-// Link hotkeys to the correct callbacks according to the settings file.
-void CrySearchForm::LinkHotkeysToActions()
-{
-	SettingsFile* const settings = SettingsFile::GetInstance();
-	for (unsigned int i = 0; i < settings->GetHotkeyCount(); i++)
-	{
-		settings->GetHotkey(i).Action = THISBACK(StartNextScanHotkey);
-	}
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -579,6 +567,8 @@ CrySearchForm::~CrySearchForm()
 	KillTimeCallback(PROCESS_TERMINATION_TIMECALLBACK);
 }
 
+// ---------------------------------------------------------------------------------------------
+
 // Populates the main application window menu strip.
 void CrySearchForm::MainMenu(Bar& pBar)
 {
@@ -659,7 +649,7 @@ void CrySearchForm::ToolsMenu(Bar& pBar)
 	}
 	
 	// These menu items can be added regardless of the program state.
-	pBar.Add("Brute-Force PID", CrySearchIml::BruteForceSmall(), THISBACK(BruteForcePIDClicked));
+	pBar.Add(!this->processLoaded, "Brute-Force PID", CrySearchIml::BruteForceSmall(), THISBACK(BruteForcePIDClicked));
 	pBar.Separator();
 	pBar.Add("Plugins", CrySearchIml::PluginsMenuSmall(), THISBACK(PluginsMenuClicked));
 }
@@ -700,6 +690,74 @@ void CrySearchForm::HelpMenu(Bar& pBar)
 {
 	pBar.Add("About", CrySearchIml::AboutButton(), THISBACK(AboutCrySearch));
 }
+
+// // Populates the menu bar for changing properties of address table entries.
+void CrySearchForm::ChangeRecordSubMenu(Bar& pBar)
+{
+	pBar.Add("Description", THISBACK1(AddressListChangeProperty, CRDM_DESCRIPTION));
+	pBar.Add(this->mUserAddressList.GetSelectCount() == 1, "Address", THISBACK1(AddressListChangeProperty, CRDM_ADDRESS));
+	pBar.Add(!mMemoryScanner->IsReadOnlyOperationMode(), "Value", THISBACK1(AddressListChangeProperty, CRDM_VALUE));
+	pBar.Add("Type", THISBACK1(AddressListChangeProperty, CRDM_TYPE));
+}
+
+// Executed when the user right-clicks an address in the address table.
+void CrySearchForm::UserDefinedEntryWhenBar(Bar& pBar)
+{
+	pBar.Add("Manually add address", CrySearchIml::AddToAddressList(), THISBACK(ManuallyAddAddressToTable));
+	
+	const int row = this->mUserAddressList.GetCursor();
+	if (row >= 0 && loadedTable.GetCount() > 0)
+	{
+		pBar.Add("Dissect memory", CrySearchIml::MemoryDissection(), THISBACK(AddressListEntryMemoryDissection));
+		pBar.Separator();
+		
+		if (loadedTable[row]->Frozen)
+		{
+			pBar.Add(!mMemoryScanner->IsReadOnlyOperationMode(), "Thaw", CrySearchIml::ThawIconSmall(), THISBACK(ToggleAddressTableFreezeThaw));
+		}
+		else
+		{
+			pBar.Add(!mMemoryScanner->IsReadOnlyOperationMode(), "Freeze", CrySearchIml::FreezeAddressSmall(), THISBACK(ToggleAddressTableFreezeThaw));
+		}
+		
+		// Add decimal/hexadecimal toggle button.
+		pBar.Add(viewAddressTableValueHex ? "View as decimal" : "View as hexadecimal", THISBACK(ToggleAddressTableValueView)).Check(viewAddressTableValueHex);
+		
+		const bool canDbg = (mDebugger && mDebugger->IsDebuggerAttached()) && this->mUserAddressList.GetSelectCount() == 1;
+		if (mDebugger && mDebugger->FindBreakpoint(loadedTable[row]->Address) == -1)
+		{
+			pBar.Add(canDbg, "Set Breakpoint", CrySearchIml::SetBreakpoint(), THISBACK(SetDataBreakpointMenu));
+		}
+		else
+		{
+			pBar.Add(canDbg, "Remove Breakpoint", CrySearchIml::DeleteButton(), THISBACK(RemoveBreakpointMenu));
+		}
+		
+		pBar.Add("Change Record", CrySearchIml::ChangeRecordIcon(), THISBACK(ChangeRecordSubMenu));
+		pBar.Separator();
+		pBar.Add("Delete\tDEL", CrySearchIml::DeleteButton(), THISBACK(DeleteUserDefinedAddress));
+	}
+}
+
+// Populates the menu bar for setting breakpoints.
+void CrySearchForm::SetDataBreakpointMenu(Bar& pBar)
+{
+	pBar.Add("Read", THISBACK(SetDataBreakpointOnRead));
+	pBar.Add("Write", THISBACK(SetDataBreakpointOnReadWrite));
+	pBar.Add("Execute", THISBACK(SetDataBreakpointOnExecute));
+}
+
+// Executed when the user right-clicks a search result.
+void CrySearchForm::SearchResultWhenBar(Bar& pBar)
+{
+	if (this->mScanResults.GetCursor() >= 0 && mMemoryScanner->GetScanResultCount() > 0)
+	{
+		pBar.Add("Add to address list", CrySearchIml::AddToAddressList(), THISBACK(SearchResultDoubleClicked));
+		pBar.Add("View as hexadecimal", THISBACK(ToggleSearchResultViewAs)).Check(GlobalScanParameter->CurrentScanHexValues);
+	}
+}
+
+// ---------------------------------------------------------------------------------------------
 
 // Handles the removal of items from the address table.
 void CrySearchForm::AddressTableRemovalRoutine(const Vector<int>& items)
@@ -753,54 +811,6 @@ void CrySearchForm::SetMainSplitterPosition()
 	const Rect r = this->mMainSplitter.GetRect();
 	const int total = r.bottom - r.top;
 	this->mMainSplitter.SetPos(((total / 2) * 10000 / total) - 600);
-}
-
-// // Populates the menu bar for changing properties of address table entries.
-void CrySearchForm::ChangeRecordSubMenu(Bar& pBar)
-{
-	pBar.Add("Description", THISBACK1(AddressListChangeProperty, CRDM_DESCRIPTION));
-	pBar.Add(this->mUserAddressList.GetSelectCount() == 1, "Address", THISBACK1(AddressListChangeProperty, CRDM_ADDRESS));
-	pBar.Add(!mMemoryScanner->IsReadOnlyOperationMode(), "Value", THISBACK1(AddressListChangeProperty, CRDM_VALUE));
-	pBar.Add("Type", THISBACK1(AddressListChangeProperty, CRDM_TYPE));
-}
-
-// Executed when the user right-clicks an address in the address table.
-void CrySearchForm::UserDefinedEntryWhenBar(Bar& pBar)
-{
-	pBar.Add("Manually add address", CrySearchIml::AddToAddressList(), THISBACK(ManuallyAddAddressToTable));
-	
-	const int row = this->mUserAddressList.GetCursor();
-	if (row >= 0 && loadedTable.GetCount() > 0)
-	{
-		pBar.Add("Dissect memory", CrySearchIml::MemoryDissection(), THISBACK(AddressListEntryMemoryDissection));
-		pBar.Separator();
-		
-		if (loadedTable[row]->Frozen)
-		{
-			pBar.Add(!mMemoryScanner->IsReadOnlyOperationMode(), "Thaw", CrySearchIml::ThawIconSmall(), THISBACK(ToggleAddressTableFreezeThaw));
-		}
-		else
-		{
-			pBar.Add(!mMemoryScanner->IsReadOnlyOperationMode(), "Freeze", CrySearchIml::FreezeAddressSmall(), THISBACK(ToggleAddressTableFreezeThaw));
-		}
-		
-		// Add decimal/hexadecimal toggle button.
-		pBar.Add(viewAddressTableValueHex ? "View as decimal" : "View as hexadecimal", THISBACK(ToggleAddressTableValueView)).Check(viewAddressTableValueHex);
-		
-		const bool canDbg = (mDebugger && mDebugger->IsDebuggerAttached()) && this->mUserAddressList.GetSelectCount() == 1;
-		if (mDebugger && mDebugger->FindBreakpoint(loadedTable[row]->Address) == -1)
-		{
-			pBar.Add(canDbg, "Set Breakpoint", CrySearchIml::SetBreakpoint(), THISBACK(SetDataBreakpointMenu));
-		}
-		else
-		{
-			pBar.Add(canDbg, "Remove Breakpoint", CrySearchIml::DeleteButton(), THISBACK(RemoveBreakpointMenu));
-		}
-		
-		pBar.Add("Change Record", CrySearchIml::ChangeRecordIcon(), THISBACK(ChangeRecordSubMenu));
-		pBar.Separator();
-		pBar.Add("Delete\tDEL", CrySearchIml::DeleteButton(), THISBACK(DeleteUserDefinedAddress));
-	}
 }
 
 // Opens up memory dissection window with new dissection dialog opened and selected address filled in.
@@ -860,24 +870,6 @@ void CrySearchForm::HeapWalkMenuClicked()
 	CryHeapWalkDialog* chwd = new CryHeapWalkDialog(CrySearchIml::HeapWalkSmall());
 	chwd->Execute();
 	delete chwd;
-}
-
-// Populates the menu bar for setting breakpoints.
-void CrySearchForm::SetDataBreakpointMenu(Bar& pBar)
-{
-	pBar.Add("Read", THISBACK(SetDataBreakpointOnRead));
-	pBar.Add("Write", THISBACK(SetDataBreakpointOnReadWrite));
-	pBar.Add("Execute", THISBACK(SetDataBreakpointOnExecute));
-}
-
-// Executed when the user right-clicks a search result.
-void CrySearchForm::SearchResultWhenBar(Bar& pBar)
-{
-	if (this->mScanResults.GetCursor() >= 0 && mMemoryScanner->GetScanResultCount() > 0)
-	{
-		pBar.Add("Add to address list", CrySearchIml::AddToAddressList(), THISBACK(SearchResultDoubleClicked));
-		pBar.Add("View as hexadecimal", THISBACK(ToggleSearchResultViewAs)).Check(GlobalScanParameter->CurrentScanHexValues);
-	}
 }
 
 // Sets a hardware breakpoint on an address.
@@ -940,7 +932,11 @@ void CrySearchForm::RemoveBreakpointMenu()
 void CrySearchForm::BruteForcePIDClicked()
 {
 	CryBruteforcePIDWindow* cbfpidw = new CryBruteforcePIDWindow();
-	cbfpidw->Execute();
+	if (cbfpidw->Execute() == 10)
+	{
+		// If the dialog result is 10, the user requested to open a brute-forced process.
+		this->WhenProcessOpened(cbfpidw->GetSelectedProcess(), true);
+	}
 	delete cbfpidw;
 }
 
@@ -1468,7 +1464,7 @@ void CrySearchForm::OpenProcessMenu()
 	CryProcessEnumeratorForm* cpef = new CryProcessEnumeratorForm(CrySearchIml::AttachToProcessMenu());
 	if (cpef->Execute() == 10)
 	{
-		this->WhenProcessOpened(cpef->GetSelectedProcess());
+		this->WhenProcessOpened(cpef->GetSelectedProcess(), false);
 	}
 	
 	delete cpef;
@@ -1868,7 +1864,19 @@ void CrySearchForm::ClearScanResultsWithoutWarning()
 	this->mToolStrip.Set(THISBACK(ToolStrip));
 }
 
-bool CrySearchForm::InitializeProcessUI()
+// Executed when opening of a process failed.
+void CrySearchForm::ProcessOpenFailedState(const bool bruteForce)
+{
+	// We want to reopen the process selection window only if this error state was not
+	// produced from a brute-force attempt.
+	if (!bruteForce)
+	{
+		PostCallback(THISBACK(OpenProcessMenu));
+	}
+}
+
+// Initializes user interface components for a newly opened process.
+bool CrySearchForm::InitializeProcessUI(const bool bruteForce)
 {
 #ifndef _WIN64
 	// Check the architecture of the loaded process. Under x64, processes can cause trouble.
@@ -1878,42 +1886,51 @@ bool CrySearchForm::InitializeProcessUI()
 		this->mWindowManager.GetModuleWindow()->Initialize();
 		this->mWindowManager.GetThreadWindow()->Initialize();
 
-		// Instantiate new PE class.
-		mPeInstance = new PortableExecutable32();
-		mDebugger = new CryDebugger32();
-		this->mWindowManager.GetPEWindow()->Initialize();
-		this->mWindowManager.GetImportsWindow()->Initialize();
-		this->mWindowManager.GetDisasmWindow()->Initialize();
+		// If we didn't succeed in retrieving the module list, we cannot do any of the following.
+		if (mModuleManager->GetModuleCount())
+		{
+			// Instantiate PE and debugger classes.
+			mPeInstance = new PortableExecutable32();
+			mDebugger = new CryDebugger32();
+			
+			this->mWindowManager.GetPEWindow()->Initialize();
+			this->mWindowManager.GetImportsWindow()->Initialize();
+			this->mWindowManager.GetDisasmWindow()->Initialize();
+			this->mWindowManager.GetDebuggerWindow()->Initialize();
+		}
 	}
 	else
 	{
 		const DWORD appname[] = {0x53797243, 0x63726165, 0x68}; //"CrySearch"
 		Prompt("Load Error", CtrlImg::error(), Format("Failed to open the selected process because it is 64-bit. Use %s x64 to open it instead.", (char*)appname), "OK");
 		mMemoryScanner->CloseProcess();
-		PostCallback(THISBACK(OpenProcessMenu));
+		this->ProcessOpenFailedState(bruteForce);
 		return false;
 	}
 #else
 	this->mWindowManager.GetModuleWindow()->Initialize();
 	this->mWindowManager.GetThreadWindow()->Initialize();
 	
-	if (mMemoryScanner->IsX86Process())
+	// If we didn't succeed in retrieving the module list, we cannot do any of the following.
+	if (mModuleManager->GetModuleCount())
 	{
-		mPeInstance = new PortableExecutable32();
-		mDebugger = new CryDebugger32();
+		if (mMemoryScanner->IsX86Process())
+		{
+			mPeInstance = new PortableExecutable32();
+			mDebugger = new CryDebugger32();
+		}
+		else
+		{
+			mPeInstance = new PortableExecutable64();
+			mDebugger = new CryDebugger64();
+		}
+		
+		this->mWindowManager.GetPEWindow()->Initialize();
+		this->mWindowManager.GetImportsWindow()->Initialize();
+		this->mWindowManager.GetDisasmWindow()->Initialize();
+		this->mWindowManager.GetDebuggerWindow()->Initialize();	
 	}
-	else
-	{
-		mPeInstance = new PortableExecutable64();
-		mDebugger = new CryDebugger64();
-	}
-	
-	this->mWindowManager.GetPEWindow()->Initialize();
-	this->mWindowManager.GetImportsWindow()->Initialize();
-	this->mWindowManager.GetDisasmWindow()->Initialize();
 #endif
-	this->mWindowManager.GetDebuggerWindow()->Initialize();
-	
 	// Still here so the process loaded succesfully. Update user interface and prepare tabs.
 	this->processLoaded = true;
 	this->mToolStrip.Set(THISBACK(ToolStrip));
@@ -1925,7 +1942,7 @@ bool CrySearchForm::InitializeProcessUI()
 	return true;
 }
 
-void CrySearchForm::WhenProcessOpened(Win32ProcessInformation* pProc)
+void CrySearchForm::WhenProcessOpened(Win32ProcessInformation* pProc, const bool bruteForce)
 {
 	// Check whether a process was previously opened.
 	if (mMemoryScanner->GetProcessId())
@@ -1949,7 +1966,7 @@ void CrySearchForm::WhenProcessOpened(Win32ProcessInformation* pProc)
 			// Check if the process actually started correctly, if it didn't, the procedure failed.
 			if (IsProcessActive(mMemoryScanner->GetHandle()))
 			{
-				if (!this->InitializeProcessUI())
+				if (!this->InitializeProcessUI(bruteForce))
 				{
 					return;
 				}
@@ -1983,14 +2000,14 @@ void CrySearchForm::WhenProcessOpened(Win32ProcessInformation* pProc)
 				// CreateProcess succeeded, but the process is not started succesfully. For example: write.exe starts wordpad.exe and then terminates.
 				Prompt("Load Error", CtrlImg::error(), "The process started succesfully but terminated before initialization. Possibly the process started another process and terminated.", "OK");
 				mMemoryScanner->CloseProcess();
-				PostCallback(THISBACK(OpenProcessMenu));
+				this->ProcessOpenFailedState(bruteForce);
 			}
 		}
 		else
 		{
 			// CreateProcess failed, no process is loaded.
 			Prompt("Load Error", CtrlImg::error(), "Failed to create the process.", "OK");
-			PostCallback(THISBACK(OpenProcessMenu));
+			this->ProcessOpenFailedState(bruteForce);
 		}
 	}
 	else
@@ -1998,7 +2015,7 @@ void CrySearchForm::WhenProcessOpened(Win32ProcessInformation* pProc)
 		// Use process ID to open an existing process.
 		if (mMemoryScanner->InitializeExistingProcess(pProc->ProcessId, NULL, SettingsFile::GetInstance()->GetEnableReadOnlyMode()))
 		{
-			if (!this->InitializeProcessUI())
+			if (!this->InitializeProcessUI(bruteForce))
 			{
 				return;
 			}
@@ -2157,6 +2174,16 @@ void CrySearchForm::ScannerPeekCompletion()
 	{
 		// Schedule the next callback to periodically check for memory scanner completion.
 		SetTimeCallback(10, THISBACK(ScannerPeekCompletion), MEMORY_SCANNER_COMPLETION_TIMECALLBACK);
+	}
+}
+
+// Link hotkeys to the correct callbacks according to the settings file.
+void CrySearchForm::LinkHotkeysToActions()
+{
+	SettingsFile* const settings = SettingsFile::GetInstance();
+	for (unsigned int i = 0; i < settings->GetHotkeyCount(); i++)
+	{
+		settings->GetHotkey(i).Action = THISBACK(StartNextScanHotkey);
 	}
 }
 

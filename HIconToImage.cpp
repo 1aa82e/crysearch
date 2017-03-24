@@ -64,6 +64,7 @@ HICON hIconForPID(DWORD pID)
 // Returns an empty image if there is no icon associated.
 Image CreateImageFromHICON(HICON icon)
 {
+	// Did we get an icon back?
 	if(!icon)
 	{
 		// The associated process did not have a main window with an icon, create blank one.
@@ -72,6 +73,7 @@ Image CreateImageFromHICON(HICON icon)
 		return Image(imgb);
 	}
 	
+	// We got an icon back. Read it and process it.
 	HDC hDC = GetDC(NULL);
 	HDC hMemDC = CreateCompatibleDC(hDC);
 	HBITMAP hBM = CreateCompatibleBitmap(hDC, 16, 16);
@@ -98,11 +100,14 @@ Image CreateImageFromHICON(HICON icon)
 	Byte* const lpbitmap = (Byte*)GlobalLock(hDIB);
 	GetDIBits(hDC, hBM, 0, (UINT)bmScreen.bmHeight, lpbitmap, (BITMAPINFO*)&bi, DIB_RGB_COLORS);
 
+	// These loops are hard to analyse for the compiler, so I added the __restrict qualifier to
+	// the pointers it uses. This way, the compiler could analyse them, because it could
+	// guarantee that lpY and bufY do not overlap. Vectorization was still unprofitable though.
 	ImageBuffer imgb(16, 16);
 	for(int y = 0; y < 16; ++y)
 	{
-		const Byte* const lpY = lpbitmap + dwScan * sizeof(RGBA) * y;
-		RGBA* const bufY = imgb[15 - y];
+		const Byte* __restrict const lpY = lpbitmap + dwScan * sizeof(RGBA) * y;
+		RGBA* __restrict const bufY = imgb[15 - y];
 		for(int x = 0; x < 16; ++x)
 		{
 			bufY[x].r = lpY[x * sizeof(RGBA) + 2];
@@ -111,7 +116,8 @@ Image CreateImageFromHICON(HICON icon)
 			bufY[x].a = 255;
 		}
 	}
-
+	
+	// Free used resources.
 	GlobalUnlock(hDIB);
 	GlobalFree(hDIB);
 	SelectObject(hMemDC, hOldBM);

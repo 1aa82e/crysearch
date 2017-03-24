@@ -107,8 +107,9 @@ private:
 	void BruteForcePIDClicked();
 	void ExecuteCrashHandlerWindowSafe(const String& msg, volatile bool* const comp);
 	
-	bool InitializeProcessUI();
-	void WhenProcessOpened(Win32ProcessInformation* pProc);
+	bool InitializeProcessUI(const bool bruteForce);
+	void ProcessOpenFailedState(const bool bruteForce);
+	void WhenProcessOpened(Win32ProcessInformation* pProc, const bool bruteForce);
 	void MemorySearch();
 	void RefreshSearchResults();
 	void StartNextScanHotkey();

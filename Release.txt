@@ -16,7 +16,9 @@ v3.0:
 		- Added a signature to dumped files; the signature is placed in the NumberOfSymbols and PointerToSymbolTable fields in the PE header.
 	- Added option (settings window, advanced tab) to show architecture of process in open process window (intrusive, turned off by default);
 	- Added feature for brute-forcing process IDs (PID) to find possibly hidden processes. Available from Tools window:
-		- Tries PIDs from 0 to 65535, and colors processes that were not found in the regular process list red.
+		- Tries PIDs from 0 to 65535, and colors processes that were not found in the regular process list red;
+		- Allows opening of brute-forced processes from right clicking.
+	- Fixed a bug where CrySearch fails to retrieve the module list on opening a process that results in an infinite loop;
 	- 
 
 v2.11:
