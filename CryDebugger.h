@@ -223,8 +223,6 @@ private:
 	
 	typedef CryDebugger CLASSNAME;
 protected:
-	const SettingsFile* mSettingsInstance;
-	
 	// Linked list with ownership property to take care of polymorphic breakpoint data structures.
 	Array<DbgBreakpoint> mBreakpoints;
 	

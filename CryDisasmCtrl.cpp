@@ -224,7 +224,7 @@ void CryDisasmCtrl::NopSelectedCode()
 			
 			// Write NOP instructions to the selected memory location.
 			memset(disLineBytes.Data, 0x90, disLineBytes.Size);
-			mMemoryScanner->Poke(address, disLineBytes);
+			mMemoryScanner->PokeB(address, disLineBytes);
 		}
 	}
 	

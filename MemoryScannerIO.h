@@ -10,7 +10,12 @@ struct StorageFileHeader
 	// Indicates the number of storage blocks in this file.
 	unsigned int BlockCount;
 	
-	StorageFileHeader() { };
+	// Default initialization constructor.
+	StorageFileHeader()
+	{
+		this->WorkerId = 0;
+		this->BlockCount = 0;
+	};
 	
 	// Default constructor to simplify basic construction.
 	StorageFileHeader(const int worker)

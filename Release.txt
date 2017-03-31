@@ -19,6 +19,7 @@ v3.0:
 		- Tries PIDs from 0 to 65535, and colors processes that were not found in the regular process list red;
 		- Allows opening of brute-forced processes from right clicking.
 	- Fixed a bug where CrySearch fails to retrieve the module list on opening a process that results in an infinite loop;
+	- Some general code improvements that resulted in decreased executable file size;
 	- 
 
 v2.11:

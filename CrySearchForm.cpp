@@ -272,148 +272,6 @@ String GetAddressTableValueType(const int index)
 
 // ---------------------------------------------------------------------------------------------
 
-// Checks key presses across all controls. Consider it a global key event function.
-void CrySearchForm::CheckKeyPresses()
-{
-	if (SettingsFile::GetInstance()->GetEnableHotkeys())
-	{
-		const unsigned int count = SettingsFile::GetInstance()->GetHotkeyCount();
-		if (count > 0)
-		{
-			// Iterate saved hotkeys and configure parameters for its configured actions.
-			for (unsigned int i = 0; i < count; ++i)
-			{
-				const CrySearchHotKey& curKey = SettingsFile::GetInstance()->GetHotkey(i);
-				
-				// Check if the configured key is currently pressed.
-				if (GetAsyncKeyState(curKey.Key) & 1)
-				{
-					if (!mMemoryScanner->IsScanRunning() && mMemoryScanner->GetScanResultCount() > 0)
-					{
-						if (curKey.Description == "Refresh search results, changed value")
-						{
-							GlobalScanParameter->GlobalScanType = SCANTYPE_CHANGED;
-						}
-						else if (curKey.Description == "Refresh search results, unchanged value")
-						{
-							GlobalScanParameter->GlobalScanType = SCANTYPE_UNCHANGED;
-						}
-						else if (curKey.Description == "Refresh search results, increased value")
-						{
-							GlobalScanParameter->GlobalScanType = SCANTYPE_INCREASED;
-						}
-						else if (curKey.Description == "Refresh search results, decreased value")
-						{
-							GlobalScanParameter->GlobalScanType = SCANTYPE_DECREASED;
-						}
-						
-						// Finally, execute the action for all of these. (Since its the same for all)
-						curKey.Action();
-					}
-				}
-			}
-		}
-	}
-	
-	// Reinstate the callback for the next iteration.
-	SetTimeCallback(100, THISBACK(CheckKeyPresses), HOTKEY_TIMECALLBACK);
-}
-
-// Called regularly to update the search results currently visible.
-void CrySearchForm::SearchResultListUpdater()
-{
-	// Refresh the address table ArrayCtrl to force updating of the values.
-	this->mScanResults.Refresh();
-	
-	// Reinstate the callback for the next iteration.
-	SetTimeCallback(1000, THISBACK(SearchResultListUpdater), UPDATE_RESULTS_TIMECALLBACK);
-}
-
-// Called regularly to update entries currently in the address table.
-void CrySearchForm::AddressValuesUpdater()
-{
-	// If CrySearch is operating in read only mode, nothing may be written to the target process.
-	if (mMemoryScanner->IsReadOnlyOperationMode())
-	{
-		return;
-	}
-	
-	// Handle frozen addresses.
-	const int addrTableCount = loadedTable.GetCount();
-	for (int i = 0; i < addrTableCount; ++i)
-	{
-		const AddressTableEntry* curEntry = loadedTable[i];
-		if (curEntry->Frozen)
-		{
-			if (curEntry->ValueType == CRYDATATYPE_BYTE)
-			{
-				mMemoryScanner->Poke<Byte>(curEntry->Address, (Byte)ScanInt(curEntry->Value, NULL, 10));
-			}
-			else if (curEntry->ValueType == CRYDATATYPE_2BYTES)
-			{
-				mMemoryScanner->Poke<short>(curEntry->Address, (short)ScanInt(curEntry->Value, NULL, 10));
-			}
-			else if (curEntry->ValueType == CRYDATATYPE_4BYTES)
-			{
-				mMemoryScanner->Poke<int>(curEntry->Address, ScanInt(curEntry->Value, NULL, 10));
-			}
-			else if (curEntry->ValueType == CRYDATATYPE_8BYTES)
-			{
-				mMemoryScanner->Poke<__int64>(curEntry->Address, ScanInt64(curEntry->Value, NULL, 10));
-			}
-			else if (curEntry->ValueType == CRYDATATYPE_FLOAT)
-			{
-				mMemoryScanner->Poke<float>(curEntry->Address, (float)StrDbl(curEntry->Value));
-			}
-			else if (curEntry->ValueType == CRYDATATYPE_DOUBLE)
-			{
-				mMemoryScanner->Poke<double>(curEntry->Address, StrDbl(curEntry->Value));
-			}
-			else if (curEntry->ValueType == CRYDATATYPE_AOB)
-			{
-				ArrayOfBytes aob = StringToBytes(curEntry->Value);
-				mMemoryScanner->Poke(curEntry->Address, aob);
-				curEntry->Size = aob.Size;
-			}
-			else if (curEntry->ValueType == CRYDATATYPE_STRING)
-			{
-				mMemoryScanner->Poke<String>(curEntry->Address, curEntry->Value);
-			}
-			else if (curEntry->ValueType == CRYDATATYPE_WSTRING)
-			{
-				mMemoryScanner->Poke<WString>(curEntry->Address, curEntry->Value.ToWString());
-			}
-		}
-	}
-	
-	// Refresh the address table ArrayCtrl to force the values to update.
-	this->mUserAddressList.Refresh();
-	
-	// Reinstate timer queue callback to ensure timer keeps running.
-	SetTimeCallback(SettingsFile::GetInstance()->GetAddressTableUpdateInterval(), THISBACK(AddressValuesUpdater), ADDRESS_TABLE_UPDATE_TIMECALLBACK);
-}
-
-// This callback checks whether the process is still running, if one is opened.
-// If the opened process terminated somehow, CrySearch will close it internally.
-void CrySearchForm::CheckProcessTermination()
-{
-	if (mMemoryScanner->GetProcessId() > 0)
-	{
-		if (!IsProcessActive(mMemoryScanner->GetHandle()))
-		{
-			this->ProcessTerminated = true;
-			this->ScannerErrorOccured(PROCESSWASTERMINATED);
-			
-			// Kill the callback, otherwise errors will keep coming.
-			KillTimeCallback(PROCESS_TERMINATION_TIMECALLBACK);
-		}
-	}
-	
-	SetTimeCallback(250, THISBACK(CheckProcessTermination), PROCESS_TERMINATION_TIMECALLBACK);
-}
-
-// ---------------------------------------------------------------------------------------------
-
 // If CrySearch was opened using a file association, open the file straight away.
 // If CrySearch was opened regularly, pass NULL as parameter.
 CrySearchForm::CrySearchForm(const char* fn)
@@ -576,7 +434,8 @@ void CrySearchForm::MainMenu(Bar& pBar)
 	pBar.Add("Edit", THISBACK(EditMenu));
 	pBar.Add("Tools", THISBACK(ToolsMenu));
 	
-	if (this->processLoaded)
+	// Some menu items should only be added when a process has been opened.
+	if (this->processLoaded && mModuleManager->GetModuleCount())
 	{
 		pBar.Add("Debugger", THISBACK(DebuggerMenu));
 	}
@@ -634,7 +493,6 @@ void CrySearchForm::EditMenu(Bar& pBar)
 // Populates the menu bar for tools.
 void CrySearchForm::ToolsMenu(Bar& pBar)
 {
-	// Some menu items should only be added when a process has been opened.
 	if (this->processLoaded)
 	{
 		pBar.Add("View PEB", CrySearchIml::AboutButton(), THISBACK(ViewPEBButtonClicked));
@@ -657,9 +515,10 @@ void CrySearchForm::ToolsMenu(Bar& pBar)
 // // Populates the menu bar for debugger settings.
 void CrySearchForm::DebuggerMenu(Bar& pBar)
 {
+	// If the modules in the opened process could not be retrieved, we can't display this menu.
 	if (this->processLoaded)
 	{
-		const bool isAttached = mDebugger->IsDebuggerAttached();
+		const bool isAttached = mDebugger && mDebugger->IsDebuggerAttached();
 		const bool isReadOnly = mMemoryScanner->IsReadOnlyOperationMode();
 		
 		pBar.Add(!isAttached && !isReadOnly, "Attach", CrySearchIml::DebuggerAttach(), THISBACK(DebuggerAttachMenu));
@@ -755,6 +614,156 @@ void CrySearchForm::SearchResultWhenBar(Bar& pBar)
 		pBar.Add("Add to address list", CrySearchIml::AddToAddressList(), THISBACK(SearchResultDoubleClicked));
 		pBar.Add("View as hexadecimal", THISBACK(ToggleSearchResultViewAs)).Check(GlobalScanParameter->CurrentScanHexValues);
 	}
+}
+
+// ---------------------------------------------------------------------------------------------
+
+// Checks key presses across all controls. Consider it a global key event function.
+void CrySearchForm::CheckKeyPresses()
+{
+	if (SettingsFile::GetInstance()->GetEnableHotkeys())
+	{
+		const unsigned int count = SettingsFile::GetInstance()->GetHotkeyCount();
+		if (count > 0)
+		{
+			// Iterate saved hotkeys and configure parameters for its configured actions.
+			for (unsigned int i = 0; i < count; ++i)
+			{
+				const CrySearchHotKey& curKey = SettingsFile::GetInstance()->GetHotkey(i);
+				
+				// Check if the configured key is currently pressed.
+				if (GetAsyncKeyState(curKey.Key) & 1)
+				{
+					if (!mMemoryScanner->IsScanRunning() && mMemoryScanner->GetScanResultCount() > 0)
+					{
+						if (curKey.Description == "Refresh search results, changed value")
+						{
+							GlobalScanParameter->GlobalScanType = SCANTYPE_CHANGED;
+						}
+						else if (curKey.Description == "Refresh search results, unchanged value")
+						{
+							GlobalScanParameter->GlobalScanType = SCANTYPE_UNCHANGED;
+						}
+						else if (curKey.Description == "Refresh search results, increased value")
+						{
+							GlobalScanParameter->GlobalScanType = SCANTYPE_INCREASED;
+						}
+						else if (curKey.Description == "Refresh search results, decreased value")
+						{
+							GlobalScanParameter->GlobalScanType = SCANTYPE_DECREASED;
+						}
+						
+						// Finally, execute the action for all of these. (Since its the same for all)
+						curKey.Action();
+					}
+				}
+			}
+		}
+	}
+	
+	// Reinstate the callback for the next iteration.
+	SetTimeCallback(100, THISBACK(CheckKeyPresses), HOTKEY_TIMECALLBACK);
+}
+
+// Called regularly to update the search results currently visible.
+void CrySearchForm::SearchResultListUpdater()
+{
+	// Refresh the address table ArrayCtrl to force updating of the values.
+	this->mScanResults.Refresh();
+	
+	// Reinstate the callback for the next iteration.
+	SetTimeCallback(1000, THISBACK(SearchResultListUpdater), UPDATE_RESULTS_TIMECALLBACK);
+}
+
+// Called regularly to update entries currently in the address table.
+void CrySearchForm::AddressValuesUpdater()
+{
+	// If CrySearch is operating in read only mode, nothing may be written to the target process.
+	if (mMemoryScanner->IsReadOnlyOperationMode())
+	{
+		return;
+	}
+	
+	// Handle frozen addresses.
+	const int addrTableCount = loadedTable.GetCount();
+	for (int i = 0; i < addrTableCount; ++i)
+	{
+		// If we are currently looking at a frozen entry, we need to write its value there.
+		const AddressTableEntry* curEntry = loadedTable[i];
+		if (curEntry->Frozen)
+		{
+			// Read the current values into local variables.
+			const int curIntValue = ScanInt(curEntry->Value, NULL, 10);
+			const double curDoubleValue = StrDbl(curEntry->Value);
+
+			// Get the correct data size for writing.
+			switch (curEntry->ValueType)
+			{
+				case CRYDATATYPE_BYTE:
+					mMemoryScanner->Poke(curEntry->Address, &curIntValue, sizeof(Byte));
+					break;
+				case CRYDATATYPE_2BYTES:
+					mMemoryScanner->Poke(curEntry->Address, &curIntValue, sizeof(short));
+					break;
+				case CRYDATATYPE_4BYTES:
+					mMemoryScanner->Poke(curEntry->Address, &curIntValue, sizeof(int));
+					break;
+				case CRYDATATYPE_8BYTES:
+					{
+						const __int64 curLongValue = ScanInt64(curEntry->Value, NULL, 10);
+						mMemoryScanner->Poke(curEntry->Address, &curLongValue, sizeof(__int64));
+					}
+					break;
+				case CRYDATATYPE_FLOAT:
+					{
+						const float fValue = (float)curDoubleValue;
+						mMemoryScanner->Poke(curEntry->Address, &fValue, sizeof(float));
+					}
+					break;
+				case CRYDATATYPE_DOUBLE:
+					mMemoryScanner->Poke(curEntry->Address, &curDoubleValue, sizeof(double));
+					break;
+				case CRYDATATYPE_AOB:
+					{
+						ArrayOfBytes curAobValue = StringToBytes(curEntry->Value);
+						mMemoryScanner->PokeB(curEntry->Address, curAobValue);
+						curEntry->Size = curAobValue.Size;
+					}
+					break;
+				case CRYDATATYPE_STRING:
+					mMemoryScanner->PokeA(curEntry->Address, curEntry->Value);
+					break;
+				case CRYDATATYPE_WSTRING:
+					mMemoryScanner->PokeW(curEntry->Address, curEntry->Value.ToWString());
+					break;
+			}
+		}
+	}
+	
+	// Refresh the address table ArrayCtrl to force the values to update.
+	this->mUserAddressList.Refresh();
+	
+	// Reinstate timer queue callback to ensure timer keeps running.
+	SetTimeCallback(SettingsFile::GetInstance()->GetAddressTableUpdateInterval(), THISBACK(AddressValuesUpdater), ADDRESS_TABLE_UPDATE_TIMECALLBACK);
+}
+
+// This callback checks whether the process is still running, if one is opened.
+// If the opened process terminated somehow, CrySearch will close it internally.
+void CrySearchForm::CheckProcessTermination()
+{
+	if (mMemoryScanner->GetProcessId() > 0)
+	{
+		if (!IsProcessActive(mMemoryScanner->GetHandle()))
+		{
+			this->ProcessTerminated = true;
+			this->ScannerErrorOccured(PROCESSWASTERMINATED);
+			
+			// Kill the callback, otherwise errors will keep coming.
+			KillTimeCallback(PROCESS_TERMINATION_TIMECALLBACK);
+		}
+	}
+	
+	SetTimeCallback(250, THISBACK(CheckProcessTermination), PROCESS_TERMINATION_TIMECALLBACK);
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -1380,81 +1389,11 @@ void CrySearchForm::StartMemoryScanReliefGUI(const bool FirstScan)
 {
 	if (FirstScan)
 	{
-		if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_BYTE)
-		{
-			mMemoryScanner->FirstScan<Byte>();
-		}
-		else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_2BYTE)
-		{
-			mMemoryScanner->FirstScan<short>();
-		}
-		else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_4BYTE)
-		{
-			mMemoryScanner->FirstScan<int>();
-		}
-		else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_8BYTE)
-		{
-			mMemoryScanner->FirstScan<__int64>();
-		}
-		else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_FLOAT)
-		{
-			mMemoryScanner->FirstScan<float>();
-		}
-		else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_DOUBLE)
-		{
-			mMemoryScanner->FirstScan<double>();
-		}
-		else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_STRING)
-		{
-			mMemoryScanner->FirstScan<String>();
-		}
-		else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_WSTRING)
-		{
-			mMemoryScanner->FirstScan<WString>();
-		}
-		else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_AOB)
-		{
-			mMemoryScanner->FirstScan<ArrayOfBytes>();
-		}
+		mMemoryScanner->FirstScan();
 	}
 	else
 	{
-		if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_BYTE)
-		{
-			mMemoryScanner->NextScan<Byte>();
-		}
-		else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_2BYTE)
-		{
-			mMemoryScanner->NextScan<short>();
-		}
-		else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_4BYTE)
-		{
-			mMemoryScanner->NextScan<int>();
-		}
-		else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_8BYTE)
-		{
-			mMemoryScanner->NextScan<__int64>();
-		}
-		else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_FLOAT)
-		{
-			mMemoryScanner->NextScan<float>();
-		}
-		else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_DOUBLE)
-		{
-			mMemoryScanner->NextScan<double>();
-		}
-		else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_STRING)
-		{
-			mMemoryScanner->NextScan<String>();
-		}
-		else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_WSTRING)
-		{
-			mMemoryScanner->NextScan<WString>();
-		}
-		else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_AOB)
-		{
-			mMemoryScanner->NextScan<ArrayOfBytes>();
-		}
+		mMemoryScanner->NextScan();
 	}
 }
 
@@ -1928,7 +1867,7 @@ bool CrySearchForm::InitializeProcessUI(const bool bruteForce)
 		this->mWindowManager.GetPEWindow()->Initialize();
 		this->mWindowManager.GetImportsWindow()->Initialize();
 		this->mWindowManager.GetDisasmWindow()->Initialize();
-		this->mWindowManager.GetDebuggerWindow()->Initialize();	
+		this->mWindowManager.GetDebuggerWindow()->Initialize();
 	}
 #endif
 	// Still here so the process loaded succesfully. Update user interface and prepare tabs.

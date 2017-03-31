@@ -10,7 +10,7 @@ using namespace Upp;
 #define MEM_EXECUTABLE (PAGE_EXECUTE_WRITECOPY | PAGE_EXECUTE_READWRITE | PAGE_EXECUTE_READ | PAGE_EXECUTE)
 #define MEM_COPYONWRITE (PAGE_EXECUTE_WRITECOPY | PAGE_WRITECOPY)
 
-#include "SettingsFile.h"
+#include "MemoryScannerContext.h"
 
 // Defines the valuetypes that are scannable by the memory scanner.
 enum MemoryScanValueType
@@ -142,41 +142,6 @@ struct SearchResultCacheEntry : Moveable<SearchResultCacheEntry>
 	};
 };
 
-// Represents a memory region found by the memory scanner.
-struct MemoryRegion : Moveable<MemoryRegion>
-{
-	// Represents the base address of the memory region.
-	SIZE_T BaseAddress;
-	
-	// Represents the size of the memory region.
-	SIZE_T MemorySize;
-};
-
-// Defines a set of parameters needed for a new scan.
-struct WorkerRegionParameterData : Moveable<WorkerRegionParameterData>
-{
-	// Identifies the worker.
-	int WorkerIdentifier;
-	
-	// Indicates where the worker input starts in the memory page vector.
-	unsigned int OriginalStartIndex;
-	
-	// Indicates how long the input in the memory page vector is for this worker.
-	unsigned int Length;
-	
-	// Worker-wide variable that indicates whether it has completed.
-	bool FinishedWork;
-	
-	// Default constructor, initializing all variables to defaults.
-	WorkerRegionParameterData()
-	{
-		this->WorkerIdentifier = 0;
-		this->OriginalStartIndex = 0;
-		this->Length = 0;
-		this->FinishedWork = false;
-	};
-};
-
 // Represents an array of bytes to be searched for in memory.
 struct ArrayOfBytes
 {
@@ -280,7 +245,6 @@ private:
 	
 	// Memory scanner control variables.
 	bool ScanRunning;
-	SettingsFile* mSettingsInstance;
 	int threadCount;
 	bool mReadOnly;
 	
@@ -288,7 +252,7 @@ private:
 	CoWork mThreadPool;
 	
 	// Vector that contains the order of worker completions. Needed to ensure next scan accuracy.
-	Vector<WorkerRegionParameterData> mWorkerFileOrder;
+	Vector<MemoryScannerWorkerContext> mWorkerFileOrder;
 	
 	// Vector that contains the memory pages of the currently opened process. Beware that a First-Scan refreshes the pages entirely.
 	Vector<MemoryRegion> memRegions;
@@ -301,17 +265,26 @@ private:
 	
 	typedef MemoryScanner CLASSNAME;
 
-	// Function that assigns the correct compare function using the user selected scan type, and fires of the workers accordingly.
+	// Functions that assign the correct compare function using the user selected scan type, and fire of the workers accordingly.
 	template <typename T>
-	void AssignAndFire(const bool first);
+	CompareFunctionType<T> GetCompareFunction();
 
+	// Workers are now divided in phases such that the amount of templated code can be minimized.
+	// The first phase of each worker is the prologue: Setting up the context.
+	void FirstWorkerPrologue(MemoryScannerWorkerContext* const context);
+	void NextWorkerPrologue(MemoryScannerWorkerContext* const context);
+	
+	// The last phase of the workers is the epilogue. In this phase, resources are released and the scan is finalized.
+	void FirstWorkerEpilogue(MemoryScannerWorkerContext* const context);
+	void NextWorkerEpilogue(MemoryScannerWorkerContext* const context);
+	
 	// Templated worker function for the first scans.
 	template <typename T>
-	void FirstScanWorker(WorkerRegionParameterData* const regionData, const T& value, CompareFunctionType<T> cmp);
+	void FirstScanWorker(MemoryScannerWorkerContext* const context, const T& value, CompareFunctionType<T> cmp);
 	
 	// Templated worker function for the refresh scans.
 	template <typename T>
-	void NextScanWorker(WorkerRegionParameterData* const regionData, const T& value, CompareFunctionType<T> cmp);
+	void NextScanWorker(MemoryScannerWorkerContext* const context, const T& value, CompareFunctionType<T> cmp);
 	
 	// Singleton code: private constructor, destructor and copy constructors.
 	MemoryScanner();
@@ -332,16 +305,16 @@ public:
 	void CloseProcess();
 	void ClearSearchResults();
 	
-	template <typename T>
 	void FirstScan();
-	
-	template <typename T>
 	void NextScan();
 	
-	template <typename T>
-	void Poke(const SIZE_T address, const T& value);
+	// Memory scanner poke functions (Writing to memory).
+	void Poke(const SIZE_T address, const void* value, const unsigned int size) const;
+	void PokeB(const SIZE_T address, const ArrayOfBytes& value) const;
+	void PokeA(const SIZE_T address, const String& value) const;
+	void PokeW(const SIZE_T address, const WString& value) const;
 	
-	// Size parameter is optional. If AOB or String types are used, parameter is used, otherwise ignored.
+	// Memory scanner peek function (Reading from memory).
 	template <typename T>
 	bool Peek(const SIZE_T address, const unsigned int size, T* outBuffer) const;
 	

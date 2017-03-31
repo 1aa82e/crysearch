@@ -1,7 +1,6 @@
 #include "MemoryScanner.h"
 #include "BackendGlobalDef.h"
 #include "UIUtilities.h"
-#include "MemoryScannerIO.h"
 
 #include <Psapi.h>
 
@@ -102,176 +101,9 @@ void AddResultsToCacheConditional(const int addrCount, const int valueCount, con
 
 // ---------------------------------------------------------------------------------------------
 
-template <>
-const bool CompareGreater(const ArrayOfBytes& input, const ArrayOfBytes& expected)
-{
-	// Dummy function, nessecary for compilation but will never be called.
-	return false;
-}
-
-template <>
-const bool CompareGreater(const float& input, const float& expected)
-{
-	return ((int)input > (int)expected);
-}
-
-template <>
-const bool CompareGreater(const double& input, const double& expected)
-{
-	return ((int)input > (int)expected);
-}
-
-template <typename T>
-const bool CompareGreater(const T& input, const T& expected)
-{
-	return (input > expected);
-}
-
-// ---------------------------------------------------------------------------------------------
-
-template <>
-const bool CompareSmaller(const ArrayOfBytes& input, const ArrayOfBytes& expected)
-{
-	// Dummy function, nessecary for compilation but will never be called.
-	return false;
-}
-
-template <>
-const bool CompareSmaller(const float& input, const float& expected)
-{
-	return ((int)input < (int)expected);
-}
-
-template <>
-const bool CompareSmaller(const double& input, const double& expected)
-{
-	return ((int)input < (int)expected);
-}
-
-template <typename T>
-const bool CompareSmaller(const T& input, const T& expected)
-{
-	return (input < expected);
-}
-
-// ---------------------------------------------------------------------------------------------
-
-template <>
-const bool CompareEqual(const ArrayOfBytes& input, const ArrayOfBytes& expected)
-{
-	// Dummy function, nessecary for compilation but will never be called.
-	return false;
-}
-
-template <>
-const bool CompareEqual(const float& input, const float& expected)
-{
-	return (((int)input) == ((int)expected));
-}
-
-template <>
-const bool CompareEqual(const double& input, const double& expected)
-{
-	return (((int)input) == ((int)expected));
-}
-
-template <typename T>
-const bool CompareEqual(const T& input, const T& expected)
-{
-	return (input == expected);
-}
-
-// ---------------------------------------------------------------------------------------------
-
-template <>
-const bool CompareInBetween(const ArrayOfBytes& input, const ArrayOfBytes& expected)
-{
-	// Dummy function, nessecary for compilation but will never be called.
-	return false;
-}
-
-template <>
-const bool CompareInBetween(const float& input, const float& expected)
-{
-	return ((int)input >= (int)expected && (int)input <= (int)(reinterpret_cast<ScanParameters<float>*>(GlobalScanParameter))->OuterScanValue);
-}
-
-template <>
-const bool CompareInBetween(const double& input, const double& expected)
-{
-	return ((int)input >= (int)expected && (int)input <= (int)(reinterpret_cast<ScanParameters<double>*>(GlobalScanParameter))->OuterScanValue);
-}
-
-template <typename T>
-const bool CompareInBetween(const T& input, const T& expected)
-{
-	// Is the input value at least expected and at most the second expected value?
-	return (input >= expected && input <= (reinterpret_cast<ScanParameters<T>*>(GlobalScanParameter))->OuterScanValue);
-}
-
-// ---------------------------------------------------------------------------------------------
-
-template <typename T>
-const bool CompareUnknownInitialValue(const T& input, const T& expected)
-{
-	// Unknown initial value should return everything that is found by the scanner.
-	return true;
-}
-
-// ---------------------------------------------------------------------------------------------
-
-// Compares ANSI and Unicode strings until a null character is found.
-const bool CompareStringNullCharA(const char* input, const int inputLength, const char* expected, int* const outputLength)
-{
-	// Do the initial comparison of the input string.
-	if (strncmp(input, expected, inputLength) == 0)
-	{
-		const char* iterator = input + inputLength;
-		const int endIterator = STRING_MAX_UNTIL_NULL - inputLength;
-		int i = 0;
-		
-		// Keep collecting characters until a NULL character is reached.
-		while (*iterator != 0 && i < endIterator)
-		{
-			++iterator;
-			++i;
-		}
-		*outputLength = i + inputLength;
-		return true;
-	}
-	
-	return false;
-}
-
-// Compares Unicode strings until a null character is found.
-const bool CompareStringNullCharW(const wchar* input, const int inputLength, const wchar* expected, int* const outputLength)
-{
-	// Do the initial comparison of the input string.
-	if (wcsncmp(input, expected, inputLength) == 0)
-	{
-		const wchar* iterator = input + inputLength;
-		const int endIterator = STRING_MAX_UNTIL_NULL - inputLength;
-		int i = 0;
-		
-		// Keep collecting characters until a NULL character is reached.
-		while (*iterator != 0 && i < endIterator)
-		{
-			++iterator;
-			++i;
-		}
-		*outputLength = i + inputLength;
-		return true;
-	}
-	
-	return false;
-}
-
-// ---------------------------------------------------------------------------------------------
-
 // MemoryScanner class default constructor.
 MemoryScanner::MemoryScanner()
 {
-	this->mSettingsInstance = SettingsFile::GetInstance();
 	this->ScanRunning = false;
 	this->mLoadedProcessId = 0;
 	this->mScanResultCount = 0;
@@ -358,7 +190,7 @@ bool MemoryScanner::InitializeExistingProcess(const int processId, const char* e
 	}
 	
 	// Select the configured routine for opening the process and execute it.
-	const int opr = this->mSettingsInstance->GetOpenProcessRoutine();
+	const int opr = SettingsFile::GetInstance()->GetOpenProcessRoutine();
 	if (opr == ROUTINE_OPENPROCESS)
 	{
 		// Use the default kernel32.dll OpenProcess function to obtain a process handle.
@@ -565,85 +397,20 @@ void MemoryScanner::ClearSearchResults()
 	this->mWorkerFileOrder.Clear();
 }
 
-// Function that assigns the correct compare function using the user selected scan type, and fires of the workers accordingly.
-template <typename T>
-void MemoryScanner::AssignAndFire(const bool first)
-{
-	// Assign the workers the correct compare function.
-	CompareFunctionType<T> cmpFunc;
-	switch (GlobalScanParameter->GlobalScanType)
-	{
-		case SCANTYPE_UNKNOWN_INITIAL_VALUE:
-			cmpFunc = CompareUnknownInitialValue;
-			break;
-		case SCANTYPE_EXACTVALUE:
-			cmpFunc = CompareEqual;
-			break;
-		case SCANTYPE_SMALLERTHAN:
-			cmpFunc = CompareSmaller;
-			break;
-		case SCANTYPE_GREATERTHAN:
-			cmpFunc = CompareGreater;
-			break;
-		case SCANTYPE_VALUE_IN_BETWEEN:
-			cmpFunc = CompareInBetween;
-			break;
-		case SCANTYPE_CHANGED:
-			cmpFunc = CompareEqual;
-			break;
-		case SCANTYPE_UNCHANGED:
-			cmpFunc = CompareEqual;
-			break;
-		case SCANTYPE_INCREASED:
-			cmpFunc = CompareGreater;
-			break;
-		case SCANTYPE_DECREASED:
-			cmpFunc = CompareSmaller;
-			break;
-		default:
-			cmpFunc = NULL;
-			break;
-	}
-
-	// Start worker threads accordingly to previous scan.
-	for (auto& work : this->mWorkerFileOrder)
-	{
-		work.FinishedWork = false;
-		
-		// Are we firing a first- or a refreshment scan?
-		if (first)
-		{
-			this->mThreadPool & THISBACK3(FirstScanWorker<T>, &work, ((T)(reinterpret_cast<ScanParameters<T>*>(GlobalScanParameter))->ScanValue), cmpFunc);
-		}
-		else
-		{
-			this->mThreadPool & THISBACK3(NextScanWorker<T>, &work, ((T)(reinterpret_cast<ScanParameters<T>*>(GlobalScanParameter))->ScanValue), cmpFunc);
-		}
-	}
-}
+// ---------------------------------------------------------------------------------------------
 
 // Worker function that implements specialized behavior for byte-array types.
 template <>
-void MemoryScanner::FirstScanWorker(WorkerRegionParameterData* const regionData, const ArrayOfBytes& value, CompareFunctionType<ArrayOfBytes> cmp)
+void MemoryScanner::FirstScanWorker(MemoryScannerWorkerContext* const context, const ArrayOfBytes& value, CompareFunctionType<ArrayOfBytes> cmp)
 {
-	// Create output files, the destructor will close them.
-	FileOut addressesFile(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.temp", regionData->WorkerIdentifier)));
-	
-	// Create file header for the output file and flush it. This way we already reserve space for it.
-	StorageFileHeader fileHeader(regionData->WorkerIdentifier);
-	addressesFile.Put(&fileHeader, sizeof(StorageFileHeader));
-	
 	unsigned int fileIndex = 0;
 	const Byte* const inputData = value.Data;
 	const int inputLength = value.Size;
-	const unsigned int forLoopLength = regionData->OriginalStartIndex + regionData->Length;
-	
-	// Create a buffer to store search results in, that can be reused at all times.
-	// No need for reallocation anymore.
-	bool* localAddresses = new bool[MEMORY_SCANNER_BUFFER_LENGTH_THRESHOLD];
+	const unsigned int forLoopLength = context->RegionData.OriginalStartIndex + context->RegionData.Length;
+	bool* const localAddresses = context->LocalAddressesBuffer;
 	
 	// Loop the memory pages for this worker.
-	for (unsigned int i = regionData->OriginalStartIndex; i < forLoopLength; ++i)
+	for (unsigned int i = context->RegionData.OriginalStartIndex; i < forLoopLength; ++i)
 	{
 		const MemoryRegion& currentRegion = this->memRegions[i];
 		unsigned int addrIndex = 0;
@@ -691,13 +458,13 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData* const regionData,
 						storage.AddressCount = addrIndex;
 						storage.ValueCount = valueIndex;
 						storage.SizeInBytes = sizeof(MemoryRegionFileHeader) + addrIndex;
-						addressesFile.Put(&storage, sizeof(MemoryRegionFileHeader));
+						context->OutAddressesFile.Put(&storage, sizeof(MemoryRegionFileHeader));
 						
 						// Write memory buffers out to file.
-						addressesFile.Put(localAddresses, addrIndex);
+						context->OutAddressesFile.Put(localAddresses, addrIndex);
 
 						// Increment block count and increase UI result counter.
-						++fileHeader.BlockCount;
+						++context->OutAddressesFileHeader.BlockCount;
 						this->mScanResultCount += valueIndex;
 					}
 					
@@ -720,13 +487,13 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData* const regionData,
 				storage.AddressCount = addrIndex;
 				storage.ValueCount = valueIndex;
 				storage.SizeInBytes = sizeof(MemoryRegionFileHeader) + addrIndex;
-				addressesFile.Put(&storage, sizeof(MemoryRegionFileHeader));
+				context->OutAddressesFile.Put(&storage, sizeof(MemoryRegionFileHeader));
 				
 				// Write memory buffers out to file.
-				addressesFile.Put(localAddresses, addrIndex);
+				context->OutAddressesFile.Put(localAddresses, addrIndex);
 				
 				// Increment block count and increase UI result counter.
-				++fileHeader.BlockCount;
+				++context->OutAddressesFileHeader.BlockCount;
 				this->mScanResultCount += valueIndex;
 			}
 		}
@@ -736,44 +503,29 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData* const regionData,
 		// Update counters and user interface components.
 		this->UpdateScanningProgress(++this->mRegionFinishCount);
 	}
-	
-	// Seek back to the begin of the file to overwrite the file header with new information.
-	addressesFile.Seek(0);
-	addressesFile.Put(&fileHeader, sizeof(StorageFileHeader));
-	
-	// Delete allocated array buffers.
-	delete[] localAddresses;
 
-	// Indicate that this worker is done processing.
-	regionData->FinishedWork = true;
+	// Call the worker epilogue.
+	this->FirstWorkerEpilogue(context);
 }
 
 // Worker function that implements specialized behavior for Unicode string types.
 template <>
-void MemoryScanner::FirstScanWorker(WorkerRegionParameterData* const regionData, const WString& value, CompareFunctionType<WString> cmp)
+void MemoryScanner::FirstScanWorker(MemoryScannerWorkerContext* const context, const WString& value, CompareFunctionType<WString> cmp)
 {
-	// Create output files, the destructor will close them.
-	FileOut addressesFile(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.temp", regionData->WorkerIdentifier)));
-	
-	// Create file header for the output file and flush it. This way we already reserve space for it.
-	StorageFileHeader fileHeader(regionData->WorkerIdentifier);
-	addressesFile.Put(&fileHeader, sizeof(StorageFileHeader));
-	
 	unsigned int fileIndex = 0;
 	const wchar* const inputData = value.Begin();
 	const int inputLength = value.GetLength();
 	const bool localNullScan = GlobalScanParameter->ScanUntilNullChar;
-	const unsigned int forLoopLength = regionData->OriginalStartIndex + regionData->Length;
+	const unsigned int forLoopLength = context->RegionData.OriginalStartIndex + context->RegionData.Length;
 	
 	// Create a buffer to store search results in, that can be reused at all times.
-	// No need for reallocation anymore.
-	bool* localAddresses = new bool[MEMORY_SCANNER_BUFFER_LENGTH_THRESHOLD];
+	bool* const localAddresses = context->LocalAddressesBuffer;
 	Vector<Byte> stringLengths;
 	stringLengths.Reserve(MEMORY_SCANNER_BUFFER_LENGTH_THRESHOLD);
 	Byte* const stringLengthsArray = stringLengths.Begin();
 	
 	// Loop the memory pages for this worker.
-	for (unsigned int i = regionData->OriginalStartIndex; i < forLoopLength; ++i)
+	for (unsigned int i = context->RegionData.OriginalStartIndex; i < forLoopLength; ++i)
 	{
 		const MemoryRegion& currentRegion = this->memRegions[i];
 		unsigned int addrIndex = 0;
@@ -822,13 +574,13 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData* const regionData,
 						storage.AddressCount = addrIndex;
 						storage.ValueCount = valueIndex;
 						storage.SizeInBytes = sizeof(MemoryRegionFileHeader) + addrIndex;
-						addressesFile.Put(&storage, sizeof(MemoryRegionFileHeader));
+						context->OutAddressesFile.Put(&storage, sizeof(MemoryRegionFileHeader));
 						
 						// Write memory buffers out to file.
-						addressesFile.Put(localAddresses, addrIndex);
+						context->OutAddressesFile.Put(localAddresses, addrIndex);
 
 						// Increment block count and increase UI result counter.
-						++fileHeader.BlockCount;
+						++context->OutAddressesFileHeader.BlockCount;
 						this->mScanResultCount += valueIndex;
 					}
 					
@@ -851,13 +603,13 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData* const regionData,
 				storage.AddressCount = addrIndex;
 				storage.ValueCount = valueIndex;
 				storage.SizeInBytes = sizeof(MemoryRegionFileHeader) + addrIndex;
-				addressesFile.Put(&storage, sizeof(MemoryRegionFileHeader));
+				context->OutAddressesFile.Put(&storage, sizeof(MemoryRegionFileHeader));
 				
 				// Write memory buffers out to file.
-				addressesFile.Put(localAddresses, addrIndex);
+				context->OutAddressesFile.Put(localAddresses, addrIndex);
 				
 				// Increment block count and increase UI result counter.
-				++fileHeader.BlockCount;
+				++context->OutAddressesFileHeader.BlockCount;
 				this->mScanResultCount += valueIndex;
 			}
 		}
@@ -867,44 +619,29 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData* const regionData,
 		// Update counters and user interface components.
 		this->UpdateScanningProgress(++this->mRegionFinishCount);
 	}
-	
-	// Seek back to the begin of the file to overwrite the file header with new information.
-	addressesFile.Seek(0);
-	addressesFile.Put(&fileHeader, sizeof(StorageFileHeader));
-	
-	// Delete allocated array buffers.
-	delete[] localAddresses;
 
-	// Indicate that this worker is done processing.
-	regionData->FinishedWork = true;
+	// Call the worker epilogue.
+	this->FirstWorkerEpilogue(context);
 }
 
 // Worker function that implements specialized behavior for ANSI string types.
 template <>
-void MemoryScanner::FirstScanWorker(WorkerRegionParameterData* const regionData, const String& value, CompareFunctionType<String> cmp)
+void MemoryScanner::FirstScanWorker(MemoryScannerWorkerContext* const context, const String& value, CompareFunctionType<String> cmp)
 {
-	// Create output files, the destructor will close them.
-	FileOut addressesFile(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.temp", regionData->WorkerIdentifier)));
-	
-	// Create file header for the output file and flush it. This way we already reserve space for it.
-	StorageFileHeader fileHeader(regionData->WorkerIdentifier);
-	addressesFile.Put(&fileHeader, sizeof(StorageFileHeader));
-	
 	unsigned int fileIndex = 0;
 	const char* const inputData = value.Begin();
 	const int inputLength = value.GetLength();
 	const bool localNullScan = GlobalScanParameter->ScanUntilNullChar;
-	const unsigned int forLoopLength = regionData->OriginalStartIndex + regionData->Length;
+	const unsigned int forLoopLength = context->RegionData.OriginalStartIndex + context->RegionData.Length;
 	
 	// Create a buffer to store search results in, that can be reused at all times.
-	// No need for reallocation anymore.
-	bool* localAddresses = new bool[MEMORY_SCANNER_BUFFER_LENGTH_THRESHOLD];
+	bool* const localAddresses = context->LocalAddressesBuffer;
 	Vector<Byte> stringLengths;
 	stringLengths.Reserve(MEMORY_SCANNER_BUFFER_LENGTH_THRESHOLD);
 	Byte* const stringLengthsArray = stringLengths.Begin();
 	
 	// Loop the memory pages for this worker.
-	for (unsigned int i = regionData->OriginalStartIndex; i < forLoopLength; ++i)
+	for (unsigned int i = context->RegionData.OriginalStartIndex; i < forLoopLength; ++i)
 	{
 		const MemoryRegion& currentRegion = this->memRegions[i];
 		unsigned int addrIndex = 0;
@@ -953,13 +690,13 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData* const regionData,
 						storage.AddressCount = addrIndex;
 						storage.ValueCount = valueIndex;
 						storage.SizeInBytes = sizeof(MemoryRegionFileHeader) + addrIndex;
-						addressesFile.Put(&storage, sizeof(MemoryRegionFileHeader));
+						context->OutAddressesFile.Put(&storage, sizeof(MemoryRegionFileHeader));
 						
 						// Write memory buffers out to file.
-						addressesFile.Put(localAddresses, addrIndex);
+						context->OutAddressesFile.Put(localAddresses, addrIndex);
 
 						// Increment block count and increase UI result counter.
-						++fileHeader.BlockCount;
+						++context->OutAddressesFileHeader.BlockCount;
 						this->mScanResultCount += valueIndex;
 					}
 					
@@ -982,13 +719,13 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData* const regionData,
 				storage.AddressCount = addrIndex;
 				storage.ValueCount = valueIndex;
 				storage.SizeInBytes = sizeof(MemoryRegionFileHeader) + addrIndex;
-				addressesFile.Put(&storage, sizeof(MemoryRegionFileHeader));
+				context->OutAddressesFile.Put(&storage, sizeof(MemoryRegionFileHeader));
 				
 				// Write memory buffers out to file.
-				addressesFile.Put(localAddresses, addrIndex);
+				context->OutAddressesFile.Put(localAddresses, addrIndex);
 				
 				// Increment block count and increase UI result counter.
-				++fileHeader.BlockCount;
+				++context->OutAddressesFileHeader.BlockCount;
 				this->mScanResultCount += valueIndex;
 			}
 		}
@@ -998,53 +735,31 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData* const regionData,
 		// Update counters and user interface components.
 		this->UpdateScanningProgress(++this->mRegionFinishCount);
 	}
-	
-	// Seek back to the begin of the file to overwrite the file header with new information.
-	addressesFile.Seek(0);
-	addressesFile.Put(&fileHeader, sizeof(StorageFileHeader));
-	
-	// Delete allocated array buffers.
-	delete[] localAddresses;
 
-	// Indicate that this worker is done processing.
-	regionData->FinishedWork = true;
+	// Call the worker epilogue.
+	this->FirstWorkerEpilogue(context);
 }
 
 // Represents the default template worker function for the set of workers including specialized ones.
 // This set of workers run the first scan sequence.
 template <typename T>
-void MemoryScanner::FirstScanWorker(WorkerRegionParameterData* const regionData, const T& value, CompareFunctionType<T> cmp)
+void MemoryScanner::FirstScanWorker(MemoryScannerWorkerContext* const context, const T& value, CompareFunctionType<T> cmp)
 {
-	// Create output files, the destructor will close them.
-	FileOut addressesFile(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.temp", regionData->WorkerIdentifier)));
-	FileOut valFile(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Values%i.temp", regionData->WorkerIdentifier)));
-	
-	// Create file header for the output file and flush it. This way we already reserve space for it.
-	StorageFileHeader fileHeader(regionData->WorkerIdentifier);
-	addressesFile.Put(&fileHeader, sizeof(StorageFileHeader));
-	
-	// Set the correct memory alignment.
-	int fastScanAlignSize = GlobalScanParameter->CurrentScanFastScan ? sizeof(T) : 1;
-	if (fastScanAlignSize == sizeof(__int64) || fastScanAlignSize == sizeof(double))
-	{
-		fastScanAlignSize = sizeof(int);
-	}
-	
 	unsigned int fileIndex = 0;
-	const unsigned int forLoopLength = regionData->OriginalStartIndex + regionData->Length;
+	const int fastScanAlignSize = context->FastScanAlignSize;
+	const unsigned int forLoopLength = context->RegionData.OriginalStartIndex + context->RegionData.Length;
 	
 	// Create a buffer to store search results in, that can be reused at all times.
-	// No need for reallocation anymore.
-	bool* localAddresses = new bool[MEMORY_SCANNER_BUFFER_LENGTH_THRESHOLD];
-	T* localValues = new T[MEMORY_SCANNER_BUFFER_LENGTH_THRESHOLD];
+	bool* const localAddresses = context->LocalAddressesBuffer;
+	T* const localValues = new T[MEMORY_SCANNER_BUFFER_LENGTH_THRESHOLD];
 	
 	// Loop the memory pages for this worker.
-	for (unsigned int i = regionData->OriginalStartIndex; i < forLoopLength; ++i)
+	for (unsigned int i = context->RegionData.OriginalStartIndex; i < forLoopLength; ++i)
 	{
 		const MemoryRegion& currentRegion = this->memRegions[i];
 		unsigned int addrIndex = 0;
 		unsigned int valueIndex = 0;
-				
+		
 		// Create a storage structure for this memory page.
 		MemoryRegionFileHeader storage(i, currentRegion.BaseAddress, fastScanAlignSize, fileIndex);
 		
@@ -1087,14 +802,14 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData* const regionData,
 						storage.AddressCount = addrIndex;
 						storage.ValueCount = valueIndex;
 						storage.SizeInBytes = sizeof(MemoryRegionFileHeader) + addrIndex;
-						addressesFile.Put(&storage, sizeof(MemoryRegionFileHeader));
+						context->OutAddressesFile.Put(&storage, sizeof(MemoryRegionFileHeader));
 						
 						// Write memory buffers out to file.
-						addressesFile.Put(localAddresses, addrIndex);
-						valFile.Put(localValues, valueIndex * sizeof(T));
+						context->OutAddressesFile.Put(localAddresses, addrIndex);
+						context->OutValuesFile.Put(localValues, valueIndex * sizeof(T));
 
 						// Increment block count and increase UI result counter.
-						++fileHeader.BlockCount;
+						++context->OutAddressesFileHeader.BlockCount;
 						this->mScanResultCount += valueIndex;
 					}
 					
@@ -1117,14 +832,14 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData* const regionData,
 				storage.AddressCount = addrIndex;
 				storage.ValueCount = valueIndex;
 				storage.SizeInBytes = sizeof(MemoryRegionFileHeader) + addrIndex;
-				addressesFile.Put(&storage, sizeof(MemoryRegionFileHeader));
+				context->OutAddressesFile.Put(&storage, sizeof(MemoryRegionFileHeader));
 				
 				// Write memory buffers out to file.
-				addressesFile.Put(localAddresses, addrIndex);
-				valFile.Put(localValues, valueIndex * sizeof(T));
+				context->OutAddressesFile.Put(localAddresses, addrIndex);
+				context->OutValuesFile.Put(localValues, valueIndex * sizeof(T));
 				
 				// Increment block count and increase UI result counter.
-				++fileHeader.BlockCount;
+				++context->OutAddressesFileHeader.BlockCount;
 				this->mScanResultCount += valueIndex;
 			}
 		}
@@ -1135,20 +850,14 @@ void MemoryScanner::FirstScanWorker(WorkerRegionParameterData* const regionData,
 		this->UpdateScanningProgress(++this->mRegionFinishCount);
 	}
 	
-	// Seek back to the begin of the file to overwrite the file header with new information.
-	addressesFile.Seek(0);
-	addressesFile.Put(&fileHeader, sizeof(StorageFileHeader));
-	
 	// Delete allocated array buffers.
-	delete[] localAddresses;
 	delete[] localValues;
 	
-	// Indicate that this worker is done processing.
-	regionData->FinishedWork = true;
+	// Call the worker epilogue.
+	this->FirstWorkerEpilogue(context);
 }
 
 // Initializes the first scan sequence. Call this function from the user interface.
-template <typename T>
 void MemoryScanner::FirstScan()
 {
 	// Clear last scan's results.
@@ -1166,18 +875,18 @@ void MemoryScanner::FirstScan()
 	{
 		// Check whether region is readable and exclude scan types that are not wanted.
 		if ((block.State == MEM_COMMIT) && (!(block.Protect & PAGE_GUARD)) && (!(block.Protect & PAGE_NOACCESS))
-			&& ((this->mSettingsInstance->GetScanMemPrivate() & (block.Type == MEM_PRIVATE))
-			|| (this->mSettingsInstance->GetScanMemImage() & (block.Type == MEM_IMAGE))
-			|| (this->mSettingsInstance->GetScanMemMapped() & (block.Type == MEM_MAPPED))))
+			&& ((SettingsFile::GetInstance()->GetScanMemPrivate() & (block.Type == MEM_PRIVATE))
+			|| (SettingsFile::GetInstance()->GetScanMemImage() & (block.Type == MEM_IMAGE))
+			|| (SettingsFile::GetInstance()->GetScanMemMapped() & (block.Type == MEM_MAPPED))))
 	    {
 	        // Check protection constants to see whether the region should be scanned or not.
-	        if ((this->mSettingsInstance->GetScanWritableMemory() & ((block.Protect & MEM_WRITABLE) != 0))
-	        	|| (this->mSettingsInstance->GetScanExecutableMemory() & ((block.Protect & MEM_EXECUTABLE) != 0))
-	        	|| (this->mSettingsInstance->GetScanCopyOnWriteMemory() & ((block.Protect & MEM_COPYONWRITE) != 0)))
+	        if ((SettingsFile::GetInstance()->GetScanWritableMemory() & ((block.Protect & MEM_WRITABLE) != 0))
+	        	|| (SettingsFile::GetInstance()->GetScanExecutableMemory() & ((block.Protect & MEM_EXECUTABLE) != 0))
+	        	|| (SettingsFile::GetInstance()->GetScanCopyOnWriteMemory() & ((block.Protect & MEM_COPYONWRITE) != 0)))
 	     	{
 	     		// Increment the total size of readable memory.
 	     		totalMemorySize += block.RegionSize;
-	     		
+
 	     		// Memory region is valid for scanning, add it to the region list.
 		        MemoryRegion memReg;
 		        memReg.BaseAddress = (SIZE_T)block.BaseAddress;
@@ -1231,7 +940,7 @@ void MemoryScanner::FirstScan()
 	
 	// Start worker threads using the regions that are found and readable.
 #ifdef _MULTITHREADED
-	this->mThreadPool.SetThreadPriority(this->mSettingsInstance->GetScanThreadPriority());
+	this->mThreadPool.SetThreadPriority(SettingsFile::GetInstance()->GetScanThreadPriority());
 #endif
 
 	// Signal user interface with a count to set progress indicator to ready state.
@@ -1251,10 +960,10 @@ void MemoryScanner::FirstScan()
 			memoryCounter += memRegions[regionIndex++].MemorySize;
 		}
 		
-		WorkerRegionParameterData& regionData = this->mWorkerFileOrder.Add();
-		regionData.OriginalStartIndex = oldRegionIndex;
-		regionData.Length = regionIndex - oldRegionIndex;
-		regionData.WorkerIdentifier = ++i;
+		MemoryScannerWorkerContext& context = this->mWorkerFileOrder.Add();
+		context.WorkerIdentifier = ++i;
+		context.RegionData.OriginalStartIndex = oldRegionIndex;
+		context.RegionData.Length = regionIndex - oldRegionIndex;
 		
 		oldRegionIndex = regionIndex;
 		memoryCounter = 0;
@@ -1264,44 +973,32 @@ void MemoryScanner::FirstScan()
 	const int remainder = regionCount - oldRegionIndex;
 	if (remainder)
 	{
-		this->mWorkerFileOrder[this->mWorkerFileOrder.GetCount() - 1].Length += remainder;
+		this->mWorkerFileOrder[this->mWorkerFileOrder.GetCount() - 1].RegionData.Length += remainder;
 	}
 	
 	// Fire off the workers.
-	this->AssignAndFire<T>(true);
+	for (auto& work : this->mWorkerFileOrder)
+	{
+		this->mThreadPool & THISBACK1(FirstWorkerPrologue, &work);
+	}
 }
 
 // This function contains specialized behavior for byte-array types.
 template <>
-void MemoryScanner::NextScanWorker(WorkerRegionParameterData* const regionData, const ArrayOfBytes& value, CompareFunctionType<ArrayOfBytes> cmp)
+void MemoryScanner::NextScanWorker(MemoryScannerWorkerContext* const context, const ArrayOfBytes& value, CompareFunctionType<ArrayOfBytes> cmp)
 {
-	const String addrFileOld = AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.tempSCANNING", regionData->WorkerIdentifier));	
-	FileOut addressesFile(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.temp", regionData->WorkerIdentifier)));
-
-	// Create file header for the output file and flush it. This way we already reserve space for it.
-	StorageFileHeader fileHeader(regionData->WorkerIdentifier);
-	addressesFile.Put(&fileHeader, sizeof(StorageFileHeader));
-
-	FileIn oldAddrFile(addrFileOld);
-	
 	unsigned int fileIndex = 0;
-	
-	// Open the existing search results file and check the number of blocks.
-	StorageFileHeader oldFh;
-	oldAddrFile.Get(&oldFh, sizeof(StorageFileHeader));
-	const unsigned int blockCount = oldFh.BlockCount;
-	
-	// Create a buffer to store search results in, that can be reused at all times. No need for reallocation anymore.
-	bool* localAddresses = new bool[MEMORY_SCANNER_BUFFER_LENGTH_THRESHOLD];
+	bool* const localAddresses = context->LocalAddressesBuffer;
+	const unsigned int blockCount = context->InOldFileHeader.BlockCount;
 	
 	// Walk the blocks in the results file.
 	for (unsigned int i = 0; i < blockCount; ++i)
 	{
 		// Read next block header and data into local buffer.
 		MemoryRegionFileHeader block;
-		oldAddrFile.Get(&block, sizeof(MemoryRegionFileHeader));
+		context->InOldAddressesFile.Get(&block, sizeof(MemoryRegionFileHeader));
 		bool* oldAddrFileBuffer = new bool[block.AddressCount];
-		oldAddrFile.Get(oldAddrFileBuffer, block.AddressCount);
+		context->InOldAddressesFile.Get(oldAddrFileBuffer, block.AddressCount);
 		
 		unsigned int addrIndex = 0;
 		unsigned int valueIndex = 0;
@@ -1361,13 +1058,13 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData* const regionData, 
 						storage.AddressCount = addrIndex;
 						storage.ValueCount = valueIndex;
 						storage.SizeInBytes = sizeof(MemoryRegionFileHeader) + addrIndex;
-						addressesFile.Put(&storage, sizeof(MemoryRegionFileHeader));
+						context->OutAddressesFile.Put(&storage, sizeof(MemoryRegionFileHeader));
 						
 						// Write memory buffers out to file.
-						addressesFile.Put(localAddresses, addrIndex);
+						context->OutAddressesFile.Put(localAddresses, addrIndex);
 
 						// Increment block count and increase UI result counter.
-						++fileHeader.BlockCount;
+						++context->OutAddressesFileHeader.BlockCount;
 						this->mScanResultCount += valueIndex;
 					}
 					
@@ -1390,13 +1087,13 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData* const regionData, 
 				storage.AddressCount = addrIndex;
 				storage.ValueCount = valueIndex;
 				storage.SizeInBytes = sizeof(MemoryRegionFileHeader) + addrIndex;
-				addressesFile.Put(&storage, sizeof(MemoryRegionFileHeader));
+				context->OutAddressesFile.Put(&storage, sizeof(MemoryRegionFileHeader));
 				
 				// Write memory buffers out to file.
-				addressesFile.Put(localAddresses, addrIndex);
+				context->OutAddressesFile.Put(localAddresses, addrIndex);
 				
 				// Increment block count and increase UI result counter.
-				++fileHeader.BlockCount;
+				++context->OutAddressesFileHeader.BlockCount;
 				this->mScanResultCount += valueIndex;
 			}
 		}
@@ -1409,59 +1106,32 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData* const regionData, 
 		this->UpdateScanningProgress(++this->mRegionFinishCount);
 	}
 	
-	// Close opened input file, we need to delete it.
-	oldAddrFile.Close();
-	
-	// Seek back to the begin of the file to overwrite the file header with new information.
-	addressesFile.Seek(0);
-	addressesFile.Put(&fileHeader, sizeof(StorageFileHeader));
-	
-	// Delete allocated array buffers.
-	delete[] localAddresses;
-
-	// Delete old temporary files, they have been replaced by new ones.
-	FileDelete(addrFileOld);
-	
-	// Indicate that this worker is done processing.
-	regionData->FinishedWork = true;
+	// Call the worker epilogue.
+	this->NextWorkerEpilogue(context);
 }
 
 // This function contains specialized behavior for Unicode string types.
 template <>
-void MemoryScanner::NextScanWorker(WorkerRegionParameterData* const regionData, const WString& value, CompareFunctionType<WString> cmp)
+void MemoryScanner::NextScanWorker(MemoryScannerWorkerContext* const context, const WString& value, CompareFunctionType<WString> cmp)
 {
-	const String addrFileOld = AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.tempSCANNING", regionData->WorkerIdentifier));	
-	FileOut addressesFile(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.temp", regionData->WorkerIdentifier)));
-
-	// Create file header for the output file and flush it. This way we already reserve space for it.
-	StorageFileHeader fileHeader(regionData->WorkerIdentifier);
-	addressesFile.Put(&fileHeader, sizeof(StorageFileHeader));
-
-	FileIn oldAddrFile(addrFileOld);
-	
-	const int inputLengthInChars = value.GetLength();
-	const int inputLength = value.GetLength();
-	unsigned int fileIndex = 0;
-	
-	// Open the existing search results file and check the number of blocks.
-	StorageFileHeader oldFh;
-	oldAddrFile.Get(&oldFh, sizeof(StorageFileHeader));
-	const unsigned int blockCount = oldFh.BlockCount;
-	
 	// Create a buffer to store search results in, that can be reused at all times. No need for reallocation anymore.
-	bool* localAddresses = new bool[MEMORY_SCANNER_BUFFER_LENGTH_THRESHOLD];
+	bool* const localAddresses = context->LocalAddressesBuffer;
 	Vector<Byte> stringLengths;
 	stringLengths.Reserve(MEMORY_SCANNER_BUFFER_LENGTH_THRESHOLD);
 	Byte* const stringLengthsArray = stringLengths.Begin();
-	
+	const unsigned int blockCount = context->InOldFileHeader.BlockCount;
+	const int inputLengthInChars = value.GetLength();
+	const int inputLength = value.GetLength();
+	unsigned int fileIndex = 0;
+		
 	// Walk the blocks in the results file.
 	for (unsigned int i = 0; i < blockCount; ++i)
 	{
 		// Read next block header and data into local buffer.
 		MemoryRegionFileHeader block;
-		oldAddrFile.Get(&block, sizeof(MemoryRegionFileHeader));
+		context->InOldAddressesFile.Get(&block, sizeof(MemoryRegionFileHeader));
 		bool* oldAddrFileBuffer = new bool[block.AddressCount];
-		oldAddrFile.Get(oldAddrFileBuffer, block.AddressCount);
+		context->InOldAddressesFile.Get(oldAddrFileBuffer, block.AddressCount);
 		
 		unsigned int addrIndex = 0;
 		unsigned int valueIndex = 0;
@@ -1521,13 +1191,13 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData* const regionData, 
 						storage.AddressCount = addrIndex;
 						storage.ValueCount = valueIndex;
 						storage.SizeInBytes = sizeof(MemoryRegionFileHeader) + addrIndex;
-						addressesFile.Put(&storage, sizeof(MemoryRegionFileHeader));
+						context->OutAddressesFile.Put(&storage, sizeof(MemoryRegionFileHeader));
 						
 						// Write memory buffers out to file.
-						addressesFile.Put(localAddresses, addrIndex);
+						context->OutAddressesFile.Put(localAddresses, addrIndex);
 
 						// Increment block count and increase UI result counter.
-						++fileHeader.BlockCount;
+						++context->OutAddressesFileHeader.BlockCount;
 						this->mScanResultCount += valueIndex;
 					}
 					
@@ -1550,13 +1220,13 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData* const regionData, 
 				storage.AddressCount = addrIndex;
 				storage.ValueCount = valueIndex;
 				storage.SizeInBytes = sizeof(MemoryRegionFileHeader) + addrIndex;
-				addressesFile.Put(&storage, sizeof(MemoryRegionFileHeader));
+				context->OutAddressesFile.Put(&storage, sizeof(MemoryRegionFileHeader));
 				
 				// Write memory buffers out to file.
-				addressesFile.Put(localAddresses, addrIndex);
+				context->OutAddressesFile.Put(localAddresses, addrIndex);
 				
 				// Increment block count and increase UI result counter.
-				++fileHeader.BlockCount;
+				++context->OutAddressesFileHeader.BlockCount;
 				this->mScanResultCount += valueIndex;
 			}
 		}
@@ -1569,58 +1239,31 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData* const regionData, 
 		this->UpdateScanningProgress(++this->mRegionFinishCount);
 	}
 	
-	// Close opened input file, we need to delete it.
-	oldAddrFile.Close();
-	
-	// Seek back to the begin of the file to overwrite the file header with new information.
-	addressesFile.Seek(0);
-	addressesFile.Put(&fileHeader, sizeof(StorageFileHeader));
-	
-	// Delete allocated array buffers.
-	delete[] localAddresses;
-
-	// Delete old temporary files, they have been replaced by new ones.
-	FileDelete(addrFileOld);
-	
-	// Indicate that this worker is done processing.
-	regionData->FinishedWork = true;
+	// Call the worker epilogue.
+	this->NextWorkerEpilogue(context);
 }
 
 // This function contains specialized behavior for ANSI string types.
 template <>
-void MemoryScanner::NextScanWorker(WorkerRegionParameterData* const regionData, const String& value, CompareFunctionType<String> cmp)
+void MemoryScanner::NextScanWorker(MemoryScannerWorkerContext* const context, const String& value, CompareFunctionType<String> cmp)
 {
-	const String addrFileOld = AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.tempSCANNING", regionData->WorkerIdentifier));	
-	FileOut addressesFile(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.temp", regionData->WorkerIdentifier)));
-
-	// Create file header for the output file and flush it. This way we already reserve space for it.
-	StorageFileHeader fileHeader(regionData->WorkerIdentifier);
-	addressesFile.Put(&fileHeader, sizeof(StorageFileHeader));
-
-	FileIn oldAddrFile(addrFileOld);
-	
-	const int inputLength = value.GetLength();
-	unsigned int fileIndex = 0;
-	
-	// Open the existing search results file and check the number of blocks.
-	StorageFileHeader oldFh;
-	oldAddrFile.Get(&oldFh, sizeof(StorageFileHeader));
-	const unsigned int blockCount = oldFh.BlockCount;
-	
 	// Create a buffer to store search results in, that can be reused at all times. No need for reallocation anymore.
-	bool* localAddresses = new bool[MEMORY_SCANNER_BUFFER_LENGTH_THRESHOLD];
+	bool* const localAddresses = context->LocalAddressesBuffer;
 	Vector<Byte> stringLengths;
 	stringLengths.Reserve(MEMORY_SCANNER_BUFFER_LENGTH_THRESHOLD);
 	Byte* const stringLengthsArray = stringLengths.Begin();
+	const int inputLength = value.GetLength();
+	unsigned int fileIndex = 0;
+	const unsigned int blockCount = context->InOldFileHeader.BlockCount;
 	
 	// Walk the blocks in the results file.
 	for (unsigned int i = 0; i < blockCount; ++i)
 	{
 		// Read next block header and data into local buffer.
 		MemoryRegionFileHeader block;
-		oldAddrFile.Get(&block, sizeof(MemoryRegionFileHeader));
+		context->InOldAddressesFile.Get(&block, sizeof(MemoryRegionFileHeader));
 		bool* oldAddrFileBuffer = new bool[block.AddressCount];
-		oldAddrFile.Get(oldAddrFileBuffer, block.AddressCount);
+		context->InOldAddressesFile.Get(oldAddrFileBuffer, block.AddressCount);
 		
 		unsigned int addrIndex = 0;
 		unsigned int valueIndex = 0;
@@ -1680,13 +1323,13 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData* const regionData, 
 						storage.AddressCount = addrIndex;
 						storage.ValueCount = valueIndex;
 						storage.SizeInBytes = sizeof(MemoryRegionFileHeader) + addrIndex;
-						addressesFile.Put(&storage, sizeof(MemoryRegionFileHeader));
+						context->OutAddressesFile.Put(&storage, sizeof(MemoryRegionFileHeader));
 						
 						// Write memory buffers out to file.
-						addressesFile.Put(localAddresses, addrIndex);
+						context->OutAddressesFile.Put(localAddresses, addrIndex);
 
 						// Increment block count and increase UI result counter.
-						++fileHeader.BlockCount;
+						++context->OutAddressesFileHeader.BlockCount;
 						this->mScanResultCount += valueIndex;
 					}
 					
@@ -1709,13 +1352,13 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData* const regionData, 
 				storage.AddressCount = addrIndex;
 				storage.ValueCount = valueIndex;
 				storage.SizeInBytes = sizeof(MemoryRegionFileHeader) + addrIndex;
-				addressesFile.Put(&storage, sizeof(MemoryRegionFileHeader));
+				context->OutAddressesFile.Put(&storage, sizeof(MemoryRegionFileHeader));
 				
 				// Write memory buffers out to file.
-				addressesFile.Put(localAddresses, addrIndex);
+				context->OutAddressesFile.Put(localAddresses, addrIndex);
 				
 				// Increment block count and increase UI result counter.
-				++fileHeader.BlockCount;
+				++context->OutAddressesFileHeader.BlockCount;
 				this->mScanResultCount += valueIndex;
 			}
 		}
@@ -1728,38 +1371,16 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData* const regionData, 
 		this->UpdateScanningProgress(++this->mRegionFinishCount);
 	}
 	
-	// Close opened input file, we need to delete it.
-	oldAddrFile.Close();
-	
-	// Seek back to the begin of the file to overwrite the file header with new information.
-	addressesFile.Seek(0);
-	addressesFile.Put(&fileHeader, sizeof(StorageFileHeader));
-	
-	// Delete allocated array buffers.
-	delete[] localAddresses;
-
-	// Delete old temporary files, they have been replaced by new ones.
-	FileDelete(addrFileOld);
-	
-	// Indicate that this worker is done processing.
-	regionData->FinishedWork = true;
+	// Call the worker epilogue.
+	this->NextWorkerEpilogue(context);
 }
 
 // This function is the default template for the set of specialized workers for the next scan.
 template <typename T>
-void MemoryScanner::NextScanWorker(WorkerRegionParameterData* const regionData, const T& value, CompareFunctionType<T> cmp)
+void MemoryScanner::NextScanWorker(MemoryScannerWorkerContext* const context, const T& value, CompareFunctionType<T> cmp)
 {
-	const String addrFileOld = AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.tempSCANNING", regionData->WorkerIdentifier));
-	const String valuesFileOld = AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Values%i.tempSCANNING", regionData->WorkerIdentifier));
+	const String valuesFileOld = AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Values%i.tempSCANNING", context->WorkerIdentifier));
 	
-	FileOut addressesFile(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.temp", regionData->WorkerIdentifier)));
-	FileOut valFile(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Values%i.temp", regionData->WorkerIdentifier)));
-
-	// Create file header for the output file and flush it. This way we already reserve space for it.
-	StorageFileHeader fileHeader(regionData->WorkerIdentifier);
-	addressesFile.Put(&fileHeader, sizeof(StorageFileHeader));
-
-	FileIn oldAddrFile(addrFileOld);
 	FileIn oldValuesFile;
 	
 	// This part is crucial for the comparison scan types (CHANGED, UNCHANGED, INCREASED, DECREASED) to work!
@@ -1767,26 +1388,21 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData* const regionData, 
 	{
 		oldValuesFile.Open(valuesFileOld);
 	}
-	
-	unsigned int fileIndex = 0;
-	
-	// Open the existing search results file and check the number of blocks.
-	StorageFileHeader oldFh;
-	oldAddrFile.Get(&oldFh, sizeof(StorageFileHeader));
-	const unsigned int blockCount = oldFh.BlockCount;
-	
+
 	// Create a buffer to store search results in, that can be reused at all times. No need for reallocation anymore.
-	bool* localAddresses = new bool[MEMORY_SCANNER_BUFFER_LENGTH_THRESHOLD];
+	bool* const localAddresses = context->LocalAddressesBuffer;
 	T* localValues = new T[MEMORY_SCANNER_BUFFER_LENGTH_THRESHOLD];
+	unsigned int fileIndex = 0;
+	const unsigned int blockCount = context->InOldFileHeader.BlockCount;
 	
 	// Walk the blocks in the results file.
 	for (unsigned int i = 0; i < blockCount; ++i)
 	{
 		// Read next block header and data into local buffer.
 		MemoryRegionFileHeader block;
-		oldAddrFile.Get(&block, sizeof(MemoryRegionFileHeader));
+		context->InOldAddressesFile.Get(&block, sizeof(MemoryRegionFileHeader));
 		bool* oldAddrFileBuffer = new bool[block.AddressCount];
-		oldAddrFile.Get(oldAddrFileBuffer, block.AddressCount);
+		context->InOldAddressesFile.Get(oldAddrFileBuffer, block.AddressCount);
 		
 		unsigned int addrIndex = 0;
 		unsigned int valueIndex = 0;
@@ -1844,7 +1460,7 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData* const regionData, 
 					
 					// Comparison result?
 					if (compareSucceeded)
-					{						
+					{
 						localAddresses[addrIndex] = true;
 						localValues[valueIndex++] = currentDataPtr;
 						++fileIndex;
@@ -1874,14 +1490,14 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData* const regionData, 
 						storage.AddressCount = addrIndex;
 						storage.ValueCount = valueIndex;
 						storage.SizeInBytes = sizeof(MemoryRegionFileHeader) + addrIndex;
-						addressesFile.Put(&storage, sizeof(MemoryRegionFileHeader));
+						context->OutAddressesFile.Put(&storage, sizeof(MemoryRegionFileHeader));
 						
 						// Write memory buffers out to file.
-						addressesFile.Put(localAddresses, addrIndex);
-						valFile.Put(localValues, valueIndex * sizeof(T));
+						context->OutAddressesFile.Put(localAddresses, addrIndex);
+						context->OutValuesFile.Put(localValues, valueIndex * sizeof(T));
 
 						// Increment block count and increase UI result counter.
-						++fileHeader.BlockCount;
+						++context->OutAddressesFileHeader.BlockCount;
 						this->mScanResultCount += valueIndex;
 					}
 					
@@ -1910,14 +1526,14 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData* const regionData, 
 				storage.AddressCount = addrIndex;
 				storage.ValueCount = valueIndex;
 				storage.SizeInBytes = sizeof(MemoryRegionFileHeader) + addrIndex;
-				addressesFile.Put(&storage, sizeof(MemoryRegionFileHeader));
+				context->OutAddressesFile.Put(&storage, sizeof(MemoryRegionFileHeader));
 				
 				// Write memory buffers out to file.
-				addressesFile.Put(localAddresses, addrIndex);
-				valFile.Put(localValues, valueIndex * sizeof(T));
+				context->OutAddressesFile.Put(localAddresses, addrIndex);
+				context->OutValuesFile.Put(localValues, valueIndex * sizeof(T));
 				
 				// Increment block count and increase UI result counter.
-				++fileHeader.BlockCount;
+				++context->OutAddressesFileHeader.BlockCount;
 				this->mScanResultCount += valueIndex;
 			}
 		}
@@ -1936,27 +1552,17 @@ void MemoryScanner::NextScanWorker(WorkerRegionParameterData* const regionData, 
 		oldValuesFile.Close();
 	}
 	
-	// Close opened input file, we need to delete it.
-	oldAddrFile.Close();
-	
-	// Seek back to the begin of the file to overwrite the file header with new information.
-	addressesFile.Seek(0);
-	addressesFile.Put(&fileHeader, sizeof(StorageFileHeader));
-	
 	// Delete allocated array buffers.
-	delete[] localAddresses;
 	delete[] localValues;
 
 	// Delete old temporary files, they have been replaced by new ones.
-	FileDelete(addrFileOld);
 	FileDelete(valuesFileOld);
-	
-	// Indicate that this worker is done processing.
-	regionData->FinishedWork = true;
+
+	// Call the worker epilogue.
+	this->NextWorkerEpilogue(context);
 }
 
 // Initializes the next scan sequence. Call this function from the user interface.
-template <typename T>
 void MemoryScanner::NextScan()
 {
 	// Clear partial search results for next scanning.
@@ -2010,118 +1616,230 @@ void MemoryScanner::NextScan()
 	
 	// Set thread priority for the workers ran by this scan session.
 #ifdef _MULTITHREADED
-	this->mThreadPool.SetThreadPriority(this->mSettingsInstance->GetScanThreadPriority());
+	this->mThreadPool.SetThreadPriority(SettingsFile::GetInstance()->GetScanThreadPriority());
 #endif
 
 	// Start worker threads accordingly to previous scan.
-	this->AssignAndFire<T>(false);
+	for (auto& work : this->mWorkerFileOrder)
+	{
+		this->mThreadPool & THISBACK1(NextWorkerPrologue, &work);
+	}
 }
 
-// Writes a byte array with specified size to the specified address.
-template <>
-void MemoryScanner::Poke(const SIZE_T address, const ArrayOfBytes& value)
-{
-	CrySearchRoutines.CryWriteMemoryRoutine(this->mOpenedProcessHandle, (void*)address, value.Data, value.Size, NULL);
-}
-
-// Writes a unicode string with specified size to the specified address.
-template <>
-void MemoryScanner::Poke(const SIZE_T address, const WString& value)
-{
-	CrySearchRoutines.CryWriteMemoryRoutine(this->mOpenedProcessHandle, (void*)address, value.Begin(), value.GetLength() * sizeof(wchar), NULL);
-}
-
-// Writes an ANSI string with specified size to the specified address.
-template <>
-void MemoryScanner::Poke(const SIZE_T address, const String& value)
-{
-	CrySearchRoutines.CryWriteMemoryRoutine(this->mOpenedProcessHandle, (void*)address, value.Begin(), value.GetLength(), NULL);
-}
-
-// Writes a T value with sizeof(T) size to the specified address.
+// Gets the correct compare function for the upcoming scan.
 template <typename T>
-void MemoryScanner::Poke(const SIZE_T address, const T& value)
+CompareFunctionType<T> MemoryScanner::GetCompareFunction()
 {
-	CrySearchRoutines.CryWriteMemoryRoutine(this->mOpenedProcessHandle, (void*)address, &value, sizeof(T), NULL);
+	switch (GlobalScanParameter->GlobalScanType)
+	{
+		case SCANTYPE_UNKNOWN_INITIAL_VALUE:
+			return CompareUnknownInitialValue;
+		case SCANTYPE_EXACTVALUE:
+		case SCANTYPE_CHANGED:
+		case SCANTYPE_UNCHANGED:
+			return CompareEqual;
+		case SCANTYPE_SMALLERTHAN:
+		case SCANTYPE_DECREASED:
+			return CompareSmaller;
+		case SCANTYPE_GREATERTHAN:
+		case SCANTYPE_INCREASED:
+			return CompareGreater;
+		case SCANTYPE_VALUE_IN_BETWEEN:
+			return CompareInBetween;
+		default:
+			return NULL;
+	}
 }
 
-// Reads a byte array with specified size from the specified address.
-template <>
-bool MemoryScanner::Peek(const SIZE_T address, const unsigned int size, ArrayOfBytes* outBuffer) const
+// The first scan worker prologue function, which sets up the context for a worker and initiates the scanning phase.
+void MemoryScanner::FirstWorkerPrologue(MemoryScannerWorkerContext* const context)
 {
-	outBuffer->Allocate(size);
-	SIZE_T bytesRead;
-	CrySearchRoutines.CryReadMemoryRoutine(this->mOpenedProcessHandle, (void*)address, outBuffer->Data, size, &bytesRead);
-	return bytesRead == size;
+	// Set the correct worker corresponding to the value type.
+	const MemoryScanValueType tmpType = GlobalScanParameter->GlobalScanValueType;
+
+	// Create address output file in the context, values file is only needed in some situations.
+	context->OpenAddresses(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.temp", context->WorkerIdentifier)));
+	
+	// Create file header for the output file and flush it. This way we already reserve space for it.
+	context->OutAddressesFileHeader.WorkerId = context->WorkerIdentifier;
+	context->OutAddressesFile.Put(&context->OutAddressesFileHeader, sizeof(StorageFileHeader));
+	
+	// Allocate local buffer for search result addresses.
+	context->AllocateLocalAddressBuffer();
+	
+	// Select the scanning phase corresponding to the specified data type.
+	if (tmpType == VALUETYPE_BYTE)
+	{
+		context->FastScanAlignSize = 1;
+		context->OpenValues(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Values%i.temp", context->WorkerIdentifier)));
+		CompareFunctionType<Byte> cmpFunc = this->GetCompareFunction<Byte>();
+		this->FirstScanWorker<Byte>(context, ((Byte)(reinterpret_cast<ScanParameters<Byte>*>(GlobalScanParameter))->ScanValue), cmpFunc);
+	}
+	else if (tmpType == VALUETYPE_2BYTE)
+	{
+		context->FastScanAlignSize = GlobalScanParameter->CurrentScanFastScan ? sizeof(short) : 1;
+		context->OpenValues(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Values%i.temp", context->WorkerIdentifier)));
+		CompareFunctionType<short> cmpFunc = this->GetCompareFunction<short>();
+		this->FirstScanWorker<short>(context, ((short)(reinterpret_cast<ScanParameters<short>*>(GlobalScanParameter))->ScanValue), cmpFunc);
+	}
+	else if (tmpType == VALUETYPE_4BYTE)
+	{
+		context->FastScanAlignSize = GlobalScanParameter->CurrentScanFastScan ? sizeof(int) : 1;
+		context->OpenValues(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Values%i.temp", context->WorkerIdentifier)));
+		CompareFunctionType<int> cmpFunc = this->GetCompareFunction<int>();
+		this->FirstScanWorker<int>(context, ((int)(reinterpret_cast<ScanParameters<int>*>(GlobalScanParameter))->ScanValue), cmpFunc);
+	}
+	else if (tmpType == VALUETYPE_8BYTE)
+	{
+		context->FastScanAlignSize = GlobalScanParameter->CurrentScanFastScan ? sizeof(int) : 1;
+		context->OpenValues(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Values%i.temp", context->WorkerIdentifier)));
+		CompareFunctionType<__int64> cmpFunc = this->GetCompareFunction<__int64>();
+		this->FirstScanWorker<__int64>(context, ((__int64)(reinterpret_cast<ScanParameters<__int64>*>(GlobalScanParameter))->ScanValue), cmpFunc);
+	}
+	else if (tmpType == VALUETYPE_FLOAT)
+	{
+		context->FastScanAlignSize = GlobalScanParameter->CurrentScanFastScan ? sizeof(float) : 1;
+		context->OpenValues(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Values%i.temp", context->WorkerIdentifier)));
+		CompareFunctionType<float> cmpFunc = this->GetCompareFunction<float>();
+		this->FirstScanWorker<float>(context, ((float)(reinterpret_cast<ScanParameters<float>*>(GlobalScanParameter))->ScanValue), cmpFunc);
+	}
+	else if (tmpType == VALUETYPE_DOUBLE)
+	{
+		context->FastScanAlignSize = GlobalScanParameter->CurrentScanFastScan ? sizeof(int) : 1;
+		context->OpenValues(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Values%i.temp", context->WorkerIdentifier)));
+		CompareFunctionType<double> cmpFunc = this->GetCompareFunction<double>();
+		this->FirstScanWorker<double>(context, ((double)(reinterpret_cast<ScanParameters<double>*>(GlobalScanParameter))->ScanValue), cmpFunc);
+	}
+	else if (tmpType == VALUETYPE_STRING)
+	{
+		context->FastScanAlignSize = 1;
+		CompareFunctionType<String> cmpFunc = this->GetCompareFunction<String>();
+		this->FirstScanWorker<String>(context, ((String)(reinterpret_cast<ScanParameters<String>*>(GlobalScanParameter))->ScanValue), cmpFunc);
+	}
+	else if (tmpType == VALUETYPE_WSTRING)
+	{
+		context->FastScanAlignSize = 1;
+		CompareFunctionType<WString> cmpFunc = this->GetCompareFunction<WString>();
+		this->FirstScanWorker<WString>(context, ((WString)(reinterpret_cast<ScanParameters<WString>*>(GlobalScanParameter))->ScanValue), cmpFunc);
+	}
+	else if (tmpType == VALUETYPE_AOB)
+	{
+		context->FastScanAlignSize = 1;
+		CompareFunctionType<ArrayOfBytes> cmpFunc = this->GetCompareFunction<ArrayOfBytes>();
+		this->FirstScanWorker<ArrayOfBytes>(context, ((ArrayOfBytes)(reinterpret_cast<ScanParameters<ArrayOfBytes>*>(GlobalScanParameter))->ScanValue), cmpFunc);
+	}
 }
 
-// Reads a unicode string with specified size from the specified address.
-template <>
-bool MemoryScanner::Peek(const SIZE_T address, const unsigned int size, WString* outBuffer) const
+// The next scan worker prologue function, which sets up the context for a worker and initiates the scanning phase.
+void MemoryScanner::NextWorkerPrologue(MemoryScannerWorkerContext* const context)
 {
-	const unsigned int bytesSize = size * sizeof(wchar);
-	SIZE_T bytesRead;
-	WStringBuffer buffer(size);
-	CrySearchRoutines.CryReadMemoryRoutine(this->mOpenedProcessHandle, (void*)address, buffer.Begin(), bytesSize, &bytesRead);
-	buffer.Strlen();
-	*outBuffer = buffer;
-	return bytesRead == bytesSize;
+	// Set the finished work flag to false.
+	context->FinishedWork = false;
+	
+	// Set the correct worker corresponding to the value type.
+	const MemoryScanValueType tmpType = GlobalScanParameter->GlobalScanValueType;
+	
+	// Create address output file in the context, values file is only needed in some situations.
+	context->OpenAddresses(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.temp", context->WorkerIdentifier)));
+	
+	// Create file header for the output file and flush it. This way we already reserve space for it.
+	context->OutAddressesFileHeader.BlockCount = 0;
+	context->OutAddressesFile.Put(&context->OutAddressesFileHeader, sizeof(StorageFileHeader));
+
+	// Allocate local buffer for search result addresses.
+	context->AllocateLocalAddressBuffer();
+	
+	// Open the existing search results file.
+	context->OpenInputAddresses(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.tempSCANNING", context->WorkerIdentifier)));
+	context->InOldAddressesFile.Get(&context->InOldFileHeader, sizeof(StorageFileHeader));	
+
+	// Select the scanning phase corresponding to the specified data type.
+	if (tmpType == VALUETYPE_BYTE)
+	{
+		context->OpenValues(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Values%i.temp", context->WorkerIdentifier)));
+		CompareFunctionType<Byte> cmpFunc = this->GetCompareFunction<Byte>();
+		this->NextScanWorker<Byte>(context, ((Byte)(reinterpret_cast<ScanParameters<Byte>*>(GlobalScanParameter))->ScanValue), cmpFunc);
+	}
+	else if (tmpType == VALUETYPE_2BYTE)
+	{
+		context->OpenValues(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Values%i.temp", context->WorkerIdentifier)));
+		CompareFunctionType<short> cmpFunc = this->GetCompareFunction<short>();
+		this->NextScanWorker<short>(context, ((short)(reinterpret_cast<ScanParameters<short>*>(GlobalScanParameter))->ScanValue), cmpFunc);
+	}
+	else if (tmpType == VALUETYPE_4BYTE)
+	{
+		context->OpenValues(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Values%i.temp", context->WorkerIdentifier)));
+		CompareFunctionType<int> cmpFunc = this->GetCompareFunction<int>();
+		this->NextScanWorker<int>(context, ((int)(reinterpret_cast<ScanParameters<int>*>(GlobalScanParameter))->ScanValue), cmpFunc);
+	}
+	else if (tmpType == VALUETYPE_8BYTE)
+	{
+		context->OpenValues(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Values%i.temp", context->WorkerIdentifier)));
+		CompareFunctionType<__int64> cmpFunc = this->GetCompareFunction<__int64>();
+		this->NextScanWorker<__int64>(context, ((__int64)(reinterpret_cast<ScanParameters<__int64>*>(GlobalScanParameter))->ScanValue), cmpFunc);
+	}
+	else if (tmpType == VALUETYPE_FLOAT)
+	{
+		context->OpenValues(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Values%i.temp", context->WorkerIdentifier)));
+		CompareFunctionType<float> cmpFunc = this->GetCompareFunction<float>();
+		this->NextScanWorker<float>(context, ((float)(reinterpret_cast<ScanParameters<float>*>(GlobalScanParameter))->ScanValue), cmpFunc);
+	}
+	else if (tmpType == VALUETYPE_DOUBLE)
+	{
+		context->OpenValues(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Values%i.temp", context->WorkerIdentifier)));
+		CompareFunctionType<double> cmpFunc = this->GetCompareFunction<double>();
+		this->NextScanWorker<double>(context, ((double)(reinterpret_cast<ScanParameters<double>*>(GlobalScanParameter))->ScanValue), cmpFunc);
+	}
+	else if (tmpType == VALUETYPE_STRING)
+	{
+		CompareFunctionType<String> cmpFunc = this->GetCompareFunction<String>();
+		this->NextScanWorker<String>(context, ((String)(reinterpret_cast<ScanParameters<String>*>(GlobalScanParameter))->ScanValue), cmpFunc);
+	}
+	else if (tmpType == VALUETYPE_WSTRING)
+	{
+		CompareFunctionType<WString> cmpFunc = this->GetCompareFunction<WString>();
+		this->NextScanWorker<WString>(context, ((WString)(reinterpret_cast<ScanParameters<WString>*>(GlobalScanParameter))->ScanValue), cmpFunc);
+	}
+	else if (tmpType == VALUETYPE_AOB)
+	{
+		CompareFunctionType<ArrayOfBytes> cmpFunc = this->GetCompareFunction<ArrayOfBytes>();
+		this->NextScanWorker<ArrayOfBytes>(context, ((ArrayOfBytes)(reinterpret_cast<ScanParameters<ArrayOfBytes>*>(GlobalScanParameter))->ScanValue), cmpFunc);
+	}
 }
 
-// Reads an ANSI string with specified size from the specified address.
-template <>
-bool MemoryScanner::Peek(const SIZE_T address, const unsigned int size, String* outBuffer) const
+// The first scan worker epilogue, which releases resources and finalizes the scan.
+void MemoryScanner::FirstWorkerEpilogue(MemoryScannerWorkerContext* const context)
 {
-	SIZE_T bytesRead;
-	StringBuffer buffer(size);
-	CrySearchRoutines.CryReadMemoryRoutine(this->mOpenedProcessHandle, (void*)address, buffer.Begin(), size, &bytesRead);
-	buffer.Strlen();
-	*outBuffer = buffer;
-	return bytesRead == size;
+	// Seek back to the begin of the file to overwrite the file header with new information.
+	context->OutAddressesFile.Seek(0);
+	context->OutAddressesFile.Put(&context->OutAddressesFileHeader, sizeof(StorageFileHeader));
+
+	// Release local addresses buffer.
+	context->ReleaseLocalAddressBuffer();
+
+	// Close output files in the context.
+	context->ReleaseFiles();
+	
+	// Indicate that this worker is done processing.
+	context->FinishedWork = true;
 }
 
-// Reads T value with sizeof(T) size from the specified address.
-template <typename T>
-bool MemoryScanner::Peek(const SIZE_T address, const unsigned int size, T* outBuffer) const
+// The next scan worker epilogue, which releases resources and finalizes the scan.
+void MemoryScanner::NextWorkerEpilogue(MemoryScannerWorkerContext* const context)
 {
-	SIZE_T bytesRead;
-	CrySearchRoutines.CryReadMemoryRoutine(this->mOpenedProcessHandle, (void*)address, outBuffer, sizeof(T), &bytesRead);
-	return bytesRead == sizeof(T);
+	// Seek back to the begin of the file to overwrite the file header with new information.
+	context->OutAddressesFile.Seek(0);
+	context->OutAddressesFile.Put(&context->OutAddressesFileHeader, sizeof(StorageFileHeader));
+	
+	// Release local addresses buffer.
+	context->ReleaseLocalAddressBuffer();
+	
+	// Close output files in the context.
+	context->ReleaseFiles();
+	
+	// Delete the old input files.
+	FileDelete(context->InOldAddressesFilePath);
+	
+	// Indicate that this worker is done processing.
+	context->FinishedWork = true;
 }
-
-// ---------------------------------------------------------------------------------------------
-
-// template implementations for linkage errors.
-template void MemoryScanner::FirstScan<Byte>();
-template void MemoryScanner::FirstScan<short>();
-template void MemoryScanner::FirstScan<int>();
-template void MemoryScanner::FirstScan<__int64>();
-template void MemoryScanner::FirstScan<float>();
-template void MemoryScanner::FirstScan<double>();
-template void MemoryScanner::FirstScan<String>();
-template void MemoryScanner::FirstScan<WString>();
-template void MemoryScanner::FirstScan<ArrayOfBytes>();
-
-template void MemoryScanner::NextScan<Byte>();
-template void MemoryScanner::NextScan<short>();
-template void MemoryScanner::NextScan<int>();
-template void MemoryScanner::NextScan<__int64>();
-template void MemoryScanner::NextScan<float>();
-template void MemoryScanner::NextScan<double>();
-template void MemoryScanner::NextScan<String>();
-template void MemoryScanner::NextScan<WString>();
-template void MemoryScanner::NextScan<ArrayOfBytes>();
-
-template void MemoryScanner::Poke<Byte>(const SIZE_T address, const Byte& value);
-template void MemoryScanner::Poke<short>(const SIZE_T address, const short& value);
-template void MemoryScanner::Poke<int>(const SIZE_T address, const int& value);
-template void MemoryScanner::Poke<__int64>(const SIZE_T address, const __int64& value);
-template void MemoryScanner::Poke<float>(const SIZE_T address, const float& value);
-template void MemoryScanner::Poke<double>(const SIZE_T address, const double& value);
-
-template bool MemoryScanner::Peek<Byte>(const SIZE_T address, const unsigned int size, Byte* outBuffer) const;
-template bool MemoryScanner::Peek<short>(const SIZE_T address, const unsigned int size, short* outBuffer) const;
-template bool MemoryScanner::Peek<int>(const SIZE_T address, const unsigned int size, int* outBuffer) const;
-template bool MemoryScanner::Peek<__int64>(const SIZE_T address, const unsigned int size, __int64* outBuffer) const;
-template bool MemoryScanner::Peek<float>(const SIZE_T address, const unsigned int size, float* outBuffer) const;
-template bool MemoryScanner::Peek<double>(const SIZE_T address, const unsigned int size, double* outBuffer) const;

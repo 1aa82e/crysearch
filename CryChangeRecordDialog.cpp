@@ -349,72 +349,50 @@ void CryChangeRecordDialog::DialogOkay()
 			// Value is not managed by address table itself, so WPM.
 			if (this->mLoadedEntry->ValueType == CRYDATATYPE_BYTE)
 			{
-				if (this->mValueIsHex)
-				{
-					mMemoryScanner->Poke(this->mLoadedEntry->Address, (Byte)ScanInt(inputVal, NULL, 16));
-				}
-				else
-				{
-					mMemoryScanner->Poke(this->mLoadedEntry->Address, (Byte)ScanInt(inputVal));
-				}
+				const Byte value = this->mValueIsHex ? ScanInt(inputVal, NULL, 16) : ScanInt(inputVal);
+				mMemoryScanner->Poke(this->mLoadedEntry->Address, &value, sizeof(Byte));
 			}
 			else if (this->mLoadedEntry->ValueType == CRYDATATYPE_2BYTES)
 			{
-				if (this->mValueIsHex)
-				{
-					mMemoryScanner->Poke(this->mLoadedEntry->Address, (short)ScanInt(inputVal, NULL, 16));
-				}
-				else
-				{
-					mMemoryScanner->Poke(this->mLoadedEntry->Address, (short)ScanInt(inputVal));
-				}
+				const short value = this->mValueIsHex ? ScanInt(inputVal, NULL, 16) : ScanInt(inputVal);
+				mMemoryScanner->Poke(this->mLoadedEntry->Address, &value, sizeof(short));
 			}
 			else if (this->mLoadedEntry->ValueType == CRYDATATYPE_4BYTES)
 			{
-				if (this->mValueIsHex)
-				{
-					mMemoryScanner->Poke(this->mLoadedEntry->Address, ScanInt(inputVal, NULL, 16));
-				}
-				else
-				{
-					mMemoryScanner->Poke(this->mLoadedEntry->Address, ScanInt(inputVal));
-				}
+				const int value = this->mValueIsHex ? ScanInt(inputVal, NULL, 16) : ScanInt(inputVal);
+				mMemoryScanner->Poke(this->mLoadedEntry->Address, &value, sizeof(int));
 			}
 			else if (this->mLoadedEntry->ValueType == CRYDATATYPE_8BYTES)
 			{
-				if (this->mValueIsHex)
-				{
-					mMemoryScanner->Poke(this->mLoadedEntry->Address, ScanInt64(inputVal, NULL, 16));
-				}
-				else
-				{
-					mMemoryScanner->Poke(this->mLoadedEntry->Address, ScanInt64(inputVal));
-				}
+				const __int64 value = this->mValueIsHex ? ScanInt64(inputVal, NULL, 16) : ScanInt64(inputVal);
+				mMemoryScanner->Poke(this->mLoadedEntry->Address, &value, sizeof(__int64));
 			}
 			else if (this->mLoadedEntry->ValueType == CRYDATATYPE_FLOAT)
 			{
-				mMemoryScanner->Poke(this->mLoadedEntry->Address, (float)ScanDouble(inputVal, NULL, true));
+				const float value = (float)ScanDouble(inputVal, NULL, true);
+				mMemoryScanner->Poke(this->mLoadedEntry->Address, &value, sizeof(float));
 			}
 			else if (this->mLoadedEntry->ValueType == CRYDATATYPE_DOUBLE)
 			{
-				mMemoryScanner->Poke(this->mLoadedEntry->Address, ScanDouble(inputVal, NULL, true));
+				const double value = ScanDouble(inputVal, NULL, true);
+				mMemoryScanner->Poke(this->mLoadedEntry->Address, &value, sizeof(double));
 			}
 			else if (this->mLoadedEntry->ValueType == CRYDATATYPE_STRING)
 			{
-				mMemoryScanner->Poke(this->mLoadedEntry->Address, inputVal);
+				mMemoryScanner->PokeA(this->mLoadedEntry->Address, inputVal);
 				this->mLoadedEntry->Size = this->mFieldValue.GetLength();
 				this->AlterSearchResult(this->mLoadedEntry->Address, this->mLoadedEntry->Size);
 			}
 			else if (this->mLoadedEntry->ValueType == CRYDATATYPE_WSTRING)
 			{
-				mMemoryScanner->Poke(this->mLoadedEntry->Address, this->mFieldValue.GetText());
+				mMemoryScanner->PokeW(this->mLoadedEntry->Address, this->mFieldValue.GetText());
 				this->mLoadedEntry->Size = this->mFieldValue.GetLength();
 				this->AlterSearchResult(this->mLoadedEntry->Address, this->mLoadedEntry->Size);
 			}
 			else if (this->mLoadedEntry->ValueType == CRYDATATYPE_AOB)
 			{
 				ArrayOfBytes aob = StringToBytes(inputVal);
-				mMemoryScanner->Poke(this->mLoadedEntry->Address, aob);
+				mMemoryScanner->PokeB(this->mLoadedEntry->Address, aob);
 				this->mLoadedEntry->Size = aob.Size;
 				this->AlterSearchResult(this->mLoadedEntry->Address, this->mLoadedEntry->Size);
 			}

@@ -22,11 +22,6 @@
 
 // ---------------------------------------------------------------------------------------------
 
-// Defines the maximum size of a buffer allocated by the memory scanner that triggers a reduced 
-// reallocation. The second definition is the reduced reallocation factor.
-// NOTE: This number is the size in elements! Not the size in BYTES!!!
-#define MEMORY_SCANNER_BUFFER_LENGTH_THRESHOLD		0x400000 // 16 MB, assumed that element size is 4 bytes.
-
 // Defines the amount of search results that CrySearch will keep in memory to view to the users.
 // Be sure to also edit the amount in the string manually in the ScannerCompleted function.
 #define MEMORYSCANNER_CACHE_LIMIT	100000

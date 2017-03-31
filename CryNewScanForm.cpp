@@ -1,5 +1,6 @@
 #include "CryNewScanForm.h"
 #include "UIUtilities.h"
+#include "SettingsFile.h"
 
 // Describes a memory scanner scan type, bound to a string representation.
 struct ScanTypeDescriptor

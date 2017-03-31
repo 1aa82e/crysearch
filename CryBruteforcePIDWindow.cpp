@@ -113,7 +113,7 @@ void CryBruteforcePIDWindow::BruteForceBegin()
 // Sets the result label to whatever number of results there currently are.
 void CryBruteforcePIDWindow::SetResultLabel(const int numres)
 {
-	this->mPidResultCount.SetLabel(Format("Brute-Force found %i Process ID's (Marked red means not in regular process list)", numres));
+	this->mPidResultCount.SetLabel(Format("Brute-Force found %i Process ID's (Red means not in regular process list)", numres));
 }
 
 // Retrieves the process that is currently selected.

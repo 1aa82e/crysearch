@@ -88,18 +88,17 @@ enum CryDebuggerEventProcessingState
 CryDebugger::CryDebugger()
 {
 	this->mDebuggerEventLockVariable = NO_EVENT;
-	this->mSettingsInstance = SettingsFile::GetInstance();
 	HANDLE loc = mMemoryScanner->GetHandle();
 	
 	// Initialize symbol handler for the process using configured symbol paths.
-	const int pathCount = this->mSettingsInstance->GetSymbolPathCount();
+	const int pathCount = SettingsFile::GetInstance()->GetSymbolPathCount();
 	if (pathCount > 0)
 	{
 		// Add manually configured paths.
-		String paths = this->mSettingsInstance->GetSymbolPath(0);
+		String paths = SettingsFile::GetInstance()->GetSymbolPath(0);
 		for (int i = 1; i < pathCount; ++i)
 		{
-			paths += ";" + this->mSettingsInstance->GetSymbolPath(i);
+			paths += ";" + SettingsFile::GetInstance()->GetSymbolPath(i);
 		}
 		
 		// Add environmentally decided paths for possible invading.
@@ -111,12 +110,12 @@ CryDebugger::CryDebugger()
 		paths += envvar;
 		
 		// Initialize symbol handler with configured pathing.
-		SymInitialize(loc, paths, this->mSettingsInstance->GetInvadeProcess() ? TRUE : FALSE);
+		SymInitialize(loc, paths, SettingsFile::GetInstance()->GetInvadeProcess() ? TRUE : FALSE);
 	}
 	else
 	{
 		// No symbol paths were configured, use Windows default ones.
-		SymInitialize(loc, NULL, this->mSettingsInstance->GetInvadeProcess() ? TRUE : FALSE);
+		SymInitialize(loc, NULL, SettingsFile::GetInstance()->GetInvadeProcess() ? TRUE : FALSE);
 	}
 	
 	// Set options for the symbol handler.
@@ -125,7 +124,7 @@ CryDebugger::CryDebugger()
 	SymSetOptions(options);
 	
 	// If the process should not be invaded, the symbols for the executable module should be loaded manually.
-	if (!this->mSettingsInstance->GetInvadeProcess())
+	if (!SettingsFile::GetInstance()->GetInvadeProcess())
 	{
 		// Retrieve the full path to the executable file of the process.
 		char fn[MAX_PATH];
@@ -196,7 +195,7 @@ void CryDebugger::DbgThread()
 	this->DebuggerEventOccured(DBG_EVENT_ATTACH, NULL);
 	
 	// If the hide setting is enabled, execute PEB writing to hide debugger from process.
-	if (this->mSettingsInstance->GetAttemptHideDebuggerFromPeb())
+	if (SettingsFile::GetInstance()->GetAttemptHideDebuggerFromPeb())
 	{
 		this->HideDebuggerFromPeb();
 	}
@@ -725,7 +724,7 @@ void CryDebugger::ExceptionWatch()
 			else
 			{
 				// If the user wanted to, catch exception.
-				if (this->mSettingsInstance->GetCatchAllExceptions())
+				if (SettingsFile::GetInstance()->GetCatchAllExceptions())
 				{
 					// Another exception occured, but CrySearch is not able to handle anything other than breakpoints. Report it to the user.
 					this->HandleMiscellaneousExceptions((SIZE_T)DebugEv.u.Exception.ExceptionRecord.ExceptionAddress, DebugEv.u.Exception.ExceptionRecord.ExceptionCode, &dwContinueStatus);
