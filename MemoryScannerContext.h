@@ -51,6 +51,10 @@ struct MemoryScannerWorkerContext : Moveable<MemoryScannerWorkerContext>
 	// The scan parameters.
 	WorkerRegionParameterData RegionData;
 	
+	// The size of the biggest memory region that this worker is going to process. By keeping
+	// track of this number, we only have to allocate a buffer once for the whole worker.
+	SIZE_T MaximumMemoryRegionBufferSize;
+	
 	// The alignment size for the scan phase.
 	int FastScanAlignSize;
 	
@@ -66,6 +70,10 @@ struct MemoryScannerWorkerContext : Moveable<MemoryScannerWorkerContext>
 	// The worker results buffer for addresses, which has a fixed size on the heap.
 	bool* LocalAddressesBuffer;
 	
+	// The worker results buffer for values, which has a fixed size on the heap.
+	// However, because of the templating, this buffer is initialized outside the context.
+	void* LocalValuesBuffer;
+	
 	// The file header of the previously written addresses file (for next scans).
 	StorageFileHeader InOldFileHeader;
 	
@@ -75,12 +83,23 @@ struct MemoryScannerWorkerContext : Moveable<MemoryScannerWorkerContext>
 	// The input file stream for next scan workers, reading the previously written addresses file.
 	FileIn InOldAddressesFile;
 	
+	// Contains the path to the input file of values (for next scans).
+	String InOldValuesFilePath;
+	
+	// The input file stream for next scan workers, reading the previously written values file.
+	FileIn InOldValuesFile;
+	
+	// -----------------------------------------------------------------------------------------
+	
 	// Default constructor.
 	MemoryScannerWorkerContext()
 	{
 		this->WorkerIdentifier = 0;
 		this->FinishedWork = false;
+		this->MaximumMemoryRegionBufferSize = 0;
 		this->FastScanAlignSize = 0;
+		this->LocalAddressesBuffer = NULL;
+		this->LocalValuesBuffer = NULL;
 	};
 	
 	// Allocates local address buffer for a worker.
@@ -88,11 +107,21 @@ struct MemoryScannerWorkerContext : Moveable<MemoryScannerWorkerContext>
 	{
 		this->LocalAddressesBuffer = new bool[MEMORY_SCANNER_BUFFER_LENGTH_THRESHOLD];
 	};
-	
-	// Releases local address buffer for a worker.
-	void ReleaseLocalAddressBuffer()
+
+	// Releases local buffers for a worker.
+	void ReleaseLocalBuffers()
 	{
-		delete[] this->LocalAddressesBuffer;
+		if (this->LocalAddressesBuffer)
+		{
+			delete[] this->LocalAddressesBuffer;
+			this->LocalAddressesBuffer = NULL;
+		}
+		
+		if (this->LocalValuesBuffer)
+		{
+			delete[] this->LocalValuesBuffer;
+			this->LocalValuesBuffer = NULL;
+		}
 	};
 	
 	// (Re)Opens the addresses file handle for the next scan worker.
@@ -114,12 +143,20 @@ struct MemoryScannerWorkerContext : Moveable<MemoryScannerWorkerContext>
 		this->InOldAddressesFile.Open(addrFile);
 	};
 	
+	// (Re)Opens the input values file handle for the next scan worker.
+	void OpenInputValues(const String& valFile)
+	{
+		this->InOldValuesFilePath = valFile;
+		this->InOldValuesFile.Open(valFile);
+	};
+	
 	// Closes file handles for this worker.
 	void ReleaseFiles()
 	{
 		this->OutAddressesFile.Close();
 		this->OutValuesFile.Close();
 		this->InOldAddressesFile.Close();
+		this->InOldValuesFile.Close();
 	};
 };
 

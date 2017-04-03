@@ -7,7 +7,7 @@ v3.0:
 	- Added a configurable warning (advanced tab, settings window) for when OriginalFirstThunk is zero: e.g. the application is packed;
 	- Revised the memory scanner for performance and I/O usage:
 		- Changed the disk storage scheme from plain value array to using vector of bools and more complex data structure on disk;
-		- Improved performance for search result caching algorithm, less overhead in scanning;
+		- Major changes in code for size and speed;
 		- Changes resulted in improved search performance, especially for larger scans.
 	- Added a window to view all committed memory page in the target process, with the possiblity to free them (Allocate memory window);
 	- Fixed race condition issue in the caching of search results for the user interface, keeping more results in memory than intended;
