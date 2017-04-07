@@ -55,6 +55,9 @@ struct MemoryScannerWorkerContext : Moveable<MemoryScannerWorkerContext>
 	// track of this number, we only have to allocate a buffer once for the whole worker.
 	SIZE_T MaximumMemoryRegionBufferSize;
 	
+	// The buffer in which memory pages can be loaded during the scanning phase.
+	Byte* MemoryRegionBuffer;
+	
 	// The alignment size for the scan phase.
 	int FastScanAlignSize;
 	
@@ -98,6 +101,7 @@ struct MemoryScannerWorkerContext : Moveable<MemoryScannerWorkerContext>
 		this->FinishedWork = false;
 		this->MaximumMemoryRegionBufferSize = 0;
 		this->FastScanAlignSize = 0;
+		this->MemoryRegionBuffer = NULL;
 		this->LocalAddressesBuffer = NULL;
 		this->LocalValuesBuffer = NULL;
 	};
@@ -111,16 +115,25 @@ struct MemoryScannerWorkerContext : Moveable<MemoryScannerWorkerContext>
 	// Releases local buffers for a worker.
 	void ReleaseLocalBuffers()
 	{
+		// Delete local addresses buffer.
 		if (this->LocalAddressesBuffer)
 		{
 			delete[] this->LocalAddressesBuffer;
 			this->LocalAddressesBuffer = NULL;
 		}
 		
+		// Delete local values buffer.
 		if (this->LocalValuesBuffer)
 		{
 			delete[] this->LocalValuesBuffer;
 			this->LocalValuesBuffer = NULL;
+		}
+		
+		// Delete buffer for memory region copies.
+		if (this->MemoryRegionBuffer)
+		{
+			delete[] this->MemoryRegionBuffer;
+			this->MemoryRegionBuffer = NULL;
 		}
 	};
 	

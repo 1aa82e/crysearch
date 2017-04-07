@@ -172,12 +172,6 @@ const char* MemoryScanner::GetTempFolderPath() const
 	return mTemporaryFolderPath;
 }
 
-// Returns the amount of threads the processor logically has, thus the application may use simultaniously.
-const int MemoryScanner::GetSystemThreadCount() const
-{
-	return this->threadCount;
-}
-
 // Open an existing process by process ID.
 // Returns true if the process succesfully opened and false if it did not.
 bool MemoryScanner::InitializeExistingProcess(const int processId, const char* exeTitle, const bool readOnly)
@@ -303,6 +297,12 @@ void MemoryScanner::ResetSuspendedState()
 	this->mProcessSuspended = false;
 }
 
+// Returns the amount of threads the processor logically has, thus the application may use simultaniously.
+const int MemoryScanner::GetSystemThreadCount() const
+{
+	return this->threadCount;
+}
+
 // Gets whether the opened process is suspended or not. The suspended flag is reset upon close
 // and after a created process has left suspended state by CrySearch operations.
 const bool MemoryScanner::IsProcessSuspended() const
@@ -403,16 +403,12 @@ void MemoryScanner::ClearSearchResults()
 template <>
 void MemoryScanner::FirstScanWorker(MemoryScannerWorkerContext* const context, const ArrayOfBytes& value, CompareFunctionType<ArrayOfBytes> cmp)
 {
-	unsigned int fileIndex = 0;
 	const Byte* const inputData = value.Data;
 	const int inputLength = value.Size;
 	const unsigned int forLoopLength = context->RegionData.OriginalStartIndex + context->RegionData.Length;
 	bool* const localAddresses = context->LocalAddressesBuffer;
 	const SIZE_T maxLocalBufferSize = MEMORY_SCANNER_BUFFER_LENGTH_THRESHOLD;
-
-	// Allocate a buffer once, of the size of the biggest memory region to be scanned.
-	Byte* const buffer = new Byte[context->MaximumMemoryRegionBufferSize];
-
+	
 	// Loop the memory pages for this worker.
 	for (unsigned int i = context->RegionData.OriginalStartIndex; i < forLoopLength; ++i)
 	{
@@ -421,14 +417,13 @@ void MemoryScanner::FirstScanWorker(MemoryScannerWorkerContext* const context, c
 		unsigned int valueIndex = 0;
 		
 		// Create a storage structure for this memory page.
-		MemoryRegionFileHeader storage(i, currentRegion.BaseAddress, 1, fileIndex);
+		MemoryRegionFileHeader storage(i, currentRegion.BaseAddress, 1, 0);
 		
 		// Try to read the memory page contents into local memory.
 		SIZE_T bytesRead = 0;
+		Byte* const buffer = context->MemoryRegionBuffer;
 		if (CrySearchRoutines.CryReadMemoryRoutine(this->mOpenedProcessHandle, (void*)currentRegion.BaseAddress, buffer, currentRegion.MemorySize, &bytesRead))
 		{
-			SIZE_T localBaseAddr = currentRegion.BaseAddress;
-
 			// Iterate the current memory page until everything is parsed, but keep the maximum
 			// size of the local buffer into account.
 			SIZE_T blockIterator = 0;
@@ -436,7 +431,7 @@ void MemoryScanner::FirstScanWorker(MemoryScannerWorkerContext* const context, c
 			{
 				// Iterate through the correctly copied memory page contents.
 				const SIZE_T iterationCount = min(bytesRead - blockIterator, maxLocalBufferSize);
-				for (SIZE_T j = 0; j < iterationCount; ++j)
+				for (SIZE_T j = blockIterator; j < iterationCount; ++j)
 				{
 					const Byte* tempStore = &(buffer[j]);
 					
@@ -444,7 +439,6 @@ void MemoryScanner::FirstScanWorker(MemoryScannerWorkerContext* const context, c
 					if (memcmp(tempStore, inputData, inputLength) == 0)
 					{
 						localAddresses[addrIndex] = true;
-						++fileIndex;
 						++valueIndex;
 					}
 					else
@@ -461,7 +455,7 @@ void MemoryScanner::FirstScanWorker(MemoryScannerWorkerContext* const context, c
 				if (valueIndex > 0)
 				{
 					// Check whether we have to cache some more search results in the user interface.
-					AddResultsToCacheConditional(addrIndex, valueIndex, localBaseAddr, 1, localAddresses, NULL);
+					AddResultsToCacheConditional(addrIndex, valueIndex, storage.BaseAddress, 1, localAddresses, NULL);
 					
 					// Write storage block header to file.
 					storage.AddressCount = addrIndex;
@@ -480,17 +474,13 @@ void MemoryScanner::FirstScanWorker(MemoryScannerWorkerContext* const context, c
 				// Reset indices and start a new block.
 				addrIndex = 0;
 				valueIndex = 0;
-				localBaseAddr += blockIterator;
-				storage.BaseAddress = localBaseAddr;
-				storage.ValueStorageIndex = fileIndex;
+				storage.BaseAddress += blockIterator;
 			}
 		}
 		
 		// Update counters and user interface components.
 		this->UpdateScanningProgress(++this->mRegionFinishCount);
 	}
-
-	delete[] buffer;
 
 	// Call the worker epilogue.
 	this->FirstWorkerEpilogue(context);
@@ -500,7 +490,6 @@ void MemoryScanner::FirstScanWorker(MemoryScannerWorkerContext* const context, c
 template <>
 void MemoryScanner::FirstScanWorker(MemoryScannerWorkerContext* const context, const WString& value, CompareFunctionType<WString> cmp)
 {
-	unsigned int fileIndex = 0;
 	const wchar* const inputData = value.Begin();
 	const int inputLength = value.GetLength();
 	const bool localNullScan = GlobalScanParameter->ScanUntilNullChar;
@@ -508,9 +497,6 @@ void MemoryScanner::FirstScanWorker(MemoryScannerWorkerContext* const context, c
 	bool* const localAddresses = context->LocalAddressesBuffer;
 	Byte* const stringLengthsArray = (Byte*)context->LocalValuesBuffer;
 	const SIZE_T maxLocalBufferSize = MEMORY_SCANNER_BUFFER_LENGTH_THRESHOLD;
-
-	// Allocate a buffer once, of the size of the biggest memory region to be scanned.
-	Byte* const buffer = new Byte[context->MaximumMemoryRegionBufferSize];
 
 	// Loop the memory pages for this worker.
 	for (unsigned int i = context->RegionData.OriginalStartIndex; i < forLoopLength; ++i)
@@ -520,14 +506,13 @@ void MemoryScanner::FirstScanWorker(MemoryScannerWorkerContext* const context, c
 		unsigned int valueIndex = 0;
 				
 		// Create a storage structure for this memory page.
-		MemoryRegionFileHeader storage(i, currentRegion.BaseAddress, 1, fileIndex);
+		MemoryRegionFileHeader storage(i, currentRegion.BaseAddress, 1, 0);
 		
 		// Try to read the memory page contents into local memory.
 		SIZE_T bytesRead = 0;
+		Byte* const buffer = context->MemoryRegionBuffer;
 		if (CrySearchRoutines.CryReadMemoryRoutine(this->mOpenedProcessHandle, (void*)currentRegion.BaseAddress, buffer, currentRegion.MemorySize, &bytesRead))
 		{
-			SIZE_T localBaseAddr = currentRegion.BaseAddress;
-			
 			// Iterate the current memory page until everything is parsed, but keep the maximum
 			// size of the local buffer into account.
 			SIZE_T blockIterator = 0;
@@ -535,7 +520,7 @@ void MemoryScanner::FirstScanWorker(MemoryScannerWorkerContext* const context, c
 			{
 				// Iterate through the correctly copied memory page contents.
 				const SIZE_T iterationCount = min(bytesRead - blockIterator, maxLocalBufferSize);
-				for (SIZE_T j = 0; j < iterationCount; ++j)
+				for (SIZE_T j = blockIterator; j < iterationCount; ++j)
 				{
 					const wchar* strPtr = (wchar*)&(buffer[j]);
 					
@@ -545,7 +530,6 @@ void MemoryScanner::FirstScanWorker(MemoryScannerWorkerContext* const context, c
 					{
 						localAddresses[addrIndex] = true;
 						stringLengthsArray[valueIndex++] = outputLength;
-						++fileIndex;
 					}
 					else
 					{
@@ -561,7 +545,7 @@ void MemoryScanner::FirstScanWorker(MemoryScannerWorkerContext* const context, c
 				if (valueIndex > 0)
 				{
 					// Check whether we have to cache some more search results in the user interface.
-					AddResultsToCacheConditional(addrIndex, valueIndex, localBaseAddr, 1, localAddresses, stringLengthsArray);
+					AddResultsToCacheConditional(addrIndex, valueIndex, storage.BaseAddress, 1, localAddresses, stringLengthsArray);
 					
 					// Write storage block header to file.
 					storage.AddressCount = addrIndex;
@@ -580,17 +564,13 @@ void MemoryScanner::FirstScanWorker(MemoryScannerWorkerContext* const context, c
 				// Reset indices and start a new block.
 				addrIndex = 0;
 				valueIndex = 0;
-				localBaseAddr += blockIterator;
-				storage.BaseAddress = localBaseAddr;
-				storage.ValueStorageIndex = fileIndex;
+				storage.BaseAddress += blockIterator;
 			}
 		}
 		
 		// Update counters and user interface components.
 		this->UpdateScanningProgress(++this->mRegionFinishCount);
 	}
-	
-	delete[] buffer;
 
 	// Call the worker epilogue.
 	this->FirstWorkerEpilogue(context);
@@ -600,7 +580,6 @@ void MemoryScanner::FirstScanWorker(MemoryScannerWorkerContext* const context, c
 template <>
 void MemoryScanner::FirstScanWorker(MemoryScannerWorkerContext* const context, const String& value, CompareFunctionType<String> cmp)
 {
-	unsigned int fileIndex = 0;
 	const char* const inputData = value.Begin();
 	const int inputLength = value.GetLength();
 	const bool localNullScan = GlobalScanParameter->ScanUntilNullChar;
@@ -609,9 +588,6 @@ void MemoryScanner::FirstScanWorker(MemoryScannerWorkerContext* const context, c
 	Byte* const stringLengthsArray = (Byte*)context->LocalValuesBuffer;
 	const SIZE_T maxLocalBufferSize = MEMORY_SCANNER_BUFFER_LENGTH_THRESHOLD;
 
-	// Allocate a buffer once, of the size of the biggest memory region to be scanned.
-	Byte* const buffer = new Byte[context->MaximumMemoryRegionBufferSize];
-	
 	// Loop the memory pages for this worker.
 	for (unsigned int i = context->RegionData.OriginalStartIndex; i < forLoopLength; ++i)
 	{
@@ -620,14 +596,13 @@ void MemoryScanner::FirstScanWorker(MemoryScannerWorkerContext* const context, c
 		unsigned int valueIndex = 0;
 				
 		// Create a storage structure for this memory page.
-		MemoryRegionFileHeader storage(i, currentRegion.BaseAddress, 1, fileIndex);
+		MemoryRegionFileHeader storage(i, currentRegion.BaseAddress, 1, 0);
 		
 		// Try to read the memory page contents into local memory.
 		SIZE_T bytesRead = 0;
+		Byte* const buffer = context->MemoryRegionBuffer;
 		if (CrySearchRoutines.CryReadMemoryRoutine(this->mOpenedProcessHandle, (void*)currentRegion.BaseAddress, buffer, currentRegion.MemorySize, &bytesRead))
 		{
-			SIZE_T localBaseAddr = currentRegion.BaseAddress;
-
 			// Iterate the current memory page until everything is parsed, but keep the maximum
 			// size of the local buffer into account.
 			SIZE_T blockIterator = 0;
@@ -635,7 +610,7 @@ void MemoryScanner::FirstScanWorker(MemoryScannerWorkerContext* const context, c
 			{
 				// Iterate through the correctly copied memory page contents.
 				const SIZE_T iterationCount = min(bytesRead - blockIterator, maxLocalBufferSize);
-				for (SIZE_T j = 0; j < iterationCount; ++j)
+				for (SIZE_T j = blockIterator; j < iterationCount; ++j)
 				{
 					const char* strPtr = (char*)&(buffer[j]);
 					
@@ -645,7 +620,6 @@ void MemoryScanner::FirstScanWorker(MemoryScannerWorkerContext* const context, c
 					{
 						localAddresses[addrIndex] = true;
 						stringLengthsArray[valueIndex++] = outputLength;
-						++fileIndex;
 					}
 					else
 					{
@@ -661,7 +635,7 @@ void MemoryScanner::FirstScanWorker(MemoryScannerWorkerContext* const context, c
 				if (valueIndex > 0)
 				{
 					// Check whether we have to cache some more search results in the user interface.
-					AddResultsToCacheConditional(addrIndex, valueIndex, localBaseAddr, 1, localAddresses, stringLengthsArray);
+					AddResultsToCacheConditional(addrIndex, valueIndex, storage.BaseAddress, 1, localAddresses, stringLengthsArray);
 					
 					// Write storage block header to file.
 					storage.AddressCount = addrIndex;
@@ -680,17 +654,13 @@ void MemoryScanner::FirstScanWorker(MemoryScannerWorkerContext* const context, c
 				// Reset indices and start a new block.
 				addrIndex = 0;
 				valueIndex = 0;
-				localBaseAddr += blockIterator;
-				storage.BaseAddress = localBaseAddr;
-				storage.ValueStorageIndex = fileIndex;
+				storage.BaseAddress += blockIterator;
 			}
 		}
 		
 		// Update counters and user interface components.
 		this->UpdateScanningProgress(++this->mRegionFinishCount);
 	}
-
-	delete[] buffer;
 
 	// Call the worker epilogue.
 	this->FirstWorkerEpilogue(context);
@@ -708,9 +678,6 @@ void MemoryScanner::FirstScanWorker(MemoryScannerWorkerContext* const context, c
 	T* const localValues = (T*)context->LocalValuesBuffer;
 	const SIZE_T maxLocalBufferSize = MEMORY_SCANNER_BUFFER_LENGTH_THRESHOLD;
 	
-	// Allocate a buffer once, of the size of the biggest memory region to be scanned.
-	Byte* const buffer = new Byte[context->MaximumMemoryRegionBufferSize];
-	
 	// Loop the memory pages for this worker.
 	for (unsigned int i = context->RegionData.OriginalStartIndex; i < forLoopLength; ++i)
 	{
@@ -723,10 +690,9 @@ void MemoryScanner::FirstScanWorker(MemoryScannerWorkerContext* const context, c
 		
 		// Try to read the memory page contents into local memory.
 		SIZE_T bytesRead = 0;
+		Byte* const buffer = context->MemoryRegionBuffer;
 		if (CrySearchRoutines.CryReadMemoryRoutine(this->mOpenedProcessHandle, (void*)currentRegion.BaseAddress, buffer, currentRegion.MemorySize, &bytesRead))
 		{
-			SIZE_T localBaseAddr = currentRegion.BaseAddress;
-			
 			// Iterate the current memory page until everything is parsed, but keep the maximum
 			// size of the local buffer into account.
 			SIZE_T blockIterator = 0;
@@ -734,39 +700,39 @@ void MemoryScanner::FirstScanWorker(MemoryScannerWorkerContext* const context, c
 			{
 				// Iterate through the correctly copied memory page contents.
 				const SIZE_T iterationCount = min(bytesRead - blockIterator, maxLocalBufferSize);
-				for (SIZE_T j = 0; j < iterationCount; j += fastScanAlignSize)
+				for (SIZE_T j = blockIterator; j < iterationCount; j += fastScanAlignSize)
 				{
 					const T tempStore = *(T*)&(buffer[j]);
-					
+
 					// Compare the value at this memory address.
 					if (cmp(tempStore, value))
 					{
 						localAddresses[addrIndex] = true;
 						localValues[valueIndex++] = tempStore;
-						++fileIndex;
 					}
 					else
 					{
 						localAddresses[addrIndex] = false;
 					}
-					
+
 					++addrIndex;
 				}
-				
+
+				fileIndex += valueIndex;
 				blockIterator += iterationCount;
-				
+
 				// Check if there are actual value results. If there are no, this block can be discarded.
 				if (valueIndex > 0)
 				{
 					// Check whether we have to cache some more search results in the user interface.
-					AddResultsToCacheConditional(addrIndex, valueIndex, localBaseAddr, fastScanAlignSize, localAddresses, NULL);
-					
+					AddResultsToCacheConditional(addrIndex, valueIndex, storage.BaseAddress, fastScanAlignSize, localAddresses, NULL);
+
 					// Write storage block header to file.
 					storage.AddressCount = addrIndex;
 					storage.ValueCount = valueIndex;
 					storage.SizeInBytes = sizeof(MemoryRegionFileHeader) + addrIndex;
 					context->OutAddressesFile.Put(&storage, sizeof(MemoryRegionFileHeader));
-					
+
 					// Write memory buffers out to file.
 					context->OutAddressesFile.Put(localAddresses, addrIndex);
 					context->OutValuesFile.Put(localValues, valueIndex * sizeof(T));
@@ -775,12 +741,11 @@ void MemoryScanner::FirstScanWorker(MemoryScannerWorkerContext* const context, c
 					++context->OutAddressesFileHeader.BlockCount;
 					this->mScanResultCount += valueIndex;
 				}
-				
+
 				// Reset indices and start a new block.
 				addrIndex = 0;
 				valueIndex = 0;
-				localBaseAddr += blockIterator;
-				storage.BaseAddress = localBaseAddr;
+				storage.BaseAddress += blockIterator;
 				storage.ValueStorageIndex = fileIndex;
 			}
 		}
@@ -788,8 +753,6 @@ void MemoryScanner::FirstScanWorker(MemoryScannerWorkerContext* const context, c
 		// Update counters and user interface components.
 		this->UpdateScanningProgress(++this->mRegionFinishCount);
 	}
-	
-	delete[] buffer;
 	
 	// Call the worker epilogue.
 	this->FirstWorkerEpilogue(context);
@@ -929,12 +892,8 @@ void MemoryScanner::FirstScan()
 template <>
 void MemoryScanner::NextScanWorker(MemoryScannerWorkerContext* const context, const ArrayOfBytes& value, CompareFunctionType<ArrayOfBytes> cmp)
 {
-	unsigned int fileIndex = 0;
 	bool* const localAddresses = context->LocalAddressesBuffer;
 	const unsigned int blockCount = context->InOldFileHeader.BlockCount;
-
-	// Allocate a buffer once, of the size of the biggest memory region to be scanned.
-	Byte* const buffer = new Byte[context->MaximumMemoryRegionBufferSize];
 
 	// Walk the blocks in the results file.
 	for (unsigned int i = 0; i < blockCount; ++i)
@@ -952,10 +911,11 @@ void MemoryScanner::NextScanWorker(MemoryScannerWorkerContext* const context, co
 		const MemoryRegion& currentRegion = this->memRegions[block.PageIndex];
 		
 		// Try to read the memory page contents into local memory.
+		Byte* const buffer = context->MemoryRegionBuffer;
 		if (CrySearchRoutines.CryReadMemoryRoutine(this->mOpenedProcessHandle, (void*)block.BaseAddress, buffer, currentRegion.MemorySize - (block.BaseAddress - currentRegion.BaseAddress), NULL))
 		{
 			// Create a new storage structure for this memory page.
-			MemoryRegionFileHeader storage(block.PageIndex, currentRegion.BaseAddress, block.AddressOffsetAlignment, fileIndex);
+			MemoryRegionFileHeader storage(block.PageIndex, currentRegion.BaseAddress, block.AddressOffsetAlignment, 0);
 			
 			SIZE_T localBaseAddr = block.BaseAddress;
 			
@@ -974,7 +934,6 @@ void MemoryScanner::NextScanWorker(MemoryScannerWorkerContext* const context, co
 					if (memcmp(currentDataPtr, value.Data, value.Size) == 0)
 					{						
 						localAddresses[addrIndex] = true;
-						++fileIndex;
 						++valueIndex;
 					}
 					else
@@ -1017,7 +976,6 @@ void MemoryScanner::NextScanWorker(MemoryScannerWorkerContext* const context, co
 					valueIndex = 0;
 					localBaseAddr += actualOffset;
 					storage.BaseAddress = localBaseAddr;
-					storage.ValueStorageIndex = fileIndex;
 				}
 			}
 			
@@ -1048,8 +1006,6 @@ void MemoryScanner::NextScanWorker(MemoryScannerWorkerContext* const context, co
 		// Update counters and user interface components.
 		this->UpdateScanningProgress(++this->mRegionFinishCount);
 	}
-
-	delete[] buffer;
 	
 	// Call the worker epilogue.
 	this->NextWorkerEpilogue(context);
@@ -1065,10 +1021,6 @@ void MemoryScanner::NextScanWorker(MemoryScannerWorkerContext* const context, co
 	const unsigned int blockCount = context->InOldFileHeader.BlockCount;
 	const int inputLengthInChars = value.GetLength();
 	const int inputLength = value.GetLength();
-	unsigned int fileIndex = 0;
-
-	// Allocate a buffer once, of the size of the biggest memory region to be scanned.
-	Byte* const buffer = new Byte[context->MaximumMemoryRegionBufferSize];
 
 	// Walk the blocks in the results file.
 	for (unsigned int i = 0; i < blockCount; ++i)
@@ -1086,10 +1038,11 @@ void MemoryScanner::NextScanWorker(MemoryScannerWorkerContext* const context, co
 		const MemoryRegion& currentRegion = this->memRegions[block.PageIndex];
 		
 		// Try to read the memory page contents into local memory.
+		Byte* const buffer = context->MemoryRegionBuffer;
 		if (CrySearchRoutines.CryReadMemoryRoutine(this->mOpenedProcessHandle, (void*)block.BaseAddress, buffer, currentRegion.MemorySize - (block.BaseAddress - currentRegion.BaseAddress), NULL))
 		{
 			// Create a new storage structure for this memory page.
-			MemoryRegionFileHeader storage(block.PageIndex, currentRegion.BaseAddress, block.AddressOffsetAlignment, fileIndex);
+			MemoryRegionFileHeader storage(block.PageIndex, currentRegion.BaseAddress, block.AddressOffsetAlignment, 0);
 			
 			SIZE_T localBaseAddr = block.BaseAddress;
 			
@@ -1109,7 +1062,6 @@ void MemoryScanner::NextScanWorker(MemoryScannerWorkerContext* const context, co
 					{						
 						localAddresses[addrIndex] = true;
 						stringLengthsArray[valueIndex++] = inputLengthInChars;
-						++fileIndex;
 					}
 					else
 					{
@@ -1151,7 +1103,6 @@ void MemoryScanner::NextScanWorker(MemoryScannerWorkerContext* const context, co
 					valueIndex = 0;
 					localBaseAddr += actualOffset;
 					storage.BaseAddress = localBaseAddr;
-					storage.ValueStorageIndex = fileIndex;
 				}
 			}
 			
@@ -1183,8 +1134,6 @@ void MemoryScanner::NextScanWorker(MemoryScannerWorkerContext* const context, co
 		this->UpdateScanningProgress(++this->mRegionFinishCount);
 	}
 
-	delete[] buffer;
-
 	// Call the worker epilogue.
 	this->NextWorkerEpilogue(context);
 }
@@ -1197,11 +1146,7 @@ void MemoryScanner::NextScanWorker(MemoryScannerWorkerContext* const context, co
 	bool* const localAddresses = context->LocalAddressesBuffer;
 	Byte* const stringLengthsArray = (Byte*)context->LocalValuesBuffer;
 	const int inputLength = value.GetLength();
-	unsigned int fileIndex = 0;
 	const unsigned int blockCount = context->InOldFileHeader.BlockCount;
-
-	// Allocate a buffer once, of the size of the biggest memory region to be scanned.
-	Byte* const buffer = new Byte[context->MaximumMemoryRegionBufferSize];
 
 	// Walk the blocks in the results file.
 	for (unsigned int i = 0; i < blockCount; ++i)
@@ -1219,10 +1164,11 @@ void MemoryScanner::NextScanWorker(MemoryScannerWorkerContext* const context, co
 		const MemoryRegion& currentRegion = this->memRegions[block.PageIndex];
 		
 		// Try to read the memory page contents into local memory.
+		Byte* const buffer = context->MemoryRegionBuffer;
 		if (CrySearchRoutines.CryReadMemoryRoutine(this->mOpenedProcessHandle, (void*)block.BaseAddress, buffer, currentRegion.MemorySize - (block.BaseAddress - currentRegion.BaseAddress), NULL))
 		{
 			// Create a new storage structure for this memory page.
-			MemoryRegionFileHeader storage(block.PageIndex, currentRegion.BaseAddress, block.AddressOffsetAlignment, fileIndex);
+			MemoryRegionFileHeader storage(block.PageIndex, currentRegion.BaseAddress, block.AddressOffsetAlignment, 0);
 			
 			SIZE_T localBaseAddr = block.BaseAddress;
 			
@@ -1242,7 +1188,6 @@ void MemoryScanner::NextScanWorker(MemoryScannerWorkerContext* const context, co
 					{
 						localAddresses[addrIndex] = true;
 						stringLengthsArray[valueIndex++] = inputLength;
-						++fileIndex;
 					}
 					else
 					{
@@ -1284,7 +1229,6 @@ void MemoryScanner::NextScanWorker(MemoryScannerWorkerContext* const context, co
 					valueIndex = 0;
 					localBaseAddr += actualOffset;
 					storage.BaseAddress = localBaseAddr;
-					storage.ValueStorageIndex = fileIndex;
 				}
 			}
 			
@@ -1315,8 +1259,6 @@ void MemoryScanner::NextScanWorker(MemoryScannerWorkerContext* const context, co
 		// Update counters and user interface components.
 		this->UpdateScanningProgress(++this->mRegionFinishCount);
 	}
-	
-	delete[] buffer;
 
 	// Call the worker epilogue.
 	this->NextWorkerEpilogue(context);
@@ -1331,9 +1273,6 @@ void MemoryScanner::NextScanWorker(MemoryScannerWorkerContext* const context, co
 	T* const localValues = (T*)context->LocalValuesBuffer;
 	unsigned int fileIndex = 0;
 	const unsigned int blockCount = context->InOldFileHeader.BlockCount;
-
-	// Allocate a buffer once, of the size of the biggest memory region to be scanned.
-	Byte* const buffer = new Byte[context->MaximumMemoryRegionBufferSize];
 
 	// Walk the blocks in the results file.
 	for (unsigned int i = 0; i < blockCount; ++i)
@@ -1351,6 +1290,7 @@ void MemoryScanner::NextScanWorker(MemoryScannerWorkerContext* const context, co
 		const MemoryRegion& currentRegion = this->memRegions[block.PageIndex];
 		
 		// Try to read the memory page contents into local memory.
+		Byte* const buffer = context->MemoryRegionBuffer;
 		if (CrySearchRoutines.CryReadMemoryRoutine(this->mOpenedProcessHandle, (void*)block.BaseAddress, buffer, currentRegion.MemorySize - (block.BaseAddress - currentRegion.BaseAddress), NULL))
 		{
 			// Create a new storage structure for this memory page.
@@ -1483,8 +1423,6 @@ void MemoryScanner::NextScanWorker(MemoryScannerWorkerContext* const context, co
 		// Update counters and user interface components.
 		this->UpdateScanningProgress(++this->mRegionFinishCount);
 	}
-	
-	delete[] buffer;
 
 	// Call the worker epilogue.
 	this->NextWorkerEpilogue(context);
@@ -1595,6 +1533,9 @@ void MemoryScanner::FirstWorkerPrologue(MemoryScannerWorkerContext* const contex
 	// Allocate local buffer for search result addresses.
 	context->AllocateLocalAddressBuffer();
 	
+	// Allocate a buffer once, of the size of the biggest memory region to be scanned.
+	context->MemoryRegionBuffer = new Byte[context->MaximumMemoryRegionBufferSize];
+	
 	// Select the scanning phase corresponding to the specified data type.
 	if (tmpType == VALUETYPE_BYTE)
 	{
@@ -1684,7 +1625,10 @@ void MemoryScanner::NextWorkerPrologue(MemoryScannerWorkerContext* const context
 
 	// Allocate local buffer for search result addresses.
 	context->AllocateLocalAddressBuffer();
-	
+
+	// Allocate a buffer once, of the size of the biggest memory region to be scanned.
+	context->MemoryRegionBuffer = new Byte[context->MaximumMemoryRegionBufferSize];
+
 	// Open the existing search results files.
 	context->OpenInputAddresses(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.tempSCANNING", context->WorkerIdentifier)));
 	context->InOldAddressesFile.Get(&context->InOldFileHeader, sizeof(StorageFileHeader));

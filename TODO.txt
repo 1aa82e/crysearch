@@ -12,7 +12,6 @@ Package:
 	- template compare functions also take up unnecessary space;
 	- I optimized the first scan worker very nicely, but how about next???
 	- Should global scan parameter be global?
-- It looks like there are very subtile differences with my new code! Why?
 - Hotkey for freezing/unfreezing;
 - Change semantics of (W)string next scan to search 'inside' any current search result?
 - Fix header (like LordPE does, virtual dump);

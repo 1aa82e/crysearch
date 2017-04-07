@@ -38,8 +38,7 @@ const char* HotkeyToString(const unsigned int hotkey)
 		}
 	}
 	
-	// Compiler does not need to generate a return statement here, because it will never be reached. Make it assume so to minimize code generation.
-	__assume(0);
+	return NULL;
 }
 
 // Retrieves the keycode of a specified hotkey string representation.
@@ -53,8 +52,7 @@ unsigned int KeycodeFromString(const String& stringRepresentation)
 		}
 	}
 	
-	// The compiler does need to generate a return statement here because it will never be reached. Make it assume so to reduce code generation.
-	__assume(0);
+	return NULL;
 }
 
 // The CryAddHotkeyWindow default constructor.
