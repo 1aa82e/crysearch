@@ -7,6 +7,7 @@ const int IsTabPageOpened(const TabCtrl& ctrl, const String& text)
 	const int tabCount = ctrl.GetCount();
 	for (int i = 0; i < tabCount; ++i)
 	{
+		// Is the caption of the current tabpage equal to what we want to find?
 		if (ctrl.GetItem(i).GetText() == text)
 		{
 			return i;
@@ -33,14 +34,17 @@ ArrayOfBytes StringToBytes(const String& input)
 	int dataIndex = 0;
 	const char* const endIterator = iterator + inputLength;
 	
+	// Iterate through the input string.
 	while (iterator < endIterator)
 	{
+		// Step over spaces.
 		if (*iterator == 0x20 || *iterator == 0x0)
 		{
 			++iterator;
 		}
 		else
 		{
+			// Parse the current string represented byte.
 			dataPtr[dataIndex++] = getByte(iterator);
 			iterator += 2;
 		}

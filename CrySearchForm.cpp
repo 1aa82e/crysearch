@@ -621,47 +621,13 @@ void CrySearchForm::SearchResultWhenBar(Bar& pBar)
 // Checks key presses across all controls. Consider it a global key event function.
 void CrySearchForm::CheckKeyPresses()
 {
+	// If hotkeys are enabled, execute the hotkeys procedure.
 	if (SettingsFile::GetInstance()->GetEnableHotkeys())
 	{
-		const unsigned int count = SettingsFile::GetInstance()->GetHotkeyCount();
-		if (count > 0)
-		{
-			// Iterate saved hotkeys and configure parameters for its configured actions.
-			for (unsigned int i = 0; i < count; ++i)
-			{
-				const CrySearchHotKey& curKey = SettingsFile::GetInstance()->GetHotkey(i);
-				
-				// Check if the configured key is currently pressed.
-				if (GetAsyncKeyState(curKey.Key) & 1)
-				{
-					if (!mMemoryScanner->IsScanRunning() && mMemoryScanner->GetScanResultCount() > 0)
-					{
-						if (curKey.Description == "Refresh search results, changed value")
-						{
-							GlobalScanParameter->GlobalScanType = SCANTYPE_CHANGED;
-						}
-						else if (curKey.Description == "Refresh search results, unchanged value")
-						{
-							GlobalScanParameter->GlobalScanType = SCANTYPE_UNCHANGED;
-						}
-						else if (curKey.Description == "Refresh search results, increased value")
-						{
-							GlobalScanParameter->GlobalScanType = SCANTYPE_INCREASED;
-						}
-						else if (curKey.Description == "Refresh search results, decreased value")
-						{
-							GlobalScanParameter->GlobalScanType = SCANTYPE_DECREASED;
-						}
-						
-						// Finally, execute the action for all of these. (Since its the same for all)
-						curKey.Action();
-					}
-				}
-			}
-		}
+		this->HotkeysProcedure();
 	}
 	
-	// Reinstate the callback for the next iteration.
+	// Reinstate the callback for the next key check.
 	SetTimeCallback(100, THISBACK(CheckKeyPresses), HOTKEY_TIMECALLBACK);
 }
 
@@ -1348,7 +1314,7 @@ void CrySearchForm::MemorySearch()
 #endif
 }
 
-// Executes a refreshment scan, searching for existing search results.
+// Executes a refreshment scan, matching existing search results.
 void CrySearchForm::RefreshSearchResults()
 {
 	if (!this->processLoaded)
@@ -2113,16 +2079,6 @@ void CrySearchForm::ScannerPeekCompletion()
 	{
 		// Schedule the next callback to periodically check for memory scanner completion.
 		SetTimeCallback(10, THISBACK(ScannerPeekCompletion), MEMORY_SCANNER_COMPLETION_TIMECALLBACK);
-	}
-}
-
-// Link hotkeys to the correct callbacks according to the settings file.
-void CrySearchForm::LinkHotkeysToActions()
-{
-	SettingsFile* const settings = SettingsFile::GetInstance();
-	for (unsigned int i = 0; i < settings->GetHotkeyCount(); i++)
-	{
-		settings->GetHotkey(i).Action = THISBACK(StartNextScanHotkey);
 	}
 }
 

@@ -24,6 +24,7 @@ file
 	CrySearchForm.h,
 	CrySearchWindowManager.cpp,
 	CrySearchWindowManager.h,
+	CrySearchHotkeys.cpp,
 	CryPluginsWindow.cpp,
 	CryPluginsWindow.h,
 	CryBruteforcePIDWindow.cpp,

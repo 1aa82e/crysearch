@@ -202,10 +202,20 @@ void CryModuleWindow::LoadLibraryThread(String pLibrary)
 		// Randomly select thread in target process to hijack.
 		const int threadcount = mThreadsList.GetCount();
 		HANDLE hThread = NULL;
-		for (int i = 0; i < threadcount || hThread == NULL; ++i)
+		
+		do
 		{
-			hThread = OpenThread(THREAD_GET_CONTEXT | THREAD_SET_CONTEXT | THREAD_SUSPEND_RESUME, FALSE, mThreadsList[i].ThreadIdentifier);
+			// Generate a random number to select a thread in the threads list.
+			const int r = Random(threadcount);
+			const Win32ThreadInformation& th = mThreadsList[r];
+			
+			// Check if the randomly selected thread is not suspended.
+			if (!th.IsSuspended)
+			{
+				hThread = OpenThread(THREAD_GET_CONTEXT | THREAD_SET_CONTEXT | THREAD_SUSPEND_RESUME, FALSE, th.ThreadIdentifier);
+			}
 		}
+		while (!hThread);
 		
 		// Start the injection process. The handle will be closed by the injection function.
 		result = mPeInstance->LoadLibraryExternalHijack(pLibrary, hThread);

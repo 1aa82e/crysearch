@@ -9,7 +9,8 @@
 
 #pragma comment(lib, "shlwapi.lib")
 
-#define EAT_ADDRESS_NOT_FOUND -1
+#define EAT_ADDRESS_NOT_FOUND				-1
+#define THREAD_HIJACK_MAGIC_PROBE_THRESHOLD	12
 
 // Checks whether a RVA points inside a section of the executable. Returns true if so and false if not.
 const bool RVAPointsInsideSection(const DWORD rva)
@@ -1283,21 +1284,23 @@ bool PortableExecutable32::LoadLibraryExternalHijack(const String& library, HAND
 	
 	// Sample the completion flag to contain the magic number 0x1337. Block the thread until the sampling is succesful.
 	DWORD magic = 0;
+	unsigned int threshold = 0;
 	do
 	{
 		CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)flagAddress, &magic, sizeof(DWORD), &bytesWritten);
 		
 		// Prevent CrySearch to start eating CPU time while still trying to have an accurate sample.
 		Sleep(75);
+		++threshold;
 	}
-	while (magic != 0x1337);
+	while (magic != 0x1337 && threshold < THREAD_HIJACK_MAGIC_PROBE_THRESHOLD);
 	
 	// The loop finished, free memory pages and close thread handle.
 	VirtualFreeEx(this->mProcessHandle, lpShellCode, 0, MEM_RELEASE);
 	VirtualFreeEx(this->mProcessHandle, lpRemoteAddress, 0, MEM_RELEASE);
 	CloseHandle(hThread);
 	
-	return !!hThread;
+	return (threshold != THREAD_HIJACK_MAGIC_PROBE_THRESHOLD);
 }
 
 // Attempts to unload a loaded module from the target process.
@@ -2155,14 +2158,16 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 		
 		// Sample the completion flag to contain the magic number 0x1337. Block the thread until the sampling is succesful.
 		DWORD magic = 0;
+		unsigned int threshold = 0;
 		do
 		{
 			CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)flagAddress, &magic, sizeof(DWORD), &bytesWritten);
 			
 			// Prevent CrySearch to start eating CPU time while still trying to have an accurate sample.
 			Sleep(75);
+			++threshold;
 		}
-		while (magic != 0x1337);
+		while (magic != 0x1337 && threshold < THREAD_HIJACK_MAGIC_PROBE_THRESHOLD);
 		
 		// The loop finished, free memory pages and close thread handle.
 		VirtualFreeEx(this->mProcessHandle, lpShellCode, 0, MEM_RELEASE);
@@ -2170,7 +2175,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 		CloseHandle(hThread);
 		VirtualFree(ctxBase, 0, MEM_RELEASE);
 		
-		return !!hThread;
+		return (threshold != THREAD_HIJACK_MAGIC_PROBE_THRESHOLD);
 	}
 	
 	// Attempts to unload a loaded module from the target process.

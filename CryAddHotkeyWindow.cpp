@@ -52,7 +52,7 @@ unsigned int KeycodeFromString(const String& stringRepresentation)
 		}
 	}
 	
-	return NULL;
+	return 0;
 }
 
 // The CryAddHotkeyWindow default constructor.
@@ -61,7 +61,7 @@ CryAddHotkeyWindow::CryAddHotkeyWindow(CrySearchHotKey* entry, const Image& icon
 	// If the dialog was created with a valid pointer, edit mode should be enabled.
 	this->mAlterEntry = entry;
 	
-	this->Title(entry ? "Edit Hotkey" : "Add Hotkey").SetRect(0, 0, 325, 100);
+	this->Title(entry ? "Edit Hotkey" : "Add Hotkey").SetRect(0, 0, 425, 100);
 	
 	this->mOK <<= THISBACK(DialogOkay);
 	this->mCancel <<= THISBACK(DialogCancel);
@@ -69,7 +69,8 @@ CryAddHotkeyWindow::CryAddHotkeyWindow(CrySearchHotKey* entry, const Image& icon
 	*this
 		<< this->mHotkeyActionDescription.SetLabel("Action:").LeftPos(5, 75).TopPos(5, 20)
 		<< this->mHotkeyAction.Add("Refresh search results, changed value").Add("Refresh search results, unchanged value")
-			.Add("Refresh search results, increased value").Add("Refresh search results, decreased value").HSizePos(80, 5).TopPos(5, 25)
+			.Add("Refresh search results, increased value").Add("Refresh search results, decreased value")
+			.Add("Toggle Freeze/Thaw on all address table entries").HSizePos(80, 5).TopPos(5, 25)
 		<< this->mHotkeyDescription.SetLabel("Hotkey").LeftPos(5, 75).TopPos(35, 25)
 		<< this->mHotkey.HSizePos(80, 5).TopPos(35, 25)
 		<< this->mOK.Ok().SetLabel("OK").RightPos(5, 70).BottomPos(5, 25)

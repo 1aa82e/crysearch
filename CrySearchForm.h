@@ -101,11 +101,19 @@ private:
 	void AddressValuesUpdater();
 	void CheckKeyPresses();
 	void CheckProcessTermination();
-	void LinkHotkeysToActions();
 	void RemoveBreakpointMenu();
 	void PluginsMenuClicked();
 	void BruteForcePIDClicked();
 	void ExecuteCrashHandlerWindowSafe(const String& msg, volatile bool* const comp);
+	
+	// Hotkey functions.
+	void HotkeysProcedure();
+	void LinkHotkeysToActions();
+	void HotkeyRefreshChanged();
+	void HotkeyRefreshUnchanged();
+	void HotkeyRefreshIncreased();
+	void HotkeyRefreshDecreased();
+	void HotkeyRefreshToggelFreezeAll();
 	
 	bool InitializeProcessUI(const bool bruteForce);
 	void ProcessOpenFailedState(const bool bruteForce);

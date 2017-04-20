@@ -20,6 +20,10 @@ v3.0:
 		- Allows opening of brute-forced processes from right clicking.
 	- Fixed a bug where CrySearch fails to retrieve the module list on opening a process that results in an infinite loop;
 	- Some general code improvements that resulted in decreased executable file size;
+	- Refactored hotkey system and added hotkey that toggles freeze/thaw on all address table entries;
+	- Fixed bugs in thread hijacking method for DLL injection where:
+		- If the opened process never communicates back that injection has finished, the injection process would enter an infinite loop;
+		- The first thread was always selected for hijacking. A thread is randomly selected now instead for better compatibility.
 	- 
 
 v2.11:
