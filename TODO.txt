@@ -13,7 +13,6 @@ Package:
 	- Should global scan parameter be global?
 - Change semantics of (W)string next scan to search 'inside' any current search result?
 - Fix header (like LordPE does, virtual dump);
-- Revise memory scanner using bitset on disk (when u++ implements proper methods);
 - Also blocks for the values and using compression/encoding to reduce size?
 - Current way of disassembling may cause inconsistencies;
 	- different disassembler, capstone?
@@ -163,6 +162,5 @@ Add this to the Bits class:
 - App.h: Comment out GetUserName function;
 - App.cpp: Comment out GetUserName function;
 - ArrayCtrl.h: Move cellInfo variable in to protected;
-- Ctrl.iml: Remove networking icon(s).
 
 Copy uppsrc-custom files to designated locations before upp build.

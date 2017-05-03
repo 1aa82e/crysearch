@@ -51,6 +51,9 @@ struct MemoryRegionFileHeader
 	// that size, a new block will have its base address start at the remaining storage.
 	SIZE_T SizeInBytes;
 	
+	// Internal Bits allocation variable. It needs to be stored because it reconstructs the Bits.
+	int BitsInternalAlloc;
+	
 	MemoryRegionFileHeader() { };
 	
 	// Default constructor to simplify constructing a basic storage header.
@@ -63,6 +66,7 @@ struct MemoryRegionFileHeader
 		this->AddressCount = 0;
 		this->ValueCount = 0;
 		this->SizeInBytes = 0;
+		this->BitsInternalAlloc = 0;
 	};
 };
 

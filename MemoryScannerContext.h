@@ -71,7 +71,7 @@ struct MemoryScannerWorkerContext : Moveable<MemoryScannerWorkerContext>
 	StorageFileHeader OutAddressesFileHeader;
 	
 	// The worker results buffer for addresses, which has a fixed size on the heap.
-	bool* LocalAddressesBuffer;
+	Bits LocalAddressesBuffer;
 	
 	// The worker results buffer for values, which has a fixed size on the heap.
 	// However, because of the templating, this buffer is initialized outside the context.
@@ -102,25 +102,20 @@ struct MemoryScannerWorkerContext : Moveable<MemoryScannerWorkerContext>
 		this->MaximumMemoryRegionBufferSize = 0;
 		this->FastScanAlignSize = 0;
 		this->MemoryRegionBuffer = NULL;
-		this->LocalAddressesBuffer = NULL;
 		this->LocalValuesBuffer = NULL;
 	};
 	
 	// Allocates local address buffer for a worker.
 	void AllocateLocalAddressBuffer()
 	{
-		this->LocalAddressesBuffer = new bool[MEMORY_SCANNER_BUFFER_LENGTH_THRESHOLD];
+		this->LocalAddressesBuffer.Reserve(MEMORY_SCANNER_BUFFER_LENGTH_THRESHOLD);
 	};
 
 	// Releases local buffers for a worker.
 	void ReleaseLocalBuffers()
 	{
 		// Delete local addresses buffer.
-		if (this->LocalAddressesBuffer)
-		{
-			delete[] this->LocalAddressesBuffer;
-			this->LocalAddressesBuffer = NULL;
-		}
+		this->LocalAddressesBuffer.Clear();
 		
 		// Delete local values buffer.
 		if (this->LocalValuesBuffer)
