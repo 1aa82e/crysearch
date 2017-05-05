@@ -11,21 +11,7 @@ using namespace Upp;
 #define MEM_COPYONWRITE (PAGE_EXECUTE_WRITECOPY | PAGE_WRITECOPY)
 
 #include "MemoryScannerContext.h"
-
-// Defines the valuetypes that are scannable by the memory scanner.
-enum MemoryScanValueType
-{
-	VALUETYPE_UNKNOWN,
-	VALUETYPE_BYTE,
-	VALUETYPE_2BYTE,
-	VALUETYPE_4BYTE,
-	VALUETYPE_8BYTE,
-	VALUETYPE_FLOAT,
-	VALUETYPE_DOUBLE,
-	VALUETYPE_STRING,
-	VALUETYPE_WSTRING,
-	VALUETYPE_AOB
-};
+#include "CrySearchLibrary/SDK/CrySearch.h"
 
 // Memory scanner comparison types.
 enum MemoryScanType
@@ -53,7 +39,7 @@ struct ScanParameterBase
 	MemoryScanType GlobalScanType;
 	
 	// The value type (sizeof) of the value that should be scanned for.
-	MemoryScanValueType GlobalScanValueType;
+	CCryDataType GlobalScanValueType;
 	
 	// Are we returning search results in hexadecimal?
 	bool CurrentScanHexValues;
@@ -71,7 +57,7 @@ struct ScanParameterBase
 	{
 		this->CurrentScanFastScan = true;
 		this->GlobalScanType = SCANTYPE_UNKNOWN_INITIAL_VALUE;
-		this->GlobalScanValueType = VALUETYPE_UNKNOWN;
+		this->GlobalScanValueType = CRYDATATYPE_UNKNOWN;
 		this->CurrentScanHexValues = false;
 		this->ValueSize = 0;
 		this->ScanUntilNullChar = false;
@@ -315,8 +301,10 @@ public:
 	void PokeW(const SIZE_T address, const WString& value) const;
 	
 	// Memory scanner peek function (Reading from memory).
-	template <typename T>
-	bool Peek(const SIZE_T address, const unsigned int size, T* outBuffer) const;
+	const bool Peek(const SIZE_T address, const unsigned int size, void* const outBuffer) const;
+	const bool PeekB(const SIZE_T address, const unsigned int size, ArrayOfBytes& outBuffer) const;
+	const bool PeekW(const SIZE_T address, const unsigned int size, WString& outBuffer) const;
+	const bool PeekA(const SIZE_T address, const unsigned int size, String& outBuffer) const;
 	
 	const bool IsProcessSuspended() const;
 	void ResetSuspendedState();

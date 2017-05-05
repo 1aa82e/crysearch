@@ -8,6 +8,7 @@ Package:
 - Update wiki with changes for the release.
 ------------------------------------------------------------------
 
+- In disassembly, we can use bitset to save the addresses?
 - Unroll memory scanner worker:
 	- template compare functions also take up unnecessary space;
 	- Should global scan parameter be global?
@@ -21,8 +22,6 @@ Package:
 - release notes - buffer overruns;
 - Bug in import table parser, x64, when switching from slack to winamp!
 
-- In disassembly, we can drastically reduce memory usage by only using byte offets to the previous disassembly entry:
-	- exponential time solution though!
 - Guessing for pointer can be done by checking whether it is inside a memory page of the process?
 
 - Follow pointer, many need it!

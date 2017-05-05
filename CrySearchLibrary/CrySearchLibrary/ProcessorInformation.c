@@ -6,27 +6,25 @@
 // The supported values are displayed in the about dialog.
 void __stdcall GetProcessorSupportInformation(char pProcInformationString[128])
 {
+	BOOL mmx;
 	BOOL sse;
 	BOOL sse2;
 	BOOL sse3;
 	BOOL ssse3;
 	BOOL sse41;
 	BOOL sse42;
-	BOOL mmx;
-	BOOL vtx;
 	BOOL fma;
 	BOOL avx;
 	BOOL avx2;
 	BOOL tsx;
 	int CPUInfo[4] = {-1};
 	size_t lastChar = 0;
-	char* prefixString = "\1[+70 Your processor supports: ";
+	char* prefixString = "\1[+70 Your CPU: ";
 
 	// Get basic CPU information and dissect this information into seperate variables.
 	__cpuid(CPUInfo, 1);
 
 	sse3 = CPUInfo[2] & (1 << 0);
-	vtx = CPUInfo[2] & (1 << 5);
 	ssse3 = CPUInfo[2] & (1 << 9);
 	sse41 = CPUInfo[2] & (1 << 19);
 	sse42 = CPUInfo[2] & (1 << 20);
@@ -42,9 +40,43 @@ void __stdcall GetProcessorSupportInformation(char pProcInformationString[128])
 	avx2 = CPUInfo[1] & (1 << 5);
 	tsx = CPUInfo[1] & (1 << 11);
 
+	// Create buffer for CPU brand string.
+	char brand[0x40];
+	memset(brand, 0, sizeof(brand));
+
+	// Get CPU brand info.
+	__cpuid(CPUInfo, 0x80000000);
+	unsigned int nExIds = CPUInfo[0];
+
+	// Get the information associated with each extended ID.
+	for (unsigned int i = 0x80000000; i <= nExIds; ++i)
+	{
+		// Get extended CPU information from current ID.
+		__cpuid(CPUInfo, i);
+
+		// Interpret CPU brand string (we leave out the frequency).
+		if (i == 0x80000002)
+		{
+			memcpy(brand, CPUInfo, sizeof(CPUInfo));
+		}
+		else if (i == 0x80000003)
+		{
+			memcpy(brand + 16, CPUInfo, sizeof(CPUInfo));
+		}
+	}
+
 	// Create output string to display to the user.
 	strcpy_s(pProcInformationString, 128, prefixString);
 
+	// Append the brand string.
+	strcat_s(pProcInformationString, 128, brand);
+
+	// Append string representations for all supported instruction set extenstions.
+	strcat_s(pProcInformationString, 128, " supports: ");
+	if (mmx)
+	{
+		strcat_s(pProcInformationString, 128, "MMX, ");
+	}
 	if (sse)
 	{
 		strcat_s(pProcInformationString, 128, "SSE, ");
@@ -69,17 +101,9 @@ void __stdcall GetProcessorSupportInformation(char pProcInformationString[128])
 	{
 		strcat_s(pProcInformationString, 128, "SSE4.2, ");
 	}
-	if (mmx)
-	{
-		strcat_s(pProcInformationString, 128, "MMX, ");
-	}
-	if (vtx)
-	{
-		strcat_s(pProcInformationString, 128, "VMX, ");
-	}
 	if (fma)
 	{
-		strcat_s(pProcInformationString, 128, "FMA3, ");
+		strcat_s(pProcInformationString, 128, "FMA, ");
 	}
 	if (avx)
 	{

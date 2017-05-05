@@ -24,6 +24,9 @@ v3.0:
 	- Fixed bugs in thread hijacking method for DLL injection where:
 		- If the opened process never communicates back that injection has finished, the injection process would enter an infinite loop;
 		- The first thread was always selected for hijacking. A thread is randomly selected now instead for better compatibility.
+	- Slightly adjusted the CPU information in the about window: sorted chronologically, added CPU brand string and removed VMX;
+	- Fixed bug with routine override functions where deleting a used plugin from the plugin directory and opening the settings window subsequently would crash CrySearch;
+	- Fixed bug where type would be changed incorrectly in the change dialog of an address table entry;
 	- 
 
 v2.11:

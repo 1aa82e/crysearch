@@ -17,45 +17,27 @@ const bool GetIsMultipleOf(const LONG_PTR intVal, const int mulVal)
 const char* CodeGeneratorParseFieldType(const CCryDataType valueType)
 {
 	// Generate data type. (Based on a cheater's data type probability, the data types are sorted manually for human-like optimization.
-	if (valueType == CRYDATATYPE_4BYTES)
+	switch (valueType)
 	{
-		return "int";
-	}
-	else if (valueType == CRYDATATYPE_2BYTES)
-	{
-		return "short";
-	}
-	else if (valueType == CRYDATATYPE_FLOAT)
-	{
-		return "float";
-	}
-	if (valueType == CRYDATATYPE_BYTE)
-	{
-		return "unsigned char";
-	}
-	else if (valueType == CRYDATATYPE_8BYTES)
-	{
-		return "__int64";
-	}
-	else if (valueType == CRYDATATYPE_DOUBLE)
-	{
-		return "double";
-	}
-	else if (valueType == CRYDATATYPE_AOB)
-	{
-		return "unsigned char";
-	}
-	else if (valueType == CRYDATATYPE_STRING)
-	{
-		return "char";
-	}
-	else if (valueType == CRYDATATYPE_WSTRING)
-	{
-		return "wchar_t";
-	}
-	else
-	{
-		return NULL;
+		case CRYDATATYPE_BYTE:
+		case CRYDATATYPE_AOB:
+			return "unsigned char";
+		case CRYDATATYPE_2BYTES:
+			return "short";
+		case CRYDATATYPE_4BYTES:
+			return "int";
+		case CRYDATATYPE_8BYTES:
+			return "__int64";
+		case CRYDATATYPE_FLOAT:
+			return "float";
+		case CRYDATATYPE_DOUBLE:
+			return "double";
+		case CRYDATATYPE_STRING:
+			return "char";
+		case CRYDATATYPE_WSTRING:
+			return "wchar_t";
+		default:
+			return NULL;
 	}
 }
 
@@ -63,39 +45,27 @@ const char* CodeGeneratorParseFieldType(const CCryDataType valueType)
 // a valid data type as defined in the CrySearch headers may cause undefined behavior because the compiler assumes these values are not entered.
 const int GetDataSizeFromValueType(CCryDataType type)
 {
-	if (type == CRYDATATYPE_BYTE)
+	switch (type)
 	{
+	case CRYDATATYPE_BYTE:
 		return 1;
-	}
-	else if (type == CRYDATATYPE_2BYTES)
-	{
+	case CRYDATATYPE_2BYTES:
 		return 2;
-	}
-	else if (type == CRYDATATYPE_4BYTES)
-	{
+	case CRYDATATYPE_4BYTES:
 		return 4;
-	}
-	else if (type == CRYDATATYPE_8BYTES)
-	{
+	case CRYDATATYPE_8BYTES:
 		return 8;
-	}
-	else if (type == CRYDATATYPE_FLOAT)
-	{
+	case CRYDATATYPE_FLOAT:
 		return 4;
-	}
-	else if (type == CRYDATATYPE_DOUBLE)
-	{
+	case CRYDATATYPE_DOUBLE:
 		return 8;
-	}
-	else if (type == CRYDATATYPE_AOB || type == CRYDATATYPE_STRING || type == CRYDATATYPE_WSTRING)
-	{
+	case CRYDATATYPE_STRING:
+	case CRYDATATYPE_WSTRING:
+	case CRYDATATYPE_AOB:
 		return 1;
+	default:
+		return 0;
 	}
-
-	// Technically seen, this code path will never be reached. Tell the compiler to assume so.
-	// Whenever the caller attempts to call this function with a parameter that is not listed in the conditional
-	// listing, the behavior is undefined.
-	__assume(0);
 }
 
 // Takes cheat table VariableType as input and outputs CrySearch ValueType.
@@ -151,16 +121,15 @@ const char* GetCrySearchDataTypeRepresentation(const CCryDataType type)
 			return "Float";
 		case CRYDATATYPE_DOUBLE:
 			return "Double";
-		case CRYDATATYPE_AOB:
-			return "Array of Bytes";
 		case CRYDATATYPE_STRING:
 			return "String";
 		case CRYDATATYPE_WSTRING:
 			return "WString";
+		case CRYDATATYPE_AOB:
+			return "Array of Bytes";
+		default:
+			return NULL;
 	}
-
-	// The data type could not be resolved.
-	return NULL;
 }
 
 // Retrieves information about the operating system for a crash report. The recommended length for the 'maxLength' parameter is 256.
@@ -294,6 +263,7 @@ void GetOSVersionString(char* const pOutString, const DWORD maxLength)
 const CCryDataType GuessTypeOfValue(const void* value)
 {
 	// The type could not be guessed. Return the default data type.
+	// Nothing implemented yet!
 	return CRYDATATYPE_4BYTES;
 }
 

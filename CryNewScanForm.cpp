@@ -94,39 +94,33 @@ CryNewScanForm::CryNewScanForm(bool FirstScan, const Image& icon) : CryDialogTem
 		// Apply value-type-specific properties.		
 		switch(GlobalScanParameter->GlobalScanValueType)
 		{
-			case VALUETYPE_BYTE:
+			case CRYDATATYPE_BYTE:
 				this->mBlockSizeSelector.SetIndex(0);
 				break;
-			case VALUETYPE_2BYTE:
+			case CRYDATATYPE_2BYTES:
 				this->mBlockSizeSelector.SetIndex(1);
 				break;
-			case VALUETYPE_4BYTE:
+			case CRYDATATYPE_4BYTES:
 				this->mBlockSizeSelector.SetIndex(2);
 				break;
-			case VALUETYPE_8BYTE:
+			case CRYDATATYPE_8BYTES:
 				this->mBlockSizeSelector.SetIndex(3);
 				break;
-			case VALUETYPE_FLOAT:
+			case CRYDATATYPE_FLOAT:
 				this->mValueIsHex.Disable();
 				this->mBlockSizeSelector.SetIndex(4);
 				break;
-			case VALUETYPE_DOUBLE:
+			case CRYDATATYPE_DOUBLE:
 				this->mValueIsHex.Disable();
 				this->mBlockSizeSelector.SetIndex(5);
 				break;
-			case VALUETYPE_AOB:
-				this->mValueIsHex.Disable();
-				this->mBlockSizeSelector.SetIndex(6);
-				this->mScanTypeSelector.Disable();
-				this->mScanTypeSelectorLabel.Disable();
-				break;
-			case VALUETYPE_STRING:
+			case CRYDATATYPE_STRING:
 				this->mValueIsHex.Disable();
 				this->mBlockSizeSelector.SetIndex(7);
 				this->mScanTypeSelector.Disable();
 				this->mScanTypeSelectorLabel.Disable();
 				break;
-			case VALUETYPE_WSTRING:
+			case CRYDATATYPE_WSTRING:
 				this->mValueIsHex.Disable();
 				this->mBlockSizeSelector.SetIndex(7);
 				this->mScanTypeSelector.Disable();
@@ -134,6 +128,12 @@ CryNewScanForm::CryNewScanForm(bool FirstScan, const Image& icon) : CryDialogTem
 				this->stringUnicode.Show();
 				this->stringUnicode = true;
 				this->stringUnicode.Disable();
+				break;
+			case CRYDATATYPE_AOB:
+				this->mValueIsHex.Disable();
+				this->mBlockSizeSelector.SetIndex(6);
+				this->mScanTypeSelector.Disable();
+				this->mScanTypeSelectorLabel.Disable();
 				break;
 		}
 		
@@ -347,43 +347,43 @@ void CryNewScanForm::OkButtonClicked()
 	}
 	
 	// Initialize the global scan parameter.
-	switch(this->mBlockSizeSelector.GetIndex())
+	switch (this->mBlockSizeSelector.GetIndex())
 	{
 		case 0: // byte
 			GlobalScanParameter = new ScanParameters<Byte>();
 			(reinterpret_cast<ScanParameters<Byte>*>(GlobalScanParameter))->ScanValue = this->mValueIsHex ? ScanInt(this->mValueToSearchFor.GetText().ToString(), NULL, 16) : StrInt(this->mValueToSearchFor.GetText().ToString());
 			(reinterpret_cast<ScanParameters<Byte>*>(GlobalScanParameter))->OuterScanValue = this->mValueIsHex ? ScanInt(this->mSecondValueToSearchFor.GetText().ToString(), NULL, 16) : StrInt(this->mSecondValueToSearchFor.GetText().ToString());
-			GlobalScanParameter->GlobalScanValueType = VALUETYPE_BYTE;
+			GlobalScanParameter->GlobalScanValueType = CRYDATATYPE_BYTE;
 			break;
 		case 1: // 2 bytes
 			GlobalScanParameter = new ScanParameters<short>();
 			(reinterpret_cast<ScanParameters<short>*>(GlobalScanParameter))->ScanValue = this->mValueIsHex ? ScanInt(this->mValueToSearchFor.GetText().ToString(), NULL, 16) : StrInt(this->mValueToSearchFor.GetText().ToString());
 			(reinterpret_cast<ScanParameters<short>*>(GlobalScanParameter))->OuterScanValue = this->mValueIsHex ? ScanInt(this->mSecondValueToSearchFor.GetText().ToString(), NULL, 16) : StrInt(this->mSecondValueToSearchFor.GetText().ToString());
-			GlobalScanParameter->GlobalScanValueType = VALUETYPE_2BYTE;
+			GlobalScanParameter->GlobalScanValueType = CRYDATATYPE_2BYTES;
 			break;
 		case 2: // 4 bytes
 			GlobalScanParameter = new ScanParameters<int>();
 			(reinterpret_cast<ScanParameters<int>*>(GlobalScanParameter))->ScanValue = this->mValueIsHex ? ScanInt(this->mValueToSearchFor.GetText().ToString(), NULL, 16) : StrInt(this->mValueToSearchFor.GetText().ToString());
 			(reinterpret_cast<ScanParameters<int>*>(GlobalScanParameter))->OuterScanValue = this->mValueIsHex ? ScanInt(this->mSecondValueToSearchFor.GetText().ToString(), NULL, 16) : StrInt(this->mSecondValueToSearchFor.GetText().ToString());
-			GlobalScanParameter->GlobalScanValueType = VALUETYPE_4BYTE;
+			GlobalScanParameter->GlobalScanValueType = CRYDATATYPE_4BYTES;
 			break;
 		case 3: // 8 bytes
 			GlobalScanParameter = new ScanParameters<__int64>();
 			(reinterpret_cast<ScanParameters<__int64>*>(GlobalScanParameter))->ScanValue = this->mValueIsHex ? ScanInt64(this->mValueToSearchFor.GetText().ToString(), NULL, 16) : atol(this->mValueToSearchFor.GetText().ToString());
 			(reinterpret_cast<ScanParameters<__int64>*>(GlobalScanParameter))->OuterScanValue = this->mValueIsHex ? ScanInt64(this->mSecondValueToSearchFor.GetText().ToString(), NULL, 16) : atol(this->mSecondValueToSearchFor.GetText().ToString());
-			GlobalScanParameter->GlobalScanValueType = VALUETYPE_8BYTE;
+			GlobalScanParameter->GlobalScanValueType = CRYDATATYPE_8BYTES;
 			break;
 		case 4: // float
 			GlobalScanParameter = new ScanParameters<float>();
 			(reinterpret_cast<ScanParameters<float>*>(GlobalScanParameter))->ScanValue = this->mValueIsHex ? (float)ScanInt(this->mValueToSearchFor.GetText().ToString(), NULL, 16) : (float)StrDbl(this->mValueToSearchFor.GetText().ToString());
 			(reinterpret_cast<ScanParameters<float>*>(GlobalScanParameter))->OuterScanValue = this->mValueIsHex ? (float)ScanInt(this->mSecondValueToSearchFor.GetText().ToString(), NULL, 16) : (float)StrDbl(this->mSecondValueToSearchFor.GetText().ToString());
-			GlobalScanParameter->GlobalScanValueType = VALUETYPE_FLOAT;
+			GlobalScanParameter->GlobalScanValueType = CRYDATATYPE_FLOAT;
 			break;
 		case 5: // double
 			GlobalScanParameter = new ScanParameters<double>();
 			(reinterpret_cast<ScanParameters<double>*>(GlobalScanParameter))->ScanValue = this->mValueIsHex ? (double)ScanInt(this->mValueToSearchFor.GetText().ToString(), NULL, 16) : StrDbl(this->mValueToSearchFor.GetText().ToString());
 			(reinterpret_cast<ScanParameters<double>*>(GlobalScanParameter))->OuterScanValue = this->mValueIsHex ? (double)ScanInt(this->mSecondValueToSearchFor.GetText().ToString(), NULL, 16) : StrDbl(this->mSecondValueToSearchFor.GetText().ToString());
-			GlobalScanParameter->GlobalScanValueType = VALUETYPE_DOUBLE;
+			GlobalScanParameter->GlobalScanValueType = CRYDATATYPE_DOUBLE;
 			break;
 		case 6: // aob
 			GlobalScanParameter = new ScanParameters<ArrayOfBytes>();
@@ -391,7 +391,7 @@ void CryNewScanForm::OkButtonClicked()
 				ArrayOfBytes aob = StringToBytes(this->mValueToSearchFor.GetText().ToString());
 				GlobalScanParameter->ValueSize = aob.Size;
 				(reinterpret_cast<ScanParameters<ArrayOfBytes>*>(GlobalScanParameter))->ScanValue = aob;		
-				GlobalScanParameter->GlobalScanValueType = VALUETYPE_AOB;
+				GlobalScanParameter->GlobalScanValueType = CRYDATATYPE_AOB;
 			}
 			break;
 		case 7: // string
@@ -400,7 +400,7 @@ void CryNewScanForm::OkButtonClicked()
 				// Unicode string
 				GlobalScanParameter = new ScanParameters<WString>();
 				(reinterpret_cast<ScanParameters<WString>*>(GlobalScanParameter))->ScanValue = this->mValueToSearchFor.GetText();
-				GlobalScanParameter->GlobalScanValueType = VALUETYPE_WSTRING;
+				GlobalScanParameter->GlobalScanValueType = CRYDATATYPE_WSTRING;
 				GlobalScanParameter->ValueSize = this->mValueToSearchFor.GetLength() * 2;
 			}
 			else
@@ -408,7 +408,7 @@ void CryNewScanForm::OkButtonClicked()
 				// C string
 				GlobalScanParameter = new ScanParameters<String>();
 				(reinterpret_cast<ScanParameters<String>*>(GlobalScanParameter))->ScanValue = this->mValueToSearchFor.GetText().ToString();
-				GlobalScanParameter->GlobalScanValueType = VALUETYPE_STRING;
+				GlobalScanParameter->GlobalScanValueType = CRYDATATYPE_STRING;
 				GlobalScanParameter->ValueSize = this->mValueToSearchFor.GetLength();
 			}
 			GlobalScanParameter->ScanUntilNullChar = this->stringUntilNull;
@@ -420,8 +420,8 @@ void CryNewScanForm::OkButtonClicked()
 	GlobalScanParameter->CurrentScanHexValues = this->mValueIsHex.IsEnabled() ? this->mValueIsHex : false;
 	
 	// String or WString types can only comply to exact match, all other types can also comply to other operators.
-	if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_STRING || GlobalScanParameter->GlobalScanValueType == VALUETYPE_WSTRING
-		|| GlobalScanParameter->GlobalScanValueType == VALUETYPE_AOB)
+	if (GlobalScanParameter->GlobalScanValueType == CRYDATATYPE_STRING || GlobalScanParameter->GlobalScanValueType == CRYDATATYPE_WSTRING
+		|| GlobalScanParameter->GlobalScanValueType == CRYDATATYPE_AOB)
 	{
 		GlobalScanParameter->GlobalScanType = SCANTYPE_EXACTVALUE;
 	}

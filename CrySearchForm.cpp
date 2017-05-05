@@ -59,6 +59,88 @@ CrySearchWindowManager* mCrySearchWindowManager;
 
 // ---------------------------------------------------------------------------------------------
 
+// Gets the string representation of a value, given its address, value type, and extra conditions.
+String GetValueRepresentationString(const SIZE_T address, const bool hex, const CCryDataType valueType, const int optSize)
+{
+	if (valueType == CRYDATATYPE_BYTE)
+	{
+		Byte value;
+		if (mMemoryScanner->Peek(address, sizeof(Byte), &value))
+		{
+			return hex ? FormatHexadecimalIntSpecial(value) : FormatIntSpecial(value);
+		}
+	}
+	else if (valueType == CRYDATATYPE_2BYTES)
+	{
+		short value;
+		if (mMemoryScanner->Peek(address, sizeof(short), &value))
+		{
+			return hex ? FormatHexadecimalIntSpecial(value) : FormatIntSpecial(value);
+		}
+	}
+	else if (valueType == CRYDATATYPE_4BYTES)
+	{
+		int value;
+		if (mMemoryScanner->Peek(address, sizeof(int), &value))
+		{
+			return hex ? FormatHexadecimalIntSpecial(value) : FormatIntSpecial(value);
+		}
+	}
+	else if (valueType == CRYDATATYPE_8BYTES)
+	{
+		__int64 value;
+		if (mMemoryScanner->Peek(address, sizeof(__int64), &value))
+		{
+			return hex ? FormatHexadecimalIntSpecial64(value) : FormatIntSpecial64(value);
+		}
+	}
+	else if (valueType == CRYDATATYPE_FLOAT)
+	{
+		float value;
+		if (mMemoryScanner->Peek(address, sizeof(float), &value))
+		{
+			return DblStr(value);
+		}
+	}
+	else if (valueType == CRYDATATYPE_DOUBLE)
+	{
+		double value;
+		if (mMemoryScanner->Peek(address, sizeof(double), &value))
+		{
+			return DblStr(value);
+		}
+	}
+	else if (valueType == CRYDATATYPE_STRING)
+	{
+		String value;
+		if (mMemoryScanner->PeekA(address, optSize, value))
+		{
+			return value;
+		}
+	}
+	else if (valueType == CRYDATATYPE_WSTRING)
+	{
+		WString value;
+		if (mMemoryScanner->PeekW(address, optSize, value))
+		{
+			return value.ToString();
+		}
+	}
+	else if (valueType == CRYDATATYPE_AOB)
+	{
+		ArrayOfBytes value;
+		if (mMemoryScanner->PeekB(address, optSize, value))
+		{
+			return BytesToString(value.Data, optSize);
+		}
+	}
+	
+	// The value of the search result could not be read. The presented value is therefore unknown.
+	return "???";
+}
+
+// ---------------------------------------------------------------------------------------------
+
 // Gets the string representation of the address of a search result.
 String GetAddress(const int index)
 {
@@ -74,79 +156,8 @@ String GetValue(const int index)
 {
 	if (!mMemoryScanner->IsScanRunning())
 	{
-		const bool mustHex = GlobalScanParameter->CurrentScanHexValues;
-		if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_BYTE)
-		{
-			Byte value;
-			if (mMemoryScanner->Peek<Byte>(CachedAddresses[index].Address, 0, &value))
-			{
-				return mustHex ? FormatHexadecimalIntSpecial(value) : FormatIntSpecial(value);
-			}
-		}
-		else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_2BYTE)
-		{
-			short value;
-			if (mMemoryScanner->Peek<short>(CachedAddresses[index].Address, 0, &value))
-			{
-				return mustHex ? FormatHexadecimalIntSpecial(value) : FormatIntSpecial(value);
-			}
-		}
-		else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_4BYTE)
-		{
-			int value;
-			if (mMemoryScanner->Peek<int>(CachedAddresses[index].Address, 0, &value))
-			{
-				return mustHex ? FormatHexadecimalIntSpecial(value) : FormatIntSpecial(value);
-			}
-		}
-		else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_8BYTE)
-		{
-			__int64 value;
-			if (mMemoryScanner->Peek<__int64>(CachedAddresses[index].Address, 0, &value))
-			{
-				return mustHex ? FormatHexadecimalIntSpecial64(value) : FormatIntSpecial64(value);
-			}
-		}
-		else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_FLOAT)
-		{
-			float value;
-			if (mMemoryScanner->Peek<float>(CachedAddresses[index].Address, 0, &value))
-			{
-				return DblStr(value);
-			}
-		}
-		else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_DOUBLE)
-		{
-			double value;
-			if (mMemoryScanner->Peek<double>(CachedAddresses[index].Address, 0, &value))
-			{
-				return DblStr(value);
-			}
-		}
-		else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_AOB)
-		{
-			ArrayOfBytes value;
-			if (mMemoryScanner->Peek<ArrayOfBytes>(CachedAddresses[index].Address, GlobalScanParameter->ValueSize, &value))
-			{
-				return BytesToString(value.Data, GlobalScanParameter->ValueSize);
-			}
-		}
-		else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_STRING)
-		{
-			String value;
-			if (mMemoryScanner->Peek<String>(CachedAddresses[index].Address, CachedAddresses[index].StringLength, &value))
-			{
-				return value;
-			}
-		}
-		else if (GlobalScanParameter->GlobalScanValueType == VALUETYPE_WSTRING)
-		{
-			WString value;
-			if (mMemoryScanner->Peek<WString>(CachedAddresses[index].Address, CachedAddresses[index].StringLength, &value))
-			{
-				return value.ToString();
-			}
-		}
+		return GetValueRepresentationString(CachedAddresses[index].Address, GlobalScanParameter->CurrentScanHexValues, GlobalScanParameter->GlobalScanValueType
+			, GlobalScanParameter->GlobalScanValueType == CRYDATATYPE_AOB ? GlobalScanParameter->ValueSize : CachedAddresses[index].StringLength);
 	}
 	
 	// The value of the search result could not be read. The presented value is therefore unknown.
@@ -176,87 +187,8 @@ String GetAddressTableValue(const int index)
 	const AddressTableEntry* const entry = loadedTable[index];
 	if (mMemoryScanner->GetProcessId())
 	{
-		if (entry->ValueType == CRYDATATYPE_BYTE)
-		{
-			Byte value;
-			if (mMemoryScanner->Peek<Byte>(entry->Address, 0, &value))
-			{
-				entry->Value = viewAddressTableValueHex ? FormatHexadecimalIntSpecial(value) : FormatIntSpecial(value);
-				return entry->Value;
-			}
-		}
-		else if (entry->ValueType == CRYDATATYPE_2BYTES)
-		{
-			short value;
-			if (mMemoryScanner->Peek<short>(entry->Address, 0, &value))
-			{
-				entry->Value = viewAddressTableValueHex ? FormatHexadecimalIntSpecial(value) : FormatIntSpecial(value);
-				return entry->Value;
-			}
-		}
-		else if (entry->ValueType == CRYDATATYPE_4BYTES)
-		{
-			int value;
-			if (mMemoryScanner->Peek<int>(entry->Address, 0, &value))
-			{
-				entry->Value = viewAddressTableValueHex ? FormatHexadecimalIntSpecial(value) : FormatIntSpecial(value);
-				return entry->Value;
-			}
-		}
-		else if (entry->ValueType == CRYDATATYPE_8BYTES)
-		{
-			__int64 value;
-			if (mMemoryScanner->Peek<__int64>(entry->Address, 0, &value))
-			{
-				entry->Value = viewAddressTableValueHex ? FormatHexadecimalIntSpecial64(value) : FormatIntSpecial64(value);
-				return entry->Value;
-			}
-		}
-		else if (entry->ValueType == CRYDATATYPE_FLOAT)
-		{
-			float value;
-			if (mMemoryScanner->Peek<float>(entry->Address, 0, &value))
-			{
-				entry->Value = DblStr(value);
-				return entry->Value;
-			}
-		}
-		else if (entry->ValueType == CRYDATATYPE_DOUBLE)
-		{
-			double value;
-			if (mMemoryScanner->Peek<double>(entry->Address, 0, &value))
-			{
-				entry->Value = DblStr(value);
-				return entry->Value;
-			}
-		}
-		else if (entry->ValueType == CRYDATATYPE_AOB)
-		{
-			ArrayOfBytes value;
-			if (mMemoryScanner->Peek<ArrayOfBytes>(entry->Address, entry->Size, &value))
-			{
-				entry->Value = BytesToString(value.Data, value.Size);
-				return entry->Value;
-			}
-		}
-		else if (entry->ValueType == CRYDATATYPE_STRING)
-		{
-			String value;
-			if (mMemoryScanner->Peek<String>(entry->Address, entry->Size, &value))
-			{
-				entry->Value = value;
-				return entry->Value;
-			}
-		}
-		else if (entry->ValueType == CRYDATATYPE_WSTRING)
-		{
-			WString value;
-			if (mMemoryScanner->Peek<WString>(entry->Address, entry->Size, &value))
-			{
-				entry->Value = value.ToString();
-				return entry->Value;
-			}
-		}
+		entry->Value = GetValueRepresentationString(entry->Address, viewAddressTableValueHex, entry->ValueType, entry->Size);
+		return entry->Value;
 	}
 	
 	// The value of the address table entry could not be read. The presented value is therefore unknown.
@@ -352,24 +284,15 @@ CrySearchForm::CrySearchForm(const char* fn)
 	bool changed = false;
 	
 	// If the settings-saved routine index is out of the current bounds, a previously used routine-plugin
-	// may have failed at this moment. We take no chance and set the default routine for use.
-	if (opr > pluginCount + 2)
+	// may have failed at this moment, or the designated plugin has been removed from the plugins directory.
+	// We take no chance and set the default routine for use.
+	const int pluginCountTwo = pluginCount + 2;
+	if ((pluginCount == 0 && (opr > 1 || rpm > 1 || wpm > 1 || pm > 1))
+		|| (opr > pluginCountTwo || rpm > pluginCountTwo || wpm > pluginCountTwo || pm > pluginCountTwo))
 	{
 		SettingsFile::GetInstance()->SetOpenProcessRoutine();
-		changed = true;
-	}
-	if (rpm > pluginCount + 2)
-	{
 		SettingsFile::GetInstance()->SetReadMemoryRoutine();
-		changed = true;
-	}
-	if (wpm > pluginCount + 2)
-	{
 		SettingsFile::GetInstance()->SetWriteMemoryRoutine();
-		changed = true;
-	}
-	if (pm > pluginCount + 2)
-	{
 		SettingsFile::GetInstance()->SetProtectMemoryRoutine();
 		changed = true;
 	}
@@ -989,9 +912,6 @@ void CrySearchForm::UserDefinedEntryWhenDoubleClicked()
 				CryChangeRecordDialog(loadedTable, singleRowInput, CRDM_TYPE).Execute();
 				break;
 #endif
-			default:
-				// Compiler cannot know what value GetCursor() returns, so we need to give it the assumption that it won't exceed the cases.
-				__assume(0);
 		}
 	}
 }
@@ -1069,9 +989,6 @@ void CrySearchForm::AddressListChangeProperty(ChangeRecordDialogMode mode)
 				CryChangeRecordDialog(loadedTable, selectedRows, CRDM_TYPE).Execute();
 #endif
 				break;
-			default:
-				// This function will only be called with one of the predefined values so this code path will never be reached.
-				__assume(0);
 		}
 	}
 }
@@ -1209,40 +1126,8 @@ void CrySearchForm::SearchResultDoubleClicked()
 	{
 		// Retrieve values from virtual columns of the ArrayCtrl.
 		const String& value = GetValue(selectedRows[i]);
-		
-		// The first value of the scan type is unknown, so + 1 should be the correct value.
-		CCryDataType toAddToAddressList = VALUETYPE_UNKNOWN;
-		switch (GlobalScanParameter->GlobalScanValueType)
-		{
-			case VALUETYPE_BYTE:
-				toAddToAddressList = CRYDATATYPE_BYTE;
-				break;
-			case VALUETYPE_2BYTE:
-				toAddToAddressList = CRYDATATYPE_2BYTES;
-				break;
-			case VALUETYPE_4BYTE:
-				toAddToAddressList = CRYDATATYPE_4BYTES;
-				break;
-			case VALUETYPE_8BYTE:
-				toAddToAddressList = CRYDATATYPE_8BYTES;
-				break;
-			case VALUETYPE_FLOAT:
-				toAddToAddressList = CRYDATATYPE_FLOAT;
-				break;
-			case VALUETYPE_DOUBLE:
-				toAddToAddressList = CRYDATATYPE_DOUBLE;
-				break;
-			case VALUETYPE_AOB:
-				toAddToAddressList = CRYDATATYPE_AOB;
-				break;
-			case VALUETYPE_STRING:
-				toAddToAddressList = CRYDATATYPE_STRING;
-				break;
-			case VALUETYPE_WSTRING:
-				toAddToAddressList = CRYDATATYPE_WSTRING;
-				break;
-		}
-		
+		CCryDataType toAddToAddressList = GlobalScanParameter->GlobalScanValueType;
+	
 		// Try to find the address table entry in the existing table.
 		const int curRow = loadedTable.Find(CachedAddresses[selectedRows[i]].Address, toAddToAddressList);
 		

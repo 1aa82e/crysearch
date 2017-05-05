@@ -1339,7 +1339,7 @@ void MemoryScanner::NextScan()
 		String valFn = AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Values%i.temp", i));
 		
 		// If the scan is a string, wstring or aob, the values file is not required.
-		if (GlobalScanParameter->GlobalScanValueType >= VALUETYPE_STRING)
+		if (GlobalScanParameter->GlobalScanValueType >= CRYDATATYPE_STRING)
 		{
 			if (!FileExists(addrFn))
 			{
@@ -1416,7 +1416,7 @@ CompareFunctionType<T> MemoryScanner::GetCompareFunction()
 void MemoryScanner::FirstWorkerPrologue(MemoryScannerWorkerContext* const context)
 {
 	// Set the correct worker corresponding to the value type.
-	const MemoryScanValueType tmpType = GlobalScanParameter->GlobalScanValueType;
+	const CCryDataType tmpType = GlobalScanParameter->GlobalScanValueType;
 
 	// Create address output file in the context, values file is only needed in some situations.
 	context->OpenAddresses(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.temp", context->WorkerIdentifier)));
@@ -1432,7 +1432,7 @@ void MemoryScanner::FirstWorkerPrologue(MemoryScannerWorkerContext* const contex
 	context->MemoryRegionBuffer = new Byte[context->MaximumMemoryRegionBufferSize];
 	
 	// Select the scanning phase corresponding to the specified data type.
-	if (tmpType == VALUETYPE_BYTE)
+	if (tmpType == CRYDATATYPE_BYTE)
 	{
 		context->FastScanAlignSize = 1;
 		context->LocalValuesBuffer = new Byte[MEMORY_SCANNER_BUFFER_LENGTH_THRESHOLD];
@@ -1440,7 +1440,7 @@ void MemoryScanner::FirstWorkerPrologue(MemoryScannerWorkerContext* const contex
 		CompareFunctionType<Byte> cmpFunc = this->GetCompareFunction<Byte>();
 		this->FirstScanWorker<Byte>(context, ((Byte)(reinterpret_cast<ScanParameters<Byte>*>(GlobalScanParameter))->ScanValue), cmpFunc);
 	}
-	else if (tmpType == VALUETYPE_2BYTE)
+	else if (tmpType == CRYDATATYPE_2BYTES)
 	{
 		context->FastScanAlignSize = GlobalScanParameter->CurrentScanFastScan ? sizeof(short) : 1;
 		context->LocalValuesBuffer = new short[MEMORY_SCANNER_BUFFER_LENGTH_THRESHOLD];
@@ -1448,7 +1448,7 @@ void MemoryScanner::FirstWorkerPrologue(MemoryScannerWorkerContext* const contex
 		CompareFunctionType<short> cmpFunc = this->GetCompareFunction<short>();
 		this->FirstScanWorker<short>(context, ((short)(reinterpret_cast<ScanParameters<short>*>(GlobalScanParameter))->ScanValue), cmpFunc);
 	}
-	else if (tmpType == VALUETYPE_4BYTE)
+	else if (tmpType == CRYDATATYPE_4BYTES)
 	{
 		context->FastScanAlignSize = GlobalScanParameter->CurrentScanFastScan ? sizeof(int) : 1;
 		context->LocalValuesBuffer = new int[MEMORY_SCANNER_BUFFER_LENGTH_THRESHOLD];
@@ -1456,7 +1456,7 @@ void MemoryScanner::FirstWorkerPrologue(MemoryScannerWorkerContext* const contex
 		CompareFunctionType<int> cmpFunc = this->GetCompareFunction<int>();
 		this->FirstScanWorker<int>(context, ((int)(reinterpret_cast<ScanParameters<int>*>(GlobalScanParameter))->ScanValue), cmpFunc);
 	}
-	else if (tmpType == VALUETYPE_8BYTE)
+	else if (tmpType == CRYDATATYPE_8BYTES)
 	{
 		context->FastScanAlignSize = GlobalScanParameter->CurrentScanFastScan ? sizeof(int) : 1;
 		context->LocalValuesBuffer = new __int64[MEMORY_SCANNER_BUFFER_LENGTH_THRESHOLD];
@@ -1464,7 +1464,7 @@ void MemoryScanner::FirstWorkerPrologue(MemoryScannerWorkerContext* const contex
 		CompareFunctionType<__int64> cmpFunc = this->GetCompareFunction<__int64>();
 		this->FirstScanWorker<__int64>(context, ((__int64)(reinterpret_cast<ScanParameters<__int64>*>(GlobalScanParameter))->ScanValue), cmpFunc);
 	}
-	else if (tmpType == VALUETYPE_FLOAT)
+	else if (tmpType == CRYDATATYPE_FLOAT)
 	{
 		context->FastScanAlignSize = GlobalScanParameter->CurrentScanFastScan ? sizeof(float) : 1;
 		context->LocalValuesBuffer = new float[MEMORY_SCANNER_BUFFER_LENGTH_THRESHOLD];
@@ -1472,7 +1472,7 @@ void MemoryScanner::FirstWorkerPrologue(MemoryScannerWorkerContext* const contex
 		CompareFunctionType<float> cmpFunc = this->GetCompareFunction<float>();
 		this->FirstScanWorker<float>(context, ((float)(reinterpret_cast<ScanParameters<float>*>(GlobalScanParameter))->ScanValue), cmpFunc);
 	}
-	else if (tmpType == VALUETYPE_DOUBLE)
+	else if (tmpType == CRYDATATYPE_DOUBLE)
 	{
 		context->FastScanAlignSize = GlobalScanParameter->CurrentScanFastScan ? sizeof(int) : 1;
 		context->LocalValuesBuffer = new double[MEMORY_SCANNER_BUFFER_LENGTH_THRESHOLD];
@@ -1480,21 +1480,21 @@ void MemoryScanner::FirstWorkerPrologue(MemoryScannerWorkerContext* const contex
 		CompareFunctionType<double> cmpFunc = this->GetCompareFunction<double>();
 		this->FirstScanWorker<double>(context, ((double)(reinterpret_cast<ScanParameters<double>*>(GlobalScanParameter))->ScanValue), cmpFunc);
 	}
-	else if (tmpType == VALUETYPE_STRING)
+	else if (tmpType == CRYDATATYPE_STRING)
 	{
 		context->FastScanAlignSize = 1;
 		context->LocalValuesBuffer = new Byte[MEMORY_SCANNER_BUFFER_LENGTH_THRESHOLD];
 		CompareFunctionType<String> cmpFunc = this->GetCompareFunction<String>();
 		this->FirstScanWorker<String>(context, ((String)(reinterpret_cast<ScanParameters<String>*>(GlobalScanParameter))->ScanValue), cmpFunc);
 	}
-	else if (tmpType == VALUETYPE_WSTRING)
+	else if (tmpType == CRYDATATYPE_WSTRING)
 	{
 		context->FastScanAlignSize = 1;
 		context->LocalValuesBuffer = new Byte[MEMORY_SCANNER_BUFFER_LENGTH_THRESHOLD];
 		CompareFunctionType<WString> cmpFunc = this->GetCompareFunction<WString>();
 		this->FirstScanWorker<WString>(context, ((WString)(reinterpret_cast<ScanParameters<WString>*>(GlobalScanParameter))->ScanValue), cmpFunc);
 	}
-	else if (tmpType == VALUETYPE_AOB)
+	else if (tmpType == CRYDATATYPE_AOB)
 	{
 		context->FastScanAlignSize = 1;
 		CompareFunctionType<ArrayOfBytes> cmpFunc = this->GetCompareFunction<ArrayOfBytes>();
@@ -1509,7 +1509,7 @@ void MemoryScanner::NextWorkerPrologue(MemoryScannerWorkerContext* const context
 	context->FinishedWork = false;
 	
 	// Set the correct worker corresponding to the value type.
-	const MemoryScanValueType tmpType = GlobalScanParameter->GlobalScanValueType;
+	const CCryDataType tmpType = GlobalScanParameter->GlobalScanValueType;
 	
 	// Create address output file in the context, values file is only needed in some situations.
 	context->OpenAddresses(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.temp", context->WorkerIdentifier)));
@@ -1534,61 +1534,61 @@ void MemoryScanner::NextWorkerPrologue(MemoryScannerWorkerContext* const context
 	}
 
 	// Select the scanning phase corresponding to the specified data type.
-	if (tmpType == VALUETYPE_BYTE)
+	if (tmpType == CRYDATATYPE_BYTE)
 	{
 		context->OpenValues(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Values%i.temp", context->WorkerIdentifier)));
 		context->LocalValuesBuffer = new Byte[MEMORY_SCANNER_BUFFER_LENGTH_THRESHOLD];
 		CompareFunctionType<Byte> cmpFunc = this->GetCompareFunction<Byte>();
 		this->NextScanWorker<Byte>(context, ((Byte)(reinterpret_cast<ScanParameters<Byte>*>(GlobalScanParameter))->ScanValue), cmpFunc);
 	}
-	else if (tmpType == VALUETYPE_2BYTE)
+	else if (tmpType == CRYDATATYPE_2BYTES)
 	{
 		context->OpenValues(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Values%i.temp", context->WorkerIdentifier)));
 		context->LocalValuesBuffer = new short[MEMORY_SCANNER_BUFFER_LENGTH_THRESHOLD];
 		CompareFunctionType<short> cmpFunc = this->GetCompareFunction<short>();
 		this->NextScanWorker<short>(context, ((short)(reinterpret_cast<ScanParameters<short>*>(GlobalScanParameter))->ScanValue), cmpFunc);
 	}
-	else if (tmpType == VALUETYPE_4BYTE)
+	else if (tmpType == CRYDATATYPE_4BYTES)
 	{
 		context->OpenValues(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Values%i.temp", context->WorkerIdentifier)));
 		context->LocalValuesBuffer = new int[MEMORY_SCANNER_BUFFER_LENGTH_THRESHOLD];
 		CompareFunctionType<int> cmpFunc = this->GetCompareFunction<int>();
 		this->NextScanWorker<int>(context, ((int)(reinterpret_cast<ScanParameters<int>*>(GlobalScanParameter))->ScanValue), cmpFunc);
 	}
-	else if (tmpType == VALUETYPE_8BYTE)
+	else if (tmpType == CRYDATATYPE_8BYTES)
 	{
 		context->OpenValues(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Values%i.temp", context->WorkerIdentifier)));
 		context->LocalValuesBuffer = new __int64[MEMORY_SCANNER_BUFFER_LENGTH_THRESHOLD];
 		CompareFunctionType<__int64> cmpFunc = this->GetCompareFunction<__int64>();
 		this->NextScanWorker<__int64>(context, ((__int64)(reinterpret_cast<ScanParameters<__int64>*>(GlobalScanParameter))->ScanValue), cmpFunc);
 	}
-	else if (tmpType == VALUETYPE_FLOAT)
+	else if (tmpType == CRYDATATYPE_FLOAT)
 	{
 		context->OpenValues(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Values%i.temp", context->WorkerIdentifier)));
 		context->LocalValuesBuffer = new float[MEMORY_SCANNER_BUFFER_LENGTH_THRESHOLD];
 		CompareFunctionType<float> cmpFunc = this->GetCompareFunction<float>();
 		this->NextScanWorker<float>(context, ((float)(reinterpret_cast<ScanParameters<float>*>(GlobalScanParameter))->ScanValue), cmpFunc);
 	}
-	else if (tmpType == VALUETYPE_DOUBLE)
+	else if (tmpType == CRYDATATYPE_DOUBLE)
 	{
 		context->OpenValues(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Values%i.temp", context->WorkerIdentifier)));
 		context->LocalValuesBuffer = new double[MEMORY_SCANNER_BUFFER_LENGTH_THRESHOLD];
 		CompareFunctionType<double> cmpFunc = this->GetCompareFunction<double>();
 		this->NextScanWorker<double>(context, ((double)(reinterpret_cast<ScanParameters<double>*>(GlobalScanParameter))->ScanValue), cmpFunc);
 	}
-	else if (tmpType == VALUETYPE_STRING)
+	else if (tmpType == CRYDATATYPE_STRING)
 	{
 		context->LocalValuesBuffer = new Byte[MEMORY_SCANNER_BUFFER_LENGTH_THRESHOLD];
 		CompareFunctionType<String> cmpFunc = this->GetCompareFunction<String>();
 		this->NextScanWorker<String>(context, ((String)(reinterpret_cast<ScanParameters<String>*>(GlobalScanParameter))->ScanValue), cmpFunc);
 	}
-	else if (tmpType == VALUETYPE_WSTRING)
+	else if (tmpType == CRYDATATYPE_WSTRING)
 	{
 		context->LocalValuesBuffer = new Byte[MEMORY_SCANNER_BUFFER_LENGTH_THRESHOLD];
 		CompareFunctionType<WString> cmpFunc = this->GetCompareFunction<WString>();
 		this->NextScanWorker<WString>(context, ((WString)(reinterpret_cast<ScanParameters<WString>*>(GlobalScanParameter))->ScanValue), cmpFunc);
 	}
-	else if (tmpType == VALUETYPE_AOB)
+	else if (tmpType == CRYDATATYPE_AOB)
 	{
 		CompareFunctionType<ArrayOfBytes> cmpFunc = this->GetCompareFunction<ArrayOfBytes>();
 		this->NextScanWorker<ArrayOfBytes>(context, ((ArrayOfBytes)(reinterpret_cast<ScanParameters<ArrayOfBytes>*>(GlobalScanParameter))->ScanValue), cmpFunc);

@@ -32,56 +32,42 @@ void MemoryScanner::PokeW(const SIZE_T address, const WString& value) const
 
 // ---------------------------------------------------------------------------------------------
 
-// Reads T value with sizeof(T) size from the specified address.
-template <typename T>
-bool MemoryScanner::Peek(const SIZE_T address, const unsigned int size, T* outBuffer) const
+// Reads a value with specified size from a memory address into the specified outBuffer.
+const bool MemoryScanner::Peek(const SIZE_T address, const unsigned int size, void* const outBuffer) const
 {
 	SIZE_T bytesRead;
-	CrySearchRoutines.CryReadMemoryRoutine(this->mOpenedProcessHandle, (void*)address, outBuffer, sizeof(T), &bytesRead);
-	return bytesRead == sizeof(T);
+	CrySearchRoutines.CryReadMemoryRoutine(this->mOpenedProcessHandle, (void*)address, outBuffer, size, &bytesRead);
+	return bytesRead == size;
 }
 
-// Reads a byte array with specified size from the specified address.
-template <>
-bool MemoryScanner::Peek(const SIZE_T address, const unsigned int size, ArrayOfBytes* outBuffer) const
+// Reads a byte array with specified size from a memory address into the specified outBuffer.
+const bool MemoryScanner::PeekB(const SIZE_T address, const unsigned int size, ArrayOfBytes& outBuffer) const
 {
-	outBuffer->Allocate(size);
+	outBuffer.Allocate(size);
 	SIZE_T bytesRead;
-	CrySearchRoutines.CryReadMemoryRoutine(this->mOpenedProcessHandle, (void*)address, outBuffer->Data, size, &bytesRead);
+	CrySearchRoutines.CryReadMemoryRoutine(this->mOpenedProcessHandle, (void*)address, outBuffer.Data, size, &bytesRead);
 	return bytesRead == size;
 }
 
 // Reads a unicode string with specified size from the specified address.
-template <>
-bool MemoryScanner::Peek(const SIZE_T address, const unsigned int size, WString* outBuffer) const
+const bool MemoryScanner::PeekW(const SIZE_T address, const unsigned int size, WString& outBuffer) const
 {
 	const unsigned int bytesSize = size * sizeof(wchar);
 	SIZE_T bytesRead;
 	WStringBuffer buffer(size);
 	CrySearchRoutines.CryReadMemoryRoutine(this->mOpenedProcessHandle, (void*)address, buffer.Begin(), bytesSize, &bytesRead);
 	buffer.Strlen();
-	*outBuffer = buffer;
+	outBuffer = buffer;
 	return bytesRead == bytesSize;
 }
 
 // Reads an ANSI string with specified size from the specified address.
-template <>
-bool MemoryScanner::Peek(const SIZE_T address, const unsigned int size, String* outBuffer) const
+const bool MemoryScanner::PeekA(const SIZE_T address, const unsigned int size, String& outBuffer) const
 {
 	SIZE_T bytesRead;
 	StringBuffer buffer(size);
 	CrySearchRoutines.CryReadMemoryRoutine(this->mOpenedProcessHandle, (void*)address, buffer.Begin(), size, &bytesRead);
 	buffer.Strlen();
-	*outBuffer = buffer;
+	outBuffer = buffer;
 	return bytesRead == size;
 }
-
-// ---------------------------------------------------------------------------------------------
-
-// template implementations for linkage errors.
-template bool MemoryScanner::Peek<Byte>(const SIZE_T address, const unsigned int size, Byte* outBuffer) const;
-template bool MemoryScanner::Peek<short>(const SIZE_T address, const unsigned int size, short* outBuffer) const;
-template bool MemoryScanner::Peek<int>(const SIZE_T address, const unsigned int size, int* outBuffer) const;
-template bool MemoryScanner::Peek<__int64>(const SIZE_T address, const unsigned int size, __int64* outBuffer) const;
-template bool MemoryScanner::Peek<float>(const SIZE_T address, const unsigned int size, float* outBuffer) const;
-template bool MemoryScanner::Peek<double>(const SIZE_T address, const unsigned int size, double* outBuffer) const;

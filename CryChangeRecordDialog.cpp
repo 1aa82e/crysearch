@@ -89,12 +89,15 @@ CryChangeRecordDialog::CryChangeRecordDialog(AddressTable& addrTable, const Vect
 		if (this->mLoadedEntry->ValueType == CRYDATATYPE_WSTRING)
 		{
 			// Set current value type index for opened entry correctly.
-			this->mTypeSelector.SetIndex(this->mLoadedEntry->ValueType - 1);
+			// We need to substract 2 because of the unknown data type.
+			this->mTypeSelector.SetIndex(this->mLoadedEntry->ValueType - 2);
 			this->mUnicodeString = true;
 		}
 		else
 		{
-			this->mTypeSelector.SetIndex(this->mLoadedEntry->ValueType);
+			// Subtract three for the index/count ratio, unknown data type, and double string
+			// data type.
+			this->mTypeSelector.SetIndex(this->mLoadedEntry->ValueType - 1);
 		}
 	}
 	else if (mode == CRDM_MANUALNEW)
@@ -210,13 +213,13 @@ void CryChangeRecordDialog::ValueModeHexOptionChanged()
 void CryChangeRecordDialog::BlockSizeSelected()
 {
 	// If the data type 'String' is selected, the option to select Unicode should become visible.
-	if (this->mTypeSelector.GetIndex() == 6)
+	if (this->mTypeSelector.GetIndex() == 6) // 6 == AOB
 	{
 		this->mUnicodeString.Hide();
 		this->mTypeLengthDescription.Show();
 		this->mTypeLength.Show();
 	}
-	else if (this->mTypeSelector.GetIndex() == 7)
+	else if (this->mTypeSelector.GetIndex() == 7) // 7 == String / WString
 	{
 		this->mUnicodeString.Show();
 		this->mTypeLengthDescription.Show();
@@ -303,19 +306,19 @@ void CryChangeRecordDialog::DialogOkay()
 
 		// Set the data type of the address table entry.
 		const int newindex = this->mTypeSelector.GetIndex();
-		if (newindex == 6)
+		if (newindex == 6) // 6 == AOB
 		{
 			optionalSize = this->mTypeLength;
-			tempType = newindex;
+			tempType = CRYDATATYPE_AOB;
 		}
-		else if (this->mTypeSelector.GetIndex() == 7)
+		else if (this->mTypeSelector.GetIndex() == 7) // 7 == String / WString
 		{
 			optionalSize = this->mTypeLength;
 			tempType = this->mUnicodeString ? CRYDATATYPE_WSTRING : CRYDATATYPE_STRING;
 		}
 		else
 		{
-			tempType = newindex;
+			tempType = newindex + 1;
 		}
 
 		// Make sure the address combined with the selected data type isn't already present in the address table.
@@ -402,12 +405,12 @@ void CryChangeRecordDialog::DialogOkay()
 		{
 			// Assign proper value type including size parameter.
 			const int newindex = this->mTypeSelector.GetIndex();
-			if (newindex == 6)
+			if (newindex == 6) // 6 == AOB
 			{
-				tempType = newindex;
+				tempType = CRYDATATYPE_AOB;
 				optionalSize = this->mTypeLength;
 			}
-			else if (this->mTypeSelector.GetIndex() == 7)
+			else if (this->mTypeSelector.GetIndex() == 7) // 7 == String / WString
 			{
 				tempType = this->mUnicodeString ? CRYDATATYPE_WSTRING : CRYDATATYPE_STRING;
 				optionalSize = this->mTypeLength;
@@ -415,7 +418,7 @@ void CryChangeRecordDialog::DialogOkay()
 			else
 			{
 				optionalSize = -1;
-				tempType = newindex;
+				tempType = newindex + 1;
 			}
 	
 			// Make sure the address combined with the selected data type isn't already present in the address table.

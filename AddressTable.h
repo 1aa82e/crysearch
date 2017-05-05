@@ -44,8 +44,8 @@ struct AddressTableEntry : Moveable<AddressTableEntry>
 	// This field is considered leading information for a great part of the address table behavior.
 	Vector<int> OffsetsList;
 	
-	// Represents the value type of the address table entry. This field is trivial and
-	// is considered leading information for a great part of the address table behavior.
+	// Represents the value type of the address table entry. This field is considered
+	// fundamental information for a great part of the address table behavior.
 	CCryDataType ValueType;
 	
 	// Represents the value of the address table entry. This field contains the user interface

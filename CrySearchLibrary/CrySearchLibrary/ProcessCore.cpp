@@ -150,8 +150,6 @@ const int CryAllocateProcessMemory(HANDLE procHandle, const unsigned int MemoryS
 	case 1:
 		protect = PAGE_EXECUTE_READWRITE;
 		break;
-	default:
-		__assume(0);
 	}
 
 	return (*pVirtualAddress = (SIZE_T)VirtualAllocEx(procHandle, NULL, MemorySize, MEM_COMMIT, protect)) ? 0 : -1;

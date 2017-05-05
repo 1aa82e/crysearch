@@ -22,15 +22,19 @@ typedef int CCryDataType;
 
 // The following definitions are CrySearch type definitions. They are passed as a 'CCryDataType' parameter
 // through the program to identify memory data types. The values are indices of a drop list and may be used like so.
-#define CRYDATATYPE_BYTE			0
-#define CRYDATATYPE_2BYTES			1
-#define CRYDATATYPE_4BYTES			2
-#define CRYDATATYPE_8BYTES			3
-#define CRYDATATYPE_FLOAT			4
-#define CRYDATATYPE_DOUBLE			5
-#define CRYDATATYPE_AOB				6
-#define CRYDATATYPE_STRING			7
-#define CRYDATATYPE_WSTRING			8
+#define CRYDATATYPE_UNKNOWN			0
+#define CRYDATATYPE_BYTE			1
+#define CRYDATATYPE_2BYTES			2
+#define CRYDATATYPE_4BYTES			3
+#define CRYDATATYPE_8BYTES			4
+#define CRYDATATYPE_FLOAT			5
+#define CRYDATATYPE_DOUBLE			6
+#define CRYDATATYPE_AOB				7
+
+// Some control indexing functionality relies on the fact that WString comes after String, and
+// that WString is the last data type definition (highest value).
+#define CRYDATATYPE_STRING			8
+#define CRYDATATYPE_WSTRING			9
 
 #ifdef __cplusplus
 extern "C"

@@ -57,9 +57,6 @@ void CryThreadChangePriorityWindow::OkButton()
 		case 6:
 			newPrior = THREAD_PRIORITY_TIME_CRITICAL;
 			break;
-		default:
-			// The compiler cannot know what value GetIndex() returns so it must be made assume that the value does not exceed the cases.
-			__assume(0);
 	}
 	
 	// Change the thread priority of the selected thread.
