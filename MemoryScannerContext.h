@@ -92,6 +92,25 @@ struct MemoryScannerWorkerContext : Moveable<MemoryScannerWorkerContext>
 	// The input file stream for next scan workers, reading the previously written values file.
 	FileIn InOldValuesFile;
 	
+	// The current value index in the output file for a worker.
+	unsigned int OutputValueFileIndex;
+	
+	// Indicates how many bytes were read from the memory page that is currently being scanned.
+	SIZE_T MemoryRegionBytesRead;
+	
+	// A pointer to the output file header for the current memory page and current block.
+	MemoryRegionFileHeader* OutputFileStoragePtr;
+	
+	// A pointer to the input file header for the current block in next scan.
+	MemoryRegionFileHeader* InputOldFileStoragePtr;
+	
+	// A bitset structure containing the input data for the current block in next scan.
+	Bits InputOldFileAddressesBuffer;
+	
+	// A buffer for old input values. The declaration is not typed, because the buffer is
+	// initialized outside of the typed context.
+	void* InputOldFileValuesBuffer;
+	
 	// -----------------------------------------------------------------------------------------
 	
 	// Default constructor.
@@ -103,6 +122,11 @@ struct MemoryScannerWorkerContext : Moveable<MemoryScannerWorkerContext>
 		this->FastScanAlignSize = 0;
 		this->MemoryRegionBuffer = NULL;
 		this->LocalValuesBuffer = NULL;
+		this->OutputValueFileIndex = 0;
+		this->MemoryRegionBytesRead = 0;
+		this->OutputFileStoragePtr = NULL;
+		this->InputOldFileStoragePtr = NULL;
+		this->InputOldFileValuesBuffer = NULL;
 	};
 	
 	// Allocates local address buffer for a worker.

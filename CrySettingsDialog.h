@@ -37,10 +37,6 @@ private:
 	Option memImage;
 	Option memMapped;
 	
-	LabelBox mScanThreadProperties;
-	Label scanningThreadPriorityLabel;
-	DropList scanningThreadPriority;
-	
 	Option mCrySearchInReadOnlyMode;
 	
 	// Internals tab

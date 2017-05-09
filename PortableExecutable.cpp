@@ -283,7 +283,7 @@ wchar* PortableExecutable::ResolveApiSetSchemaMappingEx(const wchar* ApiSetSchem
 			// Iterate redirections for this api set.
 			API_SET_VALUE_ENTRY_V2* pRedirectionDescriptor = directorStruct->Array;
 			const wchar* const redirectionString = (wchar*)(apiSetSchemaFileBuffer + pRedirectionDescriptor->ValueOffset);
-				
+			
 			// Redirection is found, create buffer to return to the caller and copy the logical dll name into it.
 			const DWORD wcsLength = pRedirectionDescriptor->ValueLength / 2;
 			wchar* const nameBuffer = new wchar[wcsLength + 1];

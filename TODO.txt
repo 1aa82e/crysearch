@@ -8,10 +8,7 @@ Package:
 - Update wiki with changes for the release.
 ------------------------------------------------------------------
 
-- In disassembly, we can use bitset to save the addresses?
-- Unroll memory scanner worker:
-	- template compare functions also take up unnecessary space;
-	- Should global scan parameter be global?
+- How about the file writing part? Can it be separated?
 - Change semantics of (W)string next scan to search 'inside' any current search result?
 - Fix header (like LordPE does, virtual dump);
 - Also blocks for the values and using compression/encoding to reduce size?
@@ -19,7 +16,6 @@ Package:
 	- different disassembler, capstone?
 	- Temporarely fixed by 1 thread.
 - Still need to fix shitloads of stuff in the import table parser, sanity checks missing everywhere;
-- release notes - buffer overruns;
 - Bug in import table parser, x64, when switching from slack to winamp!
 
 - Guessing for pointer can be done by checking whether it is inside a memory page of the process?

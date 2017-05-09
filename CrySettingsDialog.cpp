@@ -54,12 +54,7 @@ CrySearchSettingsDialog::CrySearchSettingsDialog()
 		<< this->memPrivate.SetLabel("MEM_PRIVATE").HSizePos(10, 300).TopPos(90, 20)
 		<< this->memImage.SetLabel("MEM_IMAGE").HSizePos(150, 140).TopPos(90, 20)
 		<< this->memMapped.SetLabel("MEM_MAPPED").HSizePos(270, 10).TopPos(90, 20)
-		<< this->mScanThreadProperties.SetLabel("Scanning thread properties").HSizePos(5, 5).TopPos(120, 50)
-		<< this->scanningThreadPriorityLabel.SetLabel("Scan worker thread priority:").HSizePos(10, 160)
-			.TopPos(140, 25)
-		<< this->scanningThreadPriority.Add("Lowest").Add("Below Normal").Add("Normal").Add("Above Normal")
-			.Add("Highest").HSizePos(210, 10).TopPos(140, 25)
-		<< this->mCrySearchInReadOnlyMode.SetLabel("Enable read-only mode").TopPos(180, 25).HSizePos(10, 10)
+		<< this->mCrySearchInReadOnlyMode.SetLabel("Enable read-only mode").TopPos(120, 25).HSizePos(10, 10)
 	;
 	
 	this->mInternalsTab
@@ -165,7 +160,6 @@ void CrySearchSettingsDialog::LoadSettings()
 	this->memPrivate = this->mSettingsInstance->GetScanMemPrivate();
 	this->memImage = this->mSettingsInstance->GetScanMemImage();
 	this->memMapped = this->mSettingsInstance->GetScanMemMapped();
-	this->scanningThreadPriority.SetIndex(this->mSettingsInstance->GetScanThreadPriority());
 	this->mOpenProcRoutineSelector.SetIndex(this->mSettingsInstance->GetOpenProcessRoutine());
 	this->mReadMemoryProcRoutineSelector.SetIndex(this->mSettingsInstance->GetReadMemoryRoutine());
 	this->mWriteMemoryProcRoutineSelector.SetIndex(this->mSettingsInstance->GetWriteMemoryRoutine());
@@ -207,7 +201,6 @@ void CrySearchSettingsDialog::SaveSettings()
 	this->mSettingsInstance->SetScanMemPrivate(this->memPrivate);
 	this->mSettingsInstance->SetScanMemImage(this->memImage);
 	this->mSettingsInstance->SetScanMemMapped(this->memMapped);
-	this->mSettingsInstance->SetScanThreadPriority(this->scanningThreadPriority.GetIndex());
 	this->mSettingsInstance->SetLibraryInjectionMethod(this->mInjectionMethod.GetIndex());
 	this->mSettingsInstance->SetAttemptHideDebuggerFromPeb(this->dbgAttemptHidePeb);
 	this->mSettingsInstance->SetEnableHotkeys(this->mHotkeysOption);

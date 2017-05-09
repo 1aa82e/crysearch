@@ -53,7 +53,6 @@ private:
 	DWORD obfuscation[4];
 	
 	bool mFastScanByDefault;
-	int mScanningThreadPriority;
 	
 	bool mScanWritableMemory;
 	bool mScanExecutableMemory;
@@ -113,7 +112,6 @@ public:
 	const bool GetScanMemImage() const							{ return this->mScanMemImage; }
 	const bool GetScanMemMapped() const							{ return this->mScanMemMapped; }
 	
-	const int GetScanThreadPriority() const						{ return this->mScanningThreadPriority; }
 	const bool GetEnableReadOnlyMode() const					{ return this->mEnableReadOnlyMode; }
 	
 	const int GetOpenProcessRoutine() const						{ return this->mOpenProcessRoutine; }
@@ -150,7 +148,6 @@ public:
 	void SetScanMemImage(bool value = true)						{ this->mScanMemImage = value; }
 	void SetScanMemMapped(bool value = true)					{ this->mScanMemMapped = value; }
 	
-	void SetScanThreadPriority(int value = 2)					{ this->mScanningThreadPriority = value; }
 	void SetEnableReadOnlyMode(bool value = false)				{ this->mEnableReadOnlyMode = value; }
 	
 	void SetOpenProcessRoutine(int value = 0)					{ this->mOpenProcessRoutine = value; }

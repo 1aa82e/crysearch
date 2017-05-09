@@ -7,7 +7,7 @@ v3.0:
 	- Added a configurable warning (advanced tab, settings window) for when OriginalFirstThunk is zero: e.g. the application is packed;
 	- Revised the memory scanner for performance and I/O usage:
 		- Changed the disk storage scheme from plain value array to using a bitset and more complex data structure on disk;
-		- Major changes in code for size and speed;
+		- Major changes for code size and speed;
 		- Changes resulted in improved search performance, especially for larger scans.
 	- Added a window to view all committed memory page in the target process, with the possiblity to free them (Allocate memory window);
 	- Fixed race condition issue in the caching of search results for the user interface, keeping more results in memory than intended;
@@ -27,6 +27,7 @@ v3.0:
 	- Slightly adjusted the CPU information in the about window: sorted chronologically, added CPU brand string and removed VMX;
 	- Fixed bug with routine override functions where deleting a used plugin from the plugin directory and opening the settings window subsequently would crash CrySearch;
 	- Fixed bug where type would be changed incorrectly in the change dialog of an address table entry;
+	- Removed the scan thread priority setting from the settings window;
 	- 
 
 v2.11:
