@@ -250,7 +250,11 @@ private:
 	volatile Atomic mRegionFinishCount;
 	
 	typedef MemoryScanner CLASSNAME;
-
+	
+	// Handle memory scanner cache and file output.
+	void HandleScanCacheFileOutput(MemoryScannerWorkerContext* const context, const Bits& AddressBuffer, const void* ValuesBuffer, const Byte* lengthBuffers
+		, const unsigned int addrIndex, const unsigned int valueIndex, const unsigned int typeSize, const unsigned int alignSize);
+	
 	// Functions that assign the correct compare function using the user selected scan type, and fire of the workers accordingly.
 	template <typename T>
 	CompareFunctionType<T> GetCompareFunction();

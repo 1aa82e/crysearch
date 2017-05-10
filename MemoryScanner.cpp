@@ -436,24 +436,7 @@ void MemoryScanner::FirstScanWorker(MemoryScannerWorkerContext* const context, c
 		// Check if there are actual value results. If there are no, this block can be discarded.
 		if (valueIndex > 0)
 		{
-			// Check whether we have to cache some more search results in the user interface.
-			int bitsSize = 0;
-			const DWORD* raw = localAddresses.Raw(bitsSize);
-			AddResultsToCacheConditional(addrIndex, valueIndex, context->OutputFileStoragePtr->BaseAddress, 1, localAddresses, NULL);
-			
-			// Write storage block header to file.
-			context->OutputFileStoragePtr->AddressCount = addrIndex;
-			context->OutputFileStoragePtr->ValueCount = valueIndex;
-			context->OutputFileStoragePtr->SizeInBytes = sizeof(MemoryRegionFileHeader) + addrIndex;
-			context->OutputFileStoragePtr->BitsInternalAlloc = bitsSize;
-			context->OutAddressesFile.Put(context->OutputFileStoragePtr, sizeof(MemoryRegionFileHeader));
-			
-			// Write memory buffers out to file.
-			context->OutAddressesFile.Put(raw, bitsSize);
-
-			// Increment block count and increase UI result counter.
-			++context->OutAddressesFileHeader.BlockCount;
-			this->mScanResultCount += valueIndex;
+			this->HandleScanCacheFileOutput(context, localAddresses, NULL, NULL, addrIndex, valueIndex, 1, 1);
 		}
 		
 		// Reset indices and start a new block.
@@ -508,24 +491,7 @@ void MemoryScanner::FirstScanWorker(MemoryScannerWorkerContext* const context, c
 		// Check if there are actual value results. If there are no, this block can be discarded.
 		if (valueIndex > 0)
 		{
-			// Check whether we have to cache some more search results in the user interface.
-			int bitsSize = 0;
-			const DWORD* raw = localAddresses.Raw(bitsSize);
-			AddResultsToCacheConditional(addrIndex, valueIndex, context->OutputFileStoragePtr->BaseAddress, 1, localAddresses, stringLengthsArray);
-			
-			// Write storage block header to file.
-			context->OutputFileStoragePtr->AddressCount = addrIndex;
-			context->OutputFileStoragePtr->ValueCount = valueIndex;
-			context->OutputFileStoragePtr->SizeInBytes = sizeof(MemoryRegionFileHeader) + addrIndex;
-			context->OutputFileStoragePtr->BitsInternalAlloc = bitsSize;
-			context->OutAddressesFile.Put(context->OutputFileStoragePtr, sizeof(MemoryRegionFileHeader));
-			
-			// Write memory buffers out to file.
-			context->OutAddressesFile.Put(raw, bitsSize);
-
-			// Increment block count and increase UI result counter.
-			++context->OutAddressesFileHeader.BlockCount;
-			this->mScanResultCount += valueIndex;
+			this->HandleScanCacheFileOutput(context, localAddresses, NULL, stringLengthsArray, addrIndex, valueIndex, 1, 1);
 		}
 		
 		// Reset indices and start a new block.
@@ -580,24 +546,7 @@ void MemoryScanner::FirstScanWorker(MemoryScannerWorkerContext* const context, c
 		// Check if there are actual value results. If there are no, this block can be discarded.
 		if (valueIndex > 0)
 		{
-			// Check whether we have to cache some more search results in the user interface.
-			int bitsSize = 0;
-			const DWORD* raw = localAddresses.Raw(bitsSize);
-			AddResultsToCacheConditional(addrIndex, valueIndex, context->OutputFileStoragePtr->BaseAddress, 1, localAddresses, stringLengthsArray);
-			
-			// Write storage block header to file.
-			context->OutputFileStoragePtr->AddressCount = addrIndex;
-			context->OutputFileStoragePtr->ValueCount = valueIndex;
-			context->OutputFileStoragePtr->SizeInBytes = sizeof(MemoryRegionFileHeader) + addrIndex;
-			context->OutputFileStoragePtr->BitsInternalAlloc = bitsSize;
-			context->OutAddressesFile.Put(context->OutputFileStoragePtr, sizeof(MemoryRegionFileHeader));
-			
-			// Write memory buffers out to file.
-			context->OutAddressesFile.Put(raw, bitsSize);
-
-			// Increment block count and increase UI result counter.
-			++context->OutAddressesFileHeader.BlockCount;
-			this->mScanResultCount += valueIndex;
+			this->HandleScanCacheFileOutput(context, localAddresses, NULL, stringLengthsArray, addrIndex, valueIndex, 1, 1);
 		}
 		
 		// Reset indices and start a new block.
@@ -651,25 +600,7 @@ void MemoryScanner::FirstScanWorker(MemoryScannerWorkerContext* const context, c
 		// Check if there are actual value results. If there are no, this block can be discarded.
 		if (valueIndex > 0)
 		{
-			// Check whether we have to cache some more search results in the user interface.
-			int bitsSize = 0;
-			const DWORD* raw = localAddresses.Raw(bitsSize);
-			AddResultsToCacheConditional(addrIndex, valueIndex, context->OutputFileStoragePtr->BaseAddress, fastScanAlignSize, localAddresses, NULL);
-
-			// Write storage block header to file.
-			context->OutputFileStoragePtr->AddressCount = addrIndex;
-			context->OutputFileStoragePtr->ValueCount = valueIndex;
-			context->OutputFileStoragePtr->SizeInBytes = sizeof(MemoryRegionFileHeader) + addrIndex;
-			context->OutputFileStoragePtr->BitsInternalAlloc = bitsSize;
-			context->OutAddressesFile.Put(context->OutputFileStoragePtr, sizeof(MemoryRegionFileHeader));
-
-			// Write memory buffers out to file.
-			context->OutAddressesFile.Put(raw, bitsSize);
-			context->OutValuesFile.Put(localValues, valueIndex * sizeof(T));
-
-			// Increment block count and increase UI result counter.
-			++context->OutAddressesFileHeader.BlockCount;
-			this->mScanResultCount += valueIndex;
+			this->HandleScanCacheFileOutput(context, localAddresses, localValues, NULL, addrIndex, valueIndex, sizeof(T), fastScanAlignSize);
 		}
 
 		// Reset indices and start a new block.
@@ -846,24 +777,7 @@ void MemoryScanner::NextScanWorker(MemoryScannerWorkerContext* const context, co
 	// Check if there are actual value results. If there are no, this block can be discarded.
 	if (valueIndex > 0)
 	{
-		// Check whether we have to cache some more search results in the user interface.
-		int bitsSize = 0;
-		const DWORD* raw = localAddresses.Raw(bitsSize);
-		AddResultsToCacheConditional(addrIndex, valueIndex, context->InputOldFileStoragePtr->BaseAddress, 1, localAddresses, NULL);
-
-		// Write storage block header to file.
-		context->OutputFileStoragePtr->AddressCount = addrIndex;
-		context->OutputFileStoragePtr->ValueCount = valueIndex;
-		context->OutputFileStoragePtr->SizeInBytes = sizeof(MemoryRegionFileHeader) + addrIndex;
-		context->OutputFileStoragePtr->BitsInternalAlloc = bitsSize;
-		context->OutAddressesFile.Put(context->OutputFileStoragePtr, sizeof(MemoryRegionFileHeader));
-
-		// Write memory buffers out to file.
-		context->OutAddressesFile.Put(raw, bitsSize);
-
-		// Increment block count and increase UI result counter.
-		++context->OutAddressesFileHeader.BlockCount;
-		this->mScanResultCount += valueIndex;
+		this->HandleScanCacheFileOutput(context, localAddresses, NULL, NULL, addrIndex, valueIndex, 1, 1);
 	}
 }
 
@@ -912,24 +826,7 @@ void MemoryScanner::NextScanWorker(MemoryScannerWorkerContext* const context, co
 	// Check if there are actual value results. If there are no, this block can be discarded.
 	if (valueIndex > 0)
 	{
-		// Check whether we have to cache some more search results in the user interface.
-		int bitsSize = 0;
-		const DWORD* raw = localAddresses.Raw(bitsSize);
-		AddResultsToCacheConditional(addrIndex, valueIndex, context->InputOldFileStoragePtr->BaseAddress, 1, localAddresses, stringLengthsArray);
-
-		// Write storage block header to file.
-		context->OutputFileStoragePtr->AddressCount = addrIndex;
-		context->OutputFileStoragePtr->ValueCount = valueIndex;
-		context->OutputFileStoragePtr->SizeInBytes = sizeof(MemoryRegionFileHeader) + addrIndex;
-		context->OutputFileStoragePtr->BitsInternalAlloc = bitsSize;
-		context->OutAddressesFile.Put(context->OutputFileStoragePtr, sizeof(MemoryRegionFileHeader));
-
-		// Write memory buffers out to file.
-		context->OutAddressesFile.Put(raw, bitsSize);
-
-		// Increment block count and increase UI result counter.
-		++context->OutAddressesFileHeader.BlockCount;
-		this->mScanResultCount += valueIndex;
+		this->HandleScanCacheFileOutput(context, localAddresses, NULL, stringLengthsArray, addrIndex, valueIndex, 1, 1);
 	}
 }
 
@@ -977,24 +874,7 @@ void MemoryScanner::NextScanWorker(MemoryScannerWorkerContext* const context, co
 	// Check if there are actual value results. If there are no, this block can be discarded.
 	if (valueIndex > 0)
 	{
-		// Check whether we have to cache some more search results in the user interface.
-		int bitsSize = 0;
-		const DWORD* raw = localAddresses.Raw(bitsSize);
-		AddResultsToCacheConditional(addrIndex, valueIndex, context->InputOldFileStoragePtr->BaseAddress, 1, localAddresses, stringLengthsArray);
-
-		// Write storage block header to file.
-		context->OutputFileStoragePtr->AddressCount = addrIndex;
-		context->OutputFileStoragePtr->ValueCount = valueIndex;
-		context->OutputFileStoragePtr->SizeInBytes = sizeof(MemoryRegionFileHeader) + addrIndex;
-		context->OutputFileStoragePtr->BitsInternalAlloc = bitsSize;
-		context->OutAddressesFile.Put(context->OutputFileStoragePtr, sizeof(MemoryRegionFileHeader));
-
-		// Write memory buffers out to file.
-		context->OutAddressesFile.Put(raw, bitsSize);
-
-		// Increment block count and increase UI result counter.
-		++context->OutAddressesFileHeader.BlockCount;
-		this->mScanResultCount += valueIndex;
+		this->HandleScanCacheFileOutput(context, localAddresses, NULL, stringLengthsArray, addrIndex, valueIndex, 1, 1);
 	}
 }
 
@@ -1066,25 +946,7 @@ void MemoryScanner::NextScanWorker(MemoryScannerWorkerContext* const context, co
 	// Check if there are actual value results. If there are no, this block can be discarded.
 	if (valueIndex > 0)
 	{
-		// Check whether we have to cache some more search results in the user interface.
-		int bitsSize = 0;
-		const DWORD* raw = localAddresses.Raw(bitsSize);
-		AddResultsToCacheConditional(addrIndex, valueIndex, context->InputOldFileStoragePtr->BaseAddress, context->InputOldFileStoragePtr->AddressOffsetAlignment, localAddresses, NULL);
-
-		// Write storage block header to file.
-		context->OutputFileStoragePtr->AddressCount = addrIndex;
-		context->OutputFileStoragePtr->ValueCount = valueIndex;
-		context->OutputFileStoragePtr->SizeInBytes = sizeof(MemoryRegionFileHeader) + addrIndex;
-		context->OutputFileStoragePtr->BitsInternalAlloc = bitsSize;
-		context->OutAddressesFile.Put(context->OutputFileStoragePtr, sizeof(MemoryRegionFileHeader));
-
-		// Write memory buffers out to file.
-		context->OutAddressesFile.Put(raw, bitsSize);
-		context->OutValuesFile.Put(localValues, valueIndex * sizeof(T));
-
-		// Increment block count and increase UI result counter.
-		++context->OutAddressesFileHeader.BlockCount;
-		this->mScanResultCount += valueIndex;
+		this->HandleScanCacheFileOutput(context, localAddresses, localValues, NULL, addrIndex, valueIndex, sizeof(T), oldAddrOffAlignment);
 	}
 }
 
@@ -1145,6 +1007,36 @@ void MemoryScanner::NextScan()
 	{
 		this->mThreadPool & THISBACK1(NextWorkerPrologue, &work);
 	}
+}
+
+// Handle memory scanner cache and file output.
+void MemoryScanner::HandleScanCacheFileOutput(MemoryScannerWorkerContext* const context, const Bits& AddressBuffer, const void* ValuesBuffer
+	, const Byte* lengthBuffers, const unsigned int addrIndex, const unsigned int valueIndex, const unsigned int typeSize, const unsigned int alignSize)
+{
+	// Check whether we have to cache some more search results in the user interface.
+	int bitsSize = 0;
+	const DWORD* raw = AddressBuffer.Raw(bitsSize);
+	AddResultsToCacheConditional(addrIndex, valueIndex, context->OutputFileStoragePtr->BaseAddress, alignSize, AddressBuffer, lengthBuffers);
+
+	// Write storage block header to file.
+	context->OutputFileStoragePtr->AddressCount = addrIndex;
+	context->OutputFileStoragePtr->ValueCount = valueIndex;
+	context->OutputFileStoragePtr->SizeInBytes = sizeof(MemoryRegionFileHeader) + addrIndex;
+	context->OutputFileStoragePtr->BitsInternalAlloc = bitsSize;
+	context->OutAddressesFile.Put(context->OutputFileStoragePtr, sizeof(MemoryRegionFileHeader));
+
+	// Write local addresses memory buffer out to the output file.
+	context->OutAddressesFile.Put(raw, bitsSize);
+	
+	// If the current scan contains a values buffer, also write it to the output file.
+	if (ValuesBuffer)
+	{
+		context->OutValuesFile.Put(ValuesBuffer, valueIndex * typeSize);
+	}
+
+	// Increment block count and increase UI result counter.
+	++context->OutAddressesFileHeader.BlockCount;
+	this->mScanResultCount += valueIndex;
 }
 
 // Gets the correct compare function for the upcoming scan.
