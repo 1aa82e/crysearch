@@ -169,17 +169,15 @@ struct MemoryScannerWorkerContext : Moveable<MemoryScannerWorkerContext>
 	};
 	
 	// (Re)Opens the input addresses file handle for the next scan worker.
-	void OpenInputAddresses(const String& addrFile)
+	void OpenInputAddresses()
 	{
-		this->InOldAddressesFilePath = addrFile;
-		this->InOldAddressesFile.Open(addrFile);
+		this->InOldAddressesFile.Open(this->InOldAddressesFilePath);
 	};
 	
 	// (Re)Opens the input values file handle for the next scan worker.
-	void OpenInputValues(const String& valFile)
+	void OpenInputValues()
 	{
-		this->InOldValuesFilePath = valFile;
-		this->InOldValuesFile.Open(valFile);
+		this->InOldValuesFile.Open(this->InOldValuesFilePath);
 	};
 	
 	// Closes file handles for this worker.

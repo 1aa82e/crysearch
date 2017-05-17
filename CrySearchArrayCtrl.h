@@ -11,9 +11,6 @@ class CrySearchArrayCtrl : public ArrayCtrl
 private:
 	virtual bool Key(dword key, int count);
 public:
-	Tuple2<int, int> GetVisibleRange();
-	void SetRowDisplay(int i, const Display& d);
-	
 	ArrayCtrl::Column& CryAddColumn(const char *text = NULL, int w = 0);
 	ArrayCtrl::Column& CryAddRowNumColumn(const char *text, int w = 0);
 	

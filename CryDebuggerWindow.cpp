@@ -286,11 +286,11 @@ void CryDebuggerWindow::DebuggerEventOccuredThreadsafe(DebugEvent event, void* p
 			mPluginSystem->SendGlobalPluginEvent(CRYPLUGINEVENT_DEBUGGER_DETACHED, NULL);
 			break;
 		case DBG_EVENT_ATTACH_ERROR: // another debugger was probably already attached, error is thrown.
-			Prompt("Debug Error", CtrlImg::error(), "Failed to attach the debugger. Another debugger may already have been attached or it is attempting to attach the debugger to itself.", "OK");
+			Prompt("Fatal Error", CtrlImg::error(), "Failed to attach the debugger. Another debugger may already have been attached or it is attempting to attach the debugger to itself.", "OK");
 			this->DebugErrorOccured();
 			break;
 		case DBG_EVENT_DETACH_ERROR: // the debugger was not succesfully detached. This is a rare matter but I still catch it.
-			Prompt("Debug Error", CtrlImg::error(), "The debugger could not be succesfully detached!", "OK");
+			Prompt("Fatal Error", CtrlImg::error(), "The debugger could not be succesfully detached!", "OK");
 			break;
 		case DBG_EVENT_BREAKPOINTS_CHANGED:
 			// Something changed in the breakpoint list, causing the user interface to need a refresh.

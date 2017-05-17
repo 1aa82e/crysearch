@@ -286,9 +286,9 @@ CrySearchForm::CrySearchForm(const char* fn)
 	// If the settings-saved routine index is out of the current bounds, a previously used routine-plugin
 	// may have failed at this moment, or the designated plugin has been removed from the plugins directory.
 	// We take no chance and set the default routine for use.
-	const int pluginCountTwo = pluginCount + 2;
-	if ((pluginCount == 0 && (opr > 1 || rpm > 1 || wpm > 1 || pm > 1))
-		|| (opr > pluginCountTwo || rpm > pluginCountTwo || wpm > pluginCountTwo || pm > pluginCountTwo))
+	Vector<CrySearchPlugin> overrideFuncs;
+	mPluginSystem->GetPluginsByType(CRYPLUGIN_COREFUNC_OVERRIDE, overrideFuncs);
+	if ((opr > 1 || rpm > 1 || wpm > 1 || pm > 1) && (max(opr, rpm, wpm, pm) - 2 >= overrideFuncs.GetCount()))
 	{
 		SettingsFile::GetInstance()->SetOpenProcessRoutine();
 		SettingsFile::GetInstance()->SetReadMemoryRoutine();
@@ -310,7 +310,7 @@ CrySearchForm::CrySearchForm(const char* fn)
 	// If one of more NTDLL functions were not succesfully retrieved, notify the user about it.
 	if (CrySearchRoutines.ErrorOccured())
 	{
-		Prompt("Behavioral Warning", CtrlImg::exclamation(), Format("One or more NTDLL functions were not retrieved succesfully. %s may behave unpredictable from here.", String((char*)wndTitle, 9)), "OK");
+		Prompt("Behavioral Warning", CtrlImg::exclamation(), Format("Some NTDLL functions were not loaded succesfully. %s may behave unpredictable from here.", String((char*)wndTitle, 9)), "OK");
 	}
 	
 	// Make sure the module manager is initialized.
@@ -856,8 +856,8 @@ void CrySearchForm::OpenFileMenu()
 	fs->Types(filter);
 	if (fs->ExecuteOpen("Open file..."))
 	{
-		if (loadedTable.GetCount() > 0 && !Prompt("I need your confirmation", CtrlImg::exclamation()
-			, "The address table contains addresses. Are you sure you want to clear them and open a file?", "Yes", "No"))
+		if (loadedTable.GetCount() > 0 && !Prompt("Are you sure?", CtrlImg::exclamation()
+			, "The address table contains addresses. Do you want to clear them and open a file?", "Yes", "No"))
 		{
 			delete fs;
 			return;
@@ -1073,7 +1073,7 @@ void CrySearchForm::DeleteUserDefinedAddress()
 // Clears the address table.
 void CrySearchForm::ClearAddressList()
 {
-	if (Prompt("I need your confirmation", CtrlImg::exclamation(), "Are you sure you want to clear the address list?", "Yes", "No"))
+	if (Prompt("Are you sure?", CtrlImg::exclamation(), "Do you want to clear the address list?", "Yes", "No"))
 	{
 		// When clearing the list, assurance of all data breakpoints being removed must be made.
 		if (mDebugger && mDebugger->IsDebuggerAttached())
@@ -1116,7 +1116,7 @@ void CrySearchForm::SearchResultDoubleClicked()
 	const int canStillAdd = ADDRESS_TABLE_MAX_SIZE - loadedTable.GetCount();
 	if (rowcount > ADDRESS_TABLE_MAX_SIZE || rowcount > canStillAdd)
 	{
-		Prompt("Input Error", CtrlImg::error(), Format("This insertion violates the address table limit. %i entries can still be added.", canStillAdd), "OK");
+		Prompt("Input Error", CtrlImg::error(), Format("This insertion violates the address table size limit. %i entries may be added.", canStillAdd), "OK");
 		return;
 	}
 	
@@ -1163,7 +1163,7 @@ void CrySearchForm::SearchResultDoubleClicked()
 	// If one or more rows were not succesfully added to the address table, throw an error.
 	if (failed)
 	{
-		Prompt("Input Error", CtrlImg::error(), "One or more addresses were not succesfully added to the address table.", "OK");
+		Prompt("Input Error", CtrlImg::error(), "Some addresses were not added succesfully.", "OK");
 	}
 	
 	// Refresh address table in user interface.
@@ -1176,7 +1176,7 @@ void CrySearchForm::MemorySearch()
 	// If no process is opened, a scan should not be started.
 	if (!this->processLoaded)
 	{
-		Prompt("Input Error", CtrlImg::error(), "There is no process opened. Please open a process first.", "OK");
+		Prompt("Input Error", CtrlImg::error(), "No process is opened. Please open a process first.", "OK");
 		return;
 	}
 	
@@ -1204,7 +1204,7 @@ void CrySearchForm::RefreshSearchResults()
 {
 	if (!this->processLoaded)
 	{
-		Prompt("Input Error", CtrlImg::error(), "There is no process opened. Please open a process first.", "OK");
+		Prompt("Input Error", CtrlImg::error(), "No process is opened. Please open a process first.", "OK");
 		return;
 	}
 	
@@ -1275,7 +1275,7 @@ bool CrySearchForm::CloseProcess()
 {
 	if (mMemoryScanner->IsScanRunning())
 	{
-		Prompt("Scanning Error", CtrlImg::error(), "Cannot close the process because a scan is running at the moment.", "OK");
+		Prompt("Fatal Error", CtrlImg::error(), "The process cannot be closed because a scan is running.", "OK");
 		return false;
 	}
 
@@ -1447,7 +1447,7 @@ void CrySearchForm::AllocateMemoryButtonClicked()
 #endif
 			break;
 		case -1: // virtualallocex failed
-			Prompt("Allocation Error", CtrlImg::error(), "The memory was not allocated because the system call failed. This could be due to incorrect memory size input.", "OK");
+			Prompt("Fatal Error", CtrlImg::error(), "Failed to allocate memory. This could be due to incorrect memory size input.", "OK");
 			break;
 	}
 }
@@ -1634,7 +1634,7 @@ void CrySearchForm::AboutCrySearch()
 // Prompts the user to clear the search results.
 void CrySearchForm::ClearScanResults()
 {
-	if (this->mScanResults.GetCount() > 0 && !Prompt("I need your confirmation", CtrlImg::exclamation()
+	if (this->mScanResults.GetCount() > 0 && !Prompt("Are you sure?", CtrlImg::exclamation()
 		, "Do you want to keep the current scan results?", "Yes", "No"))
 	{
 		this->mScanResults.Clear();
@@ -1692,7 +1692,7 @@ bool CrySearchForm::InitializeProcessUI(const bool bruteForce)
 	else
 	{
 		const DWORD appname[] = {0x53797243, 0x63726165, 0x68}; //"CrySearch"
-		Prompt("Load Error", CtrlImg::error(), Format("Failed to open the selected process because it is 64-bit. Use %s x64 to open it instead.", (char*)appname), "OK");
+		Prompt("Fatal Error", CtrlImg::error(), Format("Failed to open the selected process because it is 64-bit. Use %s x64 to open it instead.", (char*)appname), "OK");
 		mMemoryScanner->CloseProcess();
 		this->ProcessOpenFailedState(bruteForce);
 		return false;
@@ -1788,7 +1788,7 @@ void CrySearchForm::WhenProcessOpened(Win32ProcessInformation* pProc, const bool
 			else
 			{
 				// CreateProcess succeeded, but the process is not started succesfully. For example: write.exe starts wordpad.exe and then terminates.
-				Prompt("Load Error", CtrlImg::error(), "The process started succesfully but terminated before initialization. Possibly the process started another process and terminated.", "OK");
+				Prompt("Fatal Error", CtrlImg::error(), "The process started, but terminated subsequently. The process possibly started another and terminated.", "OK");
 				mMemoryScanner->CloseProcess();
 				this->ProcessOpenFailedState(bruteForce);
 			}
@@ -1796,7 +1796,7 @@ void CrySearchForm::WhenProcessOpened(Win32ProcessInformation* pProc, const bool
 		else
 		{
 			// CreateProcess failed, no process is loaded.
-			Prompt("Load Error", CtrlImg::error(), "Failed to create the process.", "OK");
+			Prompt("Fatal Error", CtrlImg::error(), "Failed to create the process.", "OK");
 			this->ProcessOpenFailedState(bruteForce);
 		}
 	}
@@ -1893,7 +1893,7 @@ void CrySearchForm::ScannerErrorOccuredThreadSafe(MemoryScannerError error)
 			// Kill timer callback, otherwise two error messages will pop up.
 			KillTimeCallback(PROCESS_TERMINATION_TIMECALLBACK);
 			
-			Prompt("Process Error", CtrlImg::error(), Format("Could not open the selected process. The process is either protected or 64-bit."\
+			Prompt("Fatal Error", CtrlImg::error(), Format("Could not open the selected process. The process is either protected or 64-bit."\
 				" To open a protected process, try running %s as Administrator.", (char*)appname), "OK");
 			PostCallback(THISBACK(OpenProcessMenu));
 			break;
@@ -1901,17 +1901,17 @@ void CrySearchForm::ScannerErrorOccuredThreadSafe(MemoryScannerError error)
 			// Kill timer callback, otherwise the stack will overflow.
 			KillTimeCallback(PROCESS_TERMINATION_TIMECALLBACK);
 			
-			Prompt("Process Error", CtrlImg::error(), "It looks like the process has been terminated. The process will now be closed.", "OK");
+			Prompt("Fatal Error", CtrlImg::error(), "It looks like the process has terminated. The process will now be closed.", "OK");
 			this->CloseProcessMenu();
 			break;
 		case NOREADABLEMEMORYFOUND:
-			Prompt("Scanning Error", CtrlImg::error(), "Could not find any readable memory page. Scan aborted.", "OK");
+			Prompt("Fatal Error", CtrlImg::error(), "Scan aborted. No readable memory page was found.", "OK");
 			break;
 		case DATAFILENOTFOUND:
-			Prompt("Scanning Error", CtrlImg::error(), "The temp file containing results could not be read. Scan aborted.", "OK");
+			Prompt("Fatal Error", CtrlImg::error(), "Scan aborted. The search results file could not be read.", "OK");
 			break;
 		case NATIVEROUTINEGETPROCFAILED:
-			Prompt("Scanning Error", CtrlImg::error(), "The location of the native procedure could not be retrieved from ntdll.dll.", "OK");
+			Prompt("Fatal Error", CtrlImg::error(), "Failed to load native procedures from NTDLL.", "OK");
 			break;
 	}
 

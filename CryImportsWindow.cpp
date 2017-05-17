@@ -181,7 +181,7 @@ void CryImportsWindow::PlaceHookOnIATFunction()
 	const bool wasOrdinal = (entry.Ordinal != 0);
 
 	// Check for the EAT address associated to the function. If the EAT address is not found, the address cannot be restored later.
-	if (entry.Flag == IAT_FLAG_NOT_FOUND && !Prompt("I need your confirmation", CtrlImg::exclamation(),
+	if (entry.Flag == IAT_FLAG_NOT_FOUND && !Prompt("Are you sure?", CtrlImg::exclamation(),
 		"The address of this function could not be found in the export table of the module. Therefore the address cannot be restored. Are you sure you want to place a hook on this function?"
 		, "Yes", "No"))
 	{

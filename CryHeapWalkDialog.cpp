@@ -79,7 +79,7 @@ void CryHeapWalkDialog::DumpSelectedHeap()
 			}
 			else
 			{
-				Prompt("Dumping error", CtrlImg::error(), "Failed to dump the heap. Either we failed to read memory or the file could not be created.", "OK");
+				Prompt("Fatal error", CtrlImg::error(), "Failed to dump the heap. Either we failed to read memory or the file could not be created.", "OK");
 			}
 		}
 		

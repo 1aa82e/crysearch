@@ -81,7 +81,7 @@ struct ScanParameters : public ScanParameterBase
 extern ScanParameterBase* GlobalScanParameter;
 
 // Function to delete temporary files used by the scanner.
-__declspec(noinline) void DeleteTemporaryFiles();
+void DeleteTemporaryFiles();
 
 // Memory scanner error definitions. Only for usage by the MemoryScanner class or one of it's child/friends.
 enum MemoryScannerError

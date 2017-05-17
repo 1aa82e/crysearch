@@ -27,14 +27,6 @@ void DeleteTemporaryFiles()
 	}
 }
 
-// Walks a boolean buffer until it finds a 1 (true).
-const int RunForOne(const Bits& AddressBuffer, const int start, const int maxCount)
-{
-	int i = start;
-	for (; !AddressBuffer[i] && (i < maxCount); ++i);
-	return i;
-}
-
 // Adds a set of new search results to the cache vectors. Up to a million results are kept in memory for GUI visibility.
 void AddResultsToCache(const int addrCount, const int valueCount, const SIZE_T baseAddr, const unsigned int distance, const Bits& AddressBuffer, const Byte* lengthBuffers)
 {
@@ -57,7 +49,7 @@ void AddResultsToCache(const int addrCount, const int valueCount, const SIZE_T b
 		for (int i = 0; i < minIt; ++i)
 		{
 			// Find the next address that needs to be cached and calculate the actual address location.
-			runBuf = RunForOne(AddressBuffer, runBuf, addrCount);
+			for (; !AddressBuffer[runBuf] && runBuf < addrCount; ++runBuf);
 			const SIZE_T actualAddr = baseAddr + runBuf++ * distance;
 			
 			// Do we need to find the next module or is this address still in the current module?
@@ -1216,14 +1208,16 @@ void MemoryScanner::NextWorkerPrologue(MemoryScannerWorkerContext* const context
 	context->MemoryRegionBuffer = new Byte[context->MaximumMemoryRegionBufferSize];
 
 	// Open the existing search results files.
-	context->OpenInputAddresses(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.tempSCANNING", context->WorkerIdentifier)));
+	context->InOldAddressesFilePath = AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Addresses%i.tempSCANNING", context->WorkerIdentifier));
+	context->InOldValuesFilePath = AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Values%i.tempSCANNING", context->WorkerIdentifier));
+	context->OpenInputAddresses();
 	context->InOldAddressesFile.Get(&context->InOldFileHeader, sizeof(StorageFileHeader));
 	
 	// If we need the input values for the next scan, open the file and make sure we read its contents.
 	unsigned int inputDataSize = 0;
 	if (GlobalScanParameter->GlobalScanType >= SCANTYPE_CHANGED)
 	{
-		context->OpenInputValues(AppendFileName(mMemoryScanner->GetTempFolderPath(), Format("Values%i.tempSCANNING", context->WorkerIdentifier)));
+		context->OpenInputValues();
 	}
 
 	// Select the scanning phase corresponding to the specified data type.

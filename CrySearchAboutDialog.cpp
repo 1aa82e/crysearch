@@ -81,7 +81,7 @@ CrySearchAboutDialog::CrySearchAboutDialog() : CryDialogTemplate(CrySearchIml::A
 		<< this->mUppLinkDescription.SetLabel(t_((char*)uppDesc)).HSizePos(80, 80).TopPos(155, 35)
 		<< this->mUppLinkLabel.SetLabel(t_((char*)uppLinkDesc)).HSizePos(80, 200).BottomPos(90, 25)
 		<< this->mLibraryVersions.HSizePos(80, 70).BottomPos(5, 75)
-		<< this->mOk.Ok().SetLabel("OK").RightPos(5, 65).BottomPos(5, 25)
+		<< this->mOk.Ok().SetLabel("OK").RightPos(5, 60).BottomPos(5, 25)
 	;
 	
 	// Set up library runtime versions array control.

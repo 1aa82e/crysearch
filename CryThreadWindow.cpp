@@ -130,8 +130,8 @@ void CryThreadWindow::ToolBar(Bar& pBar)
 	pBar.Add("Refresh thread list", CrySearchIml::RefreshButtonSmall(), THISBACK(LoadThreads));
 	pBar.Add(!mMemoryScanner->IsReadOnlyOperationMode(), "Create thread in loaded process", CrySearchIml::AddToAddressList(), THISBACK(CreateExternalThread));
 	pBar.Separator();
-	pBar.Add(!mMemoryScanner->IsReadOnlyOperationMode(), "Attempt to suspend all threads", CrySearchIml::SuspendAllThreadsSmall(), THISBACK(AttemptSuspendAllThreads));
-	pBar.Add(!mMemoryScanner->IsReadOnlyOperationMode(), "Attempt to resume all threads", CrySearchIml::ResumeAllThreadsSmall(), THISBACK(AttemptResumeAllThreads));
+	pBar.Add(!mMemoryScanner->IsReadOnlyOperationMode(), "Suspend all threads", CrySearchIml::SuspendAllThreadsSmall(), THISBACK(AttemptSuspendAllThreads));
+	pBar.Add(!mMemoryScanner->IsReadOnlyOperationMode(), "Resume all threads", CrySearchIml::ResumeAllThreadsSmall(), THISBACK(AttemptResumeAllThreads));
 	pBar.ToolGapRight();
 	pBar.Add(this->mThreadCount.SetAlign(ALIGN_RIGHT), 150);
 }
@@ -148,7 +148,7 @@ void CryThreadWindow::ThreadListRightClick(Bar& pBar)
 		pBar.Add(!mMemoryScanner->IsReadOnlyOperationMode(), "Resume", CrySearchIml::ResumeButtonSmall(), THISBACK(ResumeThread));
 		pBar.Add(!mMemoryScanner->IsReadOnlyOperationMode(), "Kill", CrySearchIml::DeleteButton(), THISBACK(TerminateThread));
 		pBar.Separator();
-		pBar.Add(!mMemoryScanner->IsReadOnlyOperationMode(), "Change Priority", CrySearchIml::ChangePrioritySmall(), THISBACK(ChangePriority));
+		pBar.Add(!mMemoryScanner->IsReadOnlyOperationMode(), "Change Priority", THISBACK(ChangePriority));
 	}
 }
 
@@ -217,7 +217,7 @@ void CryThreadWindow::CreateExternalThread()
 			{
 				if (dataStruct.StartSuspended)
 				{
-					PromptOK(Format("Thread created but suspended. Resume the thread manually to start it.&&Thread ID: %lX", outThreadId));
+					PromptOK(Format("Suspended thread created. Resume it manually to start it.&&Thread ID: %lX", outThreadId));
 				}
 				else
 				{
@@ -228,7 +228,7 @@ void CryThreadWindow::CreateExternalThread()
 			{
 				if (dataStruct.StartSuspended)
 				{
-					PromptOK(Format("Thread created but suspended. Resume the thread manually to start it.&&Thread ID: %llX", outThreadId));
+					PromptOK(Format("Suspended thread created. Resume it manually to start it.&&Thread ID: %llX", outThreadId));
 				}
 				else
 				{
@@ -238,7 +238,7 @@ void CryThreadWindow::CreateExternalThread()
 #else
 			if (dataStruct.StartSuspended)
 			{
-				PromptOK(Format("Thread created but suspended. Resume the thread manually to start it.&&Thread ID: %lX", outThreadId));
+				PromptOK(Format("Suspended thread created. Resume it manually to start it.&&Thread ID: %lX", outThreadId));
 			}
 			else
 			{
@@ -247,7 +247,7 @@ void CryThreadWindow::CreateExternalThread()
 #endif
 			break;
 		case -1: // failed to create the remote thread
-			Prompt("Create Error", CtrlImg::error(), "The thread was not created because the system call failed.", "OK");
+			Prompt("Create Error", CtrlImg::error(), "Thread creation failed. The system call failed.", "OK");
 			break;
 	}
 	
@@ -291,7 +291,7 @@ void CryThreadWindow::ChangePriority()
 		current = 6;
 	}
 
-	CryThreadChangePriorityWindow(mThreadsList[this->mThreads.GetCursor()].ThreadIdentifier, current, CrySearchIml::ChangePrioritySmall()).Execute();
+	CryThreadChangePriorityWindow(mThreadsList[this->mThreads.GetCursor()].ThreadIdentifier, current, CrySearchIml::CrySearch()).Execute();
 	
 	this->LoadThreads();
 }
@@ -300,7 +300,7 @@ void CryThreadWindow::SuspendThread()
 {
 	if (!CrySuspendThread(mMemoryScanner->GetHandle(), mThreadsList[this->mThreads.GetCursor()].ThreadIdentifier))
 	{
-		Prompt("Thread Error", CtrlImg::error(), "Failed to suspend the selected thread.", "OK");
+		Prompt("Fatal Error", CtrlImg::error(), "Failed to suspend the selected thread.", "OK");
 	}
 	
 	// Refresh the thread list to review the suspended thread.
@@ -311,7 +311,7 @@ void CryThreadWindow::ResumeThread()
 {
 	if (CryResumeThread(mThreadsList[this->mThreads.GetCursor()].ThreadIdentifier) == -1)
 	{
-		Prompt("Thread Error", CtrlImg::error(), "Failed to resume the selected thread.", "OK");
+		Prompt("Fatal Error", CtrlImg::error(), "Failed to resume the selected thread.", "OK");
 	}
 	
 	// Refresh the thread list to review the suspended thread.
@@ -327,7 +327,7 @@ void CryThreadWindow::TerminateThread()
 	
 	if (CryTerminateThread(mThreadsList[this->mThreads.GetCursor()].ThreadIdentifier) == -1)
 	{
-		Prompt("Thread Error", CtrlImg::error(), "Failed to terminate the selected thread.", "OK");
+		Prompt("Fatal Error", CtrlImg::error(), "Failed to terminate the selected thread.", "OK");
 	}
 	
 	this->LoadThreads();

@@ -67,7 +67,7 @@ void CryModuleWindow::ModuleListRightClick(Bar& pBar)
 	const int modCount = mModuleManager->GetModuleCount();
 	if (modRow >= 0 && modCount > 0)
 	{
-		pBar.Add("Dump module", CrySearchIml::DumpModuleSmall(), THISBACK(DumpModuleSubMenu));
+		pBar.Add("Dump module", THISBACK(DumpModuleSubMenu));
 		pBar.Add(!mMemoryScanner->IsReadOnlyOperationMode(), "Restore Headers", CrySearchIml::RestorePEHeadersSmall(), THISBACK(RestorePEHeader));
 		pBar.Add("View in Explorer", THISBACK(OpenModulePathInExplorer));
 		pBar.Separator();
@@ -110,7 +110,7 @@ void CryModuleWindow::OpenModulePathInExplorer()
 	char folder[MAX_PATH];
 	if (!GetModuleFileNameEx(mMemoryScanner->GetHandle(), (HMODULE)(*mModuleManager)[this->mModules.GetCursor()].BaseAddress, folder, MAX_PATH))
 	{
-		Prompt("Module Error", CtrlImg::error(), "The working directory of the selected module could not be retrieved!", "OK");
+		Prompt("Fatal Error", CtrlImg::error(), "The working directory of the selected module could not be retrieved!", "OK");
 	}
 
 	// Open retrieved path in explorer.
@@ -134,7 +134,7 @@ void CryModuleWindow::UnloadModule()
 		}
 		else
 		{
-			Prompt("Unload Error", CtrlImg::error(), "The module could not be unloaded!", "OK");
+			Prompt("Fatal Error", CtrlImg::error(), "The module could not be unloaded!", "OK");
 		}
 	}
 	else
@@ -164,7 +164,7 @@ void CryModuleWindow::UnloadModuleAsyncDoneThreadSafe(const SIZE_T pBase)
 	{
 		if ((*mModuleManager)[i].BaseAddress == pBase)
 		{
-			Prompt("Unload Error", CtrlImg::error(), "The module could not be unloaded!", "OK");
+			Prompt("Fatal Error", CtrlImg::error(), "The module could not be unloaded!", "OK");
 			return;
 		}
 	}
@@ -238,7 +238,7 @@ void CryModuleWindow::LoadLibraryAsyncDoneThreadSafe(BOOL result)
 	}
 	else
 	{
-		Prompt("Load Error", CtrlImg::error(), "The library was not loaded succesfully!", "OK");
+		Prompt("Fatal Error", CtrlImg::error(), "The library was not loaded succesfully!", "OK");
 	}
 	
 	this->RefreshModulesList();
@@ -315,11 +315,11 @@ void CryModuleWindow::DumpAllModulesButton()
 		{
 			if (nodumper)
 			{
-				Prompt("Dumping Error", CtrlImg::error(), "The dumping failed because there is no dumper available.", "OK");
+				Prompt("Fatal Error", CtrlImg::error(), "Dumping failed. No dumpers are available.", "OK");
 			}
 			else
 			{
-				Prompt("Dumping Error", CtrlImg::error(), "One or more modules failed to dump. Check the contents of the selected directory to see which.", "OK");
+				Prompt("Fatal Error", CtrlImg::error(), "One or more modules failed to dump. Check the output directory to see which.", "OK");
 			}
 		}
 		else
@@ -383,7 +383,7 @@ void CryModuleWindow::DumpModuleButton(const SIZE_T pluginBase)
 		}
 		else
 		{
-			Prompt("Dumping Error", CtrlImg::error(), "Failed to dump the module. Either reading memory or writing the file failed.", "OK");
+			Prompt("Fatal Error", CtrlImg::error(), "Dumping failed. Reading memory or writing the output file failed.", "OK");
 		}
 	}
 	
@@ -396,7 +396,7 @@ void CryModuleWindow::RefreshModulesList()
 	// Try to retrieve a list of modules.
 	if (!mModuleManager->Initialize())
 	{
-		Prompt("Fatal Error", CtrlImg::error(), "Failed to retrieve a list of modules. Part of CrySearch will not work properly as a result.", "OK");
+		Prompt("Fatal Error", CtrlImg::error(), "Failed to retrieve a list of modules. Part of CrySearch will not work properly.", "OK");
 	}
 
 #ifdef _WIN64
@@ -438,7 +438,7 @@ void CryModuleWindow::RestorePEHeader()
 		}
 		else
 		{
-			Prompt("Restore Error", CtrlImg::error(), "The headers could not be restored! The input file may not be valid or operating on it failed.", "OK");
+			Prompt("Fatal Error", CtrlImg::error(), "Failed to restore the headers! The input file is invalid.", "OK");
 		}
 	}
 	
@@ -456,7 +456,7 @@ void CryModuleWindow::HideModule()
 	else
 	{
 		this->RefreshModulesList();
-		Prompt("Hide Error", CtrlImg::error(), "Failed to hide the module! Either the module selected module was not succesfully found"\
+		Prompt("Fatal Error", CtrlImg::error(), "Failed to hide the module! Either the module selected module was not succesfully found"\
 			", target process writes failed or the nessecary data could not be retrieved. Try again or try another module.", "OK");
 	}
 }

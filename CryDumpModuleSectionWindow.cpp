@@ -77,7 +77,7 @@ void CryDumpModuleSectionWindow::DumpSelectedSection()
 			}
 			else
 			{
-				Prompt("Dumping error", CtrlImg::error(), "Failed to dump the section. Either the memory failed to read of the file could not be created.", "OK");
+				Prompt("Fatal error", CtrlImg::error(), "Failed to dump the section. Either the memory failed to read of the file could not be created.", "OK");
 			}
 		
 			delete fs;
