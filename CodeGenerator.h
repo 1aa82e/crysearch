@@ -20,11 +20,11 @@ private:
 	inline const char* GetCreditsCodeUnit() const		{ return (const char*)this->mCodeUnits.Credits; }
 	inline const char* GetIncludesCodeUnit() const		{ return (const char*)this->mCodeUnits.Includes; }
 	
-	const AddressTable* mTable;
+	AddressTable* mTable;
 	bool external;
 	
-	String GenerateInternalEntry(const AddressTableEntry* entry, const int number);
-	String GenerateExternalEntry(const AddressTableEntry* entry, const int number);
+	String GenerateInternalEntry(const AddressTableEntry* const entry, const int number);
+	String GenerateExternalEntry(const AddressTableEntry* const entry, const int number);
 	
 	void CreateConstants();
 public:

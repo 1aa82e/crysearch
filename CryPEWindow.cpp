@@ -193,7 +193,7 @@ void CryPEWindow::DumpSection()
 			}
 			else
 			{
-				Prompt("Fatal error", CtrlImg::error(), "Failed to dump the section. Either we failed to read the memory or the file could not be created.", "OK");
+				Prompt("Fatal error", CtrlImg::error(), "Failed to dump the section!", "OK");
 			}
 		}
 		
@@ -218,7 +218,7 @@ void CryPEWindow::DumpDotNetSection()
 			}
 			else
 			{
-				Prompt("Fatal error", CtrlImg::error(), "Failed to dump the section. Either we failed to read the memory or the file could not be created.", "OK");
+				Prompt("Fatal error", CtrlImg::error(), "Failed to dump the section!", "OK");
 			}
 		}
 		

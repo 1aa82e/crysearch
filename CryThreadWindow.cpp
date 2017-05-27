@@ -320,7 +320,7 @@ void CryThreadWindow::ResumeThread()
 
 void CryThreadWindow::TerminateThread()
 {
-	if (!Prompt("Are you sure?", CtrlImg::question(), "Are you sure you want to attempt termination of the selected thread?", "Yes", "No"))
+	if (!Prompt("Are you sure?", CtrlImg::question(), "Do you want to terminate the selected thread?", "Yes", "No"))
 	{
 		return;
 	}

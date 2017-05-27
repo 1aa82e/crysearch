@@ -46,7 +46,7 @@ void CryDisasmGoToAddressDialog::OkButtonClicked()
 		if (!mod)
 		{
 			// If the module was not found in the loaded modules list, the relative address cannot be calculated.
-			Prompt("Input Error", CtrlImg::error(), "The typed module was not found!", "OK");
+			Prompt("Input Error", CtrlImg::error(), "The module was not found!", "OK");
 			return;
 		}
 			

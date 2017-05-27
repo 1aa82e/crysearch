@@ -8,9 +8,9 @@ Package:
 - Update wiki with changes for the release.
 ------------------------------------------------------------------
 
-- Make error messages shorter to save space...
 - Use thread computing power more efficient?
 	- Workers are fired off and then pull work from a pool of pages?
+- Continue BeaEngine development (make it vectorized and stuff);
 - Change semantics of (W)string next scan to search 'inside' any current search result?
 - Fix header (like LordPE does, virtual dump);
 - Also blocks for the values and using compression/encoding to reduce size?

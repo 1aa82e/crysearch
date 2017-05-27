@@ -295,7 +295,7 @@ void CryProcessEnvironmentBlockWindow::Initialize()
 	else
 	{
 		this->mPEBInfo.CryAddColumn("Error");
-		this->mPEBInfo.Add("Failed to retrieve process environment block");
+		this->mPEBInfo.Add("Failed to retrieve PEB");
 	}
 #endif
 }
@@ -308,7 +308,7 @@ void CryProcessEnvironmentBlockWindow::ResetDebugFlag()
 	BYTE pResetted = 0x0;
 	if (!CrySearchRoutines.CryWriteMemoryRoutine(mMemoryScanner->GetHandle(), this->pIsBeingDebuggedPtr, &pResetted, sizeof(BYTE), NULL))
 	{
-		Prompt("PEB Error", CtrlImg::error(), "The flag could not be resetted.", "OK");
+		Prompt("Fatal Error", CtrlImg::error(), "The flag could not be reset.", "OK");
 	}
 
 	// Remove all columns and rows, and rebuild window contents.

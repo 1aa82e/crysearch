@@ -50,14 +50,17 @@ struct AddressTableEntry : Moveable<AddressTableEntry>
 	
 	// Represents the value of the address table entry. This field contains the user interface
 	// representation of the value because it is not persisted in the file.
-	mutable String Value;
+	String Value;
 	
 	// Indicates whether the address table entry is frozen or not. This field is considered
 	// leading information for a small part of the address table behavior.
 	bool Frozen;
 	
+	// The value that is only set for freezing an address table entry.
+	String FrozenValue;
+	
 	// This parameter represents the length of a byte array or string. When one of these types are not used, this parameter is ignored.
-	mutable int Size;
+	int Size;
 	
 	// XML serialization logic function.
 	void Xmlize(XmlIO& s)
@@ -77,7 +80,6 @@ struct AddressTableEntry : Moveable<AddressTableEntry>
 			("ModuleName", this->ModuleName)
 			("OffsetsList", this->OffsetsList)
 			("ValueType", this->ValueType)
-			("Frozen", this->Frozen)
 			("Size", this->Size)
 		;
 	};
@@ -186,11 +188,6 @@ public:
 	const int GetCount() const;
 	const String& GetFileName() const;
 	const bool GetRelativeDisplayString(const AddressTableEntry* entry, String& outString);
-	
-	const AddressTableEntry* operator [] (const int x) const
-	{
-		return &(this->mEntries[x]);
-	};
 	
 	AddressTableEntry* operator [] (const int x)
 	{

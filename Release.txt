@@ -28,7 +28,9 @@ v3.0:
 	- Fixed bug with routine override functions where deleting a used plugin from the plugin directory and opening the settings window subsequently would crash CrySearch;
 	- Fixed bug where type would be changed incorrectly in the change dialog of an address table entry;
 	- Removed the scan thread priority setting from the settings window;
-	- 
+	- Changes in the address table:
+		- Removed the frozen parameter from persistent address table storage;
+		- Fixed bug where freezing an address table entry would revert after a few minutes of playing.
 
 v2.11:
 	- Added scanning for values that are in between of two user-entered values;

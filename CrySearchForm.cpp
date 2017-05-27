@@ -184,7 +184,7 @@ String GetAddressTableAddress(const int index)
 String GetAddressTableValue(const int index)
 {
 	// Only read the value of address table entries if a process is opened.
-	const AddressTableEntry* const entry = loadedTable[index];
+	AddressTableEntry* const entry = loadedTable[index];
 	if (mMemoryScanner->GetProcessId())
 	{
 		entry->Value = GetValueRepresentationString(entry->Address, viewAddressTableValueHex, entry->ValueType, entry->Size);
@@ -578,12 +578,12 @@ void CrySearchForm::AddressValuesUpdater()
 	for (int i = 0; i < addrTableCount; ++i)
 	{
 		// If we are currently looking at a frozen entry, we need to write its value there.
-		const AddressTableEntry* curEntry = loadedTable[i];
+		AddressTableEntry* const curEntry = loadedTable[i];
 		if (curEntry->Frozen)
 		{
 			// Read the current values into local variables.
-			const int curIntValue = ScanInt(curEntry->Value, NULL, 10);
-			const double curDoubleValue = StrDbl(curEntry->Value);
+			const int curIntValue = ScanInt(curEntry->FrozenValue, NULL, 10);
+			const double curDoubleValue = StrDbl(curEntry->FrozenValue);
 
 			// Get the correct data size for writing.
 			switch (curEntry->ValueType)
@@ -614,16 +614,16 @@ void CrySearchForm::AddressValuesUpdater()
 					break;
 				case CRYDATATYPE_AOB:
 					{
-						ArrayOfBytes curAobValue = StringToBytes(curEntry->Value);
+						ArrayOfBytes curAobValue = StringToBytes(curEntry->FrozenValue);
 						mMemoryScanner->PokeB(curEntry->Address, curAobValue);
 						curEntry->Size = curAobValue.Size;
 					}
 					break;
 				case CRYDATATYPE_STRING:
-					mMemoryScanner->PokeA(curEntry->Address, curEntry->Value);
+					mMemoryScanner->PokeA(curEntry->Address, curEntry->FrozenValue);
 					break;
 				case CRYDATATYPE_WSTRING:
-					mMemoryScanner->PokeW(curEntry->Address, curEntry->Value.ToWString());
+					mMemoryScanner->PokeW(curEntry->Address, curEntry->FrozenValue.ToWString());
 					break;
 			}
 		}
@@ -1140,7 +1140,7 @@ void CrySearchForm::SearchResultDoubleClicked()
 		
 		// Add the entry to the address table.
 		const SearchResultCacheEntry& selEntry = CachedAddresses[selectedRows[i]];
-		const AddressTableEntry* newEntry = loadedTable.Add("", selEntry.Address, selEntry.StaticAddress, toAddToAddressList);
+		AddressTableEntry* const newEntry = loadedTable.Add("", selEntry.Address, selEntry.StaticAddress, toAddToAddressList);
 		
 		// Special behavior for specific types of search results.
 		if (toAddToAddressList == CRYDATATYPE_AOB)
@@ -1158,6 +1158,9 @@ void CrySearchForm::SearchResultDoubleClicked()
 		{
 			newEntry->Value = "???";
 		}
+		
+		// Set the frozen value, such that the value can be frozen without having to be edited first.
+		newEntry->FrozenValue = value;
 	}
 	
 	// If one or more rows were not succesfully added to the address table, throw an error.

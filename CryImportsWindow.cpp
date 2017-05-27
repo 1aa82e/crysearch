@@ -212,7 +212,7 @@ void CryImportsWindow::PlaceHookOnIATFunction()
 		if (!mPeInstance->PlaceIATHook(masterMod, param, newAddress, wasOrdinal))
 #endif
 		{
-			Prompt("Fatal Error", CtrlImg::error(), "The hook could not be set. The corresponding function was not found in the import table.", "OK");
+			Prompt("Fatal Error", CtrlImg::error(), "Failed to set the hook!", "OK");
 		}
 	}
 	
@@ -300,7 +300,7 @@ void CryImportsWindow::Initialize()
 	// Did we succeed? In case we did not, the imports were probably parsed, but the target executable may be packed.
 	if (!succeeded && SettingsFile::GetInstance()->GetWarnForPackedProcess())
 	{
-		Prompt("Warning", CtrlImg::exclamation(), "The imports may not have been parsed succesfully, the application may be packed!", "OK");
+		Prompt("Warning", CtrlImg::exclamation(), "Some imports were not parsed succesfully. The application may be packed!", "OK");
 	}
 	
 	// Set the user interface to display the imports.

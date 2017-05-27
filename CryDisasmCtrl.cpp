@@ -249,7 +249,7 @@ void CryDisasmCtrl::GoToEntryPointClicked()
 	}
 	else
 	{
-		Prompt("Fatal Error", CtrlImg::error(), "The entrypoint could not be retrieved!", "OK");
+		Prompt("Fatal Error", CtrlImg::error(), "Could not retrieve the entrypoint!", "OK");
 	}
 }
 
@@ -259,7 +259,7 @@ void CryDisasmCtrl::GenerateSignatureButtonClicked()
 	// If the select count of a signature is more than a threshold value, we should block generation.
 	if (this->disasmDisplay.GetSelectCount() > SELECTCOUNT_THRESHOLD)
 	{
-		Prompt("Input Error", CtrlImg::error(), "You can select a maximum of 256 rows for generation!", "OK");
+		Prompt("Input Error", CtrlImg::error(), "You can select no more than 256 rows!", "OK");
 		return;
 	}
 	
@@ -287,7 +287,7 @@ void CryDisasmCtrl::GenerateByteArrayButtonClicked()
 	// If the select count of a signature is more than a threshold value, we should block generation.
 	if (this->disasmDisplay.GetSelectCount() > SELECTCOUNT_THRESHOLD)
 	{
-		Prompt("Input Error", CtrlImg::error(), "You can select a maximum of 256 rows for generation!", "OK");
+		Prompt("Input Error", CtrlImg::error(), "You can select no more than 256 rows!", "OK");
 		return;
 	}
 	
@@ -347,7 +347,7 @@ void CryDisasmCtrl::MoveToAddress(const SIZE_T address)
 	// Memory address was not found within the address space of the process.
 	if (!GetPageFromAddress(address))
 	{
-		Prompt("Input Error", CtrlImg::error(), "The address is not within an executable section of the process!", "OK");
+		Prompt("Input Error", CtrlImg::error(), "The address is not within an executable section!", "OK");
 		return;
 	}
 	

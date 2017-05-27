@@ -329,7 +329,7 @@ void CryChangeRecordDialog::DialogOkay()
 		}
 
 		// Copy entry to table and delete local one.
-		const AddressTableEntry* newEntry = this->mLoadedTable->Add("", tempAddress, relative, tempType);
+		AddressTableEntry* const newEntry = this->mLoadedTable->Add("", tempAddress, relative, tempType);
 		newEntry->Size = optionalSize;
 	}
 
@@ -399,6 +399,10 @@ void CryChangeRecordDialog::DialogOkay()
 				this->mLoadedEntry->Size = aob.Size;
 				this->AlterSearchResult(this->mLoadedEntry->Address, this->mLoadedEntry->Size);
 			}
+			
+			// Also set the frozen value. If the user freezes this address, the value may not
+			// be overwritten by the updater.
+			this->mLoadedEntry->FrozenValue = inputVal;
 		}
 		// Edit the type of the selected entry.
 		else if (this->mMode == CRDM_TYPE)

@@ -82,7 +82,7 @@ void CodeGenerator::CreateConstants()
 }
 
 // Generates a programming language expression from an entry in the address table.
-String CodeGenerator::GenerateInternalEntry(const AddressTableEntry* entry, const int number)
+String CodeGenerator::GenerateInternalEntry(const AddressTableEntry* const entry, const int number)
 {
 	String taskOutput;
 
@@ -115,7 +115,7 @@ String CodeGenerator::GenerateInternalEntry(const AddressTableEntry* entry, cons
 
 // Generates a programming language expression from an address table entry.
 // This function assembles the expression from external memory access view.
-String CodeGenerator::GenerateExternalEntry(const AddressTableEntry* entry, const int number)
+String CodeGenerator::GenerateExternalEntry(const AddressTableEntry* const entry, const int number)
 {
 	String taskOutput;
 	

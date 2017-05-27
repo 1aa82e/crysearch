@@ -237,7 +237,7 @@ void CryMemoryDissectionWindow::AddRowToAddressList()
 		
 		// Check whether the address is static and add it to the address table.
 		const Win32ModuleInformation* mod = mModuleManager->GetModuleFromContainedAddress(addr);
-		const AddressTableEntry* newEntry = loadedTable.Add("", addr, !!mod, row->RowType);
+		AddressTableEntry* const newEntry = loadedTable.Add("", addr, !!mod, row->RowType);
 		newEntry->Size = row->DataLength;
 		
 		// If there is no process loaded, set the value to invalid.
