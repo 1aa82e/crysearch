@@ -1,7 +1,7 @@
 #include "CodeGenerator.h"
 #include "UIUtilities.h"
 
-#define GENERATED_HANDLEOPENING	"unsigned int pid;\r\n\tHANDLE proc = OpenProcess(PROCESS_VM_READ | PROCESS_VM_WRITE, FALSE, pid);\r\n"
+#define GENERATED_HANDLEOPENING	"unsigned int pid;\r\n\tHANDLE proc = OpenProcess(PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_VM_OPERATION, FALSE, pid);\r\n"
 #define GENERATED_CLOSEHANDLE	"\tCloseHandle(proc);\r\n"
 #define GENERATED_VOIDMAIN		"void main()\r\n{\r\n\t"
 #define GENERATED_ENDVOIDMAIN	"}"

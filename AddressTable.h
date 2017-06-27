@@ -40,6 +40,10 @@ struct AddressTableEntry : Moveable<AddressTableEntry>
 	// resolve the real address at runtime. This field contains the module name.
 	String ModuleName;
 	
+	// Represents whether this address table entry should be interpreted as pointer or not.
+	// This means that all offsets are added to this pointer with intermediate read.
+	bool IsPointer;
+	
 	// Contains the offsets that are configured for this address table entry.
 	// This field is considered leading information for a great part of the address table behavior.
 	Vector<int> OffsetsList;
@@ -78,6 +82,7 @@ struct AddressTableEntry : Moveable<AddressTableEntry>
 			("Address", this->Address)
 			("IsRelative", this->IsRelative)
 			("ModuleName", this->ModuleName)
+			("IsPointer", this->IsPointer)
 			("OffsetsList", this->OffsetsList)
 			("ValueType", this->ValueType)
 			("Size", this->Size)
@@ -92,6 +97,7 @@ struct AddressTableEntry : Moveable<AddressTableEntry>
 		this->Frozen = false;
 		this->Address = 0;
 		this->IsRelative = FALSE;
+		this->IsPointer = false;
 	};
 	
 	// Default copy constructor. Needed for vector containment.
@@ -104,6 +110,7 @@ struct AddressTableEntry : Moveable<AddressTableEntry>
 		this->Value = entry.Value;
 		this->IsRelative = entry.IsRelative;
 		this->ModuleName = entry.ModuleName;
+		this->IsPointer = entry.IsPointer;
 		this->OffsetsList.Append(entry.OffsetsList);
 	};
 };

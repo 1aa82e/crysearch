@@ -62,6 +62,7 @@ private:
 	bool mScanMemImage;
 	bool mScanMemMapped;
 	
+	bool mViewOffsetsInHexadecimal;
 	bool mEnableReadOnlyMode;
 	
 	int mOpenProcessRoutine;
@@ -112,6 +113,7 @@ public:
 	const bool GetScanMemImage() const							{ return this->mScanMemImage; }
 	const bool GetScanMemMapped() const							{ return this->mScanMemMapped; }
 	
+	const bool GetViewOffsetsInHexadecimal() const				{ return this->mViewOffsetsInHexadecimal; }
 	const bool GetEnableReadOnlyMode() const					{ return this->mEnableReadOnlyMode; }
 	
 	const int GetOpenProcessRoutine() const						{ return this->mOpenProcessRoutine; }
@@ -148,6 +150,7 @@ public:
 	void SetScanMemImage(bool value = true)						{ this->mScanMemImage = value; }
 	void SetScanMemMapped(bool value = true)					{ this->mScanMemMapped = value; }
 	
+	void SetViewOffsetsInHexadecimal(bool value = true)			{ this->mViewOffsetsInHexadecimal = value; }
 	void SetEnableReadOnlyMode(bool value = false)				{ this->mEnableReadOnlyMode = value; }
 	
 	void SetOpenProcessRoutine(int value = 0)					{ this->mOpenProcessRoutine = value; }

@@ -117,6 +117,7 @@ CryMemoryDissectionWindow::CryMemoryDissectionWindow(const AddressTableEntry* co
 	this->mRowSizeControl.WhenValueSet = THISBACK(RowEntryChangeDataSize);
 	
 	this->mDissection.WhenBar = THISBACK(DissectionRightClick);
+	this->mDissection.WhenLeftDouble = THISBACK(DissectionEntryDoubleClicked);
 	this->mDissection.CryAddRowNumColumn("Address", 65).SetConvert(Single<IndexBasedValueConvert<GetDissectionAddress>>()).SetDisplay(MemoryDissectionEntryDrawInstance);
 	this->mDissection.CryAddRowNumColumn("Value", 35).SetConvert(Single<IndexBasedValueConvert<GetDissectionValue>>());
 	
@@ -245,6 +246,16 @@ void CryMemoryDissectionWindow::AddRowToAddressList()
 		{
 			newEntry->Value = "???";
 		}
+	}
+}
+
+// Executed when the user double clicks an entry in the memory dissection window.
+void CryMemoryDissectionWindow::DissectionEntryDoubleClicked()
+{
+	// Row value may only be changed if not in read-only operation mode.
+	if (!mMemoryScanner->IsReadOnlyOperationMode())
+	{
+		this->ChangeRowValue();
 	}
 }
 

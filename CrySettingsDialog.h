@@ -37,6 +37,7 @@ private:
 	Option memImage;
 	Option memMapped;
 	
+	Option mViewOffsetsInHex;
 	Option mCrySearchInReadOnlyMode;
 	
 	// Internals tab

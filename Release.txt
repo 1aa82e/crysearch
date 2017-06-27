@@ -2,6 +2,16 @@ CrySearch Memory Scanner
 
 evolution536, www.unknowncheats.me
 
+v3.01:
+	- Fixed crashing bug in x64 on closing of process opened with module list warning;
+	- Implemented pointer logic for address table:
+		- In address table entry dialog, at most 16 offsets can be added;
+		- Settings dialog provides option to format offsets in decimal or hexadecimal.
+	- Fixes and changes to the memory dissection window:
+		- Now possible to double click some entry to edit its value;
+		- Fixed bug where existing values for entries would be incorrectly read in change value dialog;
+		- 
+
 v3.0:
 	- Slight performance optimizations by eliminating heap allocations;
 	- Added a configurable warning (advanced tab, settings window) for when OriginalFirstThunk is zero: e.g. the application is packed;

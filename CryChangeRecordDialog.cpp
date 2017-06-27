@@ -10,11 +10,19 @@ CryChangeRecordDialog::CryChangeRecordDialog(AddressTable& addrTable, const Vect
 	this->mLoadedEntry = (mode == CRDM_MANUALNEW) ? NULL : const_cast<AddressTableEntry*>(addrTable[rows[0]]);
 	this->mRowArray = &rows;
 	
-	this->SetRect(0, 0, 250, 130);
+	// Only load existing offsets if this is not a manually added entry.
+	if (this->mLoadedEntry)
+	{
+		this->mThisEntryOffsets <<= this->mLoadedEntry->OffsetsList;
+	}
+	
+	this->SetRect(0, 0, 250, 160);
 	
 	this->mCancel <<= THISBACK(CancelDialog);
 	this->mOk <<= THISBACK(DialogOkay);
 	this->mTypeSelector.WhenAction = THISBACK(BlockSizeSelected);
+	this->mIsPointer.WhenAction = THISBACK(IsPointerCheckedChanged);
+	this->mOffsetsWindow <<= THISBACK(OffsetsWindowClicked);
 	
 	*this
 		<< this->mCancel.SetLabel("Cancel").RightPos(7, 70).BottomPos(5, 25)
@@ -37,6 +45,8 @@ CryChangeRecordDialog::CryChangeRecordDialog(AddressTable& addrTable, const Vect
 		*this
 			<< this->mFieldDescription.SetLabel("Address (Hex):").HSizePos(5, 100).TopPos(5, 25)
 			<< this->mFieldValue.HSizePos(110, 5).TopPos(5, 25)
+			<< this->mIsPointer.SetLabel("Interpret as pointer").HSizePos(5, 80).TopPos(35, 25)
+			<< this->mOffsetsWindow.SetLabel("Offsets").RightPos(5, 60).TopPos(35, 25)
 		;
 		
 		this->Title("Change Address");
@@ -55,6 +65,9 @@ CryChangeRecordDialog::CryChangeRecordDialog(AddressTable& addrTable, const Vect
 		this->mFieldValue.SetText(FormatHexadecimalIntSpecial(this->mLoadedEntry->Address));
 #endif
 		}
+		
+		this->mIsPointer = this->mLoadedEntry->IsPointer;
+		this->IsPointerCheckedChanged();
 	}
 	else if (mode == CRDM_TYPE)
 	{
@@ -110,9 +123,11 @@ CryChangeRecordDialog::CryChangeRecordDialog(AddressTable& addrTable, const Vect
 			<< this->mSecondFieldDescription.SetLabel("Type:").HSizePos(5, 100).TopPos(35, 25)
 			<< this->mTypeSelector.Add("Byte").Add("2 Bytes").Add("4 Bytes").Add("8 Bytes").Add("Float").Add("Double")
 				.Add("Array of Bytes").Add("String").HSizePos(110, 5).TopPos(35, 25)
-			<< this->mUnicodeString.SetLabel("Unicode").HSizePos(180, 5).TopPos(60, 25)
-			<< this->mTypeLengthDescription.SetLabel("Length:").HSizePos(5, 100).TopPos(60, 25)
-			<< this->mTypeLength.Min(1).HSizePos(110, 80).TopPos(60, 25)
+			<< this->mIsPointer.SetLabel("Interpret as pointer").HSizePos(5, 80).TopPos(65, 25)
+			<< this->mOffsetsWindow.SetLabel("Offsets").RightPos(5, 60).TopPos(65, 25)
+			<< this->mUnicodeString.SetLabel("Unicode").HSizePos(180, 5).TopPos(90, 25)
+			<< this->mTypeLengthDescription.SetLabel("Length:").HSizePos(5, 100).TopPos(90, 25)
+			<< this->mTypeLength.Min(1).HSizePos(110, 80).TopPos(90, 25)
 		;
 		
 		// Manually added addresses will always have 0 as initial length, so 1 needs to be set as minimum.
@@ -121,6 +136,7 @@ CryChangeRecordDialog::CryChangeRecordDialog(AddressTable& addrTable, const Vect
 		this->mUnicodeString.Hide();
 		this->mTypeLengthDescription.Hide();
 		this->mTypeLength.Hide();
+		this->mOffsetsWindow.Hide();
 		
 		// Set the default data type for a manually added address to 4 bytes.
 		this->mTypeSelector.SetIndex(2);
@@ -148,6 +164,21 @@ CryChangeRecordDialog::CryChangeRecordDialog(AddressTable& addrTable, const Vect
 CryChangeRecordDialog::~CryChangeRecordDialog()
 {
 	
+}
+
+// Executed when the user checks or unchecks the is pointer option.
+void CryChangeRecordDialog::IsPointerCheckedChanged()
+{
+	// If the pointer option is now checked, the offsets button should be shown. Otherwise, it
+	// should be hidden from the user.
+	if (this->mIsPointer)
+	{
+		this->mOffsetsWindow.Show();
+	}
+	else
+	{
+		this->mOffsetsWindow.Hide();
+	}
 }
 
 // Executed when the user changes the view mode from decimal to hexadecimal and the other way around.
@@ -231,6 +262,14 @@ void CryChangeRecordDialog::BlockSizeSelected()
 		this->mTypeLengthDescription.Hide();
 		this->mTypeLength.Hide();
 	}
+}
+
+// Executed when the user clicks the offsets button to open the offsets window.
+void CryChangeRecordDialog::OffsetsWindowClicked()
+{
+	CryChangeRecordOffsetsWindow* ccrdow = new CryChangeRecordOffsetsWindow(&this->mThisEntryOffsets);
+	ccrdow->Execute();
+	delete ccrdow;
 }
 
 // Executed when the user cancels dialog input.
@@ -331,6 +370,8 @@ void CryChangeRecordDialog::DialogOkay()
 		// Copy entry to table and delete local one.
 		AddressTableEntry* const newEntry = this->mLoadedTable->Add("", tempAddress, relative, tempType);
 		newEntry->Size = optionalSize;
+		newEntry->IsPointer = this->mIsPointer;
+		newEntry->OffsetsList <<= this->mThisEntryOffsets;
 	}
 
 	// Make changes to every selected entry.
@@ -493,6 +534,8 @@ void CryChangeRecordDialog::DialogOkay()
 			
 			this->mLoadedEntry->Address = tempAddress;
 			this->mLoadedEntry->IsRelative = relative;
+			this->mLoadedEntry->IsPointer = this->mIsPointer;
+			this->mLoadedEntry->OffsetsList <<= this->mThisEntryOffsets;
 			
 			// If the module changed, it should be changed in the address table entry as well.
 			if (relative)

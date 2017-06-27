@@ -29,6 +29,7 @@ private:
 	void ChangeRowOffsetMenu(Bar& pBar);
 	void ViewAddressesAsMenu(Bar& pBar);
 	
+	void DissectionEntryDoubleClicked();
 	void AddRowToAddressList();
 	void ChangeRowValue();
 	void NewDissectionFromAddressTableEntry();

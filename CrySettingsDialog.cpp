@@ -54,7 +54,8 @@ CrySearchSettingsDialog::CrySearchSettingsDialog()
 		<< this->memPrivate.SetLabel("MEM_PRIVATE").HSizePos(10, 300).TopPos(90, 20)
 		<< this->memImage.SetLabel("MEM_IMAGE").HSizePos(150, 140).TopPos(90, 20)
 		<< this->memMapped.SetLabel("MEM_MAPPED").HSizePos(270, 10).TopPos(90, 20)
-		<< this->mCrySearchInReadOnlyMode.SetLabel("Enable read-only mode").TopPos(120, 25).HSizePos(10, 10)
+		<< this->mViewOffsetsInHex.SetLabel("View pointer offsets in hexadecimal").TopPos(120, 25).HSizePos(10, 10)
+		<< this->mCrySearchInReadOnlyMode.SetLabel("Enable read-only mode").TopPos(150, 25).HSizePos(10, 10)
 	;
 	
 	this->mInternalsTab
@@ -95,7 +96,7 @@ CrySearchSettingsDialog::CrySearchSettingsDialog()
 	
 	this->mAdvancedTab
 		<< this->mHideNonWow64ModulesInX64.SetLabel("Hide non-wow64 modules in x64 mode").HSizePos(5, 5).TopPos(5, 25)
-		<< this->mSignatureDefaultMasking.SetLabel("Automatically mask Assembler instruction arguments by default").HSizePos(5, 5).TopPos(30, 25)
+		<< this->mSignatureDefaultMasking.SetLabel("Automatically mask Assembly instruction arguments by default").HSizePos(5, 5).TopPos(30, 25)
 		<< this->mWarnForPackedExecutable.SetLabel("Warn for possibly packed executable").HSizePos(5, 5).TopPos(55, 25)
 		<< this->mShowArchitectureInProcWindow.SetLabel("Show architecture in open process window").HSizePos(5, 5).TopPos(80, 25)
 	;
@@ -171,6 +172,7 @@ void CrySearchSettingsDialog::LoadSettings()
 	this->mHotkeysOption = this->mSettingsInstance->GetEnableHotkeys();
 	this->dbgInvadeProcess = this->mSettingsInstance->GetInvadeProcess();
 	this->dbgCatchAllExceptions = this->mSettingsInstance->GetCatchAllExceptions();
+	this->mViewOffsetsInHex = this->mSettingsInstance->GetViewOffsetsInHexadecimal();
 	this->mCrySearchInReadOnlyMode = this->mSettingsInstance->GetEnableReadOnlyMode();
 	this->mHideNonWow64ModulesInX64 = this->mSettingsInstance->GetHideNonWow64Modules();
 	this->mSignatureDefaultMasking = this->mSettingsInstance->GetSignatureMaskingByDefault();
@@ -210,6 +212,7 @@ void CrySearchSettingsDialog::SaveSettings()
 	this->mSettingsInstance->SetSignatureMaskingByDefault(this->mSignatureDefaultMasking);
 	this->mSettingsInstance->SetWarnForPackedProcess(this->mWarnForPackedExecutable);
 	this->mSettingsInstance->SetShowArchitectureInProcWindow(this->mShowArchitectureInProcWindow);
+	this->mSettingsInstance->SetViewOffsetsInHexadecimal(this->mViewOffsetsInHex);
 	
 	// Check if the read-only option for CrySearch was changed. If it was, inform the user about the fact that
 	// this will be applied when the process is closed and reopened.

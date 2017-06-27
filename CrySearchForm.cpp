@@ -60,8 +60,9 @@ CrySearchWindowManager* mCrySearchWindowManager;
 // ---------------------------------------------------------------------------------------------
 
 // Gets the string representation of a value, given its address, value type, and extra conditions.
-String GetValueRepresentationString(const SIZE_T address, const bool hex, const CCryDataType valueType, const int optSize)
+String GetValueRepresentationString(SIZE_T address, const bool hex, const CCryDataType valueType, const int optSize)
 {
+	// Read the value at the final address.
 	if (valueType == CRYDATATYPE_BYTE)
 	{
 		Byte value;
@@ -187,7 +188,30 @@ String GetAddressTableValue(const int index)
 	AddressTableEntry* const entry = loadedTable[index];
 	if (mMemoryScanner->GetProcessId())
 	{
-		entry->Value = GetValueRepresentationString(entry->Address, viewAddressTableValueHex, entry->ValueType, entry->Size);
+		// If this address should be treated as a pointer, we should first calculate the final address.
+		SIZE_T calcAddr = entry->Address;
+		if (entry->IsPointer)
+		{
+			// Add all offsets with intermediate pointer reading.
+			const int oCount = entry->OffsetsList.GetCount() - 1;
+			for (int i = 0; i < oCount; ++i)
+			{
+				// We read out all pointer values except the last one, we don't need to read
+				// the pointer value, but the actual value instead.
+				if (!mMemoryScanner->Peek(calcAddr + entry->OffsetsList[i], mMemoryScanner->IsX86Process() ? sizeof(DWORD) : sizeof(__int64), &calcAddr))
+				{
+					// Failed to read at this address, the value can by anything from this point on.
+					entry->Value =  "???";
+					return entry->Value;
+				}
+			}
+			
+			// Add the last offset without reading.
+			calcAddr += entry->OffsetsList[entry->OffsetsList.GetCount() - 1];
+		}
+		
+		// Read the value at the final address.
+		entry->Value = GetValueRepresentationString(calcAddr, viewAddressTableValueHex, entry->ValueType, entry->Size);
 		return entry->Value;
 	}
 	
@@ -1313,9 +1337,13 @@ bool CrySearchForm::CloseProcess()
 		delete mPeInstance;
 		mPeInstance = NULL;
 		
-		mDebugger->Stop();
-		delete mDebugger;
-		mDebugger = NULL;
+		// Delete the debugger instance only if it exists.
+		if (mDebugger)
+		{
+			mDebugger->Stop();
+			delete mDebugger;
+			mDebugger = NULL;
+		}
 	}
 	
 	// Close handles.

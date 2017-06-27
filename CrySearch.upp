@@ -35,6 +35,8 @@ file
 	CrySettingsDialog.h,
 	CrySearchAboutDialog.cpp,
 	CrySearchAboutDialog.h,
+	CryChangeRecordOffsetsWindow.cpp,
+	CryChangeRecordOffsetsWindow.h,
 	CryChangeRecordDialog.cpp,
 	CryChangeRecordDialog.h,
 	CryCreateProcessWindow.cpp,

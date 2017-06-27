@@ -33,41 +33,37 @@ CryMemoryDissectionChangeValueWindow::CryMemoryDissectionChangeValueWindow(SIZE_
 	if (this->rowType == CRYDATATYPE_BYTE)
 	{
 		Byte value;
-		mMemoryScanner->Peek(this->address, 0, &value);
-		char text[64];
-		sprintf_s(text, 64, "%hhu", value);
-		this->mFieldValue.SetText(text);
+		mMemoryScanner->Peek(this->address, sizeof(Byte), &value);
+		this->mFieldValue.SetText(FormatIntSpecial(value));
 	}
 	else if (this->rowType == CRYDATATYPE_2BYTES)
 	{
 		short value;
-		mMemoryScanner->Peek(this->address, 0, &value);
-		char text[64];
-		sprintf_s(text, 64, "%hi", value);
-		this->mFieldValue.SetText(text);
+		mMemoryScanner->Peek(this->address, sizeof(short), &value);
+		this->mFieldValue.SetText(FormatIntSpecial(value));
 	}
 	else if (this->rowType == CRYDATATYPE_4BYTES)
 	{
 		int value;
-		mMemoryScanner->Peek(this->address, 0, &value);
-		this->mFieldValue.SetText(Format("%li", value));
+		mMemoryScanner->Peek(this->address, sizeof(int), &value);
+		this->mFieldValue.SetText(FormatIntSpecial(value));
 	}
 	else if (this->rowType == CRYDATATYPE_8BYTES)
 	{
 		__int64 value;
-		mMemoryScanner->Peek(this->address, 0, &value);
-		this->mFieldValue.SetText(Format("%lli", value));
+		mMemoryScanner->Peek(this->address, sizeof(__int64), &value);
+		this->mFieldValue.SetText(FormatIntSpecial64(value));
 	}
 	else if (this->rowType == CRYDATATYPE_FLOAT)
 	{
 		float value;
-		mMemoryScanner->Peek(this->address, 0, &value);
+		mMemoryScanner->Peek(this->address, sizeof(float), &value);
 		this->mFieldValue.SetText(DblStr(value));
 	}
 	else if (this->rowType == CRYDATATYPE_DOUBLE)
 	{
 		double value;
-		mMemoryScanner->Peek(this->address, 0, &value);
+		mMemoryScanner->Peek(this->address, sizeof(double), &value);
 		this->mFieldValue.SetText(DblStr(value));
 	}
 	else if (this->rowType == CRYDATATYPE_AOB)
