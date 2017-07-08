@@ -187,7 +187,7 @@ String ValueAsStringInternal(const Byte* data, const CCryDataType type, const in
 	}
 	
 	// Empty string is returned in case the type is invalid.
-	return "";
+	return "???";
 }
 
 // Parses a 64-bit number and creates a hexadecimal representation. Returns the hexadecimal

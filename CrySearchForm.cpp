@@ -6,7 +6,6 @@
 #include "CryNewScanForm.h"
 #include "CryAllocateMemoryWindow.h"
 #include "CryFillMemoryWindow.h"
-#include "CryCodeGenerationForm.h"
 #include "CryMemoryDissectionWindow.h"
 #include "CryProcessEnvironmentBlockWindow.h"
 #include "CrySystemHandleInformationWindow.h"
@@ -59,89 +58,6 @@ CrySearchWindowManager* mCrySearchWindowManager;
 
 // ---------------------------------------------------------------------------------------------
 
-// Gets the string representation of a value, given its address, value type, and extra conditions.
-String GetValueRepresentationString(SIZE_T address, const bool hex, const CCryDataType valueType, const int optSize)
-{
-	// Read the value at the final address.
-	if (valueType == CRYDATATYPE_BYTE)
-	{
-		Byte value;
-		if (mMemoryScanner->Peek(address, sizeof(Byte), &value))
-		{
-			return hex ? FormatHexadecimalIntSpecial(value) : FormatIntSpecial(value);
-		}
-	}
-	else if (valueType == CRYDATATYPE_2BYTES)
-	{
-		short value;
-		if (mMemoryScanner->Peek(address, sizeof(short), &value))
-		{
-			return hex ? FormatHexadecimalIntSpecial(value) : FormatIntSpecial(value);
-		}
-	}
-	else if (valueType == CRYDATATYPE_4BYTES)
-	{
-		int value;
-		if (mMemoryScanner->Peek(address, sizeof(int), &value))
-		{
-			return hex ? FormatHexadecimalIntSpecial(value) : FormatIntSpecial(value);
-		}
-	}
-	else if (valueType == CRYDATATYPE_8BYTES)
-	{
-		__int64 value;
-		if (mMemoryScanner->Peek(address, sizeof(__int64), &value))
-		{
-			return hex ? FormatHexadecimalIntSpecial64(value) : FormatIntSpecial64(value);
-		}
-	}
-	else if (valueType == CRYDATATYPE_FLOAT)
-	{
-		float value;
-		if (mMemoryScanner->Peek(address, sizeof(float), &value))
-		{
-			return DblStr(value);
-		}
-	}
-	else if (valueType == CRYDATATYPE_DOUBLE)
-	{
-		double value;
-		if (mMemoryScanner->Peek(address, sizeof(double), &value))
-		{
-			return DblStr(value);
-		}
-	}
-	else if (valueType == CRYDATATYPE_STRING)
-	{
-		String value;
-		if (mMemoryScanner->PeekA(address, optSize, value))
-		{
-			return value;
-		}
-	}
-	else if (valueType == CRYDATATYPE_WSTRING)
-	{
-		WString value;
-		if (mMemoryScanner->PeekW(address, optSize, value))
-		{
-			return value.ToString();
-		}
-	}
-	else if (valueType == CRYDATATYPE_AOB)
-	{
-		ArrayOfBytes value;
-		if (mMemoryScanner->PeekB(address, optSize, value))
-		{
-			return BytesToString(value.Data, optSize);
-		}
-	}
-	
-	// The value of the search result could not be read. The presented value is therefore unknown.
-	return "???";
-}
-
-// ---------------------------------------------------------------------------------------------
-
 // Gets the string representation of the address of a search result.
 String GetAddress(const int index)
 {
@@ -155,10 +71,15 @@ String GetAddress(const int index)
 // Gets the string representation of the value of a search result.
 String GetValue(const int index)
 {
+	// Do not read the values if a scan is running.
 	if (!mMemoryScanner->IsScanRunning())
 	{
-		return GetValueRepresentationString(CachedAddresses[index].Address, GlobalScanParameter->CurrentScanHexValues, GlobalScanParameter->GlobalScanValueType
-			, GlobalScanParameter->GlobalScanValueType == CRYDATATYPE_AOB ? GlobalScanParameter->ValueSize : CachedAddresses[index].StringLength);
+		const int dataSize = GlobalScanParameter->GlobalScanValueType == CRYDATATYPE_AOB ? GlobalScanParameter->ValueSize
+			: CachedAddresses[index].StringLength;
+		Byte readBuffer[STRING_MAX_UNTIL_NULL * sizeof(wchar_t)];
+		return mMemoryScanner->Peek(CachedAddresses[index].Address, dataSize ? min(dataSize, (int)(STRING_MAX_UNTIL_NULL * sizeof(wchar_t)))
+			: sizeof(__int64), readBuffer) ? ValueAsStringInternal(readBuffer, GlobalScanParameter->GlobalScanValueType
+			, dataSize, GlobalScanParameter->CurrentScanHexValues) : "???";
 	}
 	
 	// The value of the search result could not be read. The presented value is therefore unknown.
@@ -211,7 +132,17 @@ String GetAddressTableValue(const int index)
 		}
 		
 		// Read the value at the final address.
-		entry->Value = GetValueRepresentationString(calcAddr, viewAddressTableValueHex, entry->ValueType, entry->Size);
+		Byte readBuffer[STRING_MAX_UNTIL_NULL * sizeof(wchar_t)];
+		if (mMemoryScanner->Peek(calcAddr, entry->Size ? min(entry->Size, (int)(STRING_MAX_UNTIL_NULL * sizeof(wchar_t))) : sizeof(__int64), readBuffer))
+		{
+			// Properly format the final value.
+			entry->Value = ValueAsStringInternal(readBuffer, entry->ValueType, entry->Size, viewAddressTableValueHex);
+		}
+		else
+		{
+			entry->Value =  "???";
+		}
+		
 		return entry->Value;
 	}
 	
@@ -449,8 +380,6 @@ void CrySearchForm::ToolsMenu(Bar& pBar)
 		pBar.Add(!mMemoryScanner->IsReadOnlyOperationMode(), "Fill Memory", THISBACK(FillMemoryButtonClicked));
 		pBar.Add("Memory Dissection", CrySearchIml::MemoryDissection(), THISBACK(MemoryDissectionButtonClicked));
 		pBar.Add("View Heap Information", CrySearchIml::HeapWalkSmall(), THISBACK(HeapWalkMenuClicked));
-		pBar.Separator();
-		pBar.Add((this->mUserAddressList.GetCount() > 0), "Code Generation", CrySearchIml::CodeGenerationButton(), THISBACK(CodeGenerationButtonClicked));
 	}
 	
 	// These menu items can be added regardless of the program state.
@@ -592,63 +521,61 @@ void CrySearchForm::SearchResultListUpdater()
 void CrySearchForm::AddressValuesUpdater()
 {
 	// If CrySearch is operating in read only mode, nothing may be written to the target process.
-	if (mMemoryScanner->IsReadOnlyOperationMode())
+	if (!mMemoryScanner->IsReadOnlyOperationMode())
 	{
-		return;
-	}
-	
-	// Handle frozen addresses.
-	const int addrTableCount = loadedTable.GetCount();
-	for (int i = 0; i < addrTableCount; ++i)
-	{
-		// If we are currently looking at a frozen entry, we need to write its value there.
-		AddressTableEntry* const curEntry = loadedTable[i];
-		if (curEntry->Frozen)
+		// Handle frozen addresses.
+		const int addrTableCount = loadedTable.GetCount();
+		for (int i = 0; i < addrTableCount; ++i)
 		{
-			// Read the current values into local variables.
-			const int curIntValue = ScanInt(curEntry->FrozenValue, NULL, 10);
-			const double curDoubleValue = StrDbl(curEntry->FrozenValue);
-
-			// Get the correct data size for writing.
-			switch (curEntry->ValueType)
+			// If we are currently looking at a frozen entry, we need to write its value there.
+			AddressTableEntry* const curEntry = loadedTable[i];
+			if (curEntry->Frozen)
 			{
-				case CRYDATATYPE_BYTE:
-					mMemoryScanner->Poke(curEntry->Address, &curIntValue, sizeof(Byte));
-					break;
-				case CRYDATATYPE_2BYTES:
-					mMemoryScanner->Poke(curEntry->Address, &curIntValue, sizeof(short));
-					break;
-				case CRYDATATYPE_4BYTES:
-					mMemoryScanner->Poke(curEntry->Address, &curIntValue, sizeof(int));
-					break;
-				case CRYDATATYPE_8BYTES:
-					{
-						const __int64 curLongValue = ScanInt64(curEntry->Value, NULL, 10);
-						mMemoryScanner->Poke(curEntry->Address, &curLongValue, sizeof(__int64));
-					}
-					break;
-				case CRYDATATYPE_FLOAT:
-					{
-						const float fValue = (float)curDoubleValue;
-						mMemoryScanner->Poke(curEntry->Address, &fValue, sizeof(float));
-					}
-					break;
-				case CRYDATATYPE_DOUBLE:
-					mMemoryScanner->Poke(curEntry->Address, &curDoubleValue, sizeof(double));
-					break;
-				case CRYDATATYPE_AOB:
-					{
-						ArrayOfBytes curAobValue = StringToBytes(curEntry->FrozenValue);
-						mMemoryScanner->PokeB(curEntry->Address, curAobValue);
-						curEntry->Size = curAobValue.Size;
-					}
-					break;
-				case CRYDATATYPE_STRING:
-					mMemoryScanner->PokeA(curEntry->Address, curEntry->FrozenValue);
-					break;
-				case CRYDATATYPE_WSTRING:
-					mMemoryScanner->PokeW(curEntry->Address, curEntry->FrozenValue.ToWString());
-					break;
+				// Read the current values into local variables.
+				const int curIntValue = ScanInt(curEntry->FrozenValue, NULL, 10);
+				const double curDoubleValue = StrDbl(curEntry->FrozenValue);
+	
+				// Get the correct data size for writing.
+				switch (curEntry->ValueType)
+				{
+					case CRYDATATYPE_BYTE:
+						mMemoryScanner->Poke(curEntry->Address, &curIntValue, sizeof(Byte));
+						break;
+					case CRYDATATYPE_2BYTES:
+						mMemoryScanner->Poke(curEntry->Address, &curIntValue, sizeof(short));
+						break;
+					case CRYDATATYPE_4BYTES:
+						mMemoryScanner->Poke(curEntry->Address, &curIntValue, sizeof(int));
+						break;
+					case CRYDATATYPE_8BYTES:
+						{
+							const __int64 curLongValue = ScanInt64(curEntry->Value, NULL, 10);
+							mMemoryScanner->Poke(curEntry->Address, &curLongValue, sizeof(__int64));
+						}
+						break;
+					case CRYDATATYPE_FLOAT:
+						{
+							const float fValue = (float)curDoubleValue;
+							mMemoryScanner->Poke(curEntry->Address, &fValue, sizeof(float));
+						}
+						break;
+					case CRYDATATYPE_DOUBLE:
+						mMemoryScanner->Poke(curEntry->Address, &curDoubleValue, sizeof(double));
+						break;
+					case CRYDATATYPE_AOB:
+						{
+							ArrayOfBytes curAobValue = StringToBytes(curEntry->FrozenValue);
+							mMemoryScanner->PokeB(curEntry->Address, curAobValue);
+							curEntry->Size = curAobValue.Size;
+						}
+						break;
+					case CRYDATATYPE_STRING:
+						mMemoryScanner->PokeA(curEntry->Address, curEntry->FrozenValue);
+						break;
+					case CRYDATATYPE_WSTRING:
+						mMemoryScanner->PokeW(curEntry->Address, curEntry->FrozenValue.ToWString());
+						break;
+				}
 			}
 		}
 	}
@@ -743,7 +670,7 @@ void CrySearchForm::AddressListEntryMemoryDissection()
 	
 	// Execute the memory dissection window using the retrieved address table entry pointer.
 	CryMemoryDissectionWindow* cmdw = new CryMemoryDissectionWindow(pEntry);
-	cmdw->Execute();
+	cmdw->Run();
 	delete cmdw;
 }
 
@@ -1411,19 +1338,11 @@ void CrySearchForm::DebugWindowErrorOccured()
 	this->ToggleDebuggerWindow();
 }
 
-// Executes the code generation window.
-void CrySearchForm::CodeGenerationButtonClicked()
-{
-	CryCodeGenerationForm* ccgf = new CryCodeGenerationForm();
-	ccgf->Execute();
-	delete ccgf;
-}
-
 // Executes the memory dissection window.
 void CrySearchForm::MemoryDissectionButtonClicked()
 {
 	CryMemoryDissectionWindow* cmdw = new CryMemoryDissectionWindow(NULL);
-	cmdw->Execute();
+	cmdw->Run();
 	delete cmdw;
 	
 	// New entries may have been added to the address table from the dissection window. Refresh the control to show newly added ones.

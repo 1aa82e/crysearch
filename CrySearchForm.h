@@ -66,7 +66,6 @@ private:
 	void AllocateMemoryButtonClicked();
 	void FillMemoryButtonClicked();
 	void ViewPEBButtonClicked();
-	void CodeGenerationButtonClicked();
 	void MemoryDissectionButtonClicked();
 	void ToggleDebuggerWindow();
 	void ToggleAddressTableFreezeThaw();

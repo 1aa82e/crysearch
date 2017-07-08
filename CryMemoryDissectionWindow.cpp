@@ -39,6 +39,7 @@ public:
 
 // ---------------------------------------------------------------------------------------------
 
+// Gets the string representation of some dissection.
 String GetDissectionForDropList(const int index)
 {
 	// The VirtualDropList control seems to behave strangely when the form is closed and no items are left.
@@ -57,6 +58,7 @@ String GetDissectionForDropList(const int index)
 	}
 }
 
+// Gets the string representation of a dissection address.
 String GetDissectionAddress(const int index)
 {
 	MemoryDissectionEntry* dissection = loadedTable.GetDissection(MemoryDissectionMasterIndex);
@@ -77,6 +79,7 @@ String GetDissectionAddress(const int index)
 	}
 }
 
+// Gets the string representation of the value of a memory dissection entry.
 String GetDissectionValue(const int index)
 {
 	MemoryDissectionEntry* dissection = loadedTable.GetDissection(MemoryDissectionMasterIndex);
@@ -84,26 +87,22 @@ String GetDissectionValue(const int index)
 	const SIZE_T addr = dissection->AssociatedDissector.GetBaseAddress() + entry->RowOffset;
 	
 	// Read data from the address of the row.
-	int readSize = entry->DataLength ? entry->DataLength : sizeof(__int64);
-	if (entry->RowType == CRYDATATYPE_WSTRING)
-	{
-		readSize *= 2;
-	}
-	Byte* buffer = new Byte[readSize];
+	Byte buffer[STRING_MAX_UNTIL_NULL * sizeof(wchar_t)];
 	SIZE_T bytesRead;
 	String representation = "???";
-	if (CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), (void*)addr, buffer, readSize, &bytesRead))
+	if (CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), (void*)addr, buffer, entry->DataLength
+		? min(entry->DataLength, (int)(STRING_MAX_UNTIL_NULL * sizeof(wchar_t))) : sizeof(__int64), &bytesRead))
 	{
 		// Construct a string representation of the data.
 		representation = ValueAsStringInternal(buffer, entry->RowType, entry->DataLength, DissectionRowValueHexMode);
 	}
 	
-	delete[] buffer;
 	return representation;
 }
 
 // ---------------------------------------------------------------------------------------------
 
+// CryMemoryDissectionWindow default constructor.
 CryMemoryDissectionWindow::CryMemoryDissectionWindow(const AddressTableEntry* const pEntry)
 {
 	this->Title("Memory Dissection").Zoomable().Sizeable().Icon(CrySearchIml::MemoryDissection()).SetRect(0, 0, 500, 400);
@@ -149,12 +148,14 @@ CryMemoryDissectionWindow::CryMemoryDissectionWindow(const AddressTableEntry* co
 	this->SetTimeCallback(SettingsFile::GetInstance()->GetDissectionUpdateInterval(), THISBACK(IntervalUpdateDissection), DISSECTION_UPDATE_TIMECALLBACK);
 }
 
+// CryMemoryDissectionWindow default destructor.
 CryMemoryDissectionWindow::~CryMemoryDissectionWindow()
 {
 	// Kill running update callback before destroying the window.
 	KillTimeCallback(DISSECTION_UPDATE_TIMECALLBACK);
 }
 
+// Populates the window menu bar.
 void CryMemoryDissectionWindow::WindowMenuBar(Bar& pBar)
 {
 	pBar.Add("File", THISBACK(FileMenuBar));
@@ -166,12 +167,14 @@ void CryMemoryDissectionWindow::WindowMenuBar(Bar& pBar)
 	pBar.Add(this->mAvailableDissections, 200);
 }
 
+// Populates the file menu bar.
 void CryMemoryDissectionWindow::FileMenuBar(Bar& pBar)
 {
 	pBar.Add("New", CrySearchIml::AddToAddressList(), THISBACK(NewStructureClicked));
 	pBar.Add("Close", CrySearchIml::ExitApplication(), THISBACK(CloseWindow));
 }
 
+// Populates the dissection menu bar.
 void CryMemoryDissectionWindow::DissectionMenuBar(Bar& pBar)
 {
 	// Check if the menu items should be enabled or disabled.
@@ -183,6 +186,7 @@ void CryMemoryDissectionWindow::DissectionMenuBar(Bar& pBar)
 	pBar.Add(allowed, "Remove", CrySearchIml::DeleteButton(), THISBACK(RemoveDissectionFromList));
 }
 
+// Populates the view menu bar.
 void CryMemoryDissectionWindow::ViewMenuBar(Bar& pBar)
 {
 	pBar.Add("View as hexadecimal", THISBACK(ToggleHexadecimalView)).Check(DissectionRowValueHexMode);
@@ -191,12 +195,14 @@ void CryMemoryDissectionWindow::ViewMenuBar(Bar& pBar)
 	pBar.Add("Settings", CrySearchIml::SettingsButton(), THISBACK(SettingsMenuClicked));
 }
 
+// Populates the absolute/relative address view menu.
 void CryMemoryDissectionWindow::ViewAddressesAsMenu(Bar& pBar)
 {
 	pBar.Add("Address", THISBACK(AddressViewModeClicked)).Check(!DissectionAddressViewMode);
 	pBar.Add("Offset", THISBACK(AddressViewModeClicked)).Check(DissectionAddressViewMode);
 }
 
+// Populates the offsets menu.
 void CryMemoryDissectionWindow::SetOffsetsMenuOpened(Bar& pBar)
 {
 	pBar.Add("Byte", THISBACK(OffsetMenuByte));
@@ -207,6 +213,7 @@ void CryMemoryDissectionWindow::SetOffsetsMenuOpened(Bar& pBar)
 	pBar.Add("Double", THISBACK(OffsetMenuDouble));
 }
 
+// Populates the context menu for right-clicking the memory dissection view.
 void CryMemoryDissectionWindow::DissectionRightClick(Bar& pBar)
 {
 	const int cursor = this->mDissection.GetCursor();
@@ -215,11 +222,25 @@ void CryMemoryDissectionWindow::DissectionRightClick(Bar& pBar)
 		pBar.Add(!mMemoryScanner->IsReadOnlyOperationMode(), "Change Value", CrySearchIml::ChangeRecordIcon(), THISBACK(ChangeRowValue));
 		pBar.Add("Change Type", THISBACK(ChangeRowOffsetMenu));
 		pBar.Separator();
+		
+		// Frozen status of some dissection row entry depends on the frozen value of its
+		// associated address table entry. Find this entry to be sure.
+		const DissectionRowEntry* const row = loadedTable.GetDissection(MemoryDissectionMasterIndex)->AssociatedDissector[cursor];
+		const int entryIdx = loadedTable.Find(loadedTable.GetDissection(MemoryDissectionMasterIndex)->AssociatedDissector.GetBaseAddress() + row->RowOffset, row->RowType);
+		if (entryIdx != -1 && loadedTable[entryIdx]->Frozen)
+		{
+			pBar.Add(!mMemoryScanner->IsReadOnlyOperationMode(), "Thaw", CrySearchIml::ThawIconSmall(), THISBACK(ToggleDissectionFreezeThaw));
+		}
+		else
+		{
+			pBar.Add(!mMemoryScanner->IsReadOnlyOperationMode(), "Freeze", CrySearchIml::FreezeAddressSmall(), THISBACK(ToggleDissectionFreezeThaw));
+		}
+		
 		pBar.Add("Add to address list", CrySearchIml::AddToAddressList(), THISBACK(AddRowToAddressList));
 	}
-	// generate struct definition for multiple rows?
 }
 
+// Adds the selected dissection row to the address table in the main window.
 void CryMemoryDissectionWindow::AddRowToAddressList()
 {
 	const int cursor = this->mDissection.GetCursor();
@@ -259,6 +280,47 @@ void CryMemoryDissectionWindow::DissectionEntryDoubleClicked()
 	}
 }
 
+// Toggles freeze/thaw for the selected dissection row.
+void CryMemoryDissectionWindow::ToggleDissectionFreezeThaw()
+{
+	const MemoryDissector& parent = loadedTable.GetDissection(MemoryDissectionMasterIndex)->AssociatedDissector;
+	const DissectionRowEntry* const entry = loadedTable.GetDissection(MemoryDissectionMasterIndex)->AssociatedDissector[this->mDissection.GetCursor()];
+	const SIZE_T addr = parent.GetBaseAddress() + entry->RowOffset;
+	AddressTableEntry* tblEntry = NULL;
+	
+	// Check whether the address-type combination already is part of the address table.
+	const int ind = loadedTable.Find(addr, entry->RowType);
+	if (ind == -1)
+	{
+		// Freezing some address to a value will require adding it to the address table.
+		Prompt("Freezing Address", CtrlImg::information(), "Freezing this entry will add it to the address table.", "OK");
+		tblEntry = loadedTable.Add("", addr, FALSE, entry->RowType);
+		tblEntry->Frozen = true;
+
+		// Read the value at this address and set the frozen value of the address table entry.
+		Byte readBuffer[STRING_MAX_UNTIL_NULL * sizeof(wchar_t)];
+		if (mMemoryScanner->Peek(addr, entry->DataLength ? min(entry->DataLength, (int)(STRING_MAX_UNTIL_NULL * sizeof(wchar_t))) : sizeof(__int64), readBuffer))
+		{
+			// Properly format the final value.
+			tblEntry->FrozenValue = ValueAsStringInternal(readBuffer, entry->RowType, entry->DataLength, DissectionRowValueHexMode);
+		}
+		else
+		{
+			tblEntry->Value =  "???";
+			tblEntry->FrozenValue = tblEntry->Value;
+		}
+	}
+	else
+	{
+		// Entry was found in the address table.
+		tblEntry = loadedTable[ind];
+		
+		// Toggle freeze/thaw on the address table entry.
+		tblEntry->Frozen = !tblEntry->Frozen;
+	}
+}
+
+// Changes the value of the selected dissection row.
 void CryMemoryDissectionWindow::ChangeRowValue()
 {
 	MemoryDissectionEntry* entry = loadedTable.GetDissection(MemoryDissectionMasterIndex);
@@ -277,6 +339,7 @@ void CryMemoryDissectionWindow::ChangeRowValue()
 	delete cmdcvw;
 }
 
+// Populates the change row offset menu.
 void CryMemoryDissectionWindow::ChangeRowOffsetMenu(Bar& pBar)
 {
 	// Get selected dissection to find out which type is currently set.
@@ -556,6 +619,7 @@ void CryMemoryDissectionWindow::NewDissectionFromAddressTableEntry()
 	this->mExecuteNewEntryOnce = NULL;
 }
 
+// Toggles decimal/hexadecimal view of addresses.
 void CryMemoryDissectionWindow::ToggleHexadecimalView()
 {
 	// Swap the value of the hexadecimal view option and refresh the user interface.
@@ -566,17 +630,20 @@ void CryMemoryDissectionWindow::ToggleHexadecimalView()
 	}
 }
 
+// Executed when the dissection is switched to another.
 void CryMemoryDissectionWindow::MemoryDissectionEntryChanged()
 {
 	MemoryDissectionMasterIndex = this->mAvailableDissections.GetIndex();
 	this->RefreshDissection();
 }
 
+// Executed when the user opens the droplist of available dissections.
 void CryMemoryDissectionWindow::MemoryDissectionEntryDropped()
 {
 	this->mAvailableDissections.SetCount(loadedTable.GetDissectionCount());
 }
 
+// Changes the pointer (base address) of some dissection.
 void CryMemoryDissectionWindow::ChangePointerClicked()
 {
 	MemoryDissectionEntry* entry = loadedTable.GetDissection(MemoryDissectionMasterIndex);
@@ -594,6 +661,7 @@ void CryMemoryDissectionWindow::ChangePointerClicked()
 	delete cmdcpw;
 }
 
+// Removes the selected dissection from the droplist.
 void CryMemoryDissectionWindow::RemoveDissectionFromList()
 {
 	// Remove the dissection from the address table and refresh the user interface.
@@ -619,6 +687,7 @@ void CryMemoryDissectionWindow::RemoveDissectionFromList()
 	}
 }
 
+// Adds a new dissection to the droplist.
 void CryMemoryDissectionWindow::NewStructureClicked()
 {
 	String name;
@@ -645,11 +714,13 @@ void CryMemoryDissectionWindow::NewStructureClicked()
 	}
 }
 
+// Closes the memory dissection window.
 void CryMemoryDissectionWindow::CloseWindow()
 {
 	this->Close();
 }
 
+// Opens the memory dissection settings window.
 void CryMemoryDissectionWindow::SettingsMenuClicked()
 {
 	// Execute the settings window.
@@ -657,7 +728,7 @@ void CryMemoryDissectionWindow::SettingsMenuClicked()
 	if (cmdsw->Execute() == 10)
 	{
 		// Reload the hexadecimal toggle value.
-		DissectionRowValueHexMode = SettingsFile::GetInstance()->GetDissectionHexadecimalView();		
+		DissectionRowValueHexMode = SettingsFile::GetInstance()->GetDissectionHexadecimalView();
 	}
 	
 	delete cmdsw;

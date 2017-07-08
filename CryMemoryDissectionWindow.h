@@ -31,6 +31,7 @@ private:
 	
 	void DissectionEntryDoubleClicked();
 	void AddRowToAddressList();
+	void ToggleDissectionFreezeThaw();
 	void ChangeRowValue();
 	void NewDissectionFromAddressTableEntry();
 	void CloseWindow();
