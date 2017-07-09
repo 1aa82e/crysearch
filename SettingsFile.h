@@ -174,7 +174,7 @@ public:
 	
 	void SetDissectionUpdateInterval(int value = 500)			{ this->mDissectionUpdateInterval = value; }
 	void SetDissectionHexadecimalView(bool value = false)		{ this->mDissectionHexView = value; }
-	void SetEnableDissectionTypeGuessing(bool value = false)	{ this->mEnableDissectionTypeGuessing = value; }
+	void SetEnableDissectionTypeGuessing(bool value = true)		{ this->mEnableDissectionTypeGuessing = value; }
 	void SetShowArchitectureInProcWindow(bool value = false)	{ this->mShowArchitectureInProcWindow = value; }
 	
 	// Hotkey list functions

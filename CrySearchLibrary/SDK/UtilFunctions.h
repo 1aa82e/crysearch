@@ -36,6 +36,28 @@ typedef int CCryDataType;
 #define CRYDATATYPE_STRING			8
 #define CRYDATATYPE_WSTRING			9
 
+// Type guessing parameter structure.
+typedef struct _TYPE_GUESS_PARAMS
+{
+	// A pointer to the data that is supplied as value.
+	void* Value;
+
+	// The maximum number of bytes that the type guesser can utilize. This typically is the size of the value.
+	unsigned int MaxSize;
+
+	// The data length as an output parameter. This field is set by the type guesser.
+	int OutDataLength;
+
+	// The lower bound of module address space in the opened process.
+	SIZE_T AddressLowerBound;
+
+	// The upper bound of module address space in the opened process.
+	SIZE_T AddressUpperBound;
+
+	// The size of a pointer in the target process architecture.
+	unsigned int PointerSize;
+} TYPE_GUESS_PARAMS, *PTYPE_GUESS_PARAMS;
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -72,10 +94,8 @@ extern "C"
 	// Retrieves information about the operating system for a crash report. The recommended length for the 'maxLength' parameter is 256.
 	void GetOSVersionString(char* const pOutString, const DWORD maxLength);
 
-	// Tries to guess the data type of a value. The 'value' parameter must be a valid pointer to the data to guess.
-	// Returns the guessed type or CRYDATATYPE_4BYTES if the type is 4 bytes or when the type could not be guessed.
-	// This function is not yet implemented so it always returns 4-bytes.
-	const CCryDataType GuessTypeOfValue(const void* value);
+	// Tries to guess the data type of a value according to the parameter structure.
+	const CCryDataType GuessTypeOfValue(PTYPE_GUESS_PARAMS const pParams);
 
 	// Retrieves information about the processor in the system. The first parameter should be a buffer of 128 bytes
 	// that receives the processor information string. The string will contain information about supported machine

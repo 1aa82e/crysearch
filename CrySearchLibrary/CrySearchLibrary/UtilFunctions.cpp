@@ -257,13 +257,78 @@ void GetOSVersionString(char* const pOutString, const DWORD maxLength)
 	strcat_s(pOutString, maxLength, (char*)&lastPart);
 }
 
-// Tries to guess the data type of a value. The 'value' parameter must be a valid pointer to the data to guess.
-// Returns the guessed type or CRYDATATYPE_4BYTES if the type is 4 bytes or when the type could not be guessed.
-// This function is not yet implemented so it always returns 4-bytes.
-const CCryDataType GuessTypeOfValue(const void* value)
+// Tries to guess the data type of a value according to the parameter structure.
+const CCryDataType GuessTypeOfValue(PTYPE_GUESS_PARAMS const pParams)
 {
+	// First interpret it as an integer to see whether it has some human-readable integer value.
+	if (pParams->MaxSize >= sizeof(int) && (*(int*)pParams->Value >= -100000 && *(int*)pParams->Value <= 100000))
+	{
+		// Guessed to be of integer data type.
+		pParams->OutDataLength = 0;
+		return CRYDATATYPE_4BYTES;
+	}
+	// Check whether the first four characters are in the range of ASCII characters.
+	else if (pParams->MaxSize >= 4 * sizeof(char))
+	{
+		bool res = true;
+		unsigned int i = 0;
+		for (; i < 4 && res; ++i)
+		{
+			if (((char*)pParams->Value)[i] < 0x20 || ((char*)pParams->Value)[i] > 0x7E)
+			{
+				res = false;
+			}
+		}
+
+		// Guessed to be of type ASCII string, currently of 4 bytes in length.
+		if (res)
+		{
+			// See whether the string is longer, up to a certain threshold (32).
+			for (; i < min(32, pParams->MaxSize) && ((char*)pParams->Value)[i] != 0; ++i);
+			pParams->OutDataLength = i;
+			return CRYDATATYPE_STRING;
+		}
+	}
+
+	// Check whether the value could be a pointer.
+	if (pParams->MaxSize >= pParams->PointerSize)
+	{
+		pParams->OutDataLength = 0;
+
+		// 32-bit or 64-bit architecture?
+		if (pParams->PointerSize == sizeof(int))
+		{
+			if (*(unsigned int*)pParams->Value >= pParams->AddressLowerBound && *(unsigned int*)pParams->Value <= pParams->AddressUpperBound)
+			{
+				return CRYDATATYPE_4BYTES;
+			}
+		}
+		else
+		{
+			if (*(unsigned __int64*)pParams->Value >= pParams->AddressLowerBound && *(unsigned __int64*)pParams->Value <= pParams->AddressUpperBound)
+			{
+				return CRYDATATYPE_8BYTES;
+			}
+		}
+	}
+
+	// Now we see if it matches the human-readable condition while interpreted as float.
+	if (pParams->MaxSize >= sizeof(float) && (*(float*)pParams->Value >= -100000.0f && *(float*)pParams->Value <= 100000.0f))
+	{
+		// Guessed to be of float data type.
+		pParams->OutDataLength = 0;
+		return CRYDATATYPE_FLOAT;
+	}
+	// The same if it matches the human-readable condition while interpreted as double.
+	else if (pParams->MaxSize >= sizeof(double) && (*(double*)pParams->Value >= -100000.0 && *(double*)pParams->Value <= 100000.0))
+	{
+		// Guessed to be of float data type.
+		pParams->OutDataLength = 0;
+		return CRYDATATYPE_DOUBLE;
+	}
+
 	// The type could not be guessed. Return the default data type.
-	// Nothing implemented yet!
+	pParams->OutDataLength = 0;
 	return CRYDATATYPE_4BYTES;
 }
 

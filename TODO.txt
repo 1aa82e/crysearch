@@ -10,7 +10,7 @@ Package:
 
 - Is there a bug that I cannot search for pointers?
 - Is there a bug that I cannot search for increased stuff properly?
-
+- From memory dissection, if row is of type pointer, right click to create new dissection at that address;
 - Use thread computing power more efficient?
 	- Workers are fired off and then pull work from a pool of pages?
 - Continue BeaEngine development (make it vectorized and stuff);

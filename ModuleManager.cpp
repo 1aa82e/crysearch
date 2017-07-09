@@ -194,6 +194,18 @@ String ModuleManager::GetModuleFilename(const SIZE_T mod) const
 	return GetFileNamePos(buffer.Begin());
 }
 
+// Gets the lowest address of any module in the manager.
+const SIZE_T ModuleManager::GetLowerBoundAddress() const
+{
+	return this->lowestAddress;
+}
+
+// Gets the highest address of any module in the manager.
+const SIZE_T ModuleManager::GetUpperBoundAddress() const
+{
+	return this->highestAddress;
+}
+
 #ifdef _WIN64
 	// Removes all non-wow64 modules from the internal list.
 	void ModuleManager::RemoveNonWow64Modules()

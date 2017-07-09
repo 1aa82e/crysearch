@@ -19,6 +19,9 @@ void __stdcall GetProcessorSupportInformation(char pProcInformationString[128])
 	BOOL tsx;
 	int CPUInfo[4] = {-1};
 	size_t lastChar = 0;
+	char brand[0x40];
+	unsigned int nExIds;
+	unsigned int i;
 	char* prefixString = "\1[+70 Your CPU: ";
 
 	// Get basic CPU information and dissect this information into seperate variables.
@@ -41,15 +44,14 @@ void __stdcall GetProcessorSupportInformation(char pProcInformationString[128])
 	tsx = CPUInfo[1] & (1 << 11);
 
 	// Create buffer for CPU brand string.
-	char brand[0x40];
 	memset(brand, 0, sizeof(brand));
 
 	// Get CPU brand info.
 	__cpuid(CPUInfo, 0x80000000);
-	unsigned int nExIds = CPUInfo[0];
+	nExIds = CPUInfo[0];
 
 	// Get the information associated with each extended ID.
-	for (unsigned int i = 0x80000000; i <= nExIds; ++i)
+	for (i = 0x80000000; i <= nExIds; ++i)
 	{
 		// Get extended CPU information from current ID.
 		__cpuid(CPUInfo, i);

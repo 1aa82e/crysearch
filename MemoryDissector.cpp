@@ -48,12 +48,25 @@ bool MemoryDissector::Dissect(const int rowOffset, const bool enableTypeGuessing
 	if (b && bytesRead == this->mRegionSize)
 	{
 		const Byte* endAddr = buffer + this->mRegionSize;
-		int totalSteps = 0;
-		for (Byte* loop = buffer; loop < endAddr; loop += rowOffset, totalSteps += rowOffset)
+		unsigned int runnningOffset = 0;
+		TYPE_GUESS_PARAMS params;
+		params.PointerSize = mMemoryScanner->IsX86Process() ? sizeof(int) : sizeof(__int64);
+		params.AddressLowerBound = mModuleManager->GetLowerBoundAddress();
+		params.AddressUpperBound = mModuleManager->GetUpperBoundAddress();
+		for (Byte* loop = buffer; loop < endAddr; )
 		{
-			// The first dissection should have a default row size, or type guessing.
-			const CCryDataType type = GuessTypeOfValue(loop);
-			this->mDissectionRows.Add(DissectionRowEntry(totalSteps, type, 0));
+			// Guess the type if requested.
+			params.Value = loop;
+			params.MaxSize = endAddr - loop;
+			const CCryDataType type = enableTypeGuessing ? GuessTypeOfValue(&params) : CRYDATATYPE_4BYTES;
+			const int typeSize = type >= CRYDATATYPE_AOB ? params.OutDataLength : GetDataSizeFromValueType(type);
+			
+			// Add the dissection row accordingly.
+			this->mDissectionRows.Add(DissectionRowEntry(runnningOffset, type, params.OutDataLength));
+			
+			// Complete iterations.
+			loop += typeSize;
+			runnningOffset += typeSize;
 		}
 		
 		result = true;

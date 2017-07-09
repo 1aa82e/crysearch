@@ -10,7 +10,9 @@ v3.1:
 	- Fixes and changes to the memory dissection window:
 		- Now possible to double click some entry to edit its value;
 		- Fixed bug where existing values for entries would be incorrectly read in change value dialog;
-		- Now possible to freeze an address. This will automatically add the address to the address table.
+		- Now possible to freeze an address. This will automatically add the address to the address table;
+		- Fixed bug where altering the types of dissection rows would result in incorrect offsets;
+		- Added type guessing for dissection rows, enabled by default from the settings window in the memory dissection window.
 	- Fixed bug in read-only operation mode where address table values would not be periodically updated;
 	- Removed the Code Generator component. The code generator will be developed as a separate command-line application;
 	- 

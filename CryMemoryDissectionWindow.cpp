@@ -117,8 +117,8 @@ CryMemoryDissectionWindow::CryMemoryDissectionWindow(const AddressTableEntry* co
 	
 	this->mDissection.WhenBar = THISBACK(DissectionRightClick);
 	this->mDissection.WhenLeftDouble = THISBACK(DissectionEntryDoubleClicked);
-	this->mDissection.CryAddRowNumColumn("Address", 65).SetConvert(Single<IndexBasedValueConvert<GetDissectionAddress>>()).SetDisplay(MemoryDissectionEntryDrawInstance);
-	this->mDissection.CryAddRowNumColumn("Value", 35).SetConvert(Single<IndexBasedValueConvert<GetDissectionValue>>());
+	this->mDissection.CryAddRowNumColumn("Address", 60).SetConvert(Single<IndexBasedValueConvert<GetDissectionAddress>>()).SetDisplay(MemoryDissectionEntryDrawInstance);
+	this->mDissection.CryAddRowNumColumn("Value", 40).SetConvert(Single<IndexBasedValueConvert<GetDissectionValue>>());
 	
 	// Add existing dissections to drop list.
 	this->mAvailableDissections.SetConvert(Single<IndexBasedValueConvert<GetDissectionForDropList>>());
@@ -491,7 +491,7 @@ void CryMemoryDissectionWindow::RowOffsetMenuByte()
 {
 	const int row = this->mDissection.GetCursor();
 	DissectionRowEntry* entry = loadedTable.GetDissection(MemoryDissectionMasterIndex)->AssociatedDissector[row];
-	const int oldSize = GetDataSizeFromValueType(entry->RowType);
+	const int oldSize = entry->DataLength ? entry->DataLength : GetDataSizeFromValueType(entry->RowType);
 	entry->RowType = CRYDATATYPE_BYTE;
 	entry->DataLength = 0;
 	this->AlterSuccessingRows(row, GetDataSizeFromValueType(CRYDATATYPE_BYTE) - oldSize);
@@ -502,7 +502,7 @@ void CryMemoryDissectionWindow::RowOffsetMenuTwoBytes()
 {
 	const int row = this->mDissection.GetCursor();
 	DissectionRowEntry* entry = loadedTable.GetDissection(MemoryDissectionMasterIndex)->AssociatedDissector[row];
-	const int oldSize = GetDataSizeFromValueType(entry->RowType);
+	const int oldSize = entry->DataLength ? entry->DataLength : GetDataSizeFromValueType(entry->RowType);
 	entry->RowType = CRYDATATYPE_2BYTES;
 	entry->DataLength = 0;
 	this->AlterSuccessingRows(row, GetDataSizeFromValueType(CRYDATATYPE_2BYTES) - oldSize);
@@ -513,7 +513,7 @@ void CryMemoryDissectionWindow::RowOffsetMenuFourBytes()
 {
 	const int row = this->mDissection.GetCursor();
 	DissectionRowEntry* entry = loadedTable.GetDissection(MemoryDissectionMasterIndex)->AssociatedDissector[row];
-	const int oldSize = GetDataSizeFromValueType(entry->RowType);
+	const int oldSize = entry->DataLength ? entry->DataLength : GetDataSizeFromValueType(entry->RowType);
 	entry->RowType = CRYDATATYPE_4BYTES;
 	entry->DataLength = 0;
 	this->AlterSuccessingRows(row, GetDataSizeFromValueType(CRYDATATYPE_4BYTES) - oldSize);
@@ -524,7 +524,7 @@ void CryMemoryDissectionWindow::RowOffsetMenuEightBytes()
 {
 	const int row = this->mDissection.GetCursor();
 	DissectionRowEntry* entry = loadedTable.GetDissection(MemoryDissectionMasterIndex)->AssociatedDissector[row];
-	const int oldSize = GetDataSizeFromValueType(entry->RowType);
+	const int oldSize = entry->DataLength ? entry->DataLength : GetDataSizeFromValueType(entry->RowType);
 	entry->RowType = CRYDATATYPE_8BYTES;
 	entry->DataLength = 0;
 	this->AlterSuccessingRows(row, GetDataSizeFromValueType(CRYDATATYPE_8BYTES) - oldSize);
@@ -535,7 +535,7 @@ void CryMemoryDissectionWindow::RowOffsetMenuFloat()
 {
 	const int row = this->mDissection.GetCursor();
 	DissectionRowEntry* entry = loadedTable.GetDissection(MemoryDissectionMasterIndex)->AssociatedDissector[row];
-	const int oldSize = GetDataSizeFromValueType(entry->RowType);
+	const int oldSize = entry->DataLength ? entry->DataLength : GetDataSizeFromValueType(entry->RowType);
 	entry->RowType = CRYDATATYPE_FLOAT;
 	entry->DataLength = 0;
 	this->AlterSuccessingRows(row, GetDataSizeFromValueType(CRYDATATYPE_FLOAT) - oldSize);
@@ -546,7 +546,7 @@ void CryMemoryDissectionWindow::RowOffsetMenuDouble()
 {
 	const int row = this->mDissection.GetCursor();
 	DissectionRowEntry* entry = loadedTable.GetDissection(MemoryDissectionMasterIndex)->AssociatedDissector[row];
-	const int oldSize = GetDataSizeFromValueType(entry->RowType);
+	const int oldSize = entry->DataLength ? entry->DataLength : GetDataSizeFromValueType(entry->RowType);
 	entry->RowType = CRYDATATYPE_DOUBLE;
 	entry->DataLength = 0;
 	this->AlterSuccessingRows(row, GetDataSizeFromValueType(CRYDATATYPE_DOUBLE) - oldSize);
