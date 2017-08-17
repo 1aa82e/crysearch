@@ -64,12 +64,11 @@ public:
 	const DWORD GetRegionSize() const;
 	const int GetDissectionRowCount() const;
 	
-	bool Dissect(const int rowOffset, const bool enableTypeGuessing);
+	bool Dissect(const CCryDataType rowType, const bool enableTypeGuessing);
 	void Clear();
 	
 	void SetBaseAddress(const SIZE_T addr);
 	void SetRegionSize(const DWORD regionSize);
-	void SetGlobalDissectionType(const CCryDataType type);
 	
 	DissectionRowEntry* operator[] (const int index)
 	{

@@ -261,14 +261,15 @@ void GetOSVersionString(char* const pOutString, const DWORD maxLength)
 const CCryDataType GuessTypeOfValue(PTYPE_GUESS_PARAMS const pParams)
 {
 	// First interpret it as an integer to see whether it has some human-readable integer value.
-	if (pParams->MaxSize >= sizeof(int) && (*(int*)pParams->Value >= -100000 && *(int*)pParams->Value <= 100000))
+	if (pParams->MaxSize >= sizeof(int) && ((*(int*)pParams->Value >= -100000 && *(int*)pParams->Value <= 100000) || (*(int*)pParams->Value % 100 == 0)))
 	{
 		// Guessed to be of integer data type.
 		pParams->OutDataLength = 0;
 		return CRYDATATYPE_4BYTES;
 	}
+	
 	// Check whether the first four characters are in the range of ASCII characters.
-	else if (pParams->MaxSize >= 4 * sizeof(char))
+	if (pParams->MaxSize >= 4 * sizeof(char))
 	{
 		bool res = true;
 		unsigned int i = 0;
@@ -319,8 +320,9 @@ const CCryDataType GuessTypeOfValue(PTYPE_GUESS_PARAMS const pParams)
 		pParams->OutDataLength = 0;
 		return CRYDATATYPE_FLOAT;
 	}
+	
 	// The same if it matches the human-readable condition while interpreted as double.
-	else if (pParams->MaxSize >= sizeof(double) && (*(double*)pParams->Value >= -100000.0 && *(double*)pParams->Value <= 100000.0))
+	if (pParams->MaxSize >= sizeof(double) && (*(double*)pParams->Value >= -100000.0 && *(double*)pParams->Value <= 100000.0))
 	{
 		// Guessed to be of float data type.
 		pParams->OutDataLength = 0;

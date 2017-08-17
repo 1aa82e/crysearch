@@ -17,6 +17,8 @@ private:
 	CrySearchArrayCtrl mRegisterView;
 	
 	void HitInstructionClicked();
+	void CopyRegisterViewValue();
+	void RegisterValueRightClick(Bar& pBar);
 	
 	typedef CryDebuggerHitView CLASSNAME;
 public:

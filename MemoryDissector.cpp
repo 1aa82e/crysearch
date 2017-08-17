@@ -34,7 +34,7 @@ const int MemoryDissector::GetDissectionRowCount() const
 }
 
 // Starts dissection of the selected region of memory.
-bool MemoryDissector::Dissect(const int rowOffset, const bool enableTypeGuessing)
+bool MemoryDissector::Dissect(const CCryDataType rowType, const bool enableTypeGuessing)
 {
 	bool result = false;
 	
@@ -58,7 +58,7 @@ bool MemoryDissector::Dissect(const int rowOffset, const bool enableTypeGuessing
 			// Guess the type if requested.
 			params.Value = loop;
 			params.MaxSize = endAddr - loop;
-			const CCryDataType type = enableTypeGuessing ? GuessTypeOfValue(&params) : CRYDATATYPE_4BYTES;
+			const CCryDataType type = enableTypeGuessing ? GuessTypeOfValue(&params) : rowType;
 			const int typeSize = type >= CRYDATATYPE_AOB ? params.OutDataLength : GetDataSizeFromValueType(type);
 			
 			// Add the dissection row accordingly.
@@ -93,18 +93,4 @@ void MemoryDissector::SetBaseAddress(const SIZE_T addr)
 void MemoryDissector::SetRegionSize(const DWORD regionSize)
 {
 	this->mRegionSize = regionSize;
-}
-
-// Sets the same dissection type for every loaded dissection row entry.
-void MemoryDissector::SetGlobalDissectionType(const CCryDataType type)
-{
-	const int count = this->mDissectionRows.GetCount();
-	for (int i = 0; i < count; ++i)
-	{
-		DissectionRowEntry& entry = this->mDissectionRows[i];
-		entry.RowType = type;
-		
-		// We assume that this function is never called to change the global type to aob, string or wstring.
-		entry.DataLength = 0;
-	}
 }

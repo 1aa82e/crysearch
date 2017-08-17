@@ -12,9 +12,15 @@ v3.1:
 		- Fixed bug where existing values for entries would be incorrectly read in change value dialog;
 		- Now possible to freeze an address. This will automatically add the address to the address table;
 		- Fixed bug where altering the types of dissection rows would result in incorrect offsets;
-		- Added type guessing for dissection rows, enabled by default from the settings window in the memory dissection window.
+		- Added type guessing for dissection rows, enabled by default from the settings window in the memory dissection window;
+		- Now possible to create a dissection at some pointer-sized value that could be a pointer, by right-clicking the dissection row;
+		- 'Change Pointer' window is now called 'Edit', and provides possibility to change the size and pointer;
+		- Fixed bug where setting a global data type for all rows would not change everything properly.
 	- Fixed bug in read-only operation mode where address table values would not be periodically updated;
 	- Removed the Code Generator component. The code generator will be developed as a separate command-line application;
+	- Fixes and additions to the debugger window:
+		- Fixed bug where stack view would present incorrect measures;
+		- Added right-click options to copy the value of registers and stack addresses.
 	- 
 
 v3.0:

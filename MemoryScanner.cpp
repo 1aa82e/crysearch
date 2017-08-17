@@ -572,9 +572,12 @@ void MemoryScanner::FirstScanWorker(MemoryScannerWorkerContext* const context, c
 		{
 			const T tempStore = *(T*)&(buffer[j]);
 
+if (context->OutputFileStoragePtr->BaseAddress + j == 0x2DE9DA0C)
+	auto x = 1;
+
 			// Compare the value at this memory address.
 			if (cmp(tempStore, value))
-			{
+			{				
 				localAddresses.Set(addrIndex, true);
 				localValues[valueIndex++] = tempStore;
 			}
@@ -1163,7 +1166,7 @@ void MemoryScanner::FirstWorkerPrologue(MemoryScannerWorkerContext* const contex
 		// Create a storage structure for this memory page.
 		MemoryRegionFileHeader storage(i, currentRegion.BaseAddress, context->FastScanAlignSize, context->OutputValueFileIndex);
 		context->OutputFileStoragePtr = &storage;
-		
+
 		// Try to read the memory page contents into local memory.
 		if (CrySearchRoutines.CryReadMemoryRoutine(this->mOpenedProcessHandle, (void*)currentRegion.BaseAddress, context->MemoryRegionBuffer, currentRegion.MemorySize, &context->MemoryRegionBytesRead))
 		{

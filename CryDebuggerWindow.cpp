@@ -40,14 +40,14 @@ String GetStackViewAddress(const int index)
 #ifdef _WIN64
 	if (mMemoryScanner->IsX86Process())
 	{
-		return FormatHexadecimalIntSpecial((int)(*mDebugger)[BreakpointMasterIndex].Address + (index * sizeof(DWORD)));
+		return FormatHexadecimalIntSpecial((int)(*mDebugger)[BreakpointMasterIndex].BreakpointSnapshot.Wow64Context.Esp + (index * sizeof(DWORD)));
 	}
 	else
 	{
-		return FormatInt64HexUpper((*mDebugger)[BreakpointMasterIndex].Address + (index * sizeof(SIZE_T)));
+		return FormatInt64HexUpper((*mDebugger)[BreakpointMasterIndex].BreakpointSnapshot.Context64.Rsp + (index * sizeof(DWORD)));
 	}
 #else
-	return FormatHexadecimalIntSpecial((*mDebugger)[BreakpointMasterIndex].Address + (index * sizeof(DWORD)));
+	return FormatHexadecimalIntSpecial((*mDebugger)[BreakpointMasterIndex].BreakpointSnapshot.Context86.Esp + (index * sizeof(DWORD)));
 #endif
 }
 
@@ -59,20 +59,20 @@ String GetStackViewValue(const int index)
 	{
 		const SIZE_T esp = (*mDebugger)[BreakpointMasterIndex].BreakpointSnapshot.Wow64Context.Esp;
 		int value;
-		mMemoryScanner->Peek(esp + (index * sizeof(DWORD)), 0, &value);
+		mMemoryScanner->Peek(esp + (index * sizeof(DWORD)), sizeof(DWORD), &value);
 		return FormatHexadecimalIntSpecial(value);
 	}
 	else
 	{
 		const SIZE_T esp = (*mDebugger)[BreakpointMasterIndex].BreakpointSnapshot.Context64.Rsp;
 		__int64 value;
-		mMemoryScanner->Peek(esp + (index * sizeof(SIZE_T)), 0, &value);
+		mMemoryScanner->Peek(esp + (index * sizeof(SIZE_T)), sizeof(SIZE_T), &value);
 		return FormatInt64HexUpper(value);
 	}
 #else
 	const SIZE_T esp = (*mDebugger)[BreakpointMasterIndex].BreakpointSnapshot.Context86.Esp;
 	int value;
-	mMemoryScanner->Peek(esp + (index * sizeof(DWORD)), 0, &value);
+	mMemoryScanner->Peek(esp + (index * sizeof(DWORD)), sizeof(DWORD), &value);
 	return FormatHexadecimalIntSpecial(value);
 #endif
 }
@@ -134,6 +134,7 @@ CryDebuggerWindow::CryDebuggerWindow()
 	
 	this->mStackView.CryAddRowNumColumn("Address").SetConvert(Single<IndexBasedValueConvert<GetStackViewAddress>>());
 	this->mStackView.CryAddRowNumColumn("Value").SetConvert(Single<IndexBasedValueConvert<GetStackViewValue>>());
+	this->mStackView.WhenBar = THISBACK(StackViewRightClick);
 	
 	this->mCallStackView.CryAddRowNumColumn("Function Call").SetConvert(Single<IndexBasedValueConvert<GetCallStackFunctionCall>>());
 	this->mCallStackView.WhenBar = THISBACK(CallStackListRightClick);
@@ -181,6 +182,19 @@ void CryDebuggerWindow::BreakpointSelectionChanged()
 	this->mToolStrip.Set(THISBACK(ToolStrip));
 }
 
+// Executed when the user right clicks the stack view.
+void CryDebuggerWindow::StackViewRightClick(Bar& pBar)
+{
+	if (mDebugger->IsDebuggerAttached())
+	{
+		const int cursor = this->mStackView.GetCursor();
+		if (cursor >= 0 && mDebugger->GetBreakpointCount() > 0)
+		{
+			pBar.Add("Copy Value", CtrlImg::copy(), THISBACK(CopyStackViewValue));
+		}
+	}
+}
+
 // Executed when the user right clicks the breakpoint list.
 void CryDebuggerWindow::BreakpointListRightClick(Bar& pBar)
 {
@@ -205,6 +219,16 @@ void CryDebuggerWindow::CallStackListRightClick(Bar& pBar)
 		{
 			pBar.Add("Go to Disassembly", CrySearchIml::DisassemblyIcon(), THISBACK(FollowStackTraceInDisassembler));
 		}
+	}
+}
+
+// Copies the value of the selected stack view row.
+void CryDebuggerWindow::CopyStackViewValue()
+{
+	const int cursor = this->mStackView.GetCursor();
+	if (cursor > 0 && this->mStackView.GetCount())
+	{
+		WriteClipboardText(GetStackViewValue(cursor));
 	}
 }
 

@@ -27,7 +27,9 @@ private:
 	void ToolStrip(Bar& pBar);
 	void BreakpointListRightClick(Bar& pBar);
 	void CallStackListRightClick(Bar& pBar);
+	void StackViewRightClick(Bar& pBar);
 	
+	void CopyStackViewValue();
 	void DynamicCreateStackView();
 	void FollowStackTraceInDisassembler();
 	void DisableBreakpointButtonClicked();

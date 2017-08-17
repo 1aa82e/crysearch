@@ -115,6 +115,7 @@ CryDebuggerHitView::CryDebuggerHitView()
 	
 	this->mRegisterView.CryAddRowNumColumn("Register", 40).SetConvert(Single<IndexBasedValueConvert<GetRegisterName>>());
 	this->mRegisterView.CryAddRowNumColumn("Value", 60).SetConvert(Single<IndexBasedValueConvert<GetRegisterValue>>());
+	this->mRegisterView.WhenBar = THISBACK(RegisterValueRightClick);
 	
 	this->disasmAddress = 0;
 }
@@ -123,6 +124,26 @@ CryDebuggerHitView::CryDebuggerHitView()
 CryDebuggerHitView::~CryDebuggerHitView()
 {
 	
+}
+
+// Executed when the user right clicks the register view.
+void CryDebuggerHitView::RegisterValueRightClick(Bar& pBar)
+{
+	const int cursor = this->mRegisterView.GetCursor();
+	if (cursor >= 0 && this->mRegisterView.GetCount() > 0)
+	{
+		pBar.Add("Copy Value", CtrlImg::copy(), THISBACK(CopyRegisterViewValue));
+	}
+}
+
+// Copies the value of the selected register to the clipboard.
+void CryDebuggerHitView::CopyRegisterViewValue()
+{
+	const int cursor = this->mRegisterView.GetCursor();
+	if (cursor >= 0 && this->mRegisterView.GetCount() > 0)
+	{
+		WriteClipboardText(GetRegisterValue(cursor));
+	}
 }
 
 // Sets the instruction string that is displayed in the underlying label.

@@ -29,6 +29,7 @@ private:
 	void ChangeRowOffsetMenu(Bar& pBar);
 	void ViewAddressesAsMenu(Bar& pBar);
 	
+	void NewDissectionFromSelectedPointer();
 	void DissectionEntryDoubleClicked();
 	void AddRowToAddressList();
 	void ToggleDissectionFreezeThaw();
@@ -36,13 +37,13 @@ private:
 	void NewDissectionFromAddressTableEntry();
 	void CloseWindow();
 	void SettingsMenuClicked();
-	void ChangePointerClicked();
+	void EditDissectionClicked();
 	void RemoveDissectionFromList();
 	void NewStructureClicked();
 	void MemoryDissectionEntryChanged();
 	void MemoryDissectionEntryDropped();
 	void ToggleHexadecimalView();
-	void RefreshDissection();
+	void RefreshDissection(const CCryDataType globalType);
 	void IntervalUpdateDissection();
 	void OffsetMenuByte();
 	void OffsetMenuTwoBytes();

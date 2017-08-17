@@ -1,5 +1,5 @@
 #include "CryMemoryDissectionWindow.h"
-#include "CryMemoryDissectionChangePointerWindow.h"
+#include "CryMemoryDissectionChangeWindow.h"
 #include "CryMemoryDissectionChangeValueWindow.h"
 #include "CryMemoryDissectionNewWindow.h"
 #include "CryMemoryDissectionSettingsWindow.h"
@@ -131,7 +131,7 @@ CryMemoryDissectionWindow::CryMemoryDissectionWindow(const AddressTableEntry* co
 	if (count > 0)
 	{
 		this->mAvailableDissections.SetIndex(0);
-		this->RefreshDissection();
+		this->RefreshDissection(CRYDATATYPE_4BYTES);
 	}
 	
 	// This variable is set by the caller that creates the dissection window. It indicates whether
@@ -180,7 +180,7 @@ void CryMemoryDissectionWindow::DissectionMenuBar(Bar& pBar)
 	// Check if the menu items should be enabled or disabled.
 	const bool allowed = !!loadedTable.GetDissectionCount() && this->mAvailableDissections.GetIndex() >= 0;
 	
-	pBar.Add(allowed, "Change Pointer", CrySearchIml::ChangeRecordIcon(), THISBACK(ChangePointerClicked));
+	pBar.Add(allowed, "Edit", CrySearchIml::ChangeRecordIcon(), THISBACK(EditDissectionClicked));
 	pBar.Add(allowed, "Set Types", THISBACK(SetOffsetsMenuOpened));
 	pBar.Separator();
 	pBar.Add(allowed, "Remove", CrySearchIml::DeleteButton(), THISBACK(RemoveDissectionFromList));
@@ -223,9 +223,22 @@ void CryMemoryDissectionWindow::DissectionRightClick(Bar& pBar)
 		pBar.Add("Change Type", THISBACK(ChangeRowOffsetMenu));
 		pBar.Separator();
 		
+		// If the type of the right-clicked row is 4-bytes and the architecture is x86, it
+		// could be a pointer. Without loss of generality, the same could be the case for x64.
+		const DissectionRowEntry* const row = loadedTable.GetDissection(MemoryDissectionMasterIndex)->AssociatedDissector[cursor];
+		if (mMemoryScanner->IsX86Process() && row->RowType == CRYDATATYPE_4BYTES
+#ifdef _WIN64
+			|| (!mMemoryScanner->IsX86Process() && row->RowType == CRYDATATYPE_8BYTES)
+#endif
+		)
+		{
+			pBar.Add("New Dissection from here", THISBACK(NewDissectionFromSelectedPointer));
+			pBar.Separator();
+		}
+		
 		// Frozen status of some dissection row entry depends on the frozen value of its
 		// associated address table entry. Find this entry to be sure.
-		const DissectionRowEntry* const row = loadedTable.GetDissection(MemoryDissectionMasterIndex)->AssociatedDissector[cursor];
+		
 		const int entryIdx = loadedTable.Find(loadedTable.GetDissection(MemoryDissectionMasterIndex)->AssociatedDissector.GetBaseAddress() + row->RowOffset, row->RowType);
 		if (entryIdx != -1 && loadedTable[entryIdx]->Frozen)
 		{
@@ -237,6 +250,29 @@ void CryMemoryDissectionWindow::DissectionRightClick(Bar& pBar)
 		}
 		
 		pBar.Add("Add to address list", CrySearchIml::AddToAddressList(), THISBACK(AddRowToAddressList));
+	}
+}
+
+// Creates a new dissection from some selected value that could be a pointer.
+void CryMemoryDissectionWindow::NewDissectionFromSelectedPointer()
+{
+	const int cursor = this->mDissection.GetCursor();
+	if (cursor >= 0 && loadedTable.GetDissection(MemoryDissectionMasterIndex))
+	{
+		// Create and add a new dissection.
+		MemoryDissectionEntry* entry = loadedTable.GetDissection(MemoryDissectionMasterIndex);
+		const DissectionRowEntry* row = entry->AssociatedDissector[cursor];
+		loadedTable.AddDissection(Format("Unknown #%i", loadedTable.GetDissectionCount()), (SIZE_T)ScanInt64(GetDissectionValue(cursor)), 512);
+	}
+	
+	// Refresh available memory dissection entries.
+	const int count = loadedTable.GetDissectionCount();
+	this->mAvailableDissections.SetCount(count);
+	if (count > 0)
+	{
+		this->mAvailableDissections.SetIndex(count - 1);
+		MemoryDissectionMasterIndex = this->mAvailableDissections.GetIndex();
+		this->RefreshDissection(CRYDATATYPE_4BYTES);
 	}
 }
 
@@ -379,7 +415,7 @@ void CryMemoryDissectionWindow::IntervalUpdateDissection()
 }
 
 // Refreshes the dissection that is currently selected.
-void CryMemoryDissectionWindow::RefreshDissection()
+void CryMemoryDissectionWindow::RefreshDissection(const CCryDataType globalType)
 {
 	const int count = loadedTable.GetDissectionCount();
 	
@@ -388,25 +424,18 @@ void CryMemoryDissectionWindow::RefreshDissection()
 	{
 		// Attempt to read and dissect the selected memory block.
 		MemoryDissectionEntry* entry = loadedTable.GetDissection(MemoryDissectionMasterIndex);
-		if (!entry->AssociatedDissector.GetDissectionRowCount())
+		
+		// The default row offset should be 4 but we should also take into account that the user may want to enable type guessing.
+		if (entry->AssociatedDissector.Dissect(globalType, SettingsFile::GetInstance()->GetEnableDissectionTypeGuessing()))
 		{
-			// The default row offset should be 4 but we should also take into account that the user may want to enable type guessing.
-			if (entry->AssociatedDissector.Dissect(sizeof(DWORD), SettingsFile::GetInstance()->GetEnableDissectionTypeGuessing()))
-			{
-				// Update user interface with dissection results.
-				this->mDissection.SetVirtualCount(entry->AssociatedDissector.GetDissectionRowCount());
-			}
-			else
-			{
-				// The memory dissection failed. Display error message and clear out user interface.
-				this->mDissection.Clear();
-				Prompt("Fatal Error", CtrlImg::error(), "Failed to read specified memory block!", "OK");
-			}
+			// Update user interface with dissection results.
+			this->mDissection.SetVirtualCount(entry->AssociatedDissector.GetDissectionRowCount());
 		}
 		else
 		{
-			// The memory dissection already contains rows. Just load the rows into the window display.
-			this->mDissection.SetVirtualCount(entry->AssociatedDissector.GetDissectionRowCount());
+			// The memory dissection failed. Display error message and clear out user interface.
+			this->mDissection.Clear();
+			Prompt("Fatal Error", CtrlImg::error(), "Failed to read specified memory block!", "OK");
 		}
 	}
 	else
@@ -430,37 +459,37 @@ void CryMemoryDissectionWindow::AddressViewModeClicked()
 // Sets the memory dissection size to one byte.
 void CryMemoryDissectionWindow::OffsetMenuByte()
 {
-	loadedTable.GetDissection(MemoryDissectionMasterIndex)->AssociatedDissector.SetGlobalDissectionType(CRYDATATYPE_BYTE);
+	this->RefreshDissection(CRYDATATYPE_BYTE);
 }
 
 // Sets the memory dissection size to two bytes.
 void CryMemoryDissectionWindow::OffsetMenuTwoBytes()
 {
-	loadedTable.GetDissection(MemoryDissectionMasterIndex)->AssociatedDissector.SetGlobalDissectionType(CRYDATATYPE_2BYTES);
+	this->RefreshDissection(CRYDATATYPE_2BYTES);
 }
 
 // Sets the memory dissection size to four bytes.
 void CryMemoryDissectionWindow::OffsetMenuFourBytes()
 {
-	loadedTable.GetDissection(MemoryDissectionMasterIndex)->AssociatedDissector.SetGlobalDissectionType(CRYDATATYPE_4BYTES);
+	this->RefreshDissection(CRYDATATYPE_4BYTES);
 }
 
 // Sets the memory dissection size to eight bytes.
 void CryMemoryDissectionWindow::OffsetMenuEightBytes()
 {
-	loadedTable.GetDissection(MemoryDissectionMasterIndex)->AssociatedDissector.SetGlobalDissectionType(CRYDATATYPE_8BYTES);
+	this->RefreshDissection(CRYDATATYPE_8BYTES);
 }
 
 // Sets the memory dissection type to float.
 void CryMemoryDissectionWindow::OffsetMenuFloat()
 {
-	loadedTable.GetDissection(MemoryDissectionMasterIndex)->AssociatedDissector.SetGlobalDissectionType(CRYDATATYPE_FLOAT);
+	this->RefreshDissection(CRYDATATYPE_FLOAT);
 }
 
 // Sets the memory dissection type to double.
 void CryMemoryDissectionWindow::OffsetMenuDouble()
 {
-	loadedTable.GetDissection(MemoryDissectionMasterIndex)->AssociatedDissector.SetGlobalDissectionType(CRYDATATYPE_DOUBLE);
+	this->RefreshDissection(CRYDATATYPE_DOUBLE);
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -612,7 +641,7 @@ void CryMemoryDissectionWindow::NewDissectionFromAddressTableEntry()
 	{
 		this->mAvailableDissections.SetIndex(count - 1);
 		MemoryDissectionMasterIndex = this->mAvailableDissections.GetIndex();
-		this->RefreshDissection();
+		this->RefreshDissection(CRYDATATYPE_4BYTES);
 	}
 	
 	// Reset the variable so this function can not be called again. Just in case.
@@ -634,7 +663,7 @@ void CryMemoryDissectionWindow::ToggleHexadecimalView()
 void CryMemoryDissectionWindow::MemoryDissectionEntryChanged()
 {
 	MemoryDissectionMasterIndex = this->mAvailableDissections.GetIndex();
-	this->RefreshDissection();
+	this->RefreshDissection(CRYDATATYPE_4BYTES);
 }
 
 // Executed when the user opens the droplist of available dissections.
@@ -644,21 +673,23 @@ void CryMemoryDissectionWindow::MemoryDissectionEntryDropped()
 }
 
 // Changes the pointer (base address) of some dissection.
-void CryMemoryDissectionWindow::ChangePointerClicked()
+void CryMemoryDissectionWindow::EditDissectionClicked()
 {
 	MemoryDissectionEntry* entry = loadedTable.GetDissection(MemoryDissectionMasterIndex);
 	SIZE_T ptr = entry->AssociatedDissector.GetBaseAddress();
-	CryMemoryDissectionChangePointerWindow* cmdcpw = new CryMemoryDissectionChangePointerWindow(&ptr);
+	SIZE_T sz = entry->AssociatedDissector.GetRegionSize();
+	CryMemoryDissectionChangeWindow* cmdcw = new CryMemoryDissectionChangeWindow(&ptr, &sz);
 
 	// Check if dialog result was OK.
-	if (cmdcpw->Execute() == 10)
+	if (cmdcw->Execute() == 10)
 	{
 		entry->AssociatedDissector.SetBaseAddress(ptr);
+		entry->AssociatedDissector.SetRegionSize(sz);
 		this->mAvailableDissections.SetCount(loadedTable.GetDissectionCount());
-		this->RefreshDissection();
+		this->RefreshDissection(CRYDATATYPE_4BYTES);
 	}
 	
-	delete cmdcpw;
+	delete cmdcw;
 }
 
 // Removes the selected dissection from the droplist.
@@ -678,7 +709,7 @@ void CryMemoryDissectionWindow::RemoveDissectionFromList()
 	{
 		this->mAvailableDissections.SetCount(count);
 		this->mAvailableDissections.SetIndex(MemoryDissectionMasterIndex);
-		this->RefreshDissection();
+		this->RefreshDissection(CRYDATATYPE_4BYTES);
 	}
 	else
 	{
@@ -710,7 +741,7 @@ void CryMemoryDissectionWindow::NewStructureClicked()
 	{
 		this->mAvailableDissections.SetIndex(count - 1);
 		MemoryDissectionMasterIndex = this->mAvailableDissections.GetIndex();
-		this->RefreshDissection();
+		this->RefreshDissection(CRYDATATYPE_4BYTES);
 	}
 }
 
@@ -736,6 +767,6 @@ void CryMemoryDissectionWindow::SettingsMenuClicked()
 	// Most likely it is useful to refresh the dissection, but only if there actually are dissections.
 	if (loadedTable.GetDissectionCount() > 0)
 	{
-		this->RefreshDissection();
+		this->RefreshDissection(CRYDATATYPE_4BYTES);
 	}
 }

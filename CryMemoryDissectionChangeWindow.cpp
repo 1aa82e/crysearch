@@ -1,16 +1,20 @@
-#include "CryMemoryDissectionChangePointerWindow.h"
+#include "CryMemoryDissectionChangeWindow.h"
 #include "ImlProvider.h"
 #include "UIUtilities.h"
 #include "BackendGlobalDef.h"
 
-CryMemoryDissectionChangePointerWindow::CryMemoryDissectionChangePointerWindow(SIZE_T* const pPointer) : CryDialogTemplate(CrySearchIml::ChangeRecordIcon())
+// CryMemoryDissectionChangeWindow default consstructor.
+CryMemoryDissectionChangeWindow::CryMemoryDissectionChangeWindow(SIZE_T* const pPointer, SIZE_T* const pSize) : CryDialogTemplate(CrySearchIml::ChangeRecordIcon())
 {
 	this->mPointer = pPointer;
+	this->mSize = pSize;
 	this->Title("Change Pointer").SetRect(0, 0, 200, 100);
 	
 	*this
 		<< this->mPointerFieldLabel.SetLabel("Address:").LeftPos(5, 60).TopPos(5, 25)
 		<< this->mPointerField.HSizePos(65, 5).TopPos(5, 25)
+		<< this->mSizeFieldLabel.SetLabel("Size:").LeftPos(5, 60).TopPos(35, 25)
+		<< this->mSizeField.HSizePos(65, 5).TopPos(35, 25)
 		<< this->mCancel.SetLabel("Cancel").RightPos(5, 60).BottomPos(5, 25)
 		<< this->mOK.Ok().SetLabel("OK").RightPos(70, 60).BottomPos(5, 25)
 	;
@@ -21,19 +25,24 @@ CryMemoryDissectionChangePointerWindow::CryMemoryDissectionChangePointerWindow(S
 	// Load current pointer into text field.
 #ifdef _WIN64
 	this->mPointerField.SetText(FormatInt64HexUpper((LONG_PTR)*pPointer));
+	this->mSizeField.SetText(IntStr64((LONG_PTR)*pSize));
 #else
 	this->mPointerField.SetText(FormatHexadecimalIntSpecial((LONG_PTR)*pPointer));
+	this->mSizeField.SetText(IntStr((LONG_PTR)*pSize));
 #endif
 }
 
-CryMemoryDissectionChangePointerWindow::~CryMemoryDissectionChangePointerWindow()
+// CryMemoryDissectionChangeWindow default destructor.
+CryMemoryDissectionChangeWindow::~CryMemoryDissectionChangeWindow()
 {
 	
 }
 
-void CryMemoryDissectionChangePointerWindow::OkButtonClicked()
+// Executed when the user clicks the OK button.
+void CryMemoryDissectionChangeWindow::OkButtonClicked()
 {
 	String addrField = this->mPointerField.GetText().ToString();
+	String sizeField = this->mSizeField.GetText().ToString();
 	
 	// Check validity of start address.
 	if (addrField.IsEmpty())
@@ -77,6 +86,17 @@ void CryMemoryDissectionChangePointerWindow::OkButtonClicked()
 		return;
 	}
 	
+	// If the size parameter was a bogus value, the creation should be cancelled.
+	const int sizeParam = StrInt(sizeField);
+	if (sizeParam == 0x80000000)
+	{
+		Prompt("Input Error", CtrlImg::error(), "The specified size parameter is incorrect. Please enter a valid decimal value.", "OK");
+		return;
+	}
+	
+	// Set the new dissection parameters.
 	*this->mPointer = newptr;
+	*this->mSize = sizeParam;
+	
 	this->AcceptBreak(10);
 }

@@ -3,6 +3,7 @@
 #include "UIUtilities.h"
 #include "BackendGlobalDef.h"
 
+// CryMemoryDissectionNewWindow default constructor.
 CryMemoryDissectionNewWindow::CryMemoryDissectionNewWindow(String* pName, SIZE_T* pAddr, DWORD* pSize) : CryDialogTemplate(CrySearchIml::AddToAddressList())
 {
 	this->pStr = pName;
@@ -37,11 +38,13 @@ CryMemoryDissectionNewWindow::CryMemoryDissectionNewWindow(String* pName, SIZE_T
 	}
 }
 
+// CryMemoryDissectionNewWindow default destructor.
 CryMemoryDissectionNewWindow::~CryMemoryDissectionNewWindow()
 {
 	
 }
 
+// Executed when the user clicks the OK button.
 void CryMemoryDissectionNewWindow::OkButtonClicked()
 {
 	String nameField = this->mFriendlyName.GetText().ToString();
@@ -106,7 +109,7 @@ void CryMemoryDissectionNewWindow::OkButtonClicked()
 		return;
 	}
 	
-	//If the size parameter was a bogus value, the creation should be cancelled.
+	// If the size parameter was a bogus value, the creation should be cancelled.
 	if (sizeParam == 0x80000000)
 	{
 		Prompt("Input Error", CtrlImg::error(), "The specified size parameter is incorrect. Please enter a valid decimal value.", "OK");
