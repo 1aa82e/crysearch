@@ -39,6 +39,7 @@ void SettingsFile::Xmlize(XmlIO& pXml)
 		("SignatureMaskingByDefault", this->mSignatureMaskingByDefault)
 		("WarnForPackedProcess", this->mWarnForPackedProcess)
 		("ShowArchitectureInProcWindow", this->mShowArchitectureInProcWindow)
+		("ResolveDisassemblyImportedFunctions", this->mResolveDisassemblyImportedFunctions)
 	;
 }
 
@@ -82,6 +83,7 @@ void SettingsFile::DefaultSettings()
 	this->SetSignatureMaskingByDefault();
 	this->SetWarnForPackedProcess();
 	this->SetShowArchitectureInProcWindow();
+	this->SetResolveDisasmImportedFunctions();
 	this->Save();
 }
 

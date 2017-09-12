@@ -37,9 +37,9 @@ CrySignatureGenerationWindow::CrySignatureGenerationWindow(const Vector<int>& ro
 		
 		// Disassemble the current line.
 #ifdef _WIN64
-		DisasmForBytes(DisasmVisibleLines[rows[i]], mMemoryScanner->IsX86Process() ? ARCH_X86 : ARCH_X64, &sequence, &localMask);
+		DisasmForBytes(DisasmVisibleLines[rows[i]], mMemoryScanner->IsX86Process() ? CS_MODE_32 : CS_MODE_64, &sequence, &localMask);
 #else
-		DisasmForBytes(DisasmVisibleLines[rows[i]], ARCH_X86, &sequence, &localMask);
+		DisasmForBytes(DisasmVisibleLines[rows[i]], CS_MODE_32, &sequence, &localMask);
 #endif
 		
 		// Append the retrieved mask to the global mask.

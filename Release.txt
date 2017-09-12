@@ -21,6 +21,8 @@ v3.1:
 	- Fixes and additions to the debugger window:
 		- Fixed bug where stack view would present incorrect measures;
 		- Added right-click options to copy the value of registers and stack addresses.
+	- Switched from BeaEngine to Capstone for disassembling;
+	- Added the name and architecture of the opened process in crash handler information;
 	- 
 
 v3.0:

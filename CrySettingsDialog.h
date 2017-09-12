@@ -78,6 +78,7 @@ private:
 	Option mSignatureDefaultMasking;
 	Option mWarnForPackedExecutable;
 	Option mShowArchitectureInProcWindow;
+	Option mDisasmResolveIatFunctions;
 	
 	void LoadSettings();
 	void SaveSettings();

@@ -79,7 +79,14 @@ LONG __stdcall CrashHandler(PEXCEPTION_POINTERS ExceptionInfo)
 	char versionString[256];
 	GetOSVersionString(versionString, 256);
 	String excMsg(versionString);
-	excMsg += "\r\n\r\nException Information:\r\n\r\n";
+	
+	// Add information about the loaded process.
+	excMsg += "\r\nProcess Information:\r\n\r\n";
+	excMsg += Format("Name:\t\t\t\t%s\r\n", mMemoryScanner->GetProcessName());
+	excMsg += Format("Architecture:\t\t%s\r\n", mMemoryScanner->IsX86Process() ? "x86" : "x64");
+	
+	// Start the exception information.
+	excMsg += "\r\nException Information:\r\n\r\n";
 	
 	// Access violations are the most common and should be handled as detailedly as possible.
 	excMsg += "Exception:\t\t\t";

@@ -30,9 +30,9 @@ CryByteArrayGenerationWindow::CryByteArrayGenerationWindow(const Vector<int>& ro
 	{
 		ArrayOfBytes sequence;
 #ifdef _WIN64
-		DisasmGetLine(DisasmVisibleLines[rows[i]], mMemoryScanner->IsX86Process() ? ARCH_X86 : ARCH_X64, &sequence);
+		DisasmGetLine(DisasmVisibleLines[rows[i]], mMemoryScanner->IsX86Process() ? CS_MODE_32 : CS_MODE_64, &sequence);
 #else
-		DisasmGetLine(DisasmVisibleLines[rows[i]], ARCH_X86, &sequence);
+		DisasmGetLine(DisasmVisibleLines[rows[i]], CS_MODE_32, &sequence);
 #endif
 		for (int y = 0; y < sequence.Size; ++y)
 		{

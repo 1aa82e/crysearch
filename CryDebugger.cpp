@@ -782,7 +782,7 @@ CryDebugger32::~CryDebugger32()
 // Retrieves an instruction line from the disassembly.
 const SIZE_T CryDebugger32::GetDisasmLine(const SIZE_T address, bool prev) const
 {
-	return prev ? DisasmGetPreviousLine(address, ARCH_X86, NULL) : address;
+	return prev ? DisasmGetPreviousLine(address, CS_MODE_32, NULL) : address;
 }
 
 // Attempts hiding the debugger presence from the process. This way, IsDebuggerPresent would return FALSE.
@@ -1204,7 +1204,7 @@ void CryDebugger32::HandleHardwareBreakpoint(const DWORD threadId, const int bpI
 	// Retrieves an instruction line from the disassembly.
 	const SIZE_T CryDebugger64::GetDisasmLine(const SIZE_T address, bool prev) const
 	{
-		return prev ? DisasmGetPreviousLine(address, ARCH_X64, NULL) : address;
+		return prev ? DisasmGetPreviousLine(address, CS_MODE_64, NULL) : address;
 	}	
 	
 	// Attempts hiding the debugger presence from the process. This way, IsDebuggerPresent would return FALSE.

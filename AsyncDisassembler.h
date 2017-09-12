@@ -51,7 +51,7 @@ private:
 	CoWork mThreadPool;
 	
 	void DoDisassembly(AsyncDisasmWorkerInformation* const pInformation);
-	void Disassemble(const SIZE_T address, const SIZE_T size, const ArchitectureDefinitions architecture, Vector<LONG_PTR>& outInstructions);
+	void Disassemble(const SIZE_T address, const SIZE_T size, const cs_mode architecture, Vector<LONG_PTR>& outInstructions);
 	const bool PeekIsFinished() const;
 	
 	typedef AsyncDisassembler CLASSNAME;

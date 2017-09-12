@@ -2,15 +2,9 @@
 #include "ImlProvider.h"
 #include <ide/version.h>
 
-// Because of the BeaEngine declaration the header should be loosely included here.
+// Include headers to get Capstone version and CrySearch library version.
 #include "CrySearchLibrary/SDK/CrySearch.h"
-
-// Overridden BeaEngine function declarations.
-extern "C"
-{
-	const char* __stdcall BeaEngineVersion();
-	const char* __stdcall BeaEngineRevision();
-};
+#include "Capstone/include/capstone.h"
 
 // ---------------------------------------------------------------------------------------------
 
@@ -92,7 +86,9 @@ CrySearchAboutDialog::CrySearchAboutDialog() : CryDialogTemplate(CrySearchIml::A
 	this->mLibraryVersions.Add("Ultimate++", IDE_VERSION);
 
 	// Add BeaEngine library version to the versions control.
-	this->mLibraryVersions.Add("BeaEngine", Format("%s rev %s", BeaEngineVersion(), BeaEngineRevision()));
+	int major, minor;
+	cs_version(&major, &minor);
+	this->mLibraryVersions.Add("Capstone", Format("%i.%i", major, minor));
 	
 	// Set up callbacks to make it possible to resolve the clickable links to its webpage.
 	this->mLinkLabel.WhenLeftUp = callback1(LaunchWebBrowser, (char*)this->forumLink);

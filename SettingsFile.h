@@ -89,6 +89,7 @@ private:
 	bool mDissectionHexView;
 	bool mEnableDissectionTypeGuessing;
 	bool mShowArchitectureInProcWindow;
+	bool mResolveDisassemblyImportedFunctions;
 	
 	SettingsFile();
 	~SettingsFile();
@@ -138,6 +139,7 @@ public:
 	const bool GetDissectionHexadecimalView() const				{ return this->mDissectionHexView; }
 	const bool GetEnableDissectionTypeGuessing() const			{ return this->mEnableDissectionTypeGuessing; }
 	const bool GetShowArchitectureInProcWindow() const			{ return this->mShowArchitectureInProcWindow; }
+	const bool GetResolveDisasmImportedFunctions() const		{ return this->mResolveDisassemblyImportedFunctions; }
 	
 	// inline setters for settings variables
 	void SetFastScanByDefault(bool value = true)				{ this->mFastScanByDefault = value; }
@@ -176,6 +178,7 @@ public:
 	void SetDissectionHexadecimalView(bool value = false)		{ this->mDissectionHexView = value; }
 	void SetEnableDissectionTypeGuessing(bool value = true)		{ this->mEnableDissectionTypeGuessing = value; }
 	void SetShowArchitectureInProcWindow(bool value = false)	{ this->mShowArchitectureInProcWindow = value; }
+	void SetResolveDisasmImportedFunctions(bool value = true)	{ this->mResolveDisassemblyImportedFunctions = value; }
 	
 	// Hotkey list functions
 	void AddHotkey(const String& description, unsigned int key);

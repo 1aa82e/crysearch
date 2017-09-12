@@ -77,9 +77,9 @@ void AsyncDisassembler::DoDisassembly(AsyncDisasmWorkerInformation* const pInfor
 {
 	// Start disassembly.
 #ifdef _WIN64
-	this->Disassemble(pInformation->BaseAddress, pInformation->MemorySize, mMemoryScanner->IsX86Process() ? ARCH_X86 : ARCH_X64, pInformation->WorkerDisasmLines);
+	this->Disassemble(pInformation->BaseAddress, pInformation->MemorySize, mMemoryScanner->IsX86Process() ? CS_MODE_32 : CS_MODE_64, pInformation->WorkerDisasmLines);
 #else
-	this->Disassemble(pInformation->BaseAddress, pInformation->MemorySize, ARCH_X86, pInformation->WorkerDisasmLines);
+	this->Disassemble(pInformation->BaseAddress, pInformation->MemorySize, CS_MODE_32, pInformation->WorkerDisasmLines);
 #endif
 
 	// Indicate that this worker is done.
@@ -198,53 +198,40 @@ void AsyncDisassembler::Kill()
 
 // Disassembles lineCount lines of assembly into MASM syntax OPCodes, starting from address.
 // The output disassembly string is put at outInstructionString. Returns the length of the longest string bytes representation.
-void AsyncDisassembler::Disassemble(const SIZE_T address, const SIZE_T size, const ArchitectureDefinitions architecture, Vector<LONG_PTR>& outInstructions)
+void AsyncDisassembler::Disassemble(const SIZE_T address, const SIZE_T size, const cs_mode architecture, Vector<LONG_PTR>& outInstructions)
 {
-	DISASM disasm;
-	memset(&disasm, 0, sizeof(DISASM));
-	
 	// Query virtual pages inside target process.
     Byte* const buffer = new Byte[size];
     CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), (void*)address, buffer, size, NULL);
     
     // Reserve a buffer for instruction lines.
     outInstructions.Reserve((int)size / 4);
-    
-    // Set EIP, correct architecture and security block to prevent access violations.
-	disasm.EIP = (UIntPtr)buffer;
-	disasm.Archi = architecture;
-	disasm.VirtualAddr = (UInt64)address;
-
-	const UInt64 codePageEnd = ((UInt64)buffer + size);
-
-	// Disassembly each line encountered until the end of the buffer is reached.
-	while (this->mRunning && disasm.EIP < codePageEnd)
-	{
-		const int len = CryDisasm(&disasm);
-		if (len == OUT_OF_BLOCK)
-		{
-			break;
-		}
-		else if (len == UNKNOWN_OPCODE)
-		{
-			// An unknown instruction was encountered. Increment the counter to proceed disassembling until the end of the page is hit.
-			outInstructions.Add((SIZE_T)disasm.VirtualAddr);
-
-			// Increment disasm structure counters.
-			++disasm.EIP;
-			++disasm.VirtualAddr;
-		}
-		else
-		{
-			// Disassembled succesfully, add a new line.
-			outInstructions.Add((SIZE_T)disasm.VirtualAddr);
-
-			// Increment disasm structure counters.
-			disasm.EIP += len;
-			disasm.VirtualAddr += len;
-		}
-	}
 	
+	// Open Capstone disassembler in x86 mode, for either x86_32 or x86_64.
+	csh handle;
+	cs_open(CS_ARCH_X86, architecture, &handle);
+    
+    // Allocate memory cache for 1 instruction, to be used by cs_disasm_iter later.
+	cs_insn* insn = cs_malloc(handle);
+	const Byte* bufIteratorPtr = buffer;
+	size_t code_size = size;
+	uint64 iterAddress = address;
+	uint64 prevAddress = iterAddress;
+
+	// Disassemble one instruction a time & store the result into @insn variable.
+	while (cs_disasm_iter(handle, &bufIteratorPtr, &code_size, &iterAddress, insn))
+	{
+		// Disassembled succesfully, add a new line.
+		outInstructions.Add((SIZE_T)prevAddress);
+		prevAddress = iterAddress;
+	}
+
+	// Release the cache memory when done.
+	cs_free(insn, 1);
+
+	// Close the Capstone handle.
+	cs_close(&handle);
+		
 	// Clean up used buffers and shrink instruction line buffer.
 	outInstructions.Shrink();
 	delete[] buffer;

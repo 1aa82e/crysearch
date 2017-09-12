@@ -160,14 +160,14 @@ void CryDebuggerHitView::SetInstructionString(const SIZE_T is)
 #ifdef _WIN64
 	if (mMemoryScanner->IsX86Process())
 	{
-		this->mAccessedAddress.SetLabel(Format("%lX - %s", (LONG_PTR)is, DisasmGetLine(is, ARCH_X86, NULL)));
+		this->mAccessedAddress.SetLabel(Format("%lX - %s", (LONG_PTR)is, DisasmGetLine(is, CS_MODE_32, NULL)));
 	}
 	else
 	{
-		this->mAccessedAddress.SetLabel(Format("%llX - %s", (LONG_PTR)is, DisasmGetLine(is, ARCH_X64, NULL)));
+		this->mAccessedAddress.SetLabel(Format("%llX - %s", (LONG_PTR)is, DisasmGetLine(is, CS_MODE_64, NULL)));
 	}
 #else
-	this->mAccessedAddress.SetLabel(Format("%lX - %s", (LONG_PTR)is, DisasmGetLine(is, ARCH_X86, NULL)));
+	this->mAccessedAddress.SetLabel(Format("%lX - %s", (LONG_PTR)is, DisasmGetLine(is, CS_MODE_32, NULL)));
 #endif
 }
 

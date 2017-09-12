@@ -1,4 +1,4 @@
-CrySearch application TODO list by evolution536
+﻿CrySearch application TODO list by evolution536
 
 ------------------------------------------------------------------
 Package:
@@ -8,17 +8,18 @@ Package:
 - Update wiki with changes for the release.
 ------------------------------------------------------------------
 
+- Check commented part of PE!
 - Is this some bug in the division of pages maybe?
 	- Is there a bug that I cannot search for pointers?
 	- Is there a bug that I cannot search for increased stuff properly?
 - Use thread computing power more efficient?
 	- Workers are fired off and then pull work from a pool of pages?
-- Continue BeaEngine development (make it vectorized and stuff);
 - Change semantics of (W)string next scan to search 'inside' any current search result?
 - Fix header (like LordPE does, virtual dump);
 - Also blocks for the values and using compression/encoding to reduce size?
 - Current way of disassembling may cause inconsistencies;
-	- different disassembler, capstone?
+	- Leak in capstone way of disassembling?
+	- Fix masking;
 	- Temporarely fixed by 1 thread.
 - Still need to fix shitloads of stuff in the import table parser, sanity checks missing everywhere;
 - Guessing for pointer can be done by checking whether it is inside a memory page of the process?
@@ -31,7 +32,6 @@ Package:
 	- VEH debugger
 
 - Structure dissections:
-	- type guessing;
 	- data schema (smth like xsd but for memory dissections);
 	- generate struct definition from selection;
 

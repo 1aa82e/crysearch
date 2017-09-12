@@ -1487,7 +1487,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 						AddrStruct addrStruct((Byte*)modBaseAddr->BaseAddress, (exportDirectoryBuffer - dataDir.VirtualAddress), bufBase + dataDir.VirtualAddress + dataDir.Size
 							, &dataDir, (IMAGE_EXPORT_DIRECTORY*)exportDirectoryBuffer);
 
-						const SIZE_T forwardedAddress = this->GetAddressFromExportTable(&addrStruct, (char*)ScanInt((char*)(addr->BufferBaseAddress + *funcAddrPtr + RecurseDotIndex + 1), NULL, 10), true);
+						const SIZE_T forwardedAddress = this->GetAddressFromExportTable(&addrStruct, (char*)/*ScanInt((char*)*/addr->BufferBaseAddress + *funcAddrPtr + RecurseDotIndex + 1/*), NULL, 10)*/, true);
 						delete[] exportDirectoryBuffer;
 						return forwardedAddress;
 					}

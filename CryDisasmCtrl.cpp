@@ -57,9 +57,9 @@ String GetDisasmBytes(const int index)
 {
 	ArrayOfBytes disLineBytes;
 #ifdef _WIN64
-	DisasmForBytes(DisasmVisibleLines[index], mMemoryScanner->IsX86Process() ? ARCH_X86 : ARCH_X64, &disLineBytes, NULL);
+	DisasmForBytes(DisasmVisibleLines[index], mMemoryScanner->IsX86Process() ? CS_MODE_32 : CS_MODE_64, &disLineBytes, NULL);
 #else
-	DisasmForBytes(DisasmVisibleLines[index], ARCH_X86, &disLineBytes, NULL);
+	DisasmForBytes(DisasmVisibleLines[index], CS_MODE_32, &disLineBytes, NULL);
 #endif
 	
 	return BytesToString(disLineBytes.Data, disLineBytes.Size);
@@ -69,9 +69,9 @@ String GetDisasmBytes(const int index)
 String GetDisasmInstructionLine(const int index)
 {
 #ifdef _WIN64
-	return DisasmGetLineEx(DisasmVisibleLines[index], mMemoryScanner->IsX86Process() ? ARCH_X86 : ARCH_X64, NULL);
+	return DisasmGetLineEx(DisasmVisibleLines[index], mMemoryScanner->IsX86Process() ? CS_MODE_32 : CS_MODE_64, NULL);
 #else
-	return DisasmGetLineEx(DisasmVisibleLines[index], ARCH_X86, NULL);
+	return DisasmGetLineEx(DisasmVisibleLines[index], CS_MODE_32, NULL);
 #endif
 }
 
@@ -217,9 +217,9 @@ void CryDisasmCtrl::NopSelectedCode()
 			// Disassemble the instruction bytes at the selected address to see how many bytes need to be NOPed.
 			ArrayOfBytes disLineBytes;
 #ifdef _WIN64
-			DisasmGetLine(address, mMemoryScanner->IsX86Process() ? ARCH_X86 : ARCH_X64, &disLineBytes);
+			DisasmGetLine(address, mMemoryScanner->IsX86Process() ? CS_MODE_32 : CS_MODE_64, &disLineBytes);
 #else
-			DisasmGetLine(address, ARCH_X86, &disLineBytes);
+			DisasmGetLine(address, CS_MODE_32, &disLineBytes);
 #endif
 			
 			// Write NOP instructions to the selected memory location.
