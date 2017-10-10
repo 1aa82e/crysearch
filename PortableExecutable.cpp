@@ -420,10 +420,10 @@ void PortableExecutable::GetDotNetDirectoryInformation(const IMAGE_DATA_DIRECTOR
 }
 
 // Resolves ApiSetSchema module names and returns a pointer to the resolved module.
-const Win32ModuleInformation* PortableExecutable::GetResolvedModule(const Byte* bufferBase, int* const recurseIndex, const DWORD* funcPtr, const char* NameOrdinal) const
+const Win32ModuleInformation* PortableExecutable::GetResolvedModule(const char* pModName, int* const recurseIndex, const char* NameOrdinal) const
 {
 	// Find the first dot in the filename.
-	String forwardedModName = (char*)(bufferBase + *funcPtr);
+	String forwardedModName = pModName;
 	*recurseIndex = forwardedModName.Find('.');
 
 	// If the resulting filename starts with api-ms-win, we are dealing with ApiSetSchema libraries.
@@ -569,7 +569,7 @@ SIZE_T PortableExecutable32::GetAddressFromExportTable(const AddrStruct* addr, c
 				
 				if (*funcAddrPtr > addr->DirectoryAddress->VirtualAddress && *funcAddrPtr < (addr->DirectoryAddress->VirtualAddress + addr->DirectoryAddress->Size))
 				{
-					const Win32ModuleInformation* modBaseAddr = this->GetResolvedModule(addr->BufferBaseAddress, &ResurseDotIndex, funcAddrPtr, NameOrdinal);
+					const Win32ModuleInformation* modBaseAddr = this->GetResolvedModule((char*)(addr->BufferBaseAddress + *funcAddrPtr), &ResurseDotIndex, NameOrdinal);
 					
 					// Sometimes infinite redirecting causes stack overflowing. Terminate this sequence by returning not found.
 					if (!modBaseAddr || (SIZE_T)addr->BaseAddress == modBaseAddr->BaseAddress)
@@ -590,7 +590,7 @@ SIZE_T PortableExecutable32::GetAddressFromExportTable(const AddrStruct* addr, c
 					AddrStruct addrStruct((Byte*)modBaseAddr->BaseAddress, (exportDirectoryBuffer - dataDir.VirtualAddress), bufBase + dataDir.VirtualAddress + dataDir.Size
 						, &dataDir, (IMAGE_EXPORT_DIRECTORY*)exportDirectoryBuffer);
 			            
-					SIZE_T forwardedAddress = this->GetAddressFromExportTable(&addrStruct, (char*)(SIZE_T)ScanInt((char*)(addr->BufferBaseAddress + *funcAddrPtr + ResurseDotIndex + 2), NULL, 10), NameLength);
+					SIZE_T forwardedAddress = this->GetAddressFromExportTable(&addrStruct, (char*)addr->BufferBaseAddress + *funcAddrPtr + ResurseDotIndex + 2, NameLength);
 					delete[] exportDirectoryBuffer;
 					return forwardedAddress;
 				}
@@ -607,7 +607,7 @@ SIZE_T PortableExecutable32::GetAddressFromExportTable(const AddrStruct* addr, c
 					funcAddrPtr = (DWORD*)((addr->BufferBaseAddress + addr->ExportDirectory->AddressOfFunctions) + (sizeof(DWORD) * *ordValue));
 					if (*funcAddrPtr > addr->DirectoryAddress->VirtualAddress && *funcAddrPtr < (addr->DirectoryAddress->VirtualAddress + addr->DirectoryAddress->Size))
 					{
-						const Win32ModuleInformation* modBaseAddr = this->GetResolvedModule(addr->BufferBaseAddress, &ResurseDotIndex, funcAddrPtr, NameOrdinal);
+						const Win32ModuleInformation* modBaseAddr = this->GetResolvedModule((char*)(addr->BufferBaseAddress + *funcAddrPtr), &ResurseDotIndex, NameOrdinal);
 						
 						if (!modBaseAddr || (SIZE_T)addr->BaseAddress == modBaseAddr->BaseAddress)
 						{
@@ -1468,7 +1468,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 
 					if (*funcAddrPtr > addr->DirectoryAddress->VirtualAddress && *funcAddrPtr < addr->DirectoryAddress->VirtualAddress + addr->DirectoryAddress->Size)
 					{
-						const Win32ModuleInformation* modBaseAddr = this->GetResolvedModule(addr->BufferBaseAddress, &RecurseDotIndex, funcAddrPtr, NameOrdinal);
+						const Win32ModuleInformation* modBaseAddr = this->GetResolvedModule((char*)(addr->BufferBaseAddress + *funcAddrPtr), &RecurseDotIndex, NameOrdinal);
 						if (!modBaseAddr || (SIZE_T)addr->BaseAddress == modBaseAddr->BaseAddress)
 						{
 							return EAT_ADDRESS_NOT_FOUND;
@@ -1487,7 +1487,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 						AddrStruct addrStruct((Byte*)modBaseAddr->BaseAddress, (exportDirectoryBuffer - dataDir.VirtualAddress), bufBase + dataDir.VirtualAddress + dataDir.Size
 							, &dataDir, (IMAGE_EXPORT_DIRECTORY*)exportDirectoryBuffer);
 
-						const SIZE_T forwardedAddress = this->GetAddressFromExportTable(&addrStruct, (char*)/*ScanInt((char*)*/addr->BufferBaseAddress + *funcAddrPtr + RecurseDotIndex + 1/*), NULL, 10)*/, true);
+						const SIZE_T forwardedAddress = this->GetAddressFromExportTable(&addrStruct, (char*)addr->BufferBaseAddress + *funcAddrPtr + RecurseDotIndex + 1, true);
 						delete[] exportDirectoryBuffer;
 						return forwardedAddress;
 					}
@@ -1504,7 +1504,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 						funcAddrPtr = (DWORD*)(addr->BufferBaseAddress + addr->ExportDirectory->AddressOfFunctions + (sizeof(DWORD) * *ordValue));
 						if (*funcAddrPtr > addr->DirectoryAddress->VirtualAddress && *funcAddrPtr < addr->DirectoryAddress->VirtualAddress + addr->DirectoryAddress->Size)
 						{
-							const Win32ModuleInformation* modBaseAddr = this->GetResolvedModule(addr->BufferBaseAddress, &RecurseDotIndex, funcAddrPtr, NameOrdinal);
+							const Win32ModuleInformation* modBaseAddr = this->GetResolvedModule((char*)(addr->BufferBaseAddress + *funcAddrPtr), &RecurseDotIndex, NameOrdinal);
 							if (!modBaseAddr || (SIZE_T)addr->BaseAddress == modBaseAddr->BaseAddress)
 							{
 								return EAT_ADDRESS_NOT_FOUND;

@@ -1,6 +1,9 @@
 CrySearch Memory Scanner
 
-evolution536, www.unknowncheats.me
+evolution536, www.unknowncheats.me, www.crysearch.nl
+
+v3.2:
+	- 
 
 v3.1:
 	- Fixed crashing bug in x64 on closing of process opened with module list warning;
@@ -23,7 +26,8 @@ v3.1:
 		- Added right-click options to copy the value of registers and stack addresses.
 	- Switched from BeaEngine to Capstone for disassembling;
 	- Added the name and architecture of the opened process in crash handler information;
-	- 
+	- Fixed bug where import address table of deprecated library WSOCK32.DLL would crash CrySearch;
+	- Fixed bug where selecting the module with the highest index and opening a process with less modules could crash CrySearch.
 
 v3.0:
 	- Slight performance optimizations by eliminating heap allocations;

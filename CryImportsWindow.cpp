@@ -106,6 +106,13 @@ void CryImportsWindow::ModulesDropped()
 
 	// Set the user interface to match the modules.
 	this->mModulesDropList.SetCount(mModuleManager->GetModuleCount());
+	
+	// If some old module index is still present and it is higher than the number of modules,
+	// reset it to a safe value.
+	if (this->mModulesDropList.GetIndex() >= mModuleManager->GetModuleCount())
+	{
+		this->mModulesDropList.GoBegin();
+	}
 }
 
 // Executed when the user has selected a module from the drop list.

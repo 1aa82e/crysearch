@@ -193,7 +193,7 @@ public:
 	__declspec(noinline) void GetImageSectionsList(const IMAGE_SECTION_HEADER* pSecHeader, const DWORD numberOfSections, Vector<Win32PESectionInformation>& list) const;
 	
 	wchar* InlineResolveApiSetSchema(const WString& str) const;
-	const Win32ModuleInformation* GetResolvedModule(const Byte* bufferBase, int* const recurseIndex, const DWORD* funcPtr, const char* NameOrdinal) const;
+	const Win32ModuleInformation* GetResolvedModule(const char* pModName, int* const recurseIndex, const char* NameOrdinal) const;
 	
 	void* GetPebAddress() const;
 	

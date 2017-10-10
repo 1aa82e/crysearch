@@ -204,7 +204,7 @@ void AsyncDisassembler::Disassemble(const SIZE_T address, const SIZE_T size, con
     Byte* const buffer = new Byte[size];
     CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), (void*)address, buffer, size, NULL);
     
-    // Reserve a buffer for instruction lines.
+    // Reserve an approximated buffer for instruction lines.
     outInstructions.Reserve((int)size / 4);
 	
 	// Open Capstone disassembler in x86 mode, for either x86_32 or x86_64.
@@ -217,7 +217,7 @@ void AsyncDisassembler::Disassemble(const SIZE_T address, const SIZE_T size, con
 	size_t code_size = size;
 	uint64 iterAddress = address;
 	uint64 prevAddress = iterAddress;
-
+	
 	// Disassemble one instruction a time & store the result into @insn variable.
 	while (cs_disasm_iter(handle, &bufIteratorPtr, &code_size, &iterAddress, insn))
 	{
@@ -225,7 +225,7 @@ void AsyncDisassembler::Disassemble(const SIZE_T address, const SIZE_T size, con
 		outInstructions.Add((SIZE_T)prevAddress);
 		prevAddress = iterAddress;
 	}
-
+	
 	// Release the cache memory when done.
 	cs_free(insn, 1);
 
