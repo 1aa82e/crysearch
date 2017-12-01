@@ -9,7 +9,7 @@
 class CrySearchAboutDialog : public CryDialogTemplate
 {
 private:
-	DWORD forumLink[27];
+	DWORD websiteLink[6];
 	DWORD uppLink[7];
 	ImageCtrl mProgramImage;
 	Label mProgramInformation;

@@ -10,6 +10,9 @@
 class CryDisasmCtrl : public ParentCtrl
 {
 private:
+	bool mHasPreceding;
+	bool mHasSucceeding;
+
 	AsyncDisassembler mAsyncHelper;
 
 	ToolBar mToolStrip;
@@ -17,7 +20,6 @@ private:
 	
 	// Toolbar ctrls
 	Label mExecutablePagesDescriptor;
-	VirtualDropList mExecutablePages;
 	Label mPageSizeInDisasm;
 	
 	void ExecutablePagesDropped();
@@ -28,7 +30,8 @@ private:
 	void DisassemblyRightClick(Bar& pBar);
 	void DisasmGenerateSubmenu(Bar& pBar);
 	
-	void HeapWalkMenuClicked();
+	void MoveToPreviousPage();
+	void MoveToNextPage();
 	void RemoveBreakpointButtonClicked();
 	void SetSoftwareBreakpoint();
 	void SetHardwareBreakpoint();

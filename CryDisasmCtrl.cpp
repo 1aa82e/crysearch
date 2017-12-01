@@ -9,7 +9,7 @@
 
 // Extern declarations are needed here to prevent errors.
 extern Vector<LONG_PTR> DisasmVisibleLines;
-extern Vector<MemoryRegion> mExecutablePagesList;
+MemoryRegion CurrentExecutableMemoryPage;
 
 #define DISASSEMBLER_PROGRESS_TIMECALLBACK		40
 #define SELECTCOUNT_THRESHOLD					256
@@ -69,19 +69,9 @@ String GetDisasmBytes(const int index)
 String GetDisasmInstructionLine(const int index)
 {
 #ifdef _WIN64
-	return DisasmGetLineEx(DisasmVisibleLines[index], mMemoryScanner->IsX86Process() ? CS_MODE_32 : CS_MODE_64, NULL);
+	return DisasmGetLineEx(DisasmVisibleLines[index], mMemoryScanner->IsX86Process() ? CS_MODE_32 : CS_MODE_64);
 #else
-	return DisasmGetLineEx(DisasmVisibleLines[index], CS_MODE_32, NULL);
-#endif
-}
-
-// Creates a string representation for the memory page currently selected for disassembly.
-String GetMemoryPageForDropList(const int index)
-{
-#ifdef _WIN64
-	return FormatInt64HexUpper((__int64)mExecutablePagesList[index].BaseAddress) + " - " + FormatInt64HexUpper((__int64)(mExecutablePagesList[index].BaseAddress + mExecutablePagesList[index].MemorySize));
-#else
-	return FormatHexadecimalIntSpecial((int)mExecutablePagesList[index].BaseAddress) + " - " + FormatHexadecimalIntSpecial((int)(mExecutablePagesList[index].BaseAddress + mExecutablePagesList[index].MemorySize));
+	return DisasmGetLineEx(DisasmVisibleLines[index], CS_MODE_32);
 #endif
 }
 
@@ -90,6 +80,9 @@ String GetMemoryPageForDropList(const int index)
 // Default CryDisasmCtrl constructor.
 CryDisasmCtrl::CryDisasmCtrl()
 {
+	this->mHasPreceding = true;
+	this->mHasSucceeding = true;
+	
 	this->AddFrame(mToolStrip);
 	this->mToolStrip.Set(THISBACK(ToolStrip));
 	
@@ -102,10 +95,6 @@ CryDisasmCtrl::CryDisasmCtrl()
 	this->disasmDisplay.CryAddRowNumColumn("Disassembly", 50).SetConvert(Single<IndexBasedValueConvert<GetDisasmInstructionLine>>());
 	
 	this->disasmDisplay.WhenBar = THISBACK(DisassemblyRightClick);
-	
-	this->mExecutablePages.SetConvert(Single<IndexBasedValueConvert<GetMemoryPageForDropList>>());
-	this->mExecutablePages.WhenDrop = THISBACK(ExecutablePagesDropped);
-	this->mExecutablePages.WhenAction = THISBACK(ExecutablePageSelected);
 	
 	// Initialize async helper to serve UI responsiveness for the newly opened process.
 	this->mAsyncHelper.DisasmStarted = THISBACK(AsyncDisasmStarted);
@@ -120,8 +109,10 @@ CryDisasmCtrl::~CryDisasmCtrl()
 // Populates the toolstrip inside the disassembler window.
 void CryDisasmCtrl::ToolStrip(Bar& pBar)
 {
-	pBar.Add(this->mExecutablePagesDescriptor.SetLabel("Page: "));
-	pBar.Add(this->mExecutablePages, 200);
+	pBar.Add(this->mExecutablePagesDescriptor.SetLabel(Format("Memory Page: %llX - %llX", (LONG_PTR)CurrentExecutableMemoryPage.BaseAddress
+		, (LONG_PTR)(CurrentExecutableMemoryPage.BaseAddress + CurrentExecutableMemoryPage.MemorySize))), 250);
+	pBar.Add(!this->mAsyncHelper.IsRunning() && this->mHasPreceding, "Previous Page", CrySearchIml::ArrowUpSmall(), THISBACK(MoveToPreviousPage));
+	pBar.Add(!this->mAsyncHelper.IsRunning() && this->mHasSucceeding, "Next Page", CrySearchIml::ArrowDownSmall(), THISBACK(MoveToNextPage));
 	pBar.Separator();
 	pBar.Add(!this->mAsyncHelper.IsRunning(), "Go to entrypoint", CrySearchIml::EntryPointIcon(), THISBACK(GoToEntryPointClicked));
 	pBar.Separator();
@@ -309,6 +300,68 @@ void CryDisasmCtrl::GenerateByteArrayButtonClicked()
 	delete cbagw;
 }
 
+// Moves to the previous executable memory page.
+void CryDisasmCtrl::MoveToPreviousPage()
+{
+	// Get the previous memory page.
+	AuxMemRegStruct aux;
+	GetMemoryPageByAddress(CurrentExecutableMemoryPage.BaseAddress, CurrentExecutableMemoryPage, &aux);
+	
+	// Check if the previous page has a predecessor.
+	AuxMemRegStruct auxPrev;
+	GetMemoryPageByAddress(aux.Previous.BaseAddress, CurrentExecutableMemoryPage, &auxPrev);
+	
+	// If there is no preceding page, the down button must be disabled.
+	if (!auxPrev.Previous.BaseAddress)
+	{
+		this->mHasPreceding = false;
+	}
+
+	// If we go up, the succeeding page becomes available again.
+	this->mHasSucceeding = true;
+	
+	// Clean up the current set of disasm lines.
+	this->disasmDisplay.Clear();
+	DisasmVisibleLines.Clear();
+	
+	// Still here, so start refreshing the disasm.
+	this->mAsyncHelper.Start(aux.Previous.BaseAddress, CurrentExecutableMemoryPage);
+	
+	// Start polling the disassembler completion state.
+	SetTimeCallback(10, THISBACK(PeekDisasmCompletion), DISASSEMBLER_PROGRESS_TIMECALLBACK);
+}
+
+// Moves to the next executable memory page.
+void CryDisasmCtrl::MoveToNextPage()
+{
+	// Get the next executable memory page.
+	AuxMemRegStruct aux;
+	GetMemoryPageByAddress(CurrentExecutableMemoryPage.BaseAddress, CurrentExecutableMemoryPage, &aux);
+
+	// Check if the next page has a successor.
+	AuxMemRegStruct auxNext;
+	GetMemoryPageByAddress(aux.Next.BaseAddress, CurrentExecutableMemoryPage, &auxNext);
+
+	// If there is no succeeding page, the up button must be disabled.
+	if (!auxNext.Next.BaseAddress)
+	{
+		this->mHasSucceeding = false;
+	}
+	
+	// If we go down, the preceding page becomes available again.
+	this->mHasPreceding = true;
+
+	// Clean up the current set of disasm lines.
+	this->disasmDisplay.Clear();
+	DisasmVisibleLines.Clear();
+	
+	// Still here, so start refreshing the disasm.
+	this->mAsyncHelper.Start(aux.Next.BaseAddress, CurrentExecutableMemoryPage);
+	
+	// Start polling the disassembler completion state.
+	SetTimeCallback(10, THISBACK(PeekDisasmCompletion), DISASSEMBLER_PROGRESS_TIMECALLBACK);
+}
+
 // Removes a breakpoint from the selected address.
 void CryDisasmCtrl::RemoveBreakpointButtonClicked()
 {
@@ -345,10 +398,22 @@ void CryDisasmCtrl::SetHardwareBreakpoint()
 void CryDisasmCtrl::MoveToAddress(const SIZE_T address)
 {
 	// Memory address was not found within the address space of the process.
-	if (!GetPageFromAddress(address))
+	MemoryRegion page;
+	AuxMemRegStruct aux;
+	if (!GetMemoryPageByAddress(address, page, &aux))
 	{
 		Prompt("Input Error", CtrlImg::error(), "The address is not within an executable section!", "OK");
 		return;
+	}
+	
+	// If there is no preceding or succeeding page, either up or down button must be disabled.
+	if (!aux.Previous.BaseAddress)
+	{
+		this->mHasPreceding = false;
+	}
+	if (!aux.Next.BaseAddress)
+	{
+		this->mHasSucceeding = false;
 	}
 	
 	// Clean up the current set of disasm lines.
@@ -356,7 +421,7 @@ void CryDisasmCtrl::MoveToAddress(const SIZE_T address)
 	DisasmVisibleLines.Clear();
 	
 	// Still here, so start refreshing the disasm.
-	this->mAsyncHelper.Start(address);
+	this->mAsyncHelper.Start(address, CurrentExecutableMemoryPage);
 	
 	// Start polling the disassembler completion state.
 	SetTimeCallback(10, THISBACK(PeekDisasmCompletion), DISASSEMBLER_PROGRESS_TIMECALLBACK);
@@ -388,36 +453,6 @@ void CryDisasmCtrl::CopyCursorLineToClipboard()
 	}
 }
 
-// Executed when the list is opened, but before it is actually displayed.
-void CryDisasmCtrl::ExecutablePagesDropped()
-{
-	// Refresh pages in the toolbar droplist for manual selection.
-	RefreshExecutablePages(mExecutablePagesList);
-	this->mExecutablePages.SetCount(mExecutablePagesList.GetCount());
-}
-
-// Executed when a new item is selected in the virtual pages drop list.
-void CryDisasmCtrl::ExecutablePageSelected()
-{
-	// Make it fool-proof, this function can only be executed with a valid page index.
-	const int cursor = this->mExecutablePages.GetIndex();
-	if (cursor >= 0 && mExecutablePagesList.GetCount() > 0)
-	{
-		// Get the page from the page index.
-		const MemoryRegion& found = mExecutablePagesList[cursor];
-
-		// Clean up the existing set of lines.
-		this->disasmDisplay.Clear();
-		DisasmVisibleLines.Clear();
-
-		// Start the disassembly of the selected page.
-		this->mAsyncHelper.Start(found.BaseAddress);
-
-		// Start polling the disassembler completion state.
-		SetTimeCallback(10, THISBACK(PeekDisasmCompletion), DISASSEMBLER_PROGRESS_TIMECALLBACK);
-	}
-}
-
 // Clears the whole disassembly window, which includes the pages list and the disassembly list.
 void CryDisasmCtrl::ClearList()
 {
@@ -428,19 +463,16 @@ void CryDisasmCtrl::ClearList()
 	KillTimeCallback(DISASSEMBLER_PROGRESS_TIMECALLBACK);
 	
 	// Clear the user interface controls before clearing the data.
-	this->mExecutablePages.SetCount(0);
 	this->disasmDisplay.Clear();
 	
 	// Clear the list of disassembly lines after the disassembler has been killed in order to prevent trouble.
 	DisasmVisibleLines.Clear();
-	mExecutablePagesList.Clear();
 }
 
 // Callback that executes when the asynchronous disassembly process was kicked off.
 void CryDisasmCtrl::AsyncDisasmStarted()
 {
 	// Block controls that can create a risk for application stability.
-	this->mExecutablePages.Disable();
 	this->disasmDisplay.Disable();
 	
 	// Update the toolbar to disable buttons during disassembly.
@@ -452,21 +484,13 @@ void CryDisasmCtrl::PeekDisasmCompletion()
 {
 	// Check whether the disassembler has completed.
 	SIZE_T address;
-	if (this->mAsyncHelper.PeekAndCopy(&address))
+	if (this->mAsyncHelper.PeekIsFinished(&address))
 	{
 		// Re-enable controls that were blocked for stability reasons.
-		this->mExecutablePages.Enable();
 		this->disasmDisplay.Enable();
 		
 		// Update controls to fit core application process results.
 		this->disasmDisplay.SetVirtualCount(DisasmVisibleLines.GetCount());
-		
-		SIZE_T size = 0;
-		const int index = GetPageIndexFromAddress(address, &size);
-		if (index >= 0 && index < mExecutablePagesList.GetCount())
-		{
-			this->mExecutablePages.SetIndex(index);
-		}
 		
 		// Re-enable the disabled buttons in the toolbar.
 		this->UpdateToolbar();
@@ -490,21 +514,29 @@ void CryDisasmCtrl::Initialize()
 	this->disasmDisplay.Clear();
 	DisasmVisibleLines.Clear();
 	
-	// Load pages into toolbar droplist for manual selection.
-	RefreshExecutablePages(mExecutablePagesList);
-	this->mExecutablePages.SetCount(mExecutablePagesList.GetCount());
+	// Get the first executable memory page in case the entrypoint cannot be retrieved.
+	AuxMemRegStruct aux;
+	GetMemoryPageByAddress(0, CurrentExecutableMemoryPage, &aux);
+
+	// If there is no preceding or succeeding page, either up or down button must be disabled.
+	if (!aux.Previous.BaseAddress)
+	{
+		this->mHasPreceding = false;
+	}
+	if (!aux.Next.BaseAddress)
+	{
+		this->mHasSucceeding = false;
+	}
 	
-	// If the PE Headers were succesfully loaded, the entrypoint of the executable can be used to start disassembling.
-	const SIZE_T pageAddress = mExecutablePagesList.GetCount() > 0 ? mExecutablePagesList[0].BaseAddress : 0;
-	
+	// Try to get the entrypoint address, we prefer to start there.
 #ifdef _WIN64
-	SIZE_T epAddress = LoadedProcessPEInformation.PEFields.GetCount() > 0 ? (*mModuleManager)[0].BaseAddress + ScanInt64(LoadedProcessPEInformation.PEFields.Get("Address of entrypoint").ToString(), NULL, 16) : pageAddress;
+	SIZE_T epAddress = LoadedProcessPEInformation.PEFields.GetCount() > 0 ? (*mModuleManager)[0].BaseAddress + ScanInt64(LoadedProcessPEInformation.PEFields.Get("Address of entrypoint").ToString(), NULL, 16) : CurrentExecutableMemoryPage.BaseAddress;
 #else
-	SIZE_T epAddress = LoadedProcessPEInformation.PEFields.GetCount() > 0 ? (*mModuleManager)[0].BaseAddress + ScanInt(LoadedProcessPEInformation.PEFields.Get("Address of entrypoint").ToString(), NULL, 16) : pageAddress;
+	SIZE_T epAddress = LoadedProcessPEInformation.PEFields.GetCount() > 0 ? (*mModuleManager)[0].BaseAddress + ScanInt(LoadedProcessPEInformation.PEFields.Get("Address of entrypoint").ToString(), NULL, 16) : CurrentExecutableMemoryPage.BaseAddress;
 #endif
 	
 	// Initialize UI-seperate on another thread to speed up the process.
-	this->mAsyncHelper.Start(epAddress);
+	this->mAsyncHelper.Start(epAddress, CurrentExecutableMemoryPage);
 	
 	// Start polling the disassembler completion state.
 	SetTimeCallback(10, THISBACK(PeekDisasmCompletion), DISASSEMBLER_PROGRESS_TIMECALLBACK);

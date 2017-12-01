@@ -127,6 +127,15 @@ void DisasmForBytes(const SIZE_T address, const cs_mode architecture, ArrayOfByt
 			}
 		}
 	}
+	else
+	{
+		// The instruction could not be disassembled. Just place the input byte in the output.
+		if (outAob)
+		{
+			outAob->Allocate(sizeof(Byte));
+			outAob->Data[0] = *buffer;
+		}
+	}
 
 	// Free the memory buffer Capstone allocated.
 	cs_free(insn, count);
@@ -139,7 +148,7 @@ void DisasmForBytes(const SIZE_T address, const cs_mode architecture, ArrayOfByt
 }
 
 // Retrieves an instruction at the specified address, also resolving intermodular calls.
-String DisasmGetLineEx(const SIZE_T address, const cs_mode architecture, ArrayOfBytes* const outAob)
+String DisasmGetLineEx(const SIZE_T address, const cs_mode architecture)
 {
 	// Open Capstone disassembler in x86 mode, for either x86_32 or x86_64.
 	csh handle;
@@ -162,15 +171,9 @@ String DisasmGetLineEx(const SIZE_T address, const cs_mode architecture, ArrayOf
 	
 	// Was the disassembly succesful?
 	String completeStr;
-	completeStr.Reserve(MAX_PATH);
 	if (count > 0)
 	{
-		// Place the disassembled byte sequence in the output parameter if it was specified.
-		if (outAob)
-		{
-			outAob->Allocate(insn->size);
-			memcpy(outAob->Data, insn->bytes, insn->size);
-		}
+		completeStr.Reserve(MAX_PATH);
 
 		// Construct the complete instruction string.
 		bool matchedToFunction = false;
@@ -253,6 +256,11 @@ String DisasmGetLineEx(const SIZE_T address, const cs_mode architecture, ArrayOf
 			completeStr += insn->op_str;
 		}
 	}
+	else
+	{
+		// Capstone could not disassemble this instruction. We make some textual representation for this unknown byte.
+		completeStr = "db 0x" + BytesToString(buffer, 1);
+	}
 
 	// Free the memory buffer Capstone allocated.
 	cs_free(insn, count);
@@ -323,32 +331,40 @@ const SIZE_T DisasmGetPreviousLine(const SIZE_T address, const cs_mode architect
 	return outputVal;
 }
 
-// Retrieves all executable pages in the target process and puts them in the vector passed as parameter.
-void RefreshExecutablePages(Vector<MemoryRegion>& pages)
+// Retrieves the memory page that contains the specified address. If no address is specified,
+// it will return the first executable page.
+const bool GetMemoryPageByAddress(const SIZE_T address, MemoryRegion& memReg, AuxMemRegStruct* const outAuxMemRegs)
 {
-	// Clear list first.
-	pages.Clear();
-	
 	SIZE_T incAddress = 0;
 	MEMORY_BASIC_INFORMATION block;
+	int foundIndex = -1;
 	
-	// Query virtual pages inside target process.
+	// Query first memory page inside the target process.
+	Vector<MemoryRegion> memVec;
+	memVec.Reserve(128);
 	while (VirtualQueryEx(mMemoryScanner->GetHandle(), (void*)incAddress, &block, sizeof(block)))
 	{
-		// Check whether region is readable and exclude scan types that are not wanted.
+		// We need a readable page, and one that doesn't trigger an exception in the target process.
 		if ((block.State == MEM_COMMIT) && (!(block.Protect & PAGE_GUARD)) && (!(block.Protect & PAGE_NOACCESS)))
-	    {
-	        // Only save pages that contain executable code.
-	     	if ((block.Protect & MEM_EXECUTABLE) != 0)
-	     	{
-	     		// Memory region is valid for scanning, add it to the region list.
-		        MemoryRegion memReg;
-		        memReg.BaseAddress = (SIZE_T)block.BaseAddress;
-			    memReg.MemorySize = block.RegionSize;
-			    pages << memReg;
-	     	}
-	    }
-	
+		{
+			// Is it an executable memory page?
+			if ((block.Protect & MEM_EXECUTABLE) != 0)
+			{
+				// Memory region is valid for scanning, add it to the region list.
+				MemoryRegion memRegion;
+				memRegion.BaseAddress = (SIZE_T)block.BaseAddress;
+			    memRegion.MemorySize = block.RegionSize;
+			    memVec << memRegion;
+			    
+			    // Check whether the current page contains the specified address.
+			    if (address >= memRegion.BaseAddress && address <= memRegion.BaseAddress + memRegion.MemorySize)
+			    {
+					// Save the index of the found page for later.
+					foundIndex = memVec.GetCount() - 1;
+			    }
+			}
+		}
+		
 		const SIZE_T oldIncAddress = incAddress;
 	    incAddress = (SIZE_T)block.BaseAddress + block.RegionSize;
 	    
@@ -358,4 +374,54 @@ void RefreshExecutablePages(Vector<MemoryRegion>& pages)
 			break;
 		}
 	}
+	
+	// Did we find anything at all?
+	if (memVec.GetCount() > 0)
+	{
+		// If we don't want to look for address containment (address = 0), just return
+		// the first page we found.
+		if (!address)
+		{
+			foundIndex = 0;
+		}
+		
+		// Did we find the page we were looking for?
+		if (foundIndex != -1)
+		{
+			memReg = memVec[foundIndex];
+			
+			// Did the caller ask for the previous and next pages?
+			if (outAuxMemRegs)
+			{
+				// Is there a preceding page?
+				if (foundIndex > 0)
+				{
+					outAuxMemRegs->Previous = memVec[foundIndex - 1];
+				}
+				else
+				{
+					outAuxMemRegs->Previous.BaseAddress = 0;
+					outAuxMemRegs->Previous.MemorySize = 0;
+				}
+
+				// Is the a successing page?
+				if (foundIndex < memVec.GetCount() - 1)
+				{
+					outAuxMemRegs->Next = memVec[foundIndex + 1];
+				}
+				else
+				{
+					outAuxMemRegs->Next.BaseAddress = 0;
+					outAuxMemRegs->Next.MemorySize = 0;
+				}
+			}
+		}
+		else
+		{
+			// If the page containing the specified address was not found, return the first.
+			memReg = memVec[0];
+		}
+	}
+	
+	return (foundIndex != -1);
 }

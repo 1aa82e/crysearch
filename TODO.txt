@@ -8,8 +8,7 @@ Package:
 - Update wiki with changes for the release.
 ------------------------------------------------------------------
 
-- Revise disassembler, we only need one page and not all!
-	- If some address is disassembled at all times, the user will not be bothered with crap;
+- Save space with the saving of disassembly lines;
 - Is this some bug in the division of pages maybe?
 	- Is there a bug that I cannot search for pointers?
 	- Is there a bug that I cannot search for increased stuff properly?
@@ -18,15 +17,12 @@ Package:
 - Change semantics of (W)string next scan to search 'inside' any current search result?
 - Fix header (like LordPE does, virtual dump);
 - Also blocks for the values and using compression/encoding to reduce size?
-- Current way of disassembling may cause inconsistencies;
-	- Temporarely fixed by 1 thread.
 - Still need to fix shitloads of stuff in the import table parser, sanity checks missing everywhere;
 - Guessing for pointer can be done by checking whether it is inside a memory page of the process?
 - Provide the output window / menu bar entry (PLUGIN_WANTS_OUTPUT_TAB);
 - Track control flow of entire process and build it a tree!
 
 - Debugger:
-	- Software bp not correctly removed in Far Cry;
 	- 16-byte registers during snapshot?
 	- VEH debugger
 

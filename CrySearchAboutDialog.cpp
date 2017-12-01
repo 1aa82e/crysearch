@@ -15,36 +15,15 @@ CrySearchAboutDialog::CrySearchAboutDialog() : CryDialogTemplate(CrySearchIml::A
 	this->Title(Format("About %s", (char*)appname)).SetRect(0, 0, 450, 300);
 	this->mOk <<= THISBACK(CloseAboutWindow);
 	
-	const DWORD hyperLink[] = { 0x372B5B01, 0x5E5B2030, 0x2E777777, 0x6E6B6E75, 0x636E776F, 0x74616568, 0x656D2E73, 0x6E55205E, 0x576F6E4B, 0x6568436E, 0x2E735461, 0x5D5D656D, 0x00000000 };
+	const DWORD hyperLink[] = { 0x372B5B01, 0x5E5B2030, 0x2E777777, 0x73797263, 0x63726165, 0x6C6E2E68, 0x7243205E, 0x61655379, 0x20686372, 0x73626557, 0x5D657469, 0x5D };
 	
 	// Set the link to the forum thread of CrySearch.
-	this->forumLink[0] = 0x70747468;
-	this->forumLink[1] = 0x772F2F3A;
-	this->forumLink[2] = 0x752E7777;
-	this->forumLink[3] = 0x6F6E6B6E;
-	this->forumLink[4] = 0x68636E77;
-	this->forumLink[5] = 0x73746165;
-	this->forumLink[6] = 0x2F656d2E;
-	this->forumLink[7] = 0x75726F66;
-	this->forumLink[8] = 0x65672f6D;
-	this->forumLink[9] = 0x6172656E;
-	this->forumLink[10] = 0x72702D6C;
-	this->forumLink[11] = 0x6172676F;
-	this->forumLink[12] = 0x6E696D6D;
-	this->forumLink[13] = 0x6E612D67;
-	this->forumLink[14] = 0x65722D64;
-	this->forumLink[15] = 0x73726576;
-	this->forumLink[16] = 0x2F676E69;
-	this->forumLink[17] = 0x36303031;
-	this->forumLink[18] = 0x632D3737;
-	this->forumLink[19] = 0x65737972;
-	this->forumLink[20] = 0x68637261;
-	this->forumLink[21] = 0x6D656D2D;
-	this->forumLink[22] = 0x2D79726F;
-	this->forumLink[23] = 0x6E616373;
-	this->forumLink[24] = 0x2E72656E;
-	this->forumLink[25] = 0x6C6D7468;
-	this->forumLink[26] = 0x0;
+	this->websiteLink[0] = 0x70747468;
+	this->websiteLink[1] = 0x772F2F3A;
+	this->websiteLink[2] = 0x632E7777;
+	this->websiteLink[3] = 0x65737972;
+	this->websiteLink[4] = 0x68637261;
+	this->websiteLink[5] = 0x6C6E2E;
 	
 	const DWORD uppDesc[] = {0x372B5B01, 0x70532030, 0x61696365, 0x6874206C, 0x736B6E61, 0x206F7420, 0x20656874, 0x65766564, 0x65706F6C, 0x65742072, 0x6F206D61, 0x005D2066};
 	const DWORD uppLinkDesc[] = { 0x372B5B01, 0x5E5B2030, 0x2E777777, 0x69746C75, 0x6574616D, 0x6F2E7070, 0x205E6772, 0x69746C55, 0x6574616D, 0x012B2B01, 0x00005D5D };
@@ -91,7 +70,7 @@ CrySearchAboutDialog::CrySearchAboutDialog() : CryDialogTemplate(CrySearchIml::A
 	this->mLibraryVersions.Add("Capstone", Format("%i.%i", major, minor));
 	
 	// Set up callbacks to make it possible to resolve the clickable links to its webpage.
-	this->mLinkLabel.WhenLeftUp = callback1(LaunchWebBrowser, (char*)this->forumLink);
+	this->mLinkLabel.WhenLeftUp = callback1(LaunchWebBrowser, (char*)this->websiteLink);
 	this->mUppLinkLabel.WhenLeftUp = callback1(LaunchWebBrowser, (char*)this->uppLink);
 }
 

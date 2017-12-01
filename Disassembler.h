@@ -20,8 +20,16 @@ using namespace Upp;
 	#pragma comment(lib, "Capstone/lib/x86/capstone.lib")
 #endif
 
-// Refreshes the pages that may contain code to be disassembled.
-void RefreshExecutablePages(Vector<MemoryRegion>& pages);
+// Auxiliary struct that gives the previous and next memory page for a given page.
+struct AuxMemRegStruct
+{
+	MemoryRegion Previous;
+	MemoryRegion Next;
+};
+
+// Retrieves the memory page that contains the specified address. If no address is specified,
+// it will return the first executable page.
+const bool GetMemoryPageByAddress(const SIZE_T address, MemoryRegion& memReg, AuxMemRegStruct* const outAuxMemRegs);
 
 // Retrieves an instruction that precedes that one at the specified address.
 const SIZE_T DisasmGetPreviousLine(const SIZE_T address, const cs_mode architecture, ArrayOfBytes* const outAob);
@@ -33,6 +41,6 @@ String DisasmGetLine(const SIZE_T address, const cs_mode architecture, ArrayOfBy
 void DisasmForBytes(const SIZE_T address, const cs_mode architecture, ArrayOfBytes* const outAob, Vector<char>* const optOutMasking);
 
 // Retrieves an instruction at the specified address, also resolving intermodular calls.
-String DisasmGetLineEx(const SIZE_T address, const cs_mode architecture, ArrayOfBytes* const outAob);
+String DisasmGetLineEx(const SIZE_T address, const cs_mode architecture);
 
 #endif
