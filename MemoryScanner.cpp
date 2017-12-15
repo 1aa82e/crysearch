@@ -405,7 +405,7 @@ void MemoryScanner::FirstScanWorker(MemoryScannerWorkerContext* const context, c
 	{
 		// Iterate through the correctly copied memory page contents.
 		const SIZE_T iterationCount = min(context->MemoryRegionBytesRead - blockIterator, maxLocalBufferSize);
-		for (SIZE_T j = blockIterator; j < iterationCount; ++j)
+		for (SIZE_T j = blockIterator; j < blockIterator + iterationCount; ++j)
 		{
 			const Byte* tempStore = &(buffer[j]);
 			
@@ -434,7 +434,7 @@ void MemoryScanner::FirstScanWorker(MemoryScannerWorkerContext* const context, c
 		// Reset indices and start a new block.
 		addrIndex = 0;
 		valueIndex = 0;
-		context->OutputFileStoragePtr->BaseAddress += blockIterator;
+		context->OutputFileStoragePtr->BaseAddress += iterationCount;
 	}
 }
 
@@ -459,7 +459,7 @@ void MemoryScanner::FirstScanWorker(MemoryScannerWorkerContext* const context, c
 	{
 		// Iterate through the correctly copied memory page contents.
 		const SIZE_T iterationCount = min(context->MemoryRegionBytesRead - blockIterator, maxLocalBufferSize);
-		for (SIZE_T j = blockIterator; j < iterationCount; ++j)
+		for (SIZE_T j = blockIterator; j < blockIterator + iterationCount; ++j)
 		{
 			const wchar* strPtr = (wchar*)&(buffer[j]);
 			
@@ -489,7 +489,7 @@ void MemoryScanner::FirstScanWorker(MemoryScannerWorkerContext* const context, c
 		// Reset indices and start a new block.
 		addrIndex = 0;
 		valueIndex = 0;
-		context->OutputFileStoragePtr->BaseAddress += blockIterator;
+		context->OutputFileStoragePtr->BaseAddress += iterationCount;
 	}
 }
 
@@ -514,7 +514,7 @@ void MemoryScanner::FirstScanWorker(MemoryScannerWorkerContext* const context, c
 	{
 		// Iterate through the correctly copied memory page contents.
 		const SIZE_T iterationCount = min(context->MemoryRegionBytesRead - blockIterator, maxLocalBufferSize);
-		for (SIZE_T j = blockIterator; j < iterationCount; ++j)
+		for (SIZE_T j = blockIterator; j < blockIterator + iterationCount; ++j)
 		{
 			const char* strPtr = (char*)&(buffer[j]);
 			
@@ -544,7 +544,7 @@ void MemoryScanner::FirstScanWorker(MemoryScannerWorkerContext* const context, c
 		// Reset indices and start a new block.
 		addrIndex = 0;
 		valueIndex = 0;
-		context->OutputFileStoragePtr->BaseAddress += blockIterator;
+		context->OutputFileStoragePtr->BaseAddress += iterationCount;
 	}
 }
 
@@ -568,12 +568,9 @@ void MemoryScanner::FirstScanWorker(MemoryScannerWorkerContext* const context, c
 	{
 		// Iterate through the correctly copied memory page contents.
 		const SIZE_T iterationCount = min(context->MemoryRegionBytesRead - blockIterator, maxLocalBufferSize);
-		for (SIZE_T j = blockIterator; j < iterationCount; j += fastScanAlignSize)
+		for (SIZE_T j = blockIterator; j < blockIterator + iterationCount; j += fastScanAlignSize)
 		{
 			const T tempStore = *(T*)&(buffer[j]);
-
-if (context->OutputFileStoragePtr->BaseAddress + j == 0x2DE9DA0C)
-	auto x = 1;
 
 			// Compare the value at this memory address.
 			if (cmp(tempStore, value))
@@ -601,7 +598,7 @@ if (context->OutputFileStoragePtr->BaseAddress + j == 0x2DE9DA0C)
 		// Reset indices and start a new block.
 		addrIndex = 0;
 		valueIndex = 0;
-		context->OutputFileStoragePtr->BaseAddress += blockIterator;
+		context->OutputFileStoragePtr->BaseAddress += iterationCount;
 		context->OutputFileStoragePtr->ValueStorageIndex = context->OutputValueFileIndex;
 	}
 }
@@ -891,12 +888,11 @@ void MemoryScanner::NextScanWorker(MemoryScannerWorkerContext* const context, co
 	// Walk through the saved search results.
 	for (unsigned int j = 0; j < context->InputOldFileStoragePtr->AddressCount; ++j)
 	{
-		const unsigned int actualOffset = j * oldAddrOffAlignment;
-		
 		// Is this address part of the search results?
 		if (oldAddrFileBuffer[j])
 		{
 			// Get the value at the actual address that was stored.
+			const unsigned int actualOffset = j * oldAddrOffAlignment;
 			const T currentDataPtr = *(T*)(buffer + actualOffset);
 			
 			// Compare the current and saved values with whatever configured comparetor.
@@ -1324,7 +1320,7 @@ void MemoryScanner::NextWorkerPrologue(MemoryScannerWorkerContext* const context
 		if (CrySearchRoutines.CryReadMemoryRoutine(this->mOpenedProcessHandle, (void*)block.BaseAddress, context->MemoryRegionBuffer, currentRegion.MemorySize - (block.BaseAddress - currentRegion.BaseAddress), NULL))
 		{
 			// Create a new storage structure for this memory page.
-			MemoryRegionFileHeader storage(block.PageIndex, currentRegion.BaseAddress, block.AddressOffsetAlignment, context->OutputValueFileIndex);
+			MemoryRegionFileHeader storage(block.PageIndex, context->InputOldFileStoragePtr->BaseAddress, block.AddressOffsetAlignment, context->OutputValueFileIndex);
 			context->OutputFileStoragePtr = &storage;
 			
 			// Execute the scan (comparison) function for the current input block.

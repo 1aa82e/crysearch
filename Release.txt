@@ -9,6 +9,9 @@ v3.2:
 		- Removed memory page selection control in favor of scrolling from page to page using up and down buttons;
 		- Reverted back to one background thread, threadpools and multiple threads are not necessary;
 		- 
+	- Fixed bugs in memory scanner, resulting in certain ranges of memory not being searched at all;
+	- Added description of address table entry to memory dissection window where applicable;
+	- 
 
 v3.1:
 	- Fixed crashing bug in x64 on closing of process opened with module list warning;

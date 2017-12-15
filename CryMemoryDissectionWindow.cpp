@@ -79,6 +79,19 @@ String GetDissectionAddress(const int index)
 	}
 }
 
+// Gets the string representation of the description of some memory dissection entry, given
+// that is has been added to the address table.
+String GetDissectionDescription(const int index)
+{
+	MemoryDissectionEntry* dissection = loadedTable.GetDissection(MemoryDissectionMasterIndex);
+	const DissectionRowEntry* entry = dissection->AssociatedDissector[index];
+	const SIZE_T addr = dissection->AssociatedDissector.GetBaseAddress() + entry->RowOffset;
+	
+	// Check whether the dissection entry is added to the address table.
+	const int addrInd = loadedTable.Find(addr, entry->RowType);
+	return addrInd != -1 ? loadedTable[addrInd]->Description : "";
+}
+
 // Gets the string representation of the value of a memory dissection entry.
 String GetDissectionValue(const int index)
 {
@@ -117,8 +130,9 @@ CryMemoryDissectionWindow::CryMemoryDissectionWindow(const AddressTableEntry* co
 	
 	this->mDissection.WhenBar = THISBACK(DissectionRightClick);
 	this->mDissection.WhenLeftDouble = THISBACK(DissectionEntryDoubleClicked);
-	this->mDissection.CryAddRowNumColumn("Address", 60).SetConvert(Single<IndexBasedValueConvert<GetDissectionAddress>>()).SetDisplay(MemoryDissectionEntryDrawInstance);
-	this->mDissection.CryAddRowNumColumn("Value", 40).SetConvert(Single<IndexBasedValueConvert<GetDissectionValue>>());
+	this->mDissection.CryAddRowNumColumn("Address", 50).SetConvert(Single<IndexBasedValueConvert<GetDissectionAddress>>()).SetDisplay(MemoryDissectionEntryDrawInstance);
+	this->mDissection.CryAddRowNumColumn("Description", 20).SetConvert(Single<IndexBasedValueConvert<GetDissectionDescription>>());
+	this->mDissection.CryAddRowNumColumn("Value", 30).SetConvert(Single<IndexBasedValueConvert<GetDissectionValue>>());
 	
 	// Add existing dissections to drop list.
 	this->mAvailableDissections.SetConvert(Single<IndexBasedValueConvert<GetDissectionForDropList>>());
