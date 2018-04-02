@@ -2,16 +2,20 @@ CrySearch Memory Scanner
 
 evolution536, www.unknowncheats.me, www.crysearch.nl
 
+v3.3:
+	- Changes to Import Parser:
+		- Fixed bug where restoring the function address from the export table would fail because of ordinal misclassification;
+		- Fixed bug where API Set redirections would be incorrectly resolved in rare cases.
+	- 
+
 v3.2:
 	- Changed the Unknowncheats forum link in about dialog to the CrySearch website (www.crysearch.nl);
 	- Changes to the disassembler:
 		- Fixed bug where not all contents of some memory page would be disassembled by Capstone;
 		- Removed memory page selection control in favor of scrolling from page to page using up and down buttons;
-		- Reverted back to one background thread, threadpools and multiple threads are not necessary;
-		- 
+		- Reverted back to one background thread, threadpools and multiple threads are not necessary.
 	- Fixed bugs in memory scanner, resulting in certain ranges of memory not being searched at all;
-	- Added description of address table entry to memory dissection window where applicable;
-	- 
+	- Added description of address table entry to memory dissection window where applicable.
 
 v3.1:
 	- Fixed crashing bug in x64 on closing of process opened with module list warning;

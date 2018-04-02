@@ -8,16 +8,15 @@ Package:
 - Update wiki with changes for the release.
 ------------------------------------------------------------------
 
-- Fix drawing of row type in dissection window to scale with column width;
-- Allow editing of description from dissection window?
+- entrypoiint button werkt niet!
+- Code caves scanning (still fix some bugs in the implementation);
 - Save space with the saving of disassembly lines;
-- Change semantics of (W)string next scan to search 'inside' any current search result?
 - Fix header (like LordPE does, virtual dump);
 - Also blocks for the values and using compression/encoding to reduce size?
 - Still need to fix shitloads of stuff in the import table parser, sanity checks missing everywhere;
 - Guessing for pointer can be done by checking whether it is inside a memory page of the process?
 - Provide the output window / menu bar entry (PLUGIN_WANTS_OUTPUT_TAB);
-- Track control flow of entire process and build it a tree!
+- Track control flow of entire process and build it a tree (profiling)!
 
 - Debugger:
 	- 16-byte registers during snapshot?
@@ -25,7 +24,7 @@ Package:
 
 - Structure dissections:
 	- data schema (smth like xsd but for memory dissections);
-	- generate struct definition from selection;
+	- generate struct from selection / give start address and descriptions?
 
 - Identify static addresses:
 	- Generate C++ Fields / Struct / Union;
@@ -45,7 +44,6 @@ Package:
 - VTable finder / dissection (learn_more, maybe a plugin);
 - Find class instances based on a vtable;
 - Dump .NET modules?
-- Detect handles that are 'malicious'?
 - Allow entering string as argument for create thread (let's make a custom data type of it);
 
 - Main window:
@@ -68,8 +66,7 @@ Package:
 - Scan for hooked functions inside a process based on:
 	- Detours;
 	- IAT.
-	
-- Code caves scanning;
+
 - Write x86 driver using WinDDK (.sys) and create UI module to load it:
 	- OpenProcess driver level equivalent;
 	- Read/Write- ProcessMemory driver level equivalent;

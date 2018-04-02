@@ -27,6 +27,9 @@ struct AuxMemRegStruct
 	MemoryRegion Next;
 };
 
+// Retrieves a list of executable memory pages.
+void GetExecutableMemoryPagesList(Vector<MemoryRegion>& outList);
+
 // Retrieves the memory page that contains the specified address. If no address is specified,
 // it will return the first executable page.
 const bool GetMemoryPageByAddress(const SIZE_T address, MemoryRegion& memReg, AuxMemRegStruct* const outAuxMemRegs);
@@ -42,5 +45,9 @@ void DisasmForBytes(const SIZE_T address, const cs_mode architecture, ArrayOfByt
 
 // Retrieves an instruction at the specified address, also resolving intermodular calls.
 String DisasmGetLineEx(const SIZE_T address, const cs_mode architecture);
+
+// Disassembles a region of memory from some starting address to some ending address.
+// Once the killSwitch becomes false, the disassembling stops.
+void DisassembleRegion(const SIZE_T address, const SIZE_T size, const cs_mode architecture, Vector<LONG_PTR>& outInsts, volatile bool& killSwitch);
 
 #endif

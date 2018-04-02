@@ -181,7 +181,7 @@ public:
 	virtual bool LoadLibraryExternal(const String& library) const = 0;
 	virtual bool LoadLibraryExternalHijack(const String& library, HANDLE hThread) const = 0;
 	virtual void UnloadLibraryExternal(const SIZE_T module) const = 0;
-	virtual void RestoreExportTableAddressImport(const Win32ModuleInformation* modBase, const SIZE_T baseAddress, const char* NameOrdinal, bool IsOrdinal) const = 0;
+	virtual void RestoreExportTableAddressImport(const Win32ModuleInformation* modBase, const SIZE_T baseAddress, const char* NameOrdinal, const int NameLength) const = 0;
 	virtual SIZE_T GetAddressFromExportTable(const AddrStruct* addr, const char* NameOrdinal, const unsigned int NameLength) const = 0;
 	
 	wchar* ResolveApiSetSchemaMapping(const wchar* ApiSetSchemaDll, const DWORD Length) const;
@@ -220,7 +220,7 @@ public:
 	virtual bool LoadLibraryExternal(const String& library) const override final;
 	virtual bool LoadLibraryExternalHijack(const String& library, HANDLE hThread) const override final;
 	virtual void UnloadLibraryExternal(const SIZE_T module) const override final;
-	virtual void RestoreExportTableAddressImport(const Win32ModuleInformation* modBase, const SIZE_T baseAddress, const char* NameOrdinal, bool IsOrdinal) const override final;
+	virtual void RestoreExportTableAddressImport(const Win32ModuleInformation* modBase, const SIZE_T baseAddress, const char* NameOrdinal, const int NameLength) const override final;
 	virtual SIZE_T GetAddressFromExportTable(const AddrStruct* addr, const char* NameOrdinal, const unsigned int NameLength) const override final;
 	
 	PortableExecutable32() : PortableExecutable() { }
@@ -243,7 +243,7 @@ public:
 		virtual bool LoadLibraryExternal(const String& library) const override final;
 		virtual bool LoadLibraryExternalHijack(const String& library, HANDLE hThread) const override final;
 		virtual void UnloadLibraryExternal(const SIZE_T module) const override final;
-		virtual void RestoreExportTableAddressImport(const Win32ModuleInformation* modBase, const SIZE_T baseAddress, const char* NameOrdinal, bool IsOrdinal) const override final;
+		virtual void RestoreExportTableAddressImport(const Win32ModuleInformation* modBase, const SIZE_T baseAddress, const char* NameOrdinal, const int NameLength) const override final;
 		virtual SIZE_T GetAddressFromExportTable(const AddrStruct* addr, const char* NameOrdinal, const unsigned int NameLength) const override final;
 		
 		PortableExecutable64() : PortableExecutable() { }

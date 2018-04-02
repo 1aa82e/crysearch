@@ -10,6 +10,7 @@
 #include "CryProcessEnvironmentBlockWindow.h"
 #include "CrySystemHandleInformationWindow.h"
 #include "CryHeapWalkDialog.h"
+#include "CodeCaveScannerWindow.h"
 #include "CryPluginsWindow.h"
 #include "CryBruteforcePIDWindow.h"
 #include "ImlProvider.h"
@@ -380,6 +381,7 @@ void CrySearchForm::ToolsMenu(Bar& pBar)
 		pBar.Add(!mMemoryScanner->IsReadOnlyOperationMode(), "Fill Memory", THISBACK(FillMemoryButtonClicked));
 		pBar.Add("Memory Dissection", CrySearchIml::MemoryDissection(), THISBACK(MemoryDissectionButtonClicked));
 		pBar.Add("View Heap Information", CrySearchIml::HeapWalkSmall(), THISBACK(HeapWalkMenuClicked));
+		pBar.Add("Scan for Code Caves", CrySearchIml::CodeCaveSmall(), THISBACK(CodeCaveMenuClicked));
 	}
 	
 	// These menu items can be added regardless of the program state.
@@ -719,6 +721,14 @@ void CrySearchForm::HeapWalkMenuClicked()
 	CryHeapWalkDialog* chwd = new CryHeapWalkDialog(CrySearchIml::HeapWalkSmall());
 	chwd->Execute();
 	delete chwd;
+}
+
+// Executes the code cave scanner dialog.
+void CrySearchForm::CodeCaveMenuClicked()
+{
+	CodeCaveScannerWindow* ccsw = new CodeCaveScannerWindow(CrySearchIml::CodeCaveSmall());
+	ccsw->Execute();
+	delete ccsw;
 }
 
 // Sets a hardware breakpoint on an address.

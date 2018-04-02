@@ -238,19 +238,19 @@ wchar* PortableExecutable::ResolveApiSetSchemaMapping(const wchar* ApiSetSchemaD
 		if (_wcsnicmp(ApiSetSchemaDll, (wchar*)(apiSetSchemaFileBuffer + pDescriptor->OffsetDllString), Length) == 0)
 		{
 			DLLREDIRECTOR* const directorStruct = (DLLREDIRECTOR*)(apiSetSchemaFileBuffer + pDescriptor->OffsetDllRedirector);
-			
+
 			// Iterate redirections for this api set.
 			REDIRECTION* pRedirectionDescriptor = directorStruct->Redirection;
 			const wchar* const redirectionString = (wchar*)(apiSetSchemaFileBuffer + pRedirectionDescriptor->OffsetRedirection2);
-			
+
 			// Redirection is found, create buffer to return to the caller and copy the logical dll name into it.
 			const DWORD wcsLength = pRedirectionDescriptor->RedirectionLength2 / 2;
 			wchar* const nameBuffer = new wchar[wcsLength + 1];
 			memcpy(nameBuffer, redirectionString, pRedirectionDescriptor->RedirectionLength2);
-			
+
 			// Set null terminator in the string, otherwise the result contains the redirected dll name but the rest is undefined.
 			nameBuffer[wcsLength] = NULL;
-			
+
 			return nameBuffer;
 		}
 	}
@@ -284,13 +284,24 @@ wchar* PortableExecutable::ResolveApiSetSchemaMappingEx(const wchar* ApiSetSchem
 			API_SET_VALUE_ENTRY_V2* pRedirectionDescriptor = directorStruct->Array;
 			const wchar* const redirectionString = (wchar*)(apiSetSchemaFileBuffer + pRedirectionDescriptor->ValueOffset);
 			
-			// Redirection is found, create buffer to return to the caller and copy the logical dll name into it.
-			const DWORD wcsLength = pRedirectionDescriptor->ValueLength / 2;
-			wchar* const nameBuffer = new wchar[wcsLength + 1];
-			memcpy(nameBuffer, redirectionString, pRedirectionDescriptor->ValueLength);
-			
-			// Set null terminator in the string, otherwise the result contains the redirected dll name but the rest is undefined.
-			nameBuffer[wcsLength] = NULL;
+			// Apparently a virtual library may have two redirections. If the library being
+			// processed matches the first API redirection, we must use the second one.
+			const unsigned int totalLengthW = (unsigned int)wcslen(redirectionString);
+			const DWORD wcsIndex = pRedirectionDescriptor->ValueLength / sizeof(wchar);
+			wchar* const nameBuffer = new wchar[totalLengthW * sizeof(wchar)];
+			if (_wcsnicmp(ApiSetSchemaDll, redirectionString + 4, Length) == 0)
+			{
+				// Redirection is found, create buffer to return to the caller and copy the logical dll name into it.
+				const DWORD wcharCount = totalLengthW - wcsIndex;
+				memcpy(nameBuffer, redirectionString + wcsIndex, wcharCount);
+				nameBuffer[wcharCount] = NULL;
+			}
+			else
+			{
+				// Take the first redirection as result.
+				memcpy(nameBuffer, redirectionString, pRedirectionDescriptor->ValueLength);
+				nameBuffer[pRedirectionDescriptor->ValueLength / sizeof(wchar)] = NULL;
+			}
 			
 			return nameBuffer;
 		}
@@ -326,13 +337,25 @@ wchar* PortableExecutable::ResolveApiSetSchemaMapping10(const wchar* ApiSetSchem
 			API_SET_VALUE_ENTRY_10* pRedirectionDescriptor = (API_SET_VALUE_ENTRY_10*)(apiSetSchemaFileBuffer + directorStruct->DataOffset);
 			const wchar* const redirectionString = (wchar*)(apiSetSchemaFileBuffer + pRedirectionDescriptor->ValueOffset);
 			
-			// Redirection is found, create buffer to return to the caller and copy the logical dll name into it.
-			const DWORD wcsLength = pRedirectionDescriptor->ValueLength / 2;
-			wchar* const nameBuffer = new wchar[wcsLength + 1];
-			memcpy(nameBuffer, redirectionString, pRedirectionDescriptor->ValueLength);
+			// Apparently a virtual library may have two redirections. If the library being
+			// processed matches the first API redirection, we must use the second one.
+			const unsigned int totalLengthW = (unsigned int)wcslen(redirectionString);
+			const DWORD wcsIndex = pRedirectionDescriptor->ValueLength / sizeof(wchar);
+			wchar* const nameBuffer = new wchar[totalLengthW * sizeof(wchar)];
+			if (_wcsnicmp(ApiSetSchemaDll, redirectionString + 4, Length) == 0)
+			{
+				// Redirection is found, create buffer to return to the caller and copy the logical dll name into it.
+				const DWORD wcharCount = totalLengthW - wcsIndex;
+				memcpy(nameBuffer, redirectionString + wcsIndex, wcharCount);
+				nameBuffer[wcharCount] = NULL;
+			}
+			else
+			{
+				// Take the first redirection as result.
+				memcpy(nameBuffer, redirectionString, pRedirectionDescriptor->ValueLength);
+				nameBuffer[pRedirectionDescriptor->ValueLength / sizeof(wchar)] = NULL;
+			}
 			
-			// Set null terminator in the string, otherwise the result contains the redirected dll name but the rest is undefined.
-			nameBuffer[wcsLength] = NULL;
 			return nameBuffer;
 		}
 	}
@@ -427,13 +450,13 @@ const Win32ModuleInformation* PortableExecutable::GetResolvedModule(const char* 
 	*recurseIndex = forwardedModName.Find('.');
 
 	// If the resulting filename starts with api-ms-win, we are dealing with ApiSetSchema libraries.
-	if (ToLower(forwardedModName).StartsWith("api-ms-win"))
+	WString apiSetDllName = ToLower(forwardedModName);
+	if (apiSetDllName.StartsWith("api-ms-win") || apiSetDllName.StartsWith("ext-ms-win"))
 	{
-		WString unicodeBuffer(forwardedModName);
-		unicodeBuffer.Remove(0, 4);
-		unicodeBuffer.Remove(unicodeBuffer.Find('.'), (int)strlen(NameOrdinal) + 1);
+		apiSetDllName.Remove(0, 4);
+		apiSetDllName.Remove(apiSetDllName.Find('.'), (int)strlen(NameOrdinal) + 1);
 
-		const wchar* const outWString = this->InlineResolveApiSetSchema(unicodeBuffer);
+		const wchar* const outWString = this->InlineResolveApiSetSchema(apiSetDllName);
 		forwardedModName = WString(outWString).ToString();
 		delete[] outWString;
 	}
@@ -726,30 +749,46 @@ const bool PortableExecutable32::GetImportAddressTable() const
         impDesc.ModuleName = dllName;
         
         // Get base address and length of desired DLL, and look up the function foreign name in the export table of that DLL.
-        const Win32ModuleInformation* modBaseAddr = NULL;
-		if (ToLower(dllName).StartsWith("api-ms-win"))
+		WString apiSetDllName = ToLower(dllName);
+		const Win32ModuleInformation* modBaseAddr = NULL;
+
+		// Check whether we have to deal with an ApiSet redirection or not.
+		if (apiSetDllName.StartsWith("api-ms-win") || apiSetDllName.StartsWith("ext-ms-win"))
 		{
-			// Windows 6.x ApiSetSchema redirection detected, resolve the redirection.
-			WString unicodeBuffer(dllName);
-			unicodeBuffer.Remove(0, 4);
-			unicodeBuffer.Remove(unicodeBuffer.GetLength() - 4, 4);
-			
-			const wchar* const outWString = this->InlineResolveApiSetSchema(unicodeBuffer);
-			if (outWString)
+			// Windows ApiSetSchema redirection detected. Remove the file extension before resolving.
+			const int lastDot = apiSetDllName.ReverseFind('.');
+			if (lastDot != -1)
 			{
-				WString redirectedDll = outWString;
-				delete[] outWString;
-			
-				modBaseAddr = mModuleManager->FindModule(redirectedDll.ToString());
-				impDesc.LogicalBaseAddress = modBaseAddr ? modBaseAddr->BaseAddress : 0;
+				apiSetDllName.Remove(lastDot, apiSetDllName.GetLength() - lastDot);
+			}
+
+			// Recursively resolve the redirection.
+			while (!modBaseAddr)
+			{
+				// First remove the prefix, the resolving works without the prefix.
+				apiSetDllName.Remove(0, 4);
+
+				// Resolve the redirection.
+				const wchar* const outWString = this->InlineResolveApiSetSchema(apiSetDllName);
+				if (outWString)
+				{
+					apiSetDllName = outWString;
+					delete[] outWString;
+
+					// Get the module base address from the internal module list, and set the logical base address.
+					modBaseAddr = mModuleManager->FindModule(apiSetDllName.ToString());
+					impDesc.LogicalBaseAddress = modBaseAddr ? modBaseAddr->BaseAddress : 0;
+				}
 			}
 		}
 		else
 		{
-			modBaseAddr = mModuleManager->FindModule(dllName);
+			// Get the module base address from the internal module list.
+			modBaseAddr = mModuleManager->FindModule(apiSetDllName.ToString());
 			impDesc.LogicalBaseAddress = 0;
 		}
-        
+	        
+		// Does the module have a base address? If so, we parse its export table.
         if (modBaseAddr)
         {
             impDesc.ModulePointer = modBaseAddr;
@@ -1333,7 +1372,7 @@ void PortableExecutable32::UnloadLibraryExternal(const SIZE_T module) const
 }
 
 // Restores the original address of an imported function from the export table.
-void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInformation* modBase, const SIZE_T baseAddress, const char* NameOrdinal, bool IsOrdinal) const
+void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInformation* modBase, const SIZE_T baseAddress, const char* NameOrdinal, const int NameLength) const
 {
 	Byte dllBuffer[0x400];
     CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)baseAddress, dllBuffer, 0x400, NULL);
@@ -1351,7 +1390,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 		AddrStruct addrStruct((Byte*)baseAddress, (exportDirectoryBuffer - dataDir.VirtualAddress), bufBase + dataDir.VirtualAddress + dataDir.Size
 			, &dataDir, (IMAGE_EXPORT_DIRECTORY*)exportDirectoryBuffer);
 	    
-		this->PlaceIATHook(modBase, NameOrdinal, this->GetAddressFromExportTable(&addrStruct, NameOrdinal, IsOrdinal), IsOrdinal);
+		this->PlaceIATHook(modBase, NameOrdinal, this->GetAddressFromExportTable(&addrStruct, NameOrdinal, NameLength), !NameLength);
 		
 		delete[] exportDirectoryBuffer;
     }
@@ -1622,30 +1661,46 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 	        impDesc.ModuleName = dllName;
 	        
 	        // Get base address and length of desired DLL, and look up the function foreign name in the export table of that DLL.
+			WString apiSetDllName = ToLower(dllName);
 			const Win32ModuleInformation* modBaseAddr = NULL;
-			if (ToLower(dllName).StartsWith("api-ms-win"))
+
+			// Check whether we have to deal with an ApiSet redirection or not.
+			if (apiSetDllName.StartsWith("api-ms-win") || apiSetDllName.StartsWith("ext-ms-win"))
 			{
-				// Windows 6.x ApiSetSchema redirection detected, resolve the redirection.
-				WString unicodeBuffer(dllName);
-				unicodeBuffer.Remove(0, 4);
-				unicodeBuffer.Remove(unicodeBuffer.GetLength() - 4, 4);
-				
-				const wchar* const outWString = this->InlineResolveApiSetSchema(unicodeBuffer);
-				if (outWString)
+				// Windows ApiSetSchema redirection detected. Remove the file extension before resolving.
+				const int lastDot = apiSetDllName.ReverseFind('.');
+				if (lastDot != -1)
 				{
-					WString redirectedDll = outWString;
-					delete[] outWString;
-				
-					modBaseAddr = mModuleManager->FindModule(redirectedDll.ToString());
-					impDesc.LogicalBaseAddress = modBaseAddr ? modBaseAddr->BaseAddress : 0;
+					apiSetDllName.Remove(lastDot, apiSetDllName.GetLength() - lastDot);
+				}
+
+				// Recursively resolve the redirection.
+				while (!modBaseAddr)
+				{
+					// First remove the prefix, the resolving works without the prefix.
+					apiSetDllName.Remove(0, 4);
+
+					// Resolve the redirection.
+					const wchar* const outWString = this->InlineResolveApiSetSchema(apiSetDllName);
+					if (outWString)
+					{
+						apiSetDllName = outWString;
+						delete[] outWString;
+
+						// Get the module base address from the internal module list, and set the logical base address.
+						modBaseAddr = mModuleManager->FindModule(apiSetDllName.ToString());
+						impDesc.LogicalBaseAddress = modBaseAddr ? modBaseAddr->BaseAddress : 0;
+					}
 				}
 			}
 			else
 			{
-				modBaseAddr = mModuleManager->FindModule(dllName);
+				// Get the module base address from the internal module list.
+				modBaseAddr = mModuleManager->FindModule(apiSetDllName.ToString());
 				impDesc.LogicalBaseAddress = 0;
 			}
 	        
+			// Does the module have a base address? If so, we parse its export table.
 			if (modBaseAddr)
 			{
 				impDesc.ModulePointer = modBaseAddr;
@@ -2193,7 +2248,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 	}
 	
 	// Restores the original address of an imported function from the export table.
-	void PortableExecutable64::RestoreExportTableAddressImport(const Win32ModuleInformation* modBase, const SIZE_T baseAddress, const char* NameOrdinal, bool IsOrdinal) const
+	void PortableExecutable64::RestoreExportTableAddressImport(const Win32ModuleInformation* modBase, const SIZE_T baseAddress, const char* NameOrdinal, const int NameLength) const
 	{
 		Byte* const dllBuffer = new Byte[0x400];
 	    CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)baseAddress, dllBuffer, 0x400, NULL);
@@ -2213,7 +2268,7 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 			AddrStruct addrStruct((Byte*)baseAddress, (exportDirectoryBuffer - dataDir.VirtualAddress), bufBase + dataDir.VirtualAddress + dataDir.Size
 				, &dataDir, (IMAGE_EXPORT_DIRECTORY*)exportDirectoryBuffer);
 		    
-			this->PlaceIATHook(modBase, NameOrdinal, this->GetAddressFromExportTable(&addrStruct, NameOrdinal, IsOrdinal), IsOrdinal);
+			this->PlaceIATHook(modBase, NameOrdinal, this->GetAddressFromExportTable(&addrStruct, NameOrdinal, NameLength), !NameLength);
 			
 			delete[] exportDirectoryBuffer;   		
     	}

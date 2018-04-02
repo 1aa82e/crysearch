@@ -331,17 +331,12 @@ const SIZE_T DisasmGetPreviousLine(const SIZE_T address, const cs_mode architect
 	return outputVal;
 }
 
-// Retrieves the memory page that contains the specified address. If no address is specified,
-// it will return the first executable page.
-const bool GetMemoryPageByAddress(const SIZE_T address, MemoryRegion& memReg, AuxMemRegStruct* const outAuxMemRegs)
+// Retrieves a list of executable memory pages.
+void GetExecutableMemoryPagesList(Vector<MemoryRegion>& outList)
 {
 	SIZE_T incAddress = 0;
 	MEMORY_BASIC_INFORMATION block;
-	int foundIndex = -1;
 	
-	// Query first memory page inside the target process.
-	Vector<MemoryRegion> memVec;
-	memVec.Reserve(128);
 	while (VirtualQueryEx(mMemoryScanner->GetHandle(), (void*)incAddress, &block, sizeof(block)))
 	{
 		// We need a readable page, and one that doesn't trigger an exception in the target process.
@@ -354,14 +349,7 @@ const bool GetMemoryPageByAddress(const SIZE_T address, MemoryRegion& memReg, Au
 				MemoryRegion memRegion;
 				memRegion.BaseAddress = (SIZE_T)block.BaseAddress;
 			    memRegion.MemorySize = block.RegionSize;
-			    memVec << memRegion;
-			    
-			    // Check whether the current page contains the specified address.
-			    if (address >= memRegion.BaseAddress && address <= memRegion.BaseAddress + memRegion.MemorySize)
-			    {
-					// Save the index of the found page for later.
-					foundIndex = memVec.GetCount() - 1;
-			    }
+			    outList << memRegion;
 			}
 		}
 		
@@ -374,54 +362,120 @@ const bool GetMemoryPageByAddress(const SIZE_T address, MemoryRegion& memReg, Au
 			break;
 		}
 	}
+}
+
+// Retrieves the memory page that contains the specified address. If no address is specified,
+// it will return the first executable page.
+const bool GetMemoryPageByAddress(const SIZE_T address, MemoryRegion& memReg, AuxMemRegStruct* const outAuxMemRegs)
+{
+	int foundIndex = -1;
 	
-	// Did we find anything at all?
-	if (memVec.GetCount() > 0)
+	// Retrieve a list of executable memory pages.
+	Vector<MemoryRegion> memVec;
+	memVec.Reserve(128);
+	GetExecutableMemoryPagesList(memVec);
+	
+	// Loop through the pages to find several important ones.
+	const int memCount = memVec.GetCount();
+	for (int i = 0; i < memCount; ++i)
+	{
+	    // Check whether the current page contains the specified address.
+	    if (address >= memVec[i].BaseAddress && address <= memVec[i].BaseAddress + memVec[i].MemorySize)
+	    {
+			// Save the index of the found page for later.
+			foundIndex = i;
+	    }
+	}
+
+	// Did the caller ask for the previous and next pages?
+	if (outAuxMemRegs)
 	{
 		// If we don't want to look for address containment (address = 0), just return
 		// the first page we found.
 		if (!address)
 		{
+			// If the page containing the specified address was not found, return the first.
 			foundIndex = 0;
+			memReg = memVec[foundIndex];
 		}
 		
-		// Did we find the page we were looking for?
-		if (foundIndex != -1)
+		// Is there a preceding page?
+		if (foundIndex > 0)
 		{
 			memReg = memVec[foundIndex];
-			
-			// Did the caller ask for the previous and next pages?
-			if (outAuxMemRegs)
-			{
-				// Is there a preceding page?
-				if (foundIndex > 0)
-				{
-					outAuxMemRegs->Previous = memVec[foundIndex - 1];
-				}
-				else
-				{
-					outAuxMemRegs->Previous.BaseAddress = 0;
-					outAuxMemRegs->Previous.MemorySize = 0;
-				}
-
-				// Is the a successing page?
-				if (foundIndex < memVec.GetCount() - 1)
-				{
-					outAuxMemRegs->Next = memVec[foundIndex + 1];
-				}
-				else
-				{
-					outAuxMemRegs->Next.BaseAddress = 0;
-					outAuxMemRegs->Next.MemorySize = 0;
-				}
-			}
+			outAuxMemRegs->Previous = memVec[foundIndex - 1];
 		}
 		else
 		{
-			// If the page containing the specified address was not found, return the first.
-			memReg = memVec[0];
+			outAuxMemRegs->Previous.BaseAddress = 0;
+			outAuxMemRegs->Previous.MemorySize = 0;
+		}
+		
+		// Is the a successing page?
+		if (foundIndex < memVec.GetCount() - 1)
+		{
+			memReg = memVec[foundIndex];
+			outAuxMemRegs->Next = memVec[foundIndex + 1];
+		}
+		else
+		{
+			outAuxMemRegs->Next.BaseAddress = 0;
+			outAuxMemRegs->Next.MemorySize = 0;
 		}
 	}
 	
 	return (foundIndex != -1);
+}
+
+// Disassembles a region of memory from some starting address to some ending address.
+// Once the killSwitch becomes false, the disassembling stops.
+void DisassembleRegion(const SIZE_T address, const SIZE_T size, const cs_mode architecture, Vector<LONG_PTR>& outInsts, volatile bool& killSwitch)
+{
+	// Query virtual pages inside target process.
+    Byte* const buffer = new Byte[size];
+    CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), (void*)address, buffer, size, NULL);
+    
+    // Reserve an approximated buffer for instruction lines.
+    outInsts.Reserve((int)size / 4);
+	
+	// Open Capstone disassembler in x86 mode, for either x86_32 or x86_64.
+	csh handle;
+	cs_open(CS_ARCH_X86, architecture, &handle);
+    
+    // Allocate memory cache for 1 instruction, to be used by cs_disasm_iter later.
+	cs_insn* insn = cs_malloc(handle);
+	const Byte* bufIteratorPtr = buffer;
+	size_t code_size = size;
+	uint64 iterAddress = address;
+	uint64 prevAddress = iterAddress;
+	
+	// Keep disassembling until we reach the end of the specified input memory block.
+	do
+	{
+		// Disassemble one instruction a time & store the result into @insn variable.
+		while (cs_disasm_iter(handle, &bufIteratorPtr, &code_size, &iterAddress, insn))
+		{
+			// Disassembled succesfully, add a new line.
+			outInsts.Add((SIZE_T)prevAddress);
+			prevAddress = iterAddress;
+		}
+
+		// Check if we encountered an address that Capstone could not disassemble.
+		if (cs_errno(handle) == CS_ERR_OK && iterAddress < address + size)
+		{
+			outInsts.Add((SIZE_T)iterAddress++);
+			prevAddress = iterAddress;
+		}
+	}
+	while (prevAddress < address + size && killSwitch);
+	
+	// Release the cache memory when done.
+	cs_free(insn, 1);
+
+	// Close the Capstone handle.
+	cs_close(&handle);
+		
+	// Clean up used buffers and shrink instruction line buffer.
+	outInsts.Shrink();
+	delete[] buffer;
 }

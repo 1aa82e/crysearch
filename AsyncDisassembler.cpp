@@ -94,53 +94,8 @@ void AsyncDisassembler::Kill()
 // The output disassembly string is put at outInstructionString. Returns the length of the longest string bytes representation.
 void AsyncDisassembler::Disassemble(const SIZE_T address, const SIZE_T size, const cs_mode architecture)
 {
-	// Query virtual pages inside target process.
-    Byte* const buffer = new Byte[size];
-    CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), (void*)address, buffer, size, NULL);
-    
-    // Reserve an approximated buffer for instruction lines.
-    DisasmVisibleLines.Reserve((int)size / 4);
-	
-	// Open Capstone disassembler in x86 mode, for either x86_32 or x86_64.
-	csh handle;
-	cs_open(CS_ARCH_X86, architecture, &handle);
-    
-    // Allocate memory cache for 1 instruction, to be used by cs_disasm_iter later.
-	cs_insn* insn = cs_malloc(handle);
-	const Byte* bufIteratorPtr = buffer;
-	size_t code_size = size;
-	uint64 iterAddress = address;
-	uint64 prevAddress = iterAddress;
-	
-	// Keep disassembling until we reach the end of the specified input memory block.
-	do
-	{
-		// Disassemble one instruction a time & store the result into @insn variable.
-		while (cs_disasm_iter(handle, &bufIteratorPtr, &code_size, &iterAddress, insn))
-		{
-			// Disassembled succesfully, add a new line.
-			DisasmVisibleLines.Add((SIZE_T)prevAddress);
-			prevAddress = iterAddress;
-		}
-
-		// Check if we encountered an address that Capstone could not disassemble.
-		if (cs_errno(handle) == CS_ERR_OK && iterAddress < address + size)
-		{
-			DisasmVisibleLines.Add((SIZE_T)iterAddress++);
-			prevAddress = iterAddress;
-		}
-	}
-	while (prevAddress < address + size && this->mRunning);
-	
-	// Release the cache memory when done.
-	cs_free(insn, 1);
-
-	// Close the Capstone handle.
-	cs_close(&handle);
-		
-	// Clean up used buffers and shrink instruction line buffer.
-	DisasmVisibleLines.Shrink();
-	delete[] buffer;
+	// Disassemble the given region.
+	DisassembleRegion(address, size, architecture, DisasmVisibleLines, this->mRunning);
 	
 	// Indicate that this work is done.
 	this->mRunning = false;

@@ -33,7 +33,7 @@ public:
 		String type = str.Mid(sep + 2);
 		const Font& dFont = StdFont();
 		w.DrawText(r.left, r.top, addr, dFont, Black());
-		w.DrawText(r.left + (dFont.GetCy() * addr.GetLength()), r.top, type, dFont, Gray());
+		w.DrawText(r.left + dFont.GetCy() * addr.GetLength(), r.top, type, dFont, Gray());
 	}
 } MemoryDissectionEntryDrawInstance;
 

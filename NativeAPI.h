@@ -287,6 +287,8 @@ typedef struct _API_SET_NAMESPACE_ARRAY_10
     API_SET_NAMESPACE_ENTRY_10 Array[1];
 } API_SET_NAMESPACE_ARRAY_10, *PAPI_SET_NAMESPACE_ARRAY_10;
 
+// ---------------------------------------------------------------------------------------------
+
 #define GDI_HANDLE_BUFFER_SIZE32	34
 #define GDI_HANDLE_BUFFER_SIZE		GDI_HANDLE_BUFFER_SIZE32
 

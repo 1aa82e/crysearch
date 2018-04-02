@@ -165,11 +165,11 @@ void CryImportsWindow::RestoreIATFunction()
 
 		if (key.LogicalBaseAddress)
 		{
-			mPeInstance->RestoreExportTableAddressImport(masterMod, key.LogicalBaseAddress, entry.Ordinal ? (char*)entry.Ordinal : entry.FunctionName.Begin(), entry.Ordinal);
+			mPeInstance->RestoreExportTableAddressImport(masterMod, key.LogicalBaseAddress, entry.Ordinal ? (char*)entry.Ordinal : entry.FunctionName.Begin(), entry.FunctionName.GetLength());
 		}
 		else
 		{
-			mPeInstance->RestoreExportTableAddressImport(masterMod, mModuleManager->FindModule(LoadedProcessPEInformation.ImportAddressTable[this->mModulesList.GetCursor()].ModuleName)->BaseAddress, entry.Ordinal ? (char*)entry.Ordinal : entry.FunctionName.Begin(), entry.Ordinal);
+			mPeInstance->RestoreExportTableAddressImport(masterMod, mModuleManager->FindModule(LoadedProcessPEInformation.ImportAddressTable[this->mModulesList.GetCursor()].ModuleName)->BaseAddress, entry.Ordinal ? (char*)entry.Ordinal : entry.FunctionName.Begin(), entry.FunctionName.GetLength());
 		}
 
 		this->RefreshImports();

@@ -73,6 +73,7 @@ private:
 	void ToggleSearchResultViewAs();
 	void AddressListEntryMemoryDissection();
 	void HeapWalkMenuClicked();
+	void CodeCaveMenuClicked();
 	void OpenProcessMenu();
 	void CloseProcessMenu();
 	bool CloseProcess();

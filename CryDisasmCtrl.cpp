@@ -513,10 +513,14 @@ void CryDisasmCtrl::Initialize()
 	// Clear list to put new disassembly.
 	this->disasmDisplay.Clear();
 	DisasmVisibleLines.Clear();
-	
+
+	// Try to get the entrypoint address, we prefer to start there.
+	const SIZE_T epAddress = LoadedProcessPEInformation.PEFields.GetCount() > 0 ? (SIZE_T)((*mModuleManager)[0].BaseAddress
+		+ ScanInt64(LoadedProcessPEInformation.PEFields.Get("Address of entrypoint").ToString(), NULL, 16)) : 0;
+
 	// Get the first executable memory page in case the entrypoint cannot be retrieved.
 	AuxMemRegStruct aux;
-	GetMemoryPageByAddress(0, CurrentExecutableMemoryPage, &aux);
+	GetMemoryPageByAddress(epAddress, CurrentExecutableMemoryPage, &aux);
 
 	// If there is no preceding or succeeding page, either up or down button must be disabled.
 	if (!aux.Previous.BaseAddress)
@@ -528,15 +532,8 @@ void CryDisasmCtrl::Initialize()
 		this->mHasSucceeding = false;
 	}
 	
-	// Try to get the entrypoint address, we prefer to start there.
-#ifdef _WIN64
-	SIZE_T epAddress = LoadedProcessPEInformation.PEFields.GetCount() > 0 ? (*mModuleManager)[0].BaseAddress + ScanInt64(LoadedProcessPEInformation.PEFields.Get("Address of entrypoint").ToString(), NULL, 16) : CurrentExecutableMemoryPage.BaseAddress;
-#else
-	SIZE_T epAddress = LoadedProcessPEInformation.PEFields.GetCount() > 0 ? (*mModuleManager)[0].BaseAddress + ScanInt(LoadedProcessPEInformation.PEFields.Get("Address of entrypoint").ToString(), NULL, 16) : CurrentExecutableMemoryPage.BaseAddress;
-#endif
-	
 	// Initialize UI-seperate on another thread to speed up the process.
-	this->mAsyncHelper.Start(epAddress, CurrentExecutableMemoryPage);
+	this->mAsyncHelper.Start(epAddress ? epAddress : CurrentExecutableMemoryPage.BaseAddress, CurrentExecutableMemoryPage);
 	
 	// Start polling the disassembler completion state.
 	SetTimeCallback(10, THISBACK(PeekDisasmCompletion), DISASSEMBLER_PROGRESS_TIMECALLBACK);
