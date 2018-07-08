@@ -6,6 +6,9 @@ v3.3:
 	- Changes to Import Parser:
 		- Fixed bug where restoring the function address from the export table would fail because of ordinal misclassification;
 		- Fixed bug where API Set redirections would be incorrectly resolved in rare cases.
+	- Fixed bug in disassembler window where entrypoint button did not work correctly;
+	- Added code cave scanner to the tools menu (Since v3.2, forgot release note);
+	- Fixed bug in address table where selecting pointer mode and no offsets would crash CrySearch;
 	- 
 
 v3.2:

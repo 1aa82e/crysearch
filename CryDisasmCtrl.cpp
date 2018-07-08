@@ -421,6 +421,7 @@ void CryDisasmCtrl::MoveToAddress(const SIZE_T address)
 	DisasmVisibleLines.Clear();
 	
 	// Still here, so start refreshing the disasm.
+	CurrentExecutableMemoryPage = page;
 	this->mAsyncHelper.Start(address, CurrentExecutableMemoryPage);
 	
 	// Start polling the disassembler completion state.

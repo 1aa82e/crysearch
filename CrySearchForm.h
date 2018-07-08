@@ -74,6 +74,7 @@ private:
 	void AddressListEntryMemoryDissection();
 	void HeapWalkMenuClicked();
 	void CodeCaveMenuClicked();
+	void PointerScanMenuClicked();
 	void OpenProcessMenu();
 	void CloseProcessMenu();
 	bool CloseProcess();

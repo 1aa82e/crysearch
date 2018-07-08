@@ -315,6 +315,13 @@ void CryChangeRecordDialog::DialogOkay()
 			return;
 		}
 
+		// Check whether the offsets list is filled if pointer mode is selected.
+		if (this->mIsPointer && this->mThisEntryOffsets.GetCount() <= 0)
+		{
+			Prompt("Input Error", CtrlImg::error(), "At least one offset must be provided in pointer mode!", "OK");
+			return;
+		}
+
 		// If the address input contains a plus, the input is a relative address.
 		const int plusIndex = inputVal.Find("+");
 		if (plusIndex != -1)
@@ -492,7 +499,14 @@ void CryChangeRecordDialog::DialogOkay()
 				Prompt("Input Error", CtrlImg::error(), "Please enter an address.", "OK");
 				return;
 			}
-	
+
+			// Check whether the offsets list is filled if pointer mode is selected.
+			if (this->mIsPointer && this->mThisEntryOffsets.GetCount() <= 0)
+			{
+				Prompt("Input Error", CtrlImg::error(), "At least one offset must be provided in pointer mode!", "OK");
+				return;
+			}
+
 			LONG_PTR tempAddress;
 			bool relative = false;
 			
@@ -515,7 +529,6 @@ void CryChangeRecordDialog::DialogOkay()
 			}
 			else
 			{
-			
 				// Regularly parse the address. It is not a relative one.
 #ifdef _WIN64
 				tempAddress = ScanInt64(inputVal, NULL, 16);
