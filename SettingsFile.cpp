@@ -19,6 +19,7 @@ void SettingsFile::Xmlize(XmlIO& pXml)
 		("ScanMemMapped", this->mScanMemMapped)
 		("ViewOffsetsInHexadecimal", this->mViewOffsetsInHexadecimal)
 		("EnableReadOnlyMode", this->mEnableReadOnlyMode)
+		("LeaveUnbackedPagesAlone", this->mLeaveUnbackedPagesAlone)
 		("OpenProcessRoutine", this->mOpenProcessRoutine)
 		("ReadMemoryRoutine", this->mReadMemoryRoutine)
 		("WriteMemoryRoutine", this->mWriteMemoryRoutine)
@@ -67,6 +68,8 @@ void SettingsFile::DefaultSettings()
 	this->SetScanMemImage();
 	this->SetScanMemPrivate();
 	this->SetScanMemImage();
+	this->SetEnableReadOnlyMode();
+	this->SetLeaveUnbackedPagesAlone();
 	this->SetOpenProcessRoutine();
 	this->SetViewOffsetsInHexadecimal();
 	this->SetReadMemoryRoutine();

@@ -736,7 +736,9 @@ void CrySearchForm::CodeCaveMenuClicked()
 // Executes the pointer scan dialog.
 void CrySearchForm::PointerScanMenuClicked()
 {
-	
+	CryPointerScanWindow* cpsw = new CryPointerScanWindow(CrySearchIml::PointerScanSmall());
+	cpsw->Execute();
+	delete cpsw;
 }
 
 // Sets a hardware breakpoint on an address.

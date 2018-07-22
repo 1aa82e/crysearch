@@ -64,6 +64,7 @@ private:
 	
 	bool mViewOffsetsInHexadecimal;
 	bool mEnableReadOnlyMode;
+	bool mLeaveUnbackedPagesAlone;
 	
 	int mOpenProcessRoutine;
 	int mReadMemoryRoutine;
@@ -116,6 +117,7 @@ public:
 	
 	const bool GetViewOffsetsInHexadecimal() const				{ return this->mViewOffsetsInHexadecimal; }
 	const bool GetEnableReadOnlyMode() const					{ return this->mEnableReadOnlyMode; }
+	const bool GetLeaveUnbackedPagesAlone() const				{ return this->mLeaveUnbackedPagesAlone; }
 	
 	const int GetOpenProcessRoutine() const						{ return this->mOpenProcessRoutine; }
 	const int GetReadMemoryRoutine() const						{ return this->mReadMemoryRoutine; }
@@ -154,6 +156,7 @@ public:
 	
 	void SetViewOffsetsInHexadecimal(bool value = true)			{ this->mViewOffsetsInHexadecimal = value; }
 	void SetEnableReadOnlyMode(bool value = false)				{ this->mEnableReadOnlyMode = value; }
+	void SetLeaveUnbackedPagesAlone(bool value = false)			{ this->mLeaveUnbackedPagesAlone = value; }
 	
 	void SetOpenProcessRoutine(int value = 0)					{ this->mOpenProcessRoutine = value; }
 	void SetReadMemoryRoutine(int value = 0)					{ this->mReadMemoryRoutine = value; }

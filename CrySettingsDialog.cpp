@@ -55,7 +55,8 @@ CrySearchSettingsDialog::CrySearchSettingsDialog()
 		<< this->memImage.SetLabel("MEM_IMAGE").HSizePos(150, 140).TopPos(90, 20)
 		<< this->memMapped.SetLabel("MEM_MAPPED").HSizePos(270, 10).TopPos(90, 20)
 		<< this->mViewOffsetsInHex.SetLabel("View pointer offsets in hexadecimal").TopPos(120, 25).HSizePos(10, 10)
-		<< this->mCrySearchInReadOnlyMode.SetLabel("Enable read-only mode").TopPos(150, 25).HSizePos(10, 10)
+		<< this->mCrySearchInReadOnlyMode.SetLabel("Enable read-only mode").TopPos(145, 25).HSizePos(10, 10)
+		<< this->mLeaveUnbackedPagesAlone.SetLabel("Do not read from physically unbacked pages").TopPos(170, 25).HSizePos(10, 10)
 	;
 	
 	this->mInternalsTab
@@ -175,6 +176,7 @@ void CrySearchSettingsDialog::LoadSettings()
 	this->dbgCatchAllExceptions = this->mSettingsInstance->GetCatchAllExceptions();
 	this->mViewOffsetsInHex = this->mSettingsInstance->GetViewOffsetsInHexadecimal();
 	this->mCrySearchInReadOnlyMode = this->mSettingsInstance->GetEnableReadOnlyMode();
+	this->mLeaveUnbackedPagesAlone = this->mSettingsInstance->GetLeaveUnbackedPagesAlone();
 	this->mHideNonWow64ModulesInX64 = this->mSettingsInstance->GetHideNonWow64Modules();
 	this->mSignatureDefaultMasking = this->mSettingsInstance->GetSignatureMaskingByDefault();
 	this->mWarnForPackedExecutable = this->mSettingsInstance->GetWarnForPackedProcess();
@@ -216,6 +218,7 @@ void CrySearchSettingsDialog::SaveSettings()
 	this->mSettingsInstance->SetShowArchitectureInProcWindow(this->mShowArchitectureInProcWindow);
 	this->mSettingsInstance->SetViewOffsetsInHexadecimal(this->mViewOffsetsInHex);
 	this->mSettingsInstance->SetResolveDisasmImportedFunctions(this->mDisasmResolveIatFunctions);
+	this->mSettingsInstance->SetLeaveUnbackedPagesAlone(this->mLeaveUnbackedPagesAlone);
 	
 	// Check if the read-only option for CrySearch was changed. If it was, inform the user about the fact that
 	// this will be applied when the process is closed and reopened.

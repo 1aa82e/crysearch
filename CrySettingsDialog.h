@@ -39,6 +39,7 @@ private:
 	
 	Option mViewOffsetsInHex;
 	Option mCrySearchInReadOnlyMode;
+	Option mLeaveUnbackedPagesAlone;
 	
 	// Internals tab
 	LabelBox mAddressTableUpdaterIntervalBox;

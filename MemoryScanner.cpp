@@ -384,6 +384,18 @@ void MemoryScanner::ClearSearchResults()
 	this->mWorkerFileOrder.Clear();
 }
 
+// Check the validity of a page, avoiding unbacked pages.
+const bool MemoryScanner::IsPageValidBacked(const SIZE_T address) const
+{
+	// Allocate structure for information and set virtual address.
+	PSAPI_WORKING_SET_EX_INFORMATION info = { 0 };
+	info.VirtualAddress = (void*)address;
+	
+	// Query the working set of the memory page in question.
+	const bool res = !!QueryWorkingSetEx(this->mOpenedProcessHandle, &info, sizeof (PSAPI_WORKING_SET_EX_INFORMATION));
+	return (res && info.VirtualAttributes.Valid);
+}
+
 // ---------------------------------------------------------------------------------------------
 
 // Worker function that implements specialized behavior for byte-array types.
@@ -630,14 +642,32 @@ void MemoryScanner::FirstScan()
 	        	|| (SettingsFile::GetInstance()->GetScanExecutableMemory() & ((block.Protect & MEM_EXECUTABLE) != 0))
 	        	|| (SettingsFile::GetInstance()->GetScanCopyOnWriteMemory() & ((block.Protect & MEM_COPYONWRITE) != 0)))
 	     	{
-	     		// Increment the total size of readable memory.
-	     		totalMemorySize += block.RegionSize;
-
-	     		// Memory region is valid for scanning, add it to the region list.
-		        MemoryRegion memReg;
-		        memReg.BaseAddress = (SIZE_T)block.BaseAddress;
-			    memReg.MemorySize = block.RegionSize;
-			    this->memRegions << memReg;
+	     		// Get the basic parameters of the memory page.
+	     		MemoryRegion memReg;
+				memReg.BaseAddress = (SIZE_T)block.BaseAddress;
+				memReg.MemorySize = block.RegionSize;
+	     		
+	     		// Check whether we want to exclude physically unbacked pages.
+	     		if (SettingsFile::GetInstance()->GetLeaveUnbackedPagesAlone())
+	     		{
+	     			// Check whether we are dealing with a physically unbacked page.
+	     			if (this->IsPageValidBacked(memReg.BaseAddress))
+	     			{
+	     				// Increment the total size of readable memory.
+		    	 		totalMemorySize += block.RegionSize;
+		     	
+			    	 	// Memory region is valid for scanning, add it to the region list.
+						this->memRegions << memReg;
+	     			}
+	     		}
+	     		else
+	     		{
+		     		// Increment the total size of readable memory.
+		     		totalMemorySize += block.RegionSize;
+		     	
+			     	// Memory region is valid for scanning, add it to the region list.
+					this->memRegions << memReg;
+	     		}
 			}
 	    }
 	
