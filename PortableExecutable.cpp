@@ -804,6 +804,15 @@ const bool PortableExecutable32::GetImportAddressTable() const
 					// Try to read current thunk into local memory.
 					CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(this->mBaseAddress + pDesc.OriginalFirstThunk + count * sizeof(DWORD)), &thunk, sizeof(IMAGE_THUNK_DATA32), NULL);
 
+					// In some packed applications, such as UPX ones, the 'thunk.u1.AddressOfData' is sometimes NULL.
+					// In this case, the function attributes will be read from the base address of the binary (MZ),
+					// resulting in bullshit in the user interface. Skip this entry if we encounter such thunk.
+					if (!thunk.u1.AddressOfData)
+					{
+						++count;
+						continue;
+					}
+
 					ImportAddressTableEntry funcEntry;
 	
 					// Check for 32-bit ordinal magic flag.
@@ -1594,6 +1603,15 @@ void PortableExecutable32::RestoreExportTableAddressImport(const Win32ModuleInfo
 						// Try to read current thunk into local memory.
 						CrySearchRoutines.CryReadMemoryRoutine(this->mProcessHandle, (void*)(this->mBaseAddress + pDesc.OriginalFirstThunk + count * sizeof(IMAGE_THUNK_DATA)), &thunk, sizeof(IMAGE_THUNK_DATA), NULL);
 					
+						// In some packed applications, such as UPX ones, the 'thunk.u1.AddressOfData' is sometimes NULL.
+						// In this case, the function attributes will be read from the base address of the binary (MZ),
+						// resulting in bullshit in the user interface. Skip this entry if we encounter such thunk.
+						if (!thunk.u1.AddressOfData)
+						{
+							++count;
+							continue;
+						}
+
 						ImportAddressTableEntry funcEntry;
 						
 						// Check for 64-bit ordinal magic flag.

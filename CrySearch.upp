@@ -143,6 +143,8 @@ file
 	MemoryDissector.h,
 	AddressTable.cpp,
 	AddressTable.h,
+	PointerScanner.cpp,
+	PointerScanner.h,
 	Debugger readonly separator,
 	CryDebugger.cpp,
 	CryDebugger.h,

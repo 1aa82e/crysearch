@@ -109,7 +109,7 @@ CryProcessEnumeratorForm::CryProcessEnumeratorForm(const Image& icon) : CryDialo
 }
 
 // Default CryProcessEnumeratorForm destructor.
-CryProcessEnumeratorForm::~CryProcessEnumeratorForm()
+CryProcessEnumeratorForm::~CryProcessEnumeratorForm() noexcept(true)
 {
 	
 }

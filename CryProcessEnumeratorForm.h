@@ -73,7 +73,7 @@ private:
 	typedef CryProcessEnumeratorForm CLASSNAME;
 public:
 	CryProcessEnumeratorForm(const Image& icon);
-	~CryProcessEnumeratorForm();
+	~CryProcessEnumeratorForm() noexcept(true);
 	
 	Win32ProcessInformation* const GetSelectedProcess();
 	CryProcessEnumeratorForm* const GetPtr() const;

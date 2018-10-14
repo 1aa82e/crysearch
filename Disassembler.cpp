@@ -331,7 +331,8 @@ const SIZE_T DisasmGetPreviousLine(const SIZE_T address, const cs_mode architect
 	return outputVal;
 }
 
-// Retrieves a list of executable memory pages.
+// Retrieves a list of executable memory pages. Note that this function does not leave out any
+// pages with unbacked physical memory!!!
 void GetExecutableMemoryPagesList(Vector<MemoryRegion>& outList)
 {
 	SIZE_T incAddress = 0;
@@ -412,7 +413,7 @@ const bool GetMemoryPageByAddress(const SIZE_T address, MemoryRegion& memReg, Au
 		}
 		
 		// Is the a successing page?
-		if (foundIndex < memVec.GetCount() - 1)
+		if (foundIndex >= 0 && foundIndex < memVec.GetCount() - 1)
 		{
 			memReg = memVec[foundIndex];
 			outAuxMemRegs->Next = memVec[foundIndex + 1];
@@ -421,6 +422,15 @@ const bool GetMemoryPageByAddress(const SIZE_T address, MemoryRegion& memReg, Au
 		{
 			outAuxMemRegs->Next.BaseAddress = 0;
 			outAuxMemRegs->Next.MemorySize = 0;
+		}
+
+		// The address was valid, but no corresponding page was found (e.g. the base address was the address in case).
+		// In this case, we set the page to disassemble to the first available page.
+		if (foundIndex == -1)
+		{
+			memReg = memVec[0];
+			outAuxMemRegs->Next.BaseAddress = memVec[1].BaseAddress;
+			outAuxMemRegs->Next.MemorySize = memVec[1].BaseAddress;
 		}
 	}
 	
@@ -477,5 +487,93 @@ void DisassembleRegion(const SIZE_T address, const SIZE_T size, const cs_mode ar
 		
 	// Clean up used buffers and shrink instruction line buffer.
 	outInsts.Shrink();
+	delete[] buffer;
+}
+
+// Disassembles a region of memory from some starting address to some ending address, but
+// stores all constants/addresses it encounters, rather than addresses to the instructions
+// itself. Once the killSwitch becomes false, the disassembling stops.
+void DisassembleGetConstantAddresses(const SIZE_T address, const SIZE_T size, const cs_mode architecture, Vector<SIZE_T>& outConstants, volatile bool& killSwitch)
+{
+	// Query virtual pages inside target process.
+    Byte* const buffer = new Byte[size];
+    CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), (void*)address, buffer, size, NULL);
+    
+    // Reserve an approximated buffer for instruction lines.
+    outConstants.Reserve((int)size / 4);
+	
+	// Open Capstone disassembler in x86 mode, for either x86_32 or x86_64.
+	csh handle;
+	cs_open(CS_ARCH_X86, architecture, &handle);
+    
+    // Turn on the detailed output option.
+	cs_option(handle, CS_OPT_DETAIL, CS_OPT_ON);
+    
+    // Allocate memory cache for 1 instruction, to be used by cs_disasm_iter later.
+	cs_insn* insn = cs_malloc(handle);
+	const Byte* bufIteratorPtr = buffer;
+	size_t code_size = size;
+	uint64 iterAddress = address;
+	uint64 prevAddress = iterAddress;
+	
+	// Keep disassembling until we reach the end of the specified input memory block.
+	do
+	{
+		// Disassemble one instruction a time & store the result into @insn variable.
+		while (cs_disasm_iter(handle, &bufIteratorPtr, &code_size, &iterAddress, insn))
+		{
+			cs_detail* detail = insn->detail;
+			__int64 value = 0;
+			
+			// Get MEM operands if any.
+			if (cs_op_count(handle, insn, X86_OP_MEM) > 0)
+			{
+				// Get MEM operand index.
+				const int memIndex = cs_op_index(handle, insn, X86_OP_MEM, 1);
+				if (memIndex != -1)
+				{
+					value = detail->x86.operands[memIndex].mem.disp;
+				}
+			}
+			else if(cs_op_count(handle, insn, X86_OP_IMM) > 0)
+			{
+				// Get IMM operand index.
+				const int immIndex = cs_op_index(handle, insn, X86_OP_IMM, 1);
+				if (immIndex != -1)
+				{
+					value = detail->x86.operands[immIndex].reg;
+				}
+			}
+
+			// Check if we saved a value that is greater than 0. If so, we store the
+			// value for the output.
+			if (value)
+			{
+				outConstants.Add((SIZE_T)value);
+			}
+
+			prevAddress = iterAddress;
+		}
+
+		// Check if we encountered an address that Capstone could not disassemble.
+		if (cs_errno(handle) == CS_ERR_OK && iterAddress < address + size)
+		{
+			// Just increment address and ignore the results.
+			prevAddress = ++iterAddress;
+		}
+	}
+	while (prevAddress < address + size && killSwitch);
+	
+	// Release the cache memory when done.
+	cs_free(insn, 1);
+	
+	// Reset default option state.
+	cs_option(handle, CS_OPT_DETAIL, CS_OPT_OFF);
+
+	// Close the Capstone handle.
+	cs_close(&handle);
+		
+	// Clean up used buffers and shrink instruction line buffer.
+	outConstants.Shrink();
 	delete[] buffer;
 }

@@ -83,7 +83,7 @@ CryImportsWindow::~CryImportsWindow()
 void CryImportsWindow::ToolStrip(Bar& pBar)
 {
 	pBar.Add(this->mModulesDescriptorLabel.SetLabel("Module: "));
-	pBar.Add(this->mModulesDropList, 200);
+	pBar.Add(this->mModulesDropList, 250);
 	pBar.Separator();
 	pBar.Add("Refresh", CrySearchIml::RefreshButtonSmall(), THISBACK(RefreshImports));
 	pBar.ToolGapRight();

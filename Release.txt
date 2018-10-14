@@ -5,11 +5,16 @@ evolution536, www.unknowncheats.me, www.crysearch.nl
 v3.3:
 	- Changes to Import Parser:
 		- Fixed bug where restoring the function address from the export table would fail because of ordinal misclassification;
-		- Fixed bug where API Set redirections would be incorrectly resolved in rare cases.
-	- Fixed bug in disassembler window where entrypoint button did not work correctly;
+		- Fixed bug where API Set redirections would be incorrectly resolved in rare cases;
+		- Fixed bug where some packed application such as UPX would display wrong output for some functions.
+	- Changes to Disassembler:
+		- Fixed bug where entrypoint button did not work correctly;
+		- Fixed bug where CrySearch would crash when opening certain packed applications.
 	- Added code cave scanner to the tools menu (Since v3.2, forgot release note);
 	- Fixed bug in address table where selecting pointer mode and no offsets would crash CrySearch;
 	- Added option in settings dialog to leave physically unbacked pages alone (anti-cheat option);
+	- Updated Capstone library to version 3.0.5;
+	- Updated U++ to 12158;
 	- 
 
 v3.2:

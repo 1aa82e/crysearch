@@ -1,4 +1,4 @@
-﻿CrySearch application TODO list by evolution536
+CrySearch application TODO list by evolution536
 
 ------------------------------------------------------------------
 Package:
@@ -8,8 +8,10 @@ Package:
 - Update wiki with changes for the release.
 ------------------------------------------------------------------
 
+- Packed applications testen voor bugs!
+- Debug version!
 - Pointer scan;
-- look whether more 32/64 functions can be generalized;
+- Data structure for value files with size of contiguous area?
 - Save space with the saving of disassembly lines;
 - Fix header (like LordPE does, virtual dump);
 - Also blocks for the values and using compression/encoding to reduce size?
