@@ -88,7 +88,7 @@ void CryBruteforcePIDWindow::BruteForceBegin()
 	
 	// Execute the Brute-Force operation.
 	int rowCounter = -1;
-	for (unsigned long i = 0; i < USHRT_MAX; ++i)
+	for (unsigned long i = 0; i < USHRT_MAX; i += sizeof(unsigned long))
 	{
 		// Query the process ID.
 		BasicOpenProcessInfo procInfo;

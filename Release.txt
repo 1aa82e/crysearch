@@ -15,6 +15,8 @@ v3.3:
 	- Added option in settings dialog to leave physically unbacked pages alone (anti-cheat option);
 	- Updated Capstone library to version 3.0.5;
 	- Updated U++ to 12158;
+	- Fixed the PID brute-forcing algorithm to only consider 4-byte aligned PIDs (Mi4uric3's suggestion);
+	- Fixed bug in the memory scanner where any next scan after the second one resulted in wrong results;
 	- 
 
 v3.2:

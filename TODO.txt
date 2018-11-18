@@ -9,7 +9,6 @@ Package:
 ------------------------------------------------------------------
 
 - Packed applications testen voor bugs!
-- Debug version!
 - Pointer scan;
 - Data structure for value files with size of contiguous area?
 - Save space with the saving of disassembly lines;

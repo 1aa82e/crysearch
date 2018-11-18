@@ -962,6 +962,10 @@ void MemoryScanner::NextScanWorker(MemoryScannerWorkerContext* const context, co
 		++addrIndex;
 	}
 	
+	// The number of blocks doesn't change with any number of next scans, but the values file
+	// is regenerated every next scan. Therefore, we should keep updating the value storage
+	// index in the new values file.
+	context->OutputFileStoragePtr->ValueStorageIndex = context->OutputValueFileIndex;
 	context->OutputValueFileIndex += valueIndex;
 
 	// Check if there are actual value results. If there are no, this block can be discarded.
@@ -1228,6 +1232,7 @@ void MemoryScanner::NextWorkerPrologue(MemoryScannerWorkerContext* const context
 	
 	// Create file header for the output file and flush it. This way we already reserve space for it.
 	context->OutAddressesFileHeader.BlockCount = 0;
+	context->OutputValueFileIndex = 0;
 	context->OutAddressesFile.Put(&context->OutAddressesFileHeader, sizeof(StorageFileHeader));
 
 	// Allocate local buffer for search result addresses.

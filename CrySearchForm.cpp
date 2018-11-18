@@ -383,7 +383,8 @@ void CrySearchForm::ToolsMenu(Bar& pBar)
 		pBar.Add("Memory Dissection", CrySearchIml::MemoryDissection(), THISBACK(MemoryDissectionButtonClicked));
 		pBar.Add("View Heap Information", CrySearchIml::HeapWalkSmall(), THISBACK(HeapWalkMenuClicked));
 		pBar.Add("Scan for Code Caves", CrySearchIml::CodeCaveSmall(), THISBACK(CodeCaveMenuClicked));
-		pBar.Add("Pointer Scan", CrySearchIml::PointerScanSmall(), THISBACK(PointerScanMenuClicked));
+// Disabled pointer scan implementation as we first fix bugs...
+//		pBar.Add("Pointer Scan", CrySearchIml::PointerScanSmall(), THISBACK(PointerScanMenuClicked));
 	}
 	
 	// These menu items can be added regardless of the program state.
