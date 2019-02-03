@@ -47,8 +47,13 @@ private:
 	void UserDefinedEntryWhenBar(Bar& pBar);
 	void SearchResultWhenBar(Bar& pBar);
 	void ChangeRecordSubMenu(Bar& pBar);
+	void CopyAddressTableValueMenu(Bar& pBar);
 	void SetDataBreakpointMenu(Bar& pBar);
 	
+	void CopyAddressTableEntryDescription();
+	void CopyAddressTableEntryAddress();
+	void CopyAddressTableEntryValue();
+	void CopyAddressTableEntryType();
 	void AddressTableRemovalRoutine(const Vector<int>& items);
 	void SetMainSplitterPosition();
 	void HideLowerPaneButtonClicked();

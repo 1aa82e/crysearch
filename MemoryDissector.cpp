@@ -34,7 +34,7 @@ const int MemoryDissector::GetDissectionRowCount() const
 }
 
 // Starts dissection of the selected region of memory.
-bool MemoryDissector::Dissect(const CCryDataType rowType, const bool enableTypeGuessing)
+const bool MemoryDissector::Dissect(const CCryDataType rowType, const bool enableTypeGuessing)
 {
 	bool result = false;
 	

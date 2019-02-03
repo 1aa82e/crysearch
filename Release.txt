@@ -1,6 +1,16 @@
 CrySearch Memory Scanner
 
-evolution536, www.unknowncheats.me, www.crysearch.nl
+Author: evolution536
+Websites: www.unknowncheats.me, www.crysearch.nl
+
+v3.4:
+	- Added context menu for copying fields of address table entries to the clipboard;
+	- Updated Capstone library to version 4.0.1;
+	- Fixed bugs in memory dissection window:
+		- When more than one dissections are active, switching between them would reset the stored type information;
+		- Stored type and size information was reset on various operations. Fixed that the information is no longer reset;
+		- Changing the value of an AOB, String or WString dissection row would crash CrySearch.
+	- 
 
 v3.3:
 	- Changes to Import Parser:
@@ -16,8 +26,7 @@ v3.3:
 	- Updated Capstone library to version 3.0.5;
 	- Updated U++ to 12158;
 	- Fixed the PID brute-forcing algorithm to only consider 4-byte aligned PIDs (Mi4uric3's suggestion);
-	- Fixed bug in the memory scanner where any next scan after the second one resulted in wrong results;
-	- 
+	- Fixed bug in the memory scanner where any next scan after the second one resulted in wrong results.
 
 v3.2:
 	- Changed the Unknowncheats forum link in about dialog to the CrySearch website (www.crysearch.nl);
@@ -139,7 +148,7 @@ v2.04:
 	- Added a threshold to the amount of rows that can be selected for signature or byte array generation. This threshold is set to 256;
 	- Partially added masking for signature generation in the disassembly window.
 
-v2.03
+v2.03:
 	- Some changes were made to the command line process analysis automation:
 		- Fixed a bug where a zombie process would still be succesfully opened for automated analysis using command line options;
 		- Added the name of the containing module to the start address of outputted threads.
@@ -153,7 +162,7 @@ v2.03
 	- Changed the size of most input fields and buttons. Some operating systems showed them to be too small;
 	- Fixed a bug in the new scan window where selecting unknown initial value followed by string or array of bytes would render the window unusable.
 
-v2.02
+v2.02:
 	- Added a view option to the right-click menu for search results to manually switch view of formatting to hexadecimal;
 	- Fixed bug where Null integer values 0x80000000(00000000) were not propely formatted in views;
 	- Fixed a bug where it was not possible to enter relative addresses in:
@@ -165,11 +174,11 @@ v2.02
 		- Added signature and byte array generation buttons to disassembly window toolbar as well;
 		- Added page size indicator in the disassembly window toolbar, on the right.
 
-v2.01
+v2.01:
 	- Fixed bug in disassembler where going to an address from a search result may crash the application;
 	- Fixed serious bug in next scans: unchanged, changed, increased and decreased value.
 
-v2.0
+v2.0:
 	- Fixed a bug in the crash handler window where the module names of stack trace entries would not correctly resolve;
 	- Added support for Windows 10:
 		- Fixed OS version detection for Windows 10;
@@ -179,7 +188,7 @@ v2.0
 
 A new revision is released after v1.18. Major improvements were implemented and XP support is discontinued. CrySearch may still work on Windows XP but support may be removed in the future.
 
-v1.18
+v1.18:
 	- Improved memory dissector:
 		- Fixed bug where row offsets did not change correctly when changing its size;
 		- Added option to right-click address in memory dissection window to add it to the address table;
@@ -201,7 +210,7 @@ v1.18
 	- Fixed bug in code generator where generating code for static addresses could possibly crash the application;
 	- Fixed bug in main window where hiding and showing the disassembly window would crash the application.
 
-v1.17
+v1.17:
 	- Added multiple selection possibility for search results. Select multiple and right-click to add them to the address table;
 	- Added possibility to select multiple address table entries and remove them all at once;
 	- Fixed bug in registering CrySearch as default program for opening address tables where the registry key could not be read;
@@ -214,7 +223,7 @@ v1.17
 	- Following a debugger breakpoint hit instruction now scrolls down further, and selects the address in case;
 	- Changed the disassembler to load any readable, writable and executable memory page in the process instead of only readable and executable.
 
-v1.16
+v1.16:
 	- Improved overall performance of the application:
 		- Improved user interface performance in several places due to replacement of slow formatting functions;
 		- Improved memory usage and performance of the memory dissector by enabling dynamic reading of values;
@@ -232,7 +241,7 @@ v1.16
 	- Fixed code generator to take relative addresses into account;
 	- Added retrieval of command line, working directory and window title inside PEB window.
 
-v1.15
+v1.15:
 	- The icon of CrySearch has changed, thanks to Daax. He crafted a wonderful new icon for CrySearch;
 	- Improved part of the plugin SDK documentation;
 	- Made a few changes, bug fixes and improvements to the memory dissection window:
@@ -254,7 +263,7 @@ v1.15
 	- Greatly improved memory usage and performance of the memory scanner. Values are dynamically built by the display;
 	- Fixed bug in the dialog for modifying an address table entry where relative addresses could be duplicated in the table.
 
-v1.14
+v1.14:
 	- Added event procedure to plugin system. CrySearch calls the event procedure for default in-app events like process open/close;
 	- Small user interface detail modifications and improvements:
 		- Changed width of the plugin window. Users may make plugins that require longer names or descriptions;
@@ -277,7 +286,7 @@ v1.14
 	- Fixed bug where String and WString updating sequences would result in unpredicted data and high cpu utilization;
 	- Fixed bug where float values in the search results or address table would always be truncated to 0.
 
-v1.13
+v1.13:
 	- Changed about dialog to show a list of loaded libraries including their runtime versions;
 	- Added thread context snapshot feature. Right-click thread in thread window to open the snapshot window;
 	- Finally fixed process window closure bug. Wait cursor is displayed and window closure is delayed until next possible break oppertunity;
@@ -296,7 +305,7 @@ v1.13
 	- Fixed bug in process environment block window where x64 PEB address was not displayed correctly;
 	- Added Anti-Anti-Debugging with NtGlobalFlags. Attempting to hide the debugger from PEB option utilizes this feature.
 
-v1.12
+v1.12:
 	- Fixed bug in process selection window where search box may reveal duplicate processes in the list;
 	- Added possibility to disable a breakpoint before removing it from the list to allow the breakpoint data to be available when the breakpoint is inactive. Available from right-click in debugger window;
 	- Changed the way the debugger catches unhandled exceptions:
@@ -313,13 +322,13 @@ v1.12
 	- Fixed bug in address table file causing the process name to be incorrect in certain situations;
 	- Fixed bug in process selection window crashing when window is closed rapidly with callbacks running.
 
-v1.11
+v1.11:
 	- Fixed bug with searching for processes in process selection dialog, not filtering because of previous async fix;
 	- Changed 'manually add address' dialog to support type selection too, as well as the title has changed slightly (Also affects edit address table entry);
 	- Fixed array of bytes' search results not being the correct length after being double-clicked;
 	- Added signature generation in FindPattern and bytearray (Evo) format. Available from 'Disassembly' window by right-clicking multiple selected rows.
 
-v1.10
+v1.10:
 	- Added crash reporting system. When CrySearch crashes a crash report is generated for support;
 	- Changed data windows for module sections, heaps and handles to be sizeable and added count label;
 	- Added customizable routines in Settings window for ReadProcessMemory, WriteProcessMemory and VirtualProtectEx;
@@ -333,7 +342,7 @@ v1.10
 	- Changed process opening window to asynchronously enumerate icons for available windows to avoid blocking the ui thread;
 	- Added possibility to jump to disassembler from call stack entry using right-click.
 
-v1.09
+v1.09:
 	- Applied several performance fixes, increasing overall performance and memory usage. The disassembler is noticably faster;
 	- Added option to manually associate the .csat file extension with CrySearch (elevation is necessary);
 	- Added button to 'Save' address table instead of 'Save As' every time. 'Save' is enabled whenever a table is opened;
@@ -346,7 +355,7 @@ v1.09
 	- Changed memory allocation during memory scans to reduce aggressive allocation resulting in out-of-memory exceptions;
 	- Added .NET sections to lower right pane of General window. Allows dumping of .NET sections.
 
-v1.08
+v1.08:
 	- Changed the forum link in the about dialog to resolve to the CrySearch thread instead of the forum home page;
 	- Added option to format input value in hexadecimal when changing the integer value of an address table entry;
 	- Added process name to save file for future use;
@@ -364,7 +373,7 @@ v1.08
 	- Added option to randomize window title. Located under the menu 'Window';
 	- Changed the amount of search results visible in the user interface to 100.000 to reduce memory usage.
 
-v1.07
+v1.07:
 	- Added key accelerators to disassembly window to quicken certain actions;
 	- Added heap walking feature in disassembly window to view the heaps associated with the opened process;
 	- Changed the margin for resizing the splitter vertically in the main window to be smaller;
@@ -376,7 +385,7 @@ v1.07
 	- Fixed bug where CrySearch would crash when the PE headers are destroyed;
 	- Changed restore PE headers from file in module window to search working directory of module as starting directory.
 
-v1.06
+v1.06:
 	- Changed right-click selectable to set breakpoints from invisible to disabled in case the debugger is not attached;
 	- Added option in module window to open the working directory of a module in the Windows Explorer;
 	- Added possibility to sort the processes in the process selection window per column by clicking the desired column header;
@@ -387,7 +396,7 @@ v1.06
 	- Added button in module window to dump entire process into folder which includes all modules of the process;
 	- Added feature to dump specific sections of a module inside the opened process using right-click in the module window.
 
-v1.05
+v1.05:
 	- Fixed major crash when opening processes which executable's IAT is mangled or modified;
 	- Fixed dump issue with section dump, where raw section size may be 0. If so, normal section size is used;
 	- Added basic disassembly using BeaEngine, showing address, bytes and OPcodes;
@@ -405,7 +414,7 @@ v1.05
 		- Added U++ support link;
 		- Added CPUID display that shows hardware supported processor extensions.
 
-v1.04
+v1.04:
 	- Fixed dumping of modules in module window, forcing to dump .dll when trying to dump the main executable module;
 	- Added ApiSetSchema resolving for Windows 8.1 and fixed a bug samiliar to its implementation for Windows 7;
 	- Changed definition of PEB and TEB to be more complete and accurate;
@@ -417,7 +426,7 @@ v1.04
 	- Fixed bug with dumping a module, where occasionally the string length is incorrect, resulting in a mismatch;
 	- Fixed bug with ordinal import resolving where invalid address would be returned and added warning on invalid addresses.
 
-v1.03
+v1.03:
 	- Fixed IAT module name, being too short with 32 bytes, now 48 bytes;
 	- Added TEB view for threads in opened process;
 	- Added IAT hooking, allowing user to overwrite function address in IAT;
@@ -429,7 +438,7 @@ v1.03
 	- Added ApiSetSchema resolving for Windows 7+, redirected API's are resolved to its logical dll (This does not work on Windows 8.1);
 	- Added PEB window with a table view of the PEB contents, including a button to reset the BeingDebugged flag.
 
-v1.02
+v1.02:
 	- Added hotkey configuration feature, for a basic set of keys and actions and keys;
 	- Fixed process open window search function not being able to press return to open first search result;
 	- Fixed terminated process not being detected, leaving CrySearch in a blind state (improvement for bugfix in v1.01);

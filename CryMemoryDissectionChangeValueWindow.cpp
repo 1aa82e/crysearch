@@ -69,19 +69,19 @@ CryMemoryDissectionChangeValueWindow::CryMemoryDissectionChangeValueWindow(SIZE_
 	else if (this->rowType == CRYDATATYPE_AOB)
 	{
 		ArrayOfBytes value;
-		mMemoryScanner->Peek(this->address, *this->size, &value);
+		mMemoryScanner->PeekB(this->address, *this->size, value);
 		this->mFieldValue.SetText(BytesToString(value.Data, value.Size));
 	}
 	else if (this->rowType == CRYDATATYPE_STRING)
 	{
 		String value;
-		mMemoryScanner->Peek(this->address, *this->size, &value);
+		mMemoryScanner->PeekA(this->address, *this->size, value);
 		this->mFieldValue.SetText(value);
 	}
 	else if (this->rowType == CRYDATATYPE_WSTRING)
 	{
 		WString value;
-		mMemoryScanner->Peek(this->address, *this->size, &value);
+		mMemoryScanner->PeekW(this->address, *this->size, value);
 		this->mFieldValue.SetText(value.ToString());
 	}
 }

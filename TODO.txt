@@ -8,8 +8,13 @@ Package:
 - Update wiki with changes for the release.
 ------------------------------------------------------------------
 
+- Regular expression string search?
+- Can be retrieve the first module some other way?
+- Redrawing of dropdown boxes;
+- Memory dissection should store second one because data types go away;
 - Packed applications testen voor bugs!
 - Pointer scan;
+- Option to cleanse debug registers before settings bps;
 - Data structure for value files with size of contiguous area?
 - Save space with the saving of disassembly lines;
 - Fix header (like LordPE does, virtual dump);
@@ -17,10 +22,11 @@ Package:
 - Guessing for pointer can be done by checking whether it is inside a memory page of the process?
 - Provide the output window / menu bar entry (PLUGIN_WANTS_OUTPUT_TAB);
 - Track control flow of entire process and build it a tree (profiling)!
+- VTable finder / dissection (learn_more, maybe a plugin);
 
 - Debugger:
 	- 16-byte registers during snapshot?
-	- VEH debugger
+	- VEH debugger (as CrySearch plugin);
 
 - Structure dissections:
 	- data schema (smth like xsd but for memory dissections);
@@ -40,7 +46,6 @@ Package:
 	- auto deploy correct plugins to build dir?
 	- Plugins have access to a menu in-app;
 
-- VTable finder / dissection (learn_more, maybe a plugin);
 - Find class instances based on a vtable;
 - Dump .NET modules?
 - Allow entering string as argument for create thread (let's make a custom data type of it);

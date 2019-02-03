@@ -4,7 +4,7 @@
 
 // Include headers to get Capstone version and CrySearch library version.
 #include "CrySearchLibrary/SDK/CrySearch.h"
-#include "Capstone/include/capstone.h"
+#include "Capstone/include/capstone/capstone.h"
 
 // ---------------------------------------------------------------------------------------------
 

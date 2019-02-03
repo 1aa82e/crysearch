@@ -384,7 +384,7 @@ void CrySearchForm::ToolsMenu(Bar& pBar)
 		pBar.Add("View Heap Information", CrySearchIml::HeapWalkSmall(), THISBACK(HeapWalkMenuClicked));
 		pBar.Add("Scan for Code Caves", CrySearchIml::CodeCaveSmall(), THISBACK(CodeCaveMenuClicked));
 // Disabled pointer scan implementation as we first fix bugs...
-//		pBar.Add("Pointer Scan", CrySearchIml::PointerScanSmall(), THISBACK(PointerScanMenuClicked));
+		pBar.Add("Pointer Scan", CrySearchIml::PointerScanSmall(), THISBACK(PointerScanMenuClicked));
 	}
 	
 	// These menu items can be added regardless of the program state.
@@ -431,13 +431,62 @@ void CrySearchForm::HelpMenu(Bar& pBar)
 	pBar.Add("About", CrySearchIml::AboutButton(), THISBACK(AboutCrySearch));
 }
 
-// // Populates the menu bar for changing properties of address table entries.
+// Populates the menu bar for changing properties of address table entries.
 void CrySearchForm::ChangeRecordSubMenu(Bar& pBar)
 {
 	pBar.Add("Description", THISBACK1(AddressListChangeProperty, CRDM_DESCRIPTION));
 	pBar.Add(this->mUserAddressList.GetSelectCount() == 1, "Address", THISBACK1(AddressListChangeProperty, CRDM_ADDRESS));
 	pBar.Add(!mMemoryScanner->IsReadOnlyOperationMode(), "Value", THISBACK1(AddressListChangeProperty, CRDM_VALUE));
 	pBar.Add("Type", THISBACK1(AddressListChangeProperty, CRDM_TYPE));
+}
+
+// Populates the menu bar for copying the value of a field in the address table to the clipboard.
+void CrySearchForm::CopyAddressTableValueMenu(Bar& pBar)
+{
+	pBar.Add("Description", THISBACK(CopyAddressTableEntryDescription));
+	pBar.Add("Address", THISBACK(CopyAddressTableEntryAddress));
+	pBar.Add("Value", THISBACK(CopyAddressTableEntryValue));
+	pBar.Add("Type", THISBACK(CopyAddressTableEntryType));
+}
+
+// Copies the description of the currently selected address table entry to the clipboard.
+void CrySearchForm::CopyAddressTableEntryDescription()
+{
+	const int cursor = this->mUserAddressList.GetCursor();
+	if (cursor >= 0 && loadedTable.GetCount() > 0)
+	{
+		WriteClipboardText(loadedTable[cursor]->Description);
+	}
+}
+
+// Copies the address of the currently selected address table entry to the clipboard.
+void CrySearchForm::CopyAddressTableEntryAddress()
+{
+	const int cursor = this->mUserAddressList.GetCursor();
+	if (cursor >= 0 && loadedTable.GetCount() > 0)
+	{
+		WriteClipboardText(FormatInt64HexUpper(loadedTable[cursor]->Address));
+	}
+}
+
+// Copies the value of the currently selected address table entry to the clipboard.
+void CrySearchForm::CopyAddressTableEntryValue()
+{
+	const int cursor = this->mUserAddressList.GetCursor();
+	if (cursor >= 0 && loadedTable.GetCount() > 0)
+	{
+		WriteClipboardText(loadedTable[cursor]->Value);
+	}
+}
+
+// Copies the type of the currently selected address table entry to the clipboard.
+void CrySearchForm::CopyAddressTableEntryType()
+{
+	const int cursor = this->mUserAddressList.GetCursor();
+	if (cursor >= 0 && loadedTable.GetCount() > 0)
+	{
+		WriteClipboardText(GetCrySearchDataTypeRepresentation(loadedTable[cursor]->ValueType));
+	}
 }
 
 // Executed when the user right-clicks an address in the address table.
@@ -473,6 +522,7 @@ void CrySearchForm::UserDefinedEntryWhenBar(Bar& pBar)
 			pBar.Add(canDbg, "Remove Breakpoint", CrySearchIml::DeleteButton(), THISBACK(RemoveBreakpointMenu));
 		}
 		
+		pBar.Add("Copy", THISBACK(CopyAddressTableValueMenu));
 		pBar.Add("Change Record", CrySearchIml::ChangeRecordIcon(), THISBACK(ChangeRecordSubMenu));
 		pBar.Separator();
 		pBar.Add("Delete\tDEL", CrySearchIml::DeleteButton(), THISBACK(DeleteUserDefinedAddress));

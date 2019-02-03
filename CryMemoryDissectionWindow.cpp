@@ -145,7 +145,8 @@ CryMemoryDissectionWindow::CryMemoryDissectionWindow(const AddressTableEntry* co
 	if (count > 0)
 	{
 		this->mAvailableDissections.SetIndex(0);
-		this->RefreshDissection(CRYDATATYPE_4BYTES);
+		const MemoryDissectionEntry* entry = loadedTable.GetDissection(MemoryDissectionMasterIndex);
+		this->mDissection.SetVirtualCount(entry->AssociatedDissector.GetDissectionRowCount());
 	}
 	
 	// This variable is set by the caller that creates the dissection window. It indicates whether
@@ -624,7 +625,7 @@ void CryMemoryDissectionWindow::RowOffsetMenuWString()
 	DissectionRowEntry* entry = loadedTable.GetDissection(MemoryDissectionMasterIndex)->AssociatedDissector[row];
 	const int oldSize = entry->DataLength ? entry->DataLength : GetDataSizeFromValueType(entry->RowType);
 	entry->RowType = CRYDATATYPE_WSTRING;
-	entry->DataLength = GetDataSizeFromValueType(CRYDATATYPE_STRING);
+	entry->DataLength = GetDataSizeFromValueType(CRYDATATYPE_WSTRING);
 	this->AlterSuccessingRows(row, entry->DataLength - oldSize);
 }
 
@@ -643,20 +644,21 @@ void CryMemoryDissectionWindow::NewDissectionFromAddressTableEntry()
 	// Check if dialog result was OK.
 	if (cmmnw->Execute() == 10)
 	{
+		// The OK button was clicked, add a new dissection to the storage.
 		loadedTable.AddDissection(name, addr, size);
+		
+		// Refresh available memory dissection entries.
+		const int count = loadedTable.GetDissectionCount();
+		this->mAvailableDissections.SetCount(count);
+		if (count > 0)
+		{
+			this->mAvailableDissections.SetIndex(count - 1);
+			MemoryDissectionMasterIndex = this->mAvailableDissections.GetIndex();
+			this->RefreshDissection(CRYDATATYPE_4BYTES);
+		}
 	}
 	
 	delete cmmnw;
-	
-	// Refresh available memory dissection entries.
-	const int count = loadedTable.GetDissectionCount();
-	this->mAvailableDissections.SetCount(count);
-	if (count > 0)
-	{
-		this->mAvailableDissections.SetIndex(count - 1);
-		MemoryDissectionMasterIndex = this->mAvailableDissections.GetIndex();
-		this->RefreshDissection(CRYDATATYPE_4BYTES);
-	}
 	
 	// Reset the variable so this function can not be called again. Just in case.
 	this->mExecuteNewEntryOnce = NULL;
@@ -676,8 +678,10 @@ void CryMemoryDissectionWindow::ToggleHexadecimalView()
 // Executed when the dissection is switched to another.
 void CryMemoryDissectionWindow::MemoryDissectionEntryChanged()
 {
+	// Change the master index and update the user interface with the other dissection rows.
 	MemoryDissectionMasterIndex = this->mAvailableDissections.GetIndex();
-	this->RefreshDissection(CRYDATATYPE_4BYTES);
+	const MemoryDissectionEntry* entry = loadedTable.GetDissection(MemoryDissectionMasterIndex);
+	this->mDissection.SetVirtualCount(entry->AssociatedDissector.GetDissectionRowCount());
 }
 
 // Executed when the user opens the droplist of available dissections.
@@ -723,7 +727,8 @@ void CryMemoryDissectionWindow::RemoveDissectionFromList()
 	{
 		this->mAvailableDissections.SetCount(count);
 		this->mAvailableDissections.SetIndex(MemoryDissectionMasterIndex);
-		this->RefreshDissection(CRYDATATYPE_4BYTES);
+		const MemoryDissectionEntry* entry = loadedTable.GetDissection(MemoryDissectionMasterIndex);
+		this->mDissection.SetVirtualCount(entry->AssociatedDissector.GetDissectionRowCount());
 	}
 	else
 	{
@@ -743,20 +748,21 @@ void CryMemoryDissectionWindow::NewStructureClicked()
 	// Check if dialog result was OK.
 	if (cmmnw->Execute() == 10)
 	{
+		// The OK button was clicked, add a new dissection to the storage.
 		loadedTable.AddDissection(name, addr, size);
+
+		// Refresh available memory dissection entries.
+		const int count = loadedTable.GetDissectionCount();
+		this->mAvailableDissections.SetCount(count);
+		if (count > 0)
+		{
+			this->mAvailableDissections.SetIndex(count - 1);
+			MemoryDissectionMasterIndex = this->mAvailableDissections.GetIndex();
+			this->RefreshDissection(CRYDATATYPE_4BYTES);
+		}
 	}
 	
 	delete cmmnw;
-	
-	// Refresh available memory dissection entries.
-	const int count = loadedTable.GetDissectionCount();
-	this->mAvailableDissections.SetCount(count);
-	if (count > 0)
-	{
-		this->mAvailableDissections.SetIndex(count - 1);
-		MemoryDissectionMasterIndex = this->mAvailableDissections.GetIndex();
-		this->RefreshDissection(CRYDATATYPE_4BYTES);
-	}
 }
 
 // Closes the memory dissection window.

@@ -11,7 +11,7 @@ using namespace Upp;
 #include "MemoryScanner.h"
 
 // Include Capstone library headers.
-#include "Capstone/include/capstone.h"
+#include "Capstone/include/capstone/capstone.h"
 
 // Dynamically link to disassembler library.
 #ifdef _WIN64
