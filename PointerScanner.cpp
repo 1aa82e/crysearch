@@ -104,7 +104,7 @@ void PointerScanner::ProcessMemoryPage(const MemoryRegion& reg, const SIZE_T pAd
 	// Delete the memory buffer for the constants.
 	constants.Clear();
 	constants.Shrink();
-	
+
 	// Start the actual scanning process. We first check whether the static addresses we have
 	// point to the address we specified. If not, we try all offsets and recurse our way down
 	// until we reached the maximum recursion level.

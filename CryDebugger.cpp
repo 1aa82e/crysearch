@@ -639,11 +639,12 @@ void CryDebugger::ExceptionWatch()
 				const int bpCount = this->mBreakpoints.GetCount();
 				if (bpCount > 0)
 				{
+					// Get the address of the previous instruction. Since the single step exception already set EIP to the
+					// next instruction, we must look back to which instruction triggered the exception.
 					const SIZE_T excPrevLine = this->GetDisasmLine(excAddress, true);
 					
 					// Get breakpoint at the previous instruction reflected against the current exception address.
 					int bp = this->FindBreakpoint(excPrevLine);
-					
 					const SIZE_T excLine = this->GetDisasmLine(excAddress, false);
 					if (bp == -1 || bp > bpCount)
 					{

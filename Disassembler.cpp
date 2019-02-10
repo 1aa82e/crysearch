@@ -283,7 +283,7 @@ const SIZE_T DisasmGetPreviousLine(const SIZE_T address, const cs_mode architect
 	SIZE_T outputVal = 0;
 
 	// Query the memory page this breakpoint occured in, so we can guarantee accurate instruction parsing.
-	if (VirtualQueryEx(mMemoryScanner->GetHandle(), (void*)address, &block, sizeof(block)))
+	if (address && VirtualQueryEx(mMemoryScanner->GetHandle(), (void*)address, &block, sizeof(block)))
 	{
 		Byte* buffer = new Byte[block.RegionSize];
 		CrySearchRoutines.CryReadMemoryRoutine(mMemoryScanner->GetHandle(), (void*)block.BaseAddress, buffer, block.RegionSize, NULL);
@@ -298,27 +298,44 @@ const SIZE_T DisasmGetPreviousLine(const SIZE_T address, const cs_mode architect
 		size_t code_size = block.RegionSize;
 		uint64 iterAddress = (uint64)block.BaseAddress;
 		uint64 prevAddress = iterAddress;
+		bool found_prev_line = false;
 
-		// Disassemble one instruction a time & store the result into @insn variable.
-		while (cs_disasm_iter(handle, &bufIteratorPtr, &code_size, &iterAddress, insn))
+		// We sometimes encounter an instruction that cannot be disassembled. We have then
+		// not yet necessarily found the instruction we need, and hence we just need to skip it.
+		do
 		{
-			// Succesfully disassembled, check if this is the previous instruction.
-			if (insn->address + insn->size == address)
+			// Disassemble one instruction a time & store the result into @insn variable.
+			while (cs_disasm_iter(handle, &bufIteratorPtr, &code_size, &iterAddress, insn))
 			{
-				// We found the address of the previous instruction.
-				outputVal = (SIZE_T)insn->address;
-
-				// If the caller wants bytes output, prepare it.
-				if (outAob)
+				// Succesfully disassembled, check if this is the previous instruction.
+				if ((SIZE_T)(insn->address + insn->size) == address)
 				{
-					outAob->Allocate(insn->size);
-					memcpy(outAob->Data, insn->bytes, insn->size);
-				}
+					// We found the address of the previous instruction.
+					outputVal = (SIZE_T)insn->address;
 
-				break;
+					// If the caller wants bytes output, prepare it.
+					if (outAob)
+					{
+						outAob->Allocate(insn->size);
+						memcpy(outAob->Data, insn->bytes, insn->size);
+					}
+
+					// We have found the previous instruction.
+					found_prev_line = true;
+					break;
+				}
+			}
+
+			// Check if we encountered an address that Capstone could not disassemble.
+			if (cs_errno(handle) == CS_ERR_OK && iterAddress < address + code_size)
+			{
+				prevAddress = ++iterAddress;
+				++bufIteratorPtr;
 			}
 		}
+		while (prevAddress < address + code_size && !found_prev_line);
 
+		// Free the allocated memory page buffer.
 		delete[] buffer;
 
 		// Free the memory buffer Capstone allocated.
@@ -471,10 +488,13 @@ void DisassembleRegion(const SIZE_T address, const SIZE_T size, const cs_mode ar
 		}
 
 		// Check if we encountered an address that Capstone could not disassemble.
+		// In this case, we have a 'db 0x??' byte, and the buffer pointers should
+		// be incremented by one. Then we can continue looking for instructions.
 		if (cs_errno(handle) == CS_ERR_OK && iterAddress < address + size)
 		{
 			outInsts.Add((SIZE_T)iterAddress++);
 			prevAddress = iterAddress;
+			++bufIteratorPtr;
 		}
 	}
 	while (prevAddress < address + size && killSwitch);
@@ -560,6 +580,7 @@ void DisassembleGetConstantAddresses(const SIZE_T address, const SIZE_T size, co
 		{
 			// Just increment address and ignore the results.
 			prevAddress = ++iterAddress;
+			++bufIteratorPtr;
 		}
 	}
 	while (prevAddress < address + size && killSwitch);
