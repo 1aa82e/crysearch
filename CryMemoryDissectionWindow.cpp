@@ -714,6 +714,7 @@ void CryMemoryDissectionWindow::EditDissectionClicked()
 void CryMemoryDissectionWindow::RemoveDissectionFromList()
 {
 	// Remove the dissection from the address table and refresh the user interface.
+	this->mAvailableDissections.SetCount(0);
 	loadedTable.RemoveDissection(MemoryDissectionMasterIndex);
 	const int count = loadedTable.GetDissectionCount();
 	

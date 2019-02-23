@@ -735,14 +735,18 @@ void CrySearchForm::ToggleAlwaysOnTop()
 	this->TopMost(!this->IsTopMost());
 }
 
-// Executed when the tab window currently active has changed. This situation needs to be
-// handled separately because the imports window needs redrawal.
+// Executed when the tab window currently active has changed. 
 void CrySearchForm::ActiveTabWindowChanged()
 {
 	const int index = ~this->mTabbedDataWindows;
-	if (index >= 0 && this->mTabbedDataWindows.GetItem(index).GetText() == "Imports")
+	if (index >= 0)
 	{
-		this->mWindowManager.GetImportsWindow()->ModuleRedraw();
+		// This situation needs to be handled separately because the imports window needs redrawal.
+		TabCtrl::Item& newtab = this->mTabbedDataWindows.GetItem(index);
+		if (newtab.GetText() == "Imports")
+		{
+			this->mWindowManager.GetImportsWindow()->ModuleRedraw();
+		}
 	}
 }
 
@@ -1298,18 +1302,25 @@ void CrySearchForm::CloseProcessMenu()
 // Routine that is executed on the closure of an opened process.
 bool CrySearchForm::CloseProcess()
 {
+	// Check if a memory scan is running. If this is the case, the process cannot yet be closed.
 	if (mMemoryScanner->IsScanRunning())
 	{
 		Prompt("Fatal Error", CtrlImg::error(), "The process cannot be closed because a scan is running.", "OK");
 		return false;
 	}
 
+	// Kill the disassembler, if it is running we must close it. Reopening a process directly
+	// after when the disassembler is still busy will crash CrySearch.
+	this->mWindowManager.GetDisasmWindow()->ClearList();
+
+	// Reset the window title if not randomized.
 	if (!this->wndTitleRandomized)
 	{
 		DWORD wndTitle[] = {0x53797243, 0x63726165, 0x654d2068, 0x79726f6d, 0x61635320, 0x72656e6e, 0x0}; //"CrySearch Memory Scanner"
 		this->Title((char*)wndTitle);
 	}
 	
+	// Reset the opened process label.
 	this->mOpenedProcess.SetLabel("");
 	
 	// If the process was terminated, the warning should not be shown, it is annoying to the user.

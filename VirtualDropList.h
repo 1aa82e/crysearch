@@ -48,7 +48,7 @@ public:
 
 	void EnableDrop(bool b = true) { MainButton().Enable(b || alwaysdrop); }
 	int  GetCount() const          { return list.GetCount(); }
-	void SetCount(int c)           { list.SetCount(c); EnableDrop(c > 0 ? true : false); }
+	void SetCount(int c)           { list.SetCount(c); EnableDrop(c > 0 ? true : false); Sync(); }
 
 	void SetData(const Value& data) { SetIndex(data); }
 	Value GetData() const           { Value value = GetValue(); return notnull && IsNull(value) ? NotNullError() : value; }

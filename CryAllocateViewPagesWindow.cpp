@@ -84,6 +84,7 @@ void CryAllocateViewPagesWindow::Initialize()
 	MEMORY_BASIC_INFORMATION block;
 	
 	// Clear the existing pages, if any.
+	this->mPagesCtrl.Clear();
 	mAllocatedMemoryCollection.Clear();
 	
 	// Query virtual pages inside target process.

@@ -282,14 +282,14 @@ void EnumerateHandles(const int processId, Vector<Win32HandleInformation>& handl
 								
 								// Remove the first part, including the next backslash.
 								int bkslashIndex = procPath.FindFirstOf("\\") + 1;
-								if (bkslashIndex < procPath.GetLength())
+								if (bkslashIndex >= 0 && bkslashIndex < procPath.GetLength())
 								{
 									procPath.Remove(0, bkslashIndex);
 								}
 								
 								// Remove the second part.
 								bkslashIndex = procPath.FindFirstOf("\\");
-								if (bkslashIndex < procPath.GetLength())
+								if (bkslashIndex >= 0 && bkslashIndex < procPath.GetLength())
 								{
 									procPath.Remove(0, bkslashIndex);
 								}

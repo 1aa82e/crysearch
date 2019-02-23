@@ -9,11 +9,15 @@ v3.4:
 	- Fixed bugs in memory dissection window:
 		- When more than one dissections are active, switching between them would reset the stored type information;
 		- Stored type and size information was reset on various operations. Fixed that the information is no longer reset;
-		- Changing the value of an AOB, String or WString dissection row would crash CrySearch.
+		- Changing the value of an AOB, String or WString dissection row would crash CrySearch;
+		- Removing a dissection could crash CrySearch because redrawing would expect the removed one to be present.
 	- Fixes and changes to the debugger:
 		- Fixed bug where correct instruction in the disassembly could not always be found;
 		- 
 	- Fixed bug in disassembler that instructions that could not be disassembled would corrupt the output;
+	- Fixed bug in handle window where CrySearch would crash when opening the window;
+	- Fixed bug in allocate memory and then view pages window where freeing a page would crash CrySearch;
+	- Fixed the redrawing of drop lists when the selected element changes;
 	- 
 
 v3.3:
