@@ -8,15 +8,16 @@ Package:
 - Update wiki with changes for the release.
 ------------------------------------------------------------------
 
+- Changing values in memory dissection highlighting for few seconds (maybe an option);
+- Change dissection entry description;
+- Can be retrieve the first module some other way? (PEB!)
 - Bug in disassembler when opening process before disassembling has finished;
 - go to address broken and debugger hit view also broken?
 	- make multi-OP code view?
 - find string function for disassembly?
 - does address input accept 0xhex?
 - maybe an OutputDebugString hook to detect loose debug stuff in games?
-- Regular expression string search?
-- Can be retrieve the first module some other way?
-- Memory dissection should store second one because data types go away;
+- Regular expression string search;
 - Packed applications testen voor bugs / fuzzen!
 - Pointer scan;
 - Option to cleanse debug registers before settings bps;
@@ -62,7 +63,7 @@ Package:
 	- QueueUserAPC;
 	- ntdll.dll proces injection (LdrLoadDll,LdrpLoadDll).
 
-- Scan for hooked functions inside a process based on:
+- Scan for hooked functions inside a process based on (maybe plugin):
 	- Detours;
 	- IAT.
 

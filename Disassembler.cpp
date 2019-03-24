@@ -84,11 +84,13 @@ void DisasmForBytes(const SIZE_T address, const cs_mode architecture, ArrayOfByt
 			
 			// Check whether this instruction has IMM operands.
 			cs_detail* detail = insn->detail;
-			if (cs_op_count(handle, insn, X86_OP_IMM) > 0)
+			if (cs_op_count(handle, insn, X86_OP_IMM) > 0 || cs_op_count(handle, insn, X86_OP_MEM) > 0)
 			{
 				// Get IMM operand index.
 				const int immIndex = cs_op_index(handle, insn, X86_OP_IMM, 1);
-				if (immIndex != -1)
+				const int memIndex = cs_op_index(handle, insn, X86_OP_MEM, 1);
+				const int operand_index = immIndex != -1 ? immIndex : memIndex;
+				if (operand_index != -1)
 				{
 					// If we have a relative CALL (0xE8) or JMP (0xE9) instruction, the last bytes are the immediate.
 					if (insn->bytes[0] == 0xE8 || insn->bytes[0] == 0xE9)
@@ -97,12 +99,14 @@ void DisasmForBytes(const SIZE_T address, const cs_mode architecture, ArrayOfByt
 						optOutMasking->Set(1, '?', insn->size - 1);
 					}
 					// Look for the index of the immediate value.
-					else if (detail->x86.operands[immIndex].size == sizeof(__int64))
+					else if (detail->x86.operands[operand_index].size == sizeof(__int64))
 					{
 						// We want to look for a 64-bit immediate value.
 						for (unsigned int c = 0; c < insn->size; ++c)
 						{
-							if (*((__int64*)&buffer[c]) == detail->x86.operands[immIndex].imm)
+							const __int64 operand = *((__int64*)&buffer[c]);
+							if (operand == detail->x86.operands[operand_index].imm ||
+								operand == detail->x86.operands[operand_index].mem.disp)
 							{
 								// Mask the immediate value out.
 								optOutMasking->Set(c, '?', sizeof(__int64));
@@ -115,7 +119,9 @@ void DisasmForBytes(const SIZE_T address, const cs_mode architecture, ArrayOfByt
 						// We want to look for a 32-bit immediate value.
 						for (unsigned int c = 0; c < insn->size; ++c)
 						{
-							if (*((DWORD*)&buffer[c]) == (DWORD)detail->x86.operands[immIndex].imm)
+							const DWORD operand = *((DWORD*)&buffer[c]);
+							if (operand == (DWORD)detail->x86.operands[operand_index].imm ||
+								operand == (DWORD)detail->x86.operands[operand_index].mem.disp)
 							{
 								// Mask the immediate value out.
 								optOutMasking->Set(c, '?', sizeof(DWORD));

@@ -18,6 +18,7 @@ v3.4:
 	- Fixed bug in handle window where CrySearch would crash when opening the window;
 	- Fixed bug in allocate memory and then view pages window where freeing a page would crash CrySearch;
 	- Fixed the redrawing of drop lists when the selected element changes;
+	- Fixed bug in signature masking, where memory displacements were not correctly masked;
 	- 
 
 v3.3:

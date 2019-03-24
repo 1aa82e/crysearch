@@ -1309,10 +1309,6 @@ bool CrySearchForm::CloseProcess()
 		return false;
 	}
 
-	// Kill the disassembler, if it is running we must close it. Reopening a process directly
-	// after when the disassembler is still busy will crash CrySearch.
-	this->mWindowManager.GetDisasmWindow()->ClearList();
-
 	// Reset the window title if not randomized.
 	if (!this->wndTitleRandomized)
 	{
@@ -1365,7 +1361,6 @@ bool CrySearchForm::CloseProcess()
 	
 	// Free process-bound resources.
 	this->mWindowManager.ClearWindows();
-	
 	this->mTabbedDataWindows.Reset();
 	
 	// Kill running timers.
