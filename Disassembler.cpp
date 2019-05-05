@@ -34,11 +34,12 @@ String DisasmGetLine(const SIZE_T address, const cs_mode architecture, ArrayOfBy
 			memcpy(outAob->Data, insn->bytes, insn->size);
 		}
 		
-		// Free the memory buffer Capstone allocated.
-		cs_free(insn, count);
-		
 		// Construct the complete instruction string and return it.
-		return Format("%s %s", insn->mnemonic, insn->op_str);
+		String insn_string = Format("%s %s", insn->mnemonic, insn->op_str);
+
+		// Free the memory buffer Capstone allocated, and return the string.
+		cs_free(insn, count);
+		return insn_string;
 	}
 	
 	// Close the Capstone handle.

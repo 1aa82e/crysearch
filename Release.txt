@@ -1,7 +1,7 @@
 CrySearch Memory Scanner
 
 Author: evolution536
-Websites: www.unknowncheats.me, www.crysearch.nl
+Websites: https://www.unknowncheats.me, https://www.crysearch.nl
 
 v3.4:
 	- Added context menu for copying fields of address table entries to the clipboard;
@@ -13,6 +13,7 @@ v3.4:
 		- Removing a dissection could crash CrySearch because redrawing would expect the removed one to be present.
 	- Fixes and changes to the debugger:
 		- Fixed bug where correct instruction in the disassembly could not always be found;
+		- Fixed bug where correct instruction would already have been freed before it is shown in the UI;
 		- 
 	- Fixed bug in disassembler that instructions that could not be disassembled would corrupt the output;
 	- Fixed bug in handle window where CrySearch would crash when opening the window;
